@@ -4,7 +4,7 @@ import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.events.connection.DeviceJoinEvent;
 import scott.wemessage.server.events.connection.DeviceQuitEvent;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -83,9 +83,9 @@ public final class DeviceManager extends Thread {
             eventManager.callEvent(new DeviceQuitEvent(eventManager, this, device, reason));
 
             if (reasonMessage == null) {
-                LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Disconnecting device with IP Address: " + device.getAddress());
+                ServerLogger.log(ServerLogger.Level.INFO, TAG, "Disconnecting device with IP Address: " + device.getAddress());
             }else {
-                LoggingUtils.log(LoggingUtils.Level.INFO, TAG, reasonMessage);
+                ServerLogger.log(ServerLogger.Level.INFO, TAG, reasonMessage);
             }
             return true;
         }
@@ -97,13 +97,13 @@ public final class DeviceManager extends Thread {
             isRunning.set(false);
             try {
                 getSocketListener().close();
-                LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Device Service is shutting down. Disconnecting all active connections...");
+                ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device Service is shutting down. Disconnecting all active connections...");
 
                 for (Device device : devices.values()) {
                     removeDevice(device, DisconnectReason.SERVER_CLOSED, null);
                 }
             } catch (Exception ex) {
-                LoggingUtils.error(TAG, "An error occurred while shutting down the Device Service.", ex);
+                ServerLogger.error(TAG, "An error occurred while shutting down the Device Service.", ex);
             }
         }
     }
@@ -114,7 +114,7 @@ public final class DeviceManager extends Thread {
                 socketListener = new ServerSocket(PORT);
             }
             isRunning.set(true);
-            LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Device Service has started");
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device Service has started");
 
             while (isRunning.get()) {
                 try {
@@ -122,12 +122,12 @@ public final class DeviceManager extends Thread {
                     device.start();
                 }catch (Exception ex){
                     if (!getSocketListener().isClosed()) {
-                        LoggingUtils.error(TAG, "Caught an error while trying to initialize a device.", ex);
+                        ServerLogger.error(TAG, "Caught an error while trying to initialize a device.", ex);
                     }
                 }
             }
         }catch(IOException ex){
-            LoggingUtils.error(TAG, "An error has occurred in initializing the Device Manager. Shutting down.", ex);
+            ServerLogger.error(TAG, "An error has occurred in initializing the Device Manager. Shutting down.", ex);
             getMessageServer().shutdown(-1, false);
         }
     }

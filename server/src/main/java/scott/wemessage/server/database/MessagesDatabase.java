@@ -9,7 +9,7 @@ import scott.wemessage.server.messages.Message;
 import scott.wemessage.server.messages.chat.ChatBase;
 import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.messages.chat.PeerChat;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -112,7 +112,7 @@ public final class MessagesDatabase extends Thread {
     }
 
     public void run(){
-        LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Connecting to Messages Database");
+        ServerLogger.log(ServerLogger.Level.INFO, TAG, "Connecting to Messages Database");
 
         try {
             isRunning.set(true);
@@ -121,7 +121,7 @@ public final class MessagesDatabase extends Thread {
                 lastDatabaseSnapshot = new DatabaseSnapshot(getMessagesByAmount(MESSAGE_COUNT_LIMIT));
             }
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "An error occurred while connecting to the Messages Database. Shutting down", ex);
+            ServerLogger.error(TAG, "An error occurred while connecting to the Messages Database. Shutting down", ex);
             messageServer.shutdown(-1, false);
         }
 
@@ -138,12 +138,12 @@ public final class MessagesDatabase extends Thread {
 
                 boolean valid = wk.reset();
                 if (!valid) {
-                    LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "The watcher key has been unregistered");
+                    ServerLogger.log(ServerLogger.Level.INFO, TAG, "The watcher key has been unregistered");
                 }
             }
         }catch(Exception ex){
             if (isRunning.get()) {
-                LoggingUtils.error(TAG, "An error occurred while watching the Messages database. Shutting down!", ex);
+                ServerLogger.error(TAG, "An error occurred while watching the Messages database. Shutting down!", ex);
                 messageServer.shutdown(-1, false);
             }
         }
@@ -151,7 +151,7 @@ public final class MessagesDatabase extends Thread {
 
     public synchronized void stopService() {
         if (isRunning.get()) {
-            LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Terminating connection to Messages Database");
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "Terminating connection to Messages Database");
 
             isRunning.set(false);
         }
@@ -628,7 +628,7 @@ public final class MessagesDatabase extends Thread {
                 return null;
             }
         }catch(IOException ex){
-            LoggingUtils.error(TAG, "An error occurred while fetching the server configuration", ex);
+            ServerLogger.error(TAG, "An error occurred while fetching the server configuration", ex);
             return null;
         }
 
@@ -841,7 +841,7 @@ public final class MessagesDatabase extends Thread {
                 return null;
             }
         }catch(IOException ex){
-            LoggingUtils.error(TAG, "An error occurred while fetching the server configuration", ex);
+            ServerLogger.error(TAG, "An error occurred while fetching the server configuration", ex);
             return null;
         }
 

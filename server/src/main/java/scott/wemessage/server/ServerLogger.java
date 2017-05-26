@@ -1,8 +1,8 @@
-package scott.wemessage.server.utils;
+package scott.wemessage.server;
 
-public class LoggingUtils {
+public final class ServerLogger {
 
-    private LoggingUtils() { }
+    private ServerLogger() { }
 
     public static void log(String message){
         log(null, null, message);

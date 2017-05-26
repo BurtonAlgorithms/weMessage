@@ -1,7 +1,7 @@
 package scott.wemessage.server.events;
 
 import scott.wemessage.server.MessageServer;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,7 +25,7 @@ public final class EventManager extends Thread {
 
     public void run(){
         isRunning.set(true);
-        LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Event manager has started");
+        ServerLogger.log(ServerLogger.Level.INFO, TAG, "Event manager has started");
     }
 
     public MessageServer getMessageServer(){
@@ -38,7 +38,7 @@ public final class EventManager extends Thread {
         if (isRunning.get()){
             isRunning.set(false);
             listeners.clear();
-            LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Event manager is shutting down");
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "Event manager is shutting down");
         }
     }
 

@@ -17,7 +17,6 @@ import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.listeners.database.MessagesDatabaseListener;
 import scott.wemessage.server.configuration.Authenticator;
 import scott.wemessage.commons.crypto.BCrypt;
-import scott.wemessage.server.utils.LoggingUtils;
 
 import java.util.List;
 import java.util.Scanner;
@@ -61,7 +60,7 @@ public final class MessageServer {
 
                 isRunning.set(true);
             } catch (Exception e) {
-                LoggingUtils.error(TAG, "An error occurred while initializing MessageServer. Shutting down!", e);
+                ServerLogger.error(TAG, "An error occurred while initializing MessageServer. Shutting down!", e);
                 shutdown(-1, false);
             }
         }else {
@@ -107,8 +106,8 @@ public final class MessageServer {
 
     void launch() {
         if (!getScriptExecutor().isSetup()){
-            LoggingUtils.log(LoggingUtils.Level.ERROR, TAG, "weMessage Server is not configured to run yet.");
-            LoggingUtils.log(LoggingUtils.Level.ERROR, TAG, "Make sure that assistive access is enabled!");
+            ServerLogger.log(ServerLogger.Level.ERROR, TAG, "weMessage Server is not configured to run yet.");
+            ServerLogger.log(ServerLogger.Level.ERROR, TAG, "Make sure that assistive access is enabled!");
             shutdown(-1, true);
             return;
         }
@@ -116,11 +115,11 @@ public final class MessageServer {
         try {
             if (!authenticator.isAccountValid()) {
                 synchronized (serverConfigurationLock) {
-                    LoggingUtils.log("The email and password provided in " + serverConfiguration.getConfigFileName() + " are invalid!");
-                    LoggingUtils.emptyLine();
-                    LoggingUtils.log("Please enter a new email and password for devices to connect with!");
-                    LoggingUtils.log("Your email must be the same as the one you are using iMessage with.");
-                    LoggingUtils.emptyLine();
+                    ServerLogger.log("The email and password provided in " + serverConfiguration.getConfigFileName() + " are invalid!");
+                    ServerLogger.emptyLine();
+                    ServerLogger.log("Please enter a new email and password for devices to connect with!");
+                    ServerLogger.log("Your email must be the same as the one you are using iMessage with.");
+                    ServerLogger.emptyLine();
 
                     boolean isEmailNotAuthenticated = true;
                     Scanner emailScanner = new Scanner(System.in);
@@ -129,8 +128,8 @@ public final class MessageServer {
                         String email = emailScanner.nextLine();
 
                         if (!Authenticator.isValidEmailFormat(email) || email.equalsIgnoreCase(weMessage.DEFAULT_EMAIL)) {
-                            LoggingUtils.log("The email you provided is not a valid address.");
-                            LoggingUtils.emptyLine();
+                            ServerLogger.log("The email you provided is not a valid address.");
+                            ServerLogger.emptyLine();
                         } else {
                             try {
                                 ConfigJSON configJSON = serverConfiguration.getConfigJSON();
@@ -139,15 +138,15 @@ public final class MessageServer {
                                 serverConfiguration.writeJsonToConfig(configJSON);
                                 isEmailNotAuthenticated = false;
                             } catch (Exception ex) {
-                                LoggingUtils.error("An error occurred while trying to set a login email address. Shutting down!", ex);
+                                ServerLogger.error("An error occurred while trying to set a login email address. Shutting down!", ex);
                                 shutdown(-1, false);
                             }
                         }
                     }
 
-                    LoggingUtils.emptyLine();
-                    LoggingUtils.log("Please enter a new password for devices to connect with!");
-                    LoggingUtils.emptyLine();
+                    ServerLogger.emptyLine();
+                    ServerLogger.log("Please enter a new password for devices to connect with!");
+                    ServerLogger.emptyLine();
 
                     Scanner passwordScanner = new Scanner(System.in);
                     boolean isPasswordNotAuthenticated = true;
@@ -156,9 +155,9 @@ public final class MessageServer {
                         String password = passwordScanner.nextLine();
 
                         if (password.length() < weMessage.MINIMUM_CONNECT_PASSWORD_LENGTH) {
-                            LoggingUtils.log("The password you have provided is too short.");
-                            LoggingUtils.log("Please provide a password that is at least " + weMessage.MINIMUM_CONNECT_PASSWORD_LENGTH + " characters in length.");
-                            LoggingUtils.emptyLine();
+                            ServerLogger.log("The password you have provided is too short.");
+                            ServerLogger.log("Please provide a password that is at least " + weMessage.MINIMUM_CONNECT_PASSWORD_LENGTH + " characters in length.");
+                            ServerLogger.emptyLine();
                         } else {
                             try {
                                 String secret = BCrypt.generateSalt();
@@ -171,7 +170,7 @@ public final class MessageServer {
                                 serverConfiguration.writeJsonToConfig(configJSON);
                                 isPasswordNotAuthenticated = false;
                             } catch (Exception ex) {
-                                LoggingUtils.error("An error occurred while trying to set a password. Shutting down!", ex);
+                                ServerLogger.error("An error occurred while trying to set a password. Shutting down!", ex);
                                 shutdown(-1, false);
                             }
                         }
@@ -179,13 +178,13 @@ public final class MessageServer {
                 }
             }
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "There was an error starting the server. Shutting down!", ex);
+            ServerLogger.error(TAG, "There was an error starting the server. Shutting down!", ex);
             shutdown(-1, false);
             return;
         }
 
         try {
-            LoggingUtils.log(LoggingUtils.Level.INFO, "weMessage Server", "Starting weMessage Server on port " + getConfiguration().getPort());
+            ServerLogger.log(ServerLogger.Level.INFO, "weMessage Server", "Starting weMessage Server on port " + getConfiguration().getPort());
 
             synchronized (databaseManagerLock) {
                 databaseManager.start();
@@ -210,12 +209,12 @@ public final class MessageServer {
             commandManager.startService();
 
             Thread.sleep(500);
-            LoggingUtils.emptyLine();
-            LoggingUtils.log("weServer Started!");
-            LoggingUtils.log("Version: " + getConfiguration().getVersion());
-            LoggingUtils.emptyLine();
+            ServerLogger.emptyLine();
+            ServerLogger.log("weServer Started!");
+            ServerLogger.log("Version: " + getConfiguration().getVersion());
+            ServerLogger.emptyLine();
         } catch(Exception e){
-            LoggingUtils.error(TAG, "There was an error starting the server. Shutting down!", e);
+            ServerLogger.error(TAG, "There was an error starting the server. Shutting down!", e);
             shutdown(-1, false);
             return;
         }
@@ -237,34 +236,34 @@ public final class MessageServer {
             }
             if(command != null) {
                 try {
-                    LoggingUtils.emptyLine();
+                    ServerLogger.emptyLine();
                     command.execute(commandArgs);
 
                     if (!command.getName().equals("stop")) {
-                        LoggingUtils.emptyLine();
+                        ServerLogger.emptyLine();
                     }
                 }catch(Exception ex){
-                    LoggingUtils.error(TAG, "An error occurred while running the command " + command.getName() + "!", ex);
+                    ServerLogger.error(TAG, "An error occurred while running the command " + command.getName() + "!", ex);
                 }
             }else {
-                LoggingUtils.emptyLine();
-                LoggingUtils.log(LoggingUtils.Level.WARNING, TAG, "Command " + commandString.split(" ")[0] + " was not found! Are you sure you typed it in correctly?");
-                LoggingUtils.emptyLine();
+                ServerLogger.emptyLine();
+                ServerLogger.log(ServerLogger.Level.WARNING, TAG, "Command " + commandString.split(" ")[0] + " was not found! Are you sure you typed it in correctly?");
+                ServerLogger.emptyLine();
             }
         }
     }
 
     private boolean init(){
-        LoggingUtils.emptyLine();
+        ServerLogger.emptyLine();
 
         if(!System.getProperty("os.name").toLowerCase().startsWith("mac")){
-            LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "weServer can only run on macOS. Shutting down!");
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "weServer can only run on macOS. Shutting down!");
             shutdown(-1, false);
             return false;
         }
 
         if(!System.getProperty("os.version").startsWith("10.12")){
-            LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "As of now, weServer only supports macOS Sierra and higher. Shutting down!");
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "As of now, weServer only supports macOS Sierra and higher. Shutting down!");
             shutdown(-1, false);
             return false;
         }
@@ -276,7 +275,7 @@ public final class MessageServer {
 
     public synchronized void shutdown(int returnCode, boolean showCloseMessage){
         if(showCloseMessage) {
-            LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "weServer is shutting down. Goodbye!");
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "weServer is shutting down. Goodbye!");
         }
         isRunning.set(false);
         try {
@@ -289,7 +288,7 @@ public final class MessageServer {
                 eventManager.stopService();
                 isInitialized.set(false);
             }
-            LoggingUtils.emptyLine();
+            ServerLogger.emptyLine();
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
@@ -297,7 +296,7 @@ public final class MessageServer {
                 }
             }, 2000);
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "An error occurred while shutting down the server.", ex);
+            ServerLogger.error(TAG, "An error occurred while shutting down the server.", ex);
             System.exit(returnCode);
         }
     }

@@ -4,7 +4,7 @@ import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.configuration.ServerConfiguration;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -57,12 +57,12 @@ public final class AppleScriptExecutor extends Thread {
                 this.tempFolder = Files.createTempDirectory("weServer");
             }
         }catch(IOException ex){
-            LoggingUtils.error(TAG, "An unknown error occurred while creating the weServer temp directory. Shutting down!", ex);
+            ServerLogger.error(TAG, "An unknown error occurred while creating the weServer temp directory. Shutting down!", ex);
             messageServer.shutdown(-1, false);
         }
 
         if (!getScriptsFolder().exists()){
-            LoggingUtils.error(TAG, "weMessage Scripts folder could not be found. Shutting down!", new Exception());
+            ServerLogger.error(TAG, "weMessage Scripts folder could not be found. Shutting down!", new Exception());
             messageServer.shutdown(-1, false);
         }
     }
@@ -110,7 +110,7 @@ public final class AppleScriptExecutor extends Thread {
                     }
                 });
             } catch (IOException e) {
-                LoggingUtils.error(TAG, "Failed to delete temp folder" + getTempFolder().toString(), e);
+                ServerLogger.error(TAG, "Failed to delete temp folder" + getTempFolder().toString(), e);
             }
         }
     }
@@ -125,7 +125,7 @@ public final class AppleScriptExecutor extends Thread {
             });
             scriptFile = scriptFiles[0];
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "The script " + actionType.getScriptName() + ".scpt does not exist!", new NullPointerException());
+            ServerLogger.error(TAG, "The script " + actionType.getScriptName() + ".scpt does not exist!", new NullPointerException());
             return null;
         }
 
@@ -195,8 +195,8 @@ public final class AppleScriptExecutor extends Thread {
                 result = returnType;
 
                 if (returnType == ReturnType.UI_ERROR){
-                    LoggingUtils.log(LoggingUtils.Level.ERROR, TAG, "A UI error occurred within the Messages App.");
-                    LoggingUtils.log(LoggingUtils.Level.ERROR, TAG, "In order to prevent further errors from occurring, weMessage will force close and relaunch it.");
+                    ServerLogger.log(ServerLogger.Level.ERROR, TAG, "A UI error occurred within the Messages App.");
+                    ServerLogger.log(ServerLogger.Level.ERROR, TAG, "In order to prevent further errors from occurring, weMessage will force close and relaunch it.");
                     killMessagesApp(true);
                 }
             }else {
@@ -204,15 +204,15 @@ public final class AppleScriptExecutor extends Thread {
 
                 for (ReturnType returnType : resultReturnsList) {
                     if (returnType == ReturnType.UI_ERROR) {
-                        LoggingUtils.log(LoggingUtils.Level.ERROR, TAG, "A UI error occurred within the Messages App.");
-                        LoggingUtils.log(LoggingUtils.Level.ERROR, TAG, "In order to prevent further errors from occurring, weMessage will force close and relaunch it.");
+                        ServerLogger.log(ServerLogger.Level.ERROR, TAG, "A UI error occurred within the Messages App.");
+                        ServerLogger.log(ServerLogger.Level.ERROR, TAG, "In order to prevent further errors from occurring, weMessage will force close and relaunch it.");
                         killMessagesApp(true);
                         break;
                     }
                 }
             }
         }catch (Exception ex){
-            LoggingUtils.error(TAG, "An error occurred while running script " + actionType.getScriptName() + ".scpt", ex);
+            ServerLogger.error(TAG, "An error occurred while running script " + actionType.getScriptName() + ".scpt", ex);
             result = null;
         }
         return result;
@@ -229,7 +229,7 @@ public final class AppleScriptExecutor extends Thread {
             });
             setupScriptFile = scriptFiles[0];
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "The script Setup.scpt does not exist!", new NullPointerException());
+            ServerLogger.error(TAG, "The script Setup.scpt does not exist!", new NullPointerException());
             return false;
         }
 
@@ -251,7 +251,7 @@ public final class AppleScriptExecutor extends Thread {
                 return false;
             }
         }catch(Exception ex){
-            LoggingUtils.error("An error occurred while checking to see if weMessage is configured to start.", ex);
+            ServerLogger.error("An error occurred while checking to see if weMessage is configured to start.", ex);
             return false;
         }
     }
@@ -294,7 +294,7 @@ public final class AppleScriptExecutor extends Thread {
                     try {
                         startMessagesApp();
                     }catch(ScriptException ex){
-                        LoggingUtils.error(TAG, "An error occurred while executing the script to restart Messages.", ex);
+                        ServerLogger.error(TAG, "An error occurred while executing the script to restart Messages.", ex);
                     }
                 }
             }, 200);

@@ -5,7 +5,7 @@ import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.commands.connection.ConnectionCommand;
 import scott.wemessage.server.commands.database.DatabaseCommand;
 import scott.wemessage.server.commands.scripts.ScriptCommand;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.commons.utils.StringUtils;
 
 import java.util.ArrayList;
@@ -25,8 +25,8 @@ public class CommandHelp extends CoreCommand {
         List<String> databaseCommands = new ArrayList<>();
         List<String> extraCommands = new ArrayList<>();
 
-        LoggingUtils.log("weServer Command Guide:  ");
-        LoggingUtils.emptyLine();
+        ServerLogger.log("weServer Command Guide:  ");
+        ServerLogger.emptyLine();
 
         for (Command cmd : getCommandManager().getCommands()){
             String aliases;
@@ -50,39 +50,39 @@ public class CommandHelp extends CoreCommand {
             }
         }
 
-        LoggingUtils.log("Core Commands");
+        ServerLogger.log("Core Commands");
 
         for (String s : coreCommands){
-            LoggingUtils.log(s);
+            ServerLogger.log(s);
         }
 
-        LoggingUtils.emptyLine();
-        LoggingUtils.log("Device Commands");
+        ServerLogger.emptyLine();
+        ServerLogger.log("Device Commands");
 
         for (String s : deviceCommands){
-            LoggingUtils.log(s);
+            ServerLogger.log(s);
         }
 
-        LoggingUtils.emptyLine();
-        LoggingUtils.log("Messaging Commands");
+        ServerLogger.emptyLine();
+        ServerLogger.log("Messaging Commands");
 
         for (String s : scriptCommands){
-            LoggingUtils.log(s);
+            ServerLogger.log(s);
         }
 
-        LoggingUtils.emptyLine();
-        LoggingUtils.log("Database Commands");
+        ServerLogger.emptyLine();
+        ServerLogger.log("Database Commands");
 
         for (String s : databaseCommands){
-            LoggingUtils.log(s);
+            ServerLogger.log(s);
         }
 
         if (!extraCommands.isEmpty()){
-            LoggingUtils.emptyLine();
-            LoggingUtils.log("Miscellaneous Commands");
+            ServerLogger.emptyLine();
+            ServerLogger.log("Miscellaneous Commands");
 
             for (String s : extraCommands){
-                LoggingUtils.log(s);
+                ServerLogger.log(s);
             }
         }
     }

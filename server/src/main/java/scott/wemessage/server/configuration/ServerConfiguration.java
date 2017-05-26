@@ -4,8 +4,8 @@ import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.configuration.json.ConfigJSON;
 import scott.wemessage.server.configuration.json.ConfigJSONData;
 import scott.wemessage.server.configuration.json.ConfigAccountJSON;
-import scott.wemessage.server.utils.FileUtils;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.commons.utils.FileUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.weMessage;
 
 import java.io.File;
@@ -46,8 +46,8 @@ public final class ServerConfiguration {
         ConfigJSON configJSON = gson.fromJson(jsonString, ConfigJSON.class);
 
         if (configJSON.getConfig().getConfigVersion() != weMessage.WEMESSAGE_CONFIG_VERSION){
-            LoggingUtils.log(LoggingUtils.Level.ERROR, messageServer.TAG, "The config version and the server version do not match! Resetting config.");
-            LoggingUtils.log(LoggingUtils.Level.ERROR, messageServer.TAG, "Note: You will have to reconfigure your config details. Shutting down!");
+            ServerLogger.log(ServerLogger.Level.ERROR, messageServer.TAG, "The config version and the server version do not match! Resetting config.");
+            ServerLogger.log(ServerLogger.Level.ERROR, messageServer.TAG, "Note: You will have to reconfigure your config details. Shutting down!");
 
             configFile.delete();
             createConfig(configFile);

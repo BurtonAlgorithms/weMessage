@@ -4,7 +4,7 @@ import scott.wemessage.commons.crypto.BCrypt;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.configuration.json.ConfigAccountJSON;
 import scott.wemessage.server.configuration.json.ConfigJSON;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.weMessage;
 
 import java.util.regex.Pattern;
@@ -37,13 +37,13 @@ public final class Authenticator {
         try {
             BCrypt.hashPassword("test", storedSecret);
         } catch (Exception ex) {
-            LoggingUtils.log(LoggingUtils.Level.ERROR, TAG, "The secret key stored in " + configuration.getConfigFileName() + " is not valid!");
+            ServerLogger.log(ServerLogger.Level.ERROR, TAG, "The secret key stored in " + configuration.getConfigFileName() + " is not valid!");
             return false;
         }
         try {
             BCrypt.checkPassword("test", storedPassword);
         } catch (Exception ex) {
-            LoggingUtils.log(LoggingUtils.Level.ERROR, TAG, "The password stored in " + configuration.getConfigFileName() + " is not valid!");
+            ServerLogger.log(ServerLogger.Level.ERROR, TAG, "The password stored in " + configuration.getConfigFileName() + " is not valid!");
             return false;
         }
 

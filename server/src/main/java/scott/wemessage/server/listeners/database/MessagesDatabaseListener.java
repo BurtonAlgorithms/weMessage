@@ -9,7 +9,7 @@ import scott.wemessage.server.events.Event;
 import scott.wemessage.server.events.Listener;
 import scott.wemessage.server.events.database.MessagesDatabaseUpdateEvent;
 import scott.wemessage.server.messages.Message;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 
 public class MessagesDatabaseListener extends Listener {
 
@@ -59,7 +59,7 @@ public class MessagesDatabaseListener extends Listener {
             }
             messagesDb.setLastDatabaseSnapshot(newSnapshot);
         }catch(Exception ex){
-            LoggingUtils.error("An error occurred while checking the Messages database for updates.", ex);
+            ServerLogger.error("An error occurred while checking the Messages database for updates.", ex);
         }
     }
 

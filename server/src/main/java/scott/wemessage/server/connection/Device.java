@@ -25,8 +25,8 @@ import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.messages.chat.PeerChat;
 import scott.wemessage.commons.crypto.AESCrypto;
 import scott.wemessage.commons.crypto.AESCrypto.CipherByteArrayIvMac;
-import scott.wemessage.server.utils.FileUtils;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.commons.utils.FileUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.weMessage;
 
 import java.io.File;
@@ -126,7 +126,7 @@ public class Device extends Thread {
             getOutputStream().writeObject(prefix + outgoingJson);
             getOutputStream().flush();
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "An error occurred while sending a message to Device: " + getAddress(), ex);
+            ServerLogger.error(TAG, "An error occurred while sending a message to Device: " + getAddress(), ex);
         }
     }
 
@@ -236,7 +236,7 @@ public class Device extends Thread {
 
             return parseResult(result);
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "An error occurred while relaying a message.", ex);
+            ServerLogger.error(TAG, "An error occurred while relaying a message.", ex);
             return null;
         }
     }
@@ -263,7 +263,7 @@ public class Device extends Thread {
 
             interrupt();
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "An error occurred while disconnecting device with IP Address: " + getAddress(), ex);
+            ServerLogger.error(TAG, "An error occurred while disconnecting device with IP Address: " + getAddress(), ex);
             interrupt();
         }
     }
@@ -291,7 +291,7 @@ public class Device extends Thread {
 
                     sendOutgoingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, secretJson);
                 }catch(Exception ex){
-                    LoggingUtils.error(TAG, "An error occurred while encrypting the secret key", ex);
+                    ServerLogger.error(TAG, "An error occurred while encrypting the secret key", ex);
                     return;
                 }
 
@@ -302,21 +302,21 @@ public class Device extends Thread {
                     String password = AESCrypto.decryptString(initConnect.getPassword().getEncryptedText(), initConnect.getPassword().getKey());
 
                     if (initConnect.getBuildVersion() != configuration.getBuildVersion()){
-                        LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because it's version does not match the server's.");
-                        LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Device Version: " + initConnect.getBuildVersion() + "   Server Version: " + configuration.getBuildVersion());
+                        ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because it's version does not match the server's.");
+                        ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device Version: " + initConnect.getBuildVersion() + "   Server Version: " + configuration.getBuildVersion());
                         killDevice(DisconnectReason.INCORRECT_VERSION);
                         return;
                     }
 
                     if (!email.equals(configuration.getConfigJSON().getConfig().getAccountInfo().getEmail())){
-                        LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because the wrong email address was provided.");
+                        ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because the wrong email address was provided.");
                         hasTriedVerifying.set(true);
                         killDevice(DisconnectReason.INVALID_LOGIN);
                         return;
                     }
 
                     if (!password.equals(configuration.getConfigJSON().getConfig().getAccountInfo().getPassword())) {
-                        LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because the wrong password was provided.");
+                        ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because the wrong password was provided.");
                         hasTriedVerifying.set(true);
                         killDevice(DisconnectReason.INVALID_LOGIN);
                         return;
@@ -327,7 +327,7 @@ public class Device extends Thread {
                     boolean result = getDeviceManager().getDeviceByAddress(getAddress()) != null;
 
                     if (!result) {
-                        LoggingUtils.error(TAG, "Device with IP Address: " + getAddress() + " could not join because it already connected!", new Exception());
+                        ServerLogger.error(TAG, "Device with IP Address: " + getAddress() + " could not join because it already connected!", new Exception());
                         killDevice(DisconnectReason.ALREADY_CONNECTED);
                         return;
                     }
@@ -335,7 +335,7 @@ public class Device extends Thread {
                     DeviceType deviceType = DeviceType.fromString(initConnect.getDeviceType());
 
                     if (deviceType == DeviceType.UNSUPPORTED) {
-                        LoggingUtils.log(LoggingUtils.Level.ERROR, TAG, "Disconnecting device with IP Address: " + getAddress() + " due to an unsupported type format.");
+                        ServerLogger.log(ServerLogger.Level.ERROR, TAG, "Disconnecting device with IP Address: " + getAddress() + " due to an unsupported type format.");
                         killDevice(DisconnectReason.ERROR);
                         return;
                     }
@@ -350,14 +350,14 @@ public class Device extends Thread {
 
                     getDeviceManager().addDevice(this);
                 }catch(Exception ex){
-                    LoggingUtils.error(TAG, "Device with IP Address: " + getAddress() + " could not join because an error occurred.", ex);
+                    ServerLogger.error(TAG, "Device with IP Address: " + getAddress() + " could not join because an error occurred.", ex);
                     killDevice(DisconnectReason.ERROR);
                     return;
                 }
             }
 
-            LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "A device with an IP of " + getAddress() + " connected.");
-            LoggingUtils.emptyLine();
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "A device with an IP of " + getAddress() + " connected.");
+            ServerLogger.emptyLine();
 
             while (isRunning.get()){
                 try {
@@ -384,11 +384,11 @@ public class Device extends Thread {
                         eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage));
                     }
                 }catch(Exception ex){
-                    LoggingUtils.error(TAG, "An error occurred while fetching a message from Device: " + getAddress(), ex);
+                    ServerLogger.error(TAG, "An error occurred while fetching a message from Device: " + getAddress(), ex);
                 }
             }
         }catch(IOException ex){
-            LoggingUtils.error(TAG, "An error occurred while establishing a connection with Device " + getAddress(), ex);
+            ServerLogger.error(TAG, "An error occurred while establishing a connection with Device " + getAddress(), ex);
             killDevice(DisconnectReason.ERROR);
         }
     }

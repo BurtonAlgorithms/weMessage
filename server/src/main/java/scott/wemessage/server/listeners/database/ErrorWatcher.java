@@ -3,7 +3,7 @@ package scott.wemessage.server.listeners.database;
 import scott.wemessage.server.events.Event;
 import scott.wemessage.server.events.Listener;
 import scott.wemessage.server.events.database.ServerDatabaseUpdateEvent;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,17 +34,17 @@ public final class ErrorWatcher extends Listener {
             PreparedStatement clearStatement = event.getServerDatabaseConnection().prepareStatement(clearStatementString);
             clearStatement.setString(1, errorMessage);
 
-            LoggingUtils.log(LoggingUtils.Level.ERROR, "AppleScript Error", "An unexpected error occurred while executing AppleScript " + scriptCaller);
-            LoggingUtils.emptyLine();
-            LoggingUtils.log(errorMessage);
-            LoggingUtils.emptyLine();
+            ServerLogger.log(ServerLogger.Level.ERROR, "AppleScript Error", "An unexpected error occurred while executing AppleScript " + scriptCaller);
+            ServerLogger.emptyLine();
+            ServerLogger.log(errorMessage);
+            ServerLogger.emptyLine();
             clearStatement.execute();
 
             resultSet.close();
             findStatement.close();
             clearStatement.close();
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "An error occurred while watching the error database table. Shutting down!", ex);
+            ServerLogger.error(TAG, "An error occurred while watching the error database table. Shutting down!", ex);
             e.getMessageServer().shutdown(-1, false);
         }
     }

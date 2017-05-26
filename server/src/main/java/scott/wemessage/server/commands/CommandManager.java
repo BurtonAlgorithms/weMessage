@@ -5,7 +5,7 @@ import scott.wemessage.server.commands.connection.*;
 import scott.wemessage.server.commands.core.*;
 import scott.wemessage.server.commands.database.*;
 import scott.wemessage.server.commands.scripts.*;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,14 +65,14 @@ public final class CommandManager {
         addCommand(new CommandHandleInfo(this));
         addCommand(new CommandLastMessage(this));
 
-        LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Commands Service has started");
+        ServerLogger.log(ServerLogger.Level.INFO, TAG, "Commands Service has started");
     }
 
     public void stopService(){
         if (isRunning) {
             isRunning = false;
             commands.clear();
-            LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Commands Service is shutting down");
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "Commands Service is shutting down");
         }
     }
 
@@ -80,7 +80,7 @@ public final class CommandManager {
         if(getCommand(command.getName()) == null) {
             commands.add(command);
         }else {
-            LoggingUtils.error(TAG, "Tried to add an already registered command! Command name: " + command.getName() + " Class: " + command.getClass().getName(), new Exception());
+            ServerLogger.error(TAG, "Tried to add an already registered command! Command name: " + command.getName() + " Class: " + command.getClass().getName(), new Exception());
         }
     }
 }

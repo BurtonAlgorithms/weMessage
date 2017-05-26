@@ -2,7 +2,7 @@ package scott.wemessage.server.commands.core;
 
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.configuration.ServerConfiguration;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 
 public class CommandInfo extends CoreCommand {
 
@@ -13,10 +13,10 @@ public class CommandInfo extends CoreCommand {
     public void execute(String[] args){
         ServerConfiguration configuration = getCommandManager().getMessageServer().getConfiguration();
 
-        LoggingUtils.log("weServer Info");
-        LoggingUtils.emptyLine();
-        LoggingUtils.log("Version:  " + configuration.getVersion());
-        LoggingUtils.log("Release Number:  " + configuration.getBuildVersion());
-        LoggingUtils.log("Port:  " + configuration.getPort());
+        ServerLogger.log("weServer Info");
+        ServerLogger.emptyLine();
+        ServerLogger.log("Version:  " + configuration.getVersion());
+        ServerLogger.log("Release Number:  " + configuration.getBuildVersion());
+        ServerLogger.log("Port:  " + configuration.getPort());
     }
 }

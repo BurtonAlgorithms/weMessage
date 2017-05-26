@@ -6,7 +6,7 @@ import scott.wemessage.server.events.Event;
 import scott.wemessage.server.events.Listener;
 import scott.wemessage.server.events.connection.DeviceJoinEvent;
 import scott.wemessage.server.messages.Message;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -68,7 +68,7 @@ public class DeviceJoinListener extends Listener {
             resultSet.close();
             findStatement.close();
         }catch(Exception ex){
-            LoggingUtils.error("An error occurred while connecting Device: " + event.getDevice().getAddress() + " to the server. \nPlease disconnect it or it will not work as expected.", ex);
+            ServerLogger.error("An error occurred while connecting Device: " + event.getDevice().getAddress() + " to the server. \nPlease disconnect it or it will not work as expected.", ex);
         }
     }
 }

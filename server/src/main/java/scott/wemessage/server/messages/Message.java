@@ -10,7 +10,7 @@ import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.messages.chat.PeerChat;
 import scott.wemessage.commons.crypto.AESCrypto;
-import scott.wemessage.server.utils.FileUtils;
+import scott.wemessage.commons.utils.FileUtils;
 
 import java.io.File;
 import java.io.IOException;

@@ -7,7 +7,7 @@ import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.events.database.ServerDatabaseUpdateEvent;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.weMessage;
 
 import java.io.File;
@@ -137,7 +137,7 @@ public final class DatabaseManager extends Thread {
                 createActionQueueStatement.close();
             }
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "An error occurred while connecting to the weServer database. Shutting down!", ex);
+            ServerLogger.error(TAG, "An error occurred while connecting to the weServer database. Shutting down!", ex);
             messageServer.shutdown(-1, false);
             return;
         }
@@ -152,7 +152,7 @@ public final class DatabaseManager extends Thread {
                 }
             }
         }catch(Exception ex){
-            LoggingUtils.error(TAG, "An error occurred while connecting to the Messages Chat database. Shutting down!", ex);
+            ServerLogger.error(TAG, "An error occurred while connecting to the Messages Chat database. Shutting down!", ex);
             messageServer.shutdown(-1, false);
         }
     }
@@ -386,7 +386,7 @@ public final class DatabaseManager extends Thread {
     public void run() {
         isRunning.set(true);
 
-        LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Database Service has started");
+        ServerLogger.log(ServerLogger.Level.INFO, TAG, "Database Service has started");
 
         try (final WatchService watchService = FileSystems.getDefault().newWatchService()) {
             final WatchKey watchKey = FileSystems.getDefault().getPath(serverConfiguration.getParentDirectoryPath()).register(watchService, new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_MODIFY}, SensitivityWatchEventModifier.HIGH);
@@ -403,12 +403,12 @@ public final class DatabaseManager extends Thread {
                 }
                 boolean valid = wk.reset();
                 if (!valid) {
-                    LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "The watcher key has been unregistered");
+                    ServerLogger.log(ServerLogger.Level.INFO, TAG, "The watcher key has been unregistered");
                 }
             }
         }catch(Exception ex){
             if (isRunning.get()) {
-                LoggingUtils.error(TAG, "An error occurred while watching the weServer database. Shutting down!", ex);
+                ServerLogger.error(TAG, "An error occurred while watching the weServer database. Shutting down!", ex);
                 messageServer.shutdown(-1, false);
             }
         }
@@ -417,13 +417,13 @@ public final class DatabaseManager extends Thread {
     public void stopService(){
         if (isRunning.get()){
             isRunning.set(false);
-            LoggingUtils.log(LoggingUtils.Level.INFO, TAG, "Database Manager is shutting down");
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "Database Manager is shutting down");
 
             try {
                 getServerDatabaseConnection().close();
                 getChatDatabaseConnection().close();
             }catch(Exception ex){
-                LoggingUtils.error(TAG, "An error occurred while shutting down the database manager", ex);
+                ServerLogger.error(TAG, "An error occurred while shutting down the database manager", ex);
             }
         }
     }

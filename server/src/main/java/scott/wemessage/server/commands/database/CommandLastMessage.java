@@ -8,7 +8,7 @@ import scott.wemessage.server.messages.chat.ChatBase;
 import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.messages.chat.PeerChat;
 import scott.wemessage.commons.utils.DateUtils;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.commons.utils.StringUtils;
 
 import java.util.ArrayList;
@@ -24,54 +24,54 @@ public class CommandLastMessage extends DatabaseCommand {
             Message message = getMessagesDatabase().getLastMessageSent();
 
             if (message == null){
-                LoggingUtils.log("The last message sent was a null message (or an action).");
+                ServerLogger.log("The last message sent was a null message (or an action).");
                 return;
             }
 
             if (message.getText() == null){
-                LoggingUtils.log("Text: Empty Message");
+                ServerLogger.log("Text: Empty Message");
             }else {
-                LoggingUtils.log("Text: " + message.getText());
+                ServerLogger.log("Text: " + message.getText());
             }
 
-            LoggingUtils.log("GUID: " + message.getGuid());
-            LoggingUtils.log("Database Row ID: " + message.getRowID());
-            LoggingUtils.log("Date Sent: " + DateUtils.getSimpleStringFromDate(message.getModernDateSent()));
-            LoggingUtils.log("Date Delivered: " + DateUtils.getSimpleStringFromDate(message.getModernDateDelivered()));
-            LoggingUtils.log("Date Read: " + DateUtils.getSimpleStringFromDate(message.getModernDateRead()));
-            LoggingUtils.log("Has Errored: " + StringUtils.uppercaseFirst(Boolean.toString(message.hasErrored())));
-            LoggingUtils.log("Is Sent: " + StringUtils.uppercaseFirst(Boolean.toString(message.isSent())));
-            LoggingUtils.log("Is Delivered: " + StringUtils.uppercaseFirst(Boolean.toString(message.isDelivered())));
-            LoggingUtils.log("Is Read: " + StringUtils.uppercaseFirst(Boolean.toString(message.isRead())));
-            LoggingUtils.log("Is Finished: " + StringUtils.uppercaseFirst(Boolean.toString(message.isFinished())));
-            LoggingUtils.log("Is From Me: " + StringUtils.uppercaseFirst(Boolean.toString(message.isFromMe())));
-            LoggingUtils.log("Has Attachments: " + StringUtils.uppercaseFirst(Boolean.toString(message.hasAttachments())));
+            ServerLogger.log("GUID: " + message.getGuid());
+            ServerLogger.log("Database Row ID: " + message.getRowID());
+            ServerLogger.log("Date Sent: " + DateUtils.getSimpleStringFromDate(message.getModernDateSent()));
+            ServerLogger.log("Date Delivered: " + DateUtils.getSimpleStringFromDate(message.getModernDateDelivered()));
+            ServerLogger.log("Date Read: " + DateUtils.getSimpleStringFromDate(message.getModernDateRead()));
+            ServerLogger.log("Has Errored: " + StringUtils.uppercaseFirst(Boolean.toString(message.hasErrored())));
+            ServerLogger.log("Is Sent: " + StringUtils.uppercaseFirst(Boolean.toString(message.isSent())));
+            ServerLogger.log("Is Delivered: " + StringUtils.uppercaseFirst(Boolean.toString(message.isDelivered())));
+            ServerLogger.log("Is Read: " + StringUtils.uppercaseFirst(Boolean.toString(message.isRead())));
+            ServerLogger.log("Is Finished: " + StringUtils.uppercaseFirst(Boolean.toString(message.isFinished())));
+            ServerLogger.log("Is From Me: " + StringUtils.uppercaseFirst(Boolean.toString(message.isFromMe())));
+            ServerLogger.log("Has Attachments: " + StringUtils.uppercaseFirst(Boolean.toString(message.hasAttachments())));
 
             if (message.getHandle() != null) {
-                LoggingUtils.emptyLine();
-                LoggingUtils.log("Handle Info: ");
-                LoggingUtils.log("Handle Account: " + message.getHandle().getHandleID());
-                LoggingUtils.log("Country: " + message.getHandle().getCountry());
-                LoggingUtils.log("Database Row ID: " + message.getHandle().getRowID());
-                LoggingUtils.log("Handle: " + message.getHandle().getHandleID());
+                ServerLogger.emptyLine();
+                ServerLogger.log("Handle Info: ");
+                ServerLogger.log("Handle Account: " + message.getHandle().getHandleID());
+                ServerLogger.log("Country: " + message.getHandle().getCountry());
+                ServerLogger.log("Database Row ID: " + message.getHandle().getRowID());
+                ServerLogger.log("Handle: " + message.getHandle().getHandleID());
             }
             if (!message.getAttachments().isEmpty()) {
-                LoggingUtils.emptyLine();
-                LoggingUtils.log("Attachments:");
+                ServerLogger.emptyLine();
+                ServerLogger.log("Attachments:");
                 for (Attachment a : message.getAttachments()) {
-                    LoggingUtils.emptyLine();
-                    LoggingUtils.log("Transfer Name: " + a.getTransferName());
-                    LoggingUtils.log("File Location: " + a.getFileLocation());
-                    LoggingUtils.log("File Type: " + a.getFileType());
-                    LoggingUtils.log("Total Bytes: " + a.getTotalBytes());
+                    ServerLogger.emptyLine();
+                    ServerLogger.log("Transfer Name: " + a.getTransferName());
+                    ServerLogger.log("File Location: " + a.getFileLocation());
+                    ServerLogger.log("File Type: " + a.getFileType());
+                    ServerLogger.log("Total Bytes: " + a.getTotalBytes());
                 }
             }
 
             ChatBase chatBase = message.getChat();
 
-            LoggingUtils.emptyLine();
+            ServerLogger.emptyLine();
             if (chatBase instanceof PeerChat){
-                LoggingUtils.log("Peer: " + ((PeerChat)chatBase).getPeer().getHandleID());
+                ServerLogger.log("Peer: " + ((PeerChat)chatBase).getPeer().getHandleID());
             }
             if (chatBase instanceof GroupChat){
                 GroupChat groupChat = (GroupChat) chatBase;
@@ -81,11 +81,11 @@ public class CommandLastMessage extends DatabaseCommand {
                     participants.add(handle.getHandleID());
                 }
 
-                LoggingUtils.log("Group Chat Name: " + groupChat.getDisplayName());
-                LoggingUtils.log("Participants: " + StringUtils.join(participants, ", ", 2));
+                ServerLogger.log("Group Chat Name: " + groupChat.getDisplayName());
+                ServerLogger.log("Participants: " + StringUtils.join(participants, ", ", 2));
             }
         }catch(Exception ex){
-            LoggingUtils.error("An error occurred while fetching the messages database", ex);
+            ServerLogger.error("An error occurred while fetching the messages database", ex);
         }
     }
 }

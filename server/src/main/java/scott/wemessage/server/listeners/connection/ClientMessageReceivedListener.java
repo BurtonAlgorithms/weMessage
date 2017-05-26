@@ -6,7 +6,7 @@ import scott.wemessage.server.connection.Device;
 import scott.wemessage.server.events.Event;
 import scott.wemessage.server.events.Listener;
 import scott.wemessage.server.events.connection.ClientMessageReceivedEvent;
-import scott.wemessage.server.utils.LoggingUtils;
+import scott.wemessage.server.ServerLogger;
 
 public class ClientMessageReceivedListener extends Listener {
 
@@ -22,7 +22,7 @@ public class ClientMessageReceivedListener extends Listener {
                 e.getDeviceManager().getMessageServer().getDatabaseManager().queueAction((JSONAction) e.getClientMessage().getIncoming());
             }
         }catch(Exception ex){
-            LoggingUtils.error("An error occurred while listening for a client message receive event", ex);
+            ServerLogger.error("An error occurred while listening for a client message receive event", ex);
         }
 
         for (Device device : e.getDeviceManager().getDevices().values()){
@@ -34,7 +34,7 @@ public class ClientMessageReceivedListener extends Listener {
                         e.getDevice().sendOutgoingMessage((JSONMessage) e.getClientMessage().getIncoming());
                     }
                 }catch(Exception ex){
-                    LoggingUtils.error("An error occurred while listening for a client message receive event", ex);
+                    ServerLogger.error("An error occurred while listening for a client message receive event", ex);
                 }
             }
         }
