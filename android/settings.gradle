@@ -1,0 +1,4 @@
+include ':app'
+include ':Commons'
+
+project(':Commons').projectDir = new File(rootDir.getParent(), '/Commons')
