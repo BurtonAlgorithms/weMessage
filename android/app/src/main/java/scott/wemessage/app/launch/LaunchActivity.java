@@ -1,7 +1,9 @@
-package scott.wemessage;
+package scott.wemessage.app.launch;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+
+import scott.wemessage.R;
 
 public class LaunchActivity extends AppCompatActivity {
 

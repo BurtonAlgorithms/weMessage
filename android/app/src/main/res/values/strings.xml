@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">weMessage</string>
+    <string name="login_text">Please enter your login credentials. Your email and password should match those set on your weServer. </string>
+    <string name="login_IP">IP: </string>
 </resources>
