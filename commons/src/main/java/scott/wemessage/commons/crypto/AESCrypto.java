@@ -825,13 +825,35 @@ public class AESCrypto {
         return result;
     }
 
-    public static final class PRNGFixes {
+    /**
+     * Returns the PRNG helper class that has been set for applying the fixes. If none has been set already, returns null
+     *
+     * @return The PRNG Helper class
+     */
+    public static IPRNGHelper getPrngHelper(){
+        return PRNGFixes.getHelper();
+    }
+
+    /**
+     * Sets the PRNG helper for the AES crypto library
+     *
+     * @param helper the PRNG Helper class
+     */
+    public static void setPrngHelper(IPRNGHelper helper){
+        PRNGFixes.setHelper(helper);
+    }
+
+    /**
+     *
+     * A helper class to fix the PRNG problems hidden in Android while still maintaining compatibility with native Java
+     *
+     */
+    private static final class PRNGFixes {
 
         private static IPRNGHelper helper;
 
-        private PRNGFixes(){
-
-        }
+        /** Hidden constructor to prevent instantiation **/
+        private PRNGFixes(){ }
 
         /**
          * Applies all fixes.
@@ -839,17 +861,28 @@ public class AESCrypto {
          * @throws SecurityException if a fix is needed but could not be
          *             applied.
          */
-        public static void apply() {
+        private static void apply() {
             if (helper != null) {
                 helper.applyFixes();
             }
         }
 
-        public static void setHelper(IPRNGHelper theHelper){
-            helper = theHelper;
+        private static IPRNGHelper getHelper(){
+            return helper;
+        }
+
+        private static void setHelper(IPRNGHelper theHelper){
+            if (helper == null) {
+                helper = theHelper;
+            }
         }
     }
 
+    /**
+     *
+     * The PRNG Helper interface that applies the necessary fixes
+     *
+     */
     public interface IPRNGHelper {
 
         void applyFixes();
