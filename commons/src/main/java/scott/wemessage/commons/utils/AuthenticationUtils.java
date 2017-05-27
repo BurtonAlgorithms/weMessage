@@ -16,19 +16,13 @@ public class AuthenticationUtils {
 
     public static PasswordValidateType isValidPasswordFormat(String password){
         if (password.length() < Constants.MINIMUM_PASSWORD_LENGTH)  return PasswordValidateType.LENGTH_TOO_SMALL;
-        if (!getValidPasswordPattern().matcher(password).matches()) return PasswordValidateType.MUST_HAVE_DIGITS_AND_LETTERS;
         if (password.equals(Constants.DEFAULT_PASSWORD)) return PasswordValidateType.PASSWORD_TOO_EASY;
 
         return PasswordValidateType.VALID;
     }
 
-    public static Pattern getValidPasswordPattern(){
-        return Pattern.compile("^(?=.*[0-9])(?=.*[a-z])$");
-    }
-
     public enum PasswordValidateType {
         LENGTH_TOO_SMALL,
-        MUST_HAVE_DIGITS_AND_LETTERS,
         PASSWORD_TOO_EASY,
         VALID
     }
