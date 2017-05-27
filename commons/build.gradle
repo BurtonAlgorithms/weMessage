@@ -3,11 +3,15 @@ version 'Alpha 0.1'
 
 apply plugin: 'java'
 
+targetCompatibility = '1.7'
+sourceCompatibility = '1.7'
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
     compile 'com.google.code.gson:gson:2.8.0'
+    compile 'commons-codec:commons-codec:1.10'
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }

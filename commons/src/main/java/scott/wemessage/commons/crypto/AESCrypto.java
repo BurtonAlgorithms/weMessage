@@ -24,6 +24,8 @@
 
 package scott.wemessage.commons.crypto;
 
+import org.apache.commons.codec.binary.Base64;
+
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -31,7 +33,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.KeySpec;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.crypto.Cipher;
@@ -89,11 +90,11 @@ public class AESCrypto {
             throw new IllegalArgumentException("Cannot parse aesKey:hmacKey");
 
         } else {
-            byte[] confidentialityKey = Base64.getDecoder().decode(keysArr[0]);
+            byte[] confidentialityKey = Base64.decodeBase64(keysArr[0]);
             if (confidentialityKey.length != AES_KEY_LENGTH_BITS /8) {
                 throw new InvalidKeyException("Base64 decoded key is not " + AES_KEY_LENGTH_BITS + " bytes");
             }
-            byte[] integrityKey = Base64.getDecoder().decode(keysArr[1]);
+            byte[] integrityKey = Base64.decodeBase64(keysArr[1]);
             if (integrityKey.length != HMAC_KEY_LENGTH_BITS /8) {
                 throw new InvalidKeyException("Base64 decoded key is not " + HMAC_KEY_LENGTH_BITS + " bytes");
             }
@@ -168,7 +169,7 @@ public class AESCrypto {
      * @throws GeneralSecurityException
      */
     public static SecretKeys generateKeyFromPassword(String password, String salt) throws GeneralSecurityException {
-        return generateKeyFromPassword(password, Base64.getDecoder().decode(salt));
+        return generateKeyFromPassword(password, Base64.decodeBase64(salt));
     }
 
     /**
@@ -187,7 +188,7 @@ public class AESCrypto {
      * @return a base 64 encoded salt string suitable to pass into generateKeyFromPassword.
      */
     public static String saltString(byte[] salt) {
-        return Base64.getEncoder().encodeToString(salt);
+        return Base64.encodeBase64String(salt);
     }
 
     /**
@@ -544,8 +545,8 @@ public class AESCrypto {
          */
         @Override
         public String toString() {
-            return Base64.getEncoder().encodeToString(getConfidentialityKey().getEncoded())
-                    + ":" + Base64.getEncoder().encodeToString(getIntegrityKey().getEncoded());
+            return Base64.encodeBase64String(getConfidentialityKey().getEncoded())
+                    + ":" + Base64.encodeBase64String(getIntegrityKey().getEncoded());
         }
 
         @Override
@@ -640,9 +641,9 @@ public class AESCrypto {
             if (civArray.length != 3) {
                 throw new IllegalArgumentException("Cannot parse iv:ciphertext:mac");
             } else {
-                iv = Base64.getDecoder().decode(civArray[0]);
-                mac = Base64.getDecoder().decode(civArray[1]);
-                cipherText = Base64.getDecoder().decode(civArray[2]);
+                iv = Base64.decodeBase64(civArray[0]);
+                mac = Base64.decodeBase64(civArray[1]);
+                cipherText = Base64.decodeBase64(civArray[2]);
             }
         }
 
@@ -668,9 +669,9 @@ public class AESCrypto {
          */
         @Override
         public String toString() {
-            String ivString = Base64.getEncoder().encodeToString(iv);
-            String cipherTextString = Base64.getEncoder().encodeToString(cipherText);
-            String macString = Base64.getEncoder().encodeToString(mac);
+            String ivString = Base64.encodeBase64String(iv);
+            String cipherTextString = Base64.encodeBase64String(cipherText);
+            String macString = Base64.encodeBase64String(mac);
             return String.format(ivString + ":" + macString + ":" + cipherTextString);
         }
 
@@ -753,8 +754,8 @@ public class AESCrypto {
             if (civArray.length != 2) {
                 throw new IllegalArgumentException("Cannot parse iv:mac");
             } else {
-                iv = Base64.getDecoder().decode(civArray[0]);
-                mac = Base64.getDecoder().decode(civArray[1]);
+                iv = Base64.decodeBase64(civArray[0]);
+                mac = Base64.decodeBase64(civArray[1]);
                 this.cipherBytes = theBytes;
             }
         }
@@ -774,8 +775,8 @@ public class AESCrypto {
         }
 
         public String joinedIvAndMac(){
-            String ivString = Base64.getEncoder().encodeToString(iv);
-            String macString = Base64.getEncoder().encodeToString(mac);
+            String ivString = Base64.encodeBase64String(iv);
+            String macString = Base64.encodeBase64String(mac);
             return String.format(ivString + ":" + macString);
         }
 
