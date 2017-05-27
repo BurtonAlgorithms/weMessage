@@ -98,12 +98,6 @@ public class CommandResetLoginInfo extends CoreCommand {
                 continue;
             }
 
-            if (validateType == AuthenticationUtils.PasswordValidateType.MUST_HAVE_DIGITS_AND_LETTERS){
-                ServerLogger.log("Make sure your password contains both numbers and letters.");
-                ServerLogger.emptyLine();
-                continue;
-            }
-
             if (validateType == AuthenticationUtils.PasswordValidateType.VALID) {
                 try {
                     String secret = BCrypt.generateSalt();
