@@ -2,6 +2,7 @@
 <android.support.constraint.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -16,7 +17,9 @@
         android:layout_marginLeft="8dp"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="24dp" />
+        android:layout_marginTop="24dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp" />
 
     <scott.wemessage.app.view.text.FontTextView
         android:id="@+id/launchAppText"
@@ -30,10 +33,12 @@
         app:font="orkney_light.ttf"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/launchAppIcon" />
+        app:layout_constraintTop_toBottomOf="@+id/launchAppIcon"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp" />
 
     <scott.wemessage.app.view.text.FontTextView
-        android:id="@+id/launchIpText"
+        android:id="@+id/launchLoginText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
@@ -41,10 +46,86 @@
         android:paddingEnd="12dp"
         android:paddingStart="12dp"
         android:text="@string/login_text"
-        android:textSize="16sp"
+        android:textSize="15sp"
         app:font="orkney_light.ttf"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/launchAppText" />
+
+    <GridLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:columnCount="2"
+        android:background="@drawable/login_border"
+        android:padding="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/launchLoginText"
+        android:id="@+id/launchLoginGridLayout">
+
+        <scott.wemessage.app.view.text.FontTextView
+            android:id="@+id/launchIpTextView"
+            android:layout_columnWeight="1"
+            android:layout_gravity="center_vertical"
+            android:labelFor="@+id/launchIpEditText"
+            app:font="orkney_bold.ttf"
+            android:text="@string/login_IP"
+            android:textColor="@color/lightBlack" />
+
+        <EditText
+            android:id="@+id/launchIpEditText"
+            android:layout_columnWeight="20"
+            android:layout_width="match_parent"
+            android:backgroundTint="@color/colorHeader"
+            android:inputType="text" />
+
+        <scott.wemessage.app.view.text.FontTextView
+            android:id="@+id/launchEmailTextView"
+            android:layout_columnWeight="1"
+            android:layout_gravity="center_vertical"
+            android:labelFor="@+id/launchEmailEditText"
+            app:font="orkney_bold.ttf"
+            android:text="@string/login_email"
+            android:textColor="@color/lightBlack" />
+
+        <EditText
+            android:id="@+id/launchEmailEditText"
+            android:layout_columnWeight="20"
+            android:backgroundTint="@color/colorHeader"
+            android:inputType="textEmailAddress" />
+
+        <scott.wemessage.app.view.text.FontTextView
+            android:id="@+id/launchPasswordTextView"
+            android:layout_columnWeight="1"
+            android:layout_gravity="center_vertical"
+            android:labelFor="@+id/launchPasswordEditText"
+            app:font="orkney_bold.ttf"
+            android:text="@string/login_password"
+            android:textColor="@color/lightBlack" />
+
+        <EditText
+            android:id="@+id/launchPasswordEditText"
+            android:layout_columnWeight="20"
+            android:inputType="textPassword"
+            android:backgroundTint="@color/colorHeader"/>
+    </GridLayout>
+
+    <scott.wemessage.app.view.button.FontButton
+        android:id="@+id/signInButton"
+        app:buttonFont="orkney_light.ttf"
+        android:textAllCaps="false"
+        android:textSize="22sp"
+        android:textColor="@drawable/sign_in_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:text="@string/sign_in"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@+id/launchLoginGridLayout" />
 
 </android.support.constraint.ConstraintLayout>

@@ -10,8 +10,23 @@ import scott.wemessage.R;
 
 public class FontTextView extends AppCompatTextView {
 
+    public FontTextView(Context context){
+        super(context);
+    }
+
     public FontTextView(Context context, AttributeSet attributeSet){
         super(context, attributeSet);
+
+        TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.FontTextView);
+        String fontName = array.getString(R.styleable.FontTextView_font);
+        array.recycle();
+
+        Typeface font = Typeface.createFromAsset(context.getAssets(), "fonts/" + fontName);
+        setTypeface(font);
+    }
+
+    public FontTextView(Context context, AttributeSet attributeSet, int defStyle){
+        super(context, attributeSet, defStyle);
 
         TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.FontTextView);
         String fontName = array.getString(R.styleable.FontTextView_font);
