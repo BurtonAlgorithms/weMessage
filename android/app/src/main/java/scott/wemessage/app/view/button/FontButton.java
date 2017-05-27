@@ -35,4 +35,9 @@ public class FontButton extends AppCompatButton {
         Typeface font = Typeface.createFromAsset(context.getAssets(), "fonts/" + fontName);
         setTypeface(font);
     }
+
+    public void setFont(String fontName){
+        Typeface font = Typeface.createFromAsset(getContext().getAssets(), "fonts/" + fontName);
+        setTypeface(font);
+    }
 }

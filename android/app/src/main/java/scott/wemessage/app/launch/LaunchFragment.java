@@ -8,8 +8,11 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import scott.wemessage.R;
+import scott.wemessage.app.view.button.FontButton;
 
 public class LaunchFragment extends Fragment {
+
+    private FontButton signInButton;
 
     @Nullable
     @Override
