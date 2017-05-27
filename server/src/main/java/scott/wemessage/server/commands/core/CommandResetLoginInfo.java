@@ -1,5 +1,6 @@
 package scott.wemessage.server.commands.core;
 
+import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.configuration.json.ConfigJSON;
@@ -81,12 +82,29 @@ public class CommandResetLoginInfo extends CoreCommand {
 
         while (isPasswordNotAuthenticated) {
             String password = passwordScanner.nextLine();
+            AuthenticationUtils.PasswordValidateType validateType = AuthenticationUtils.isValidPasswordFormat(password);
 
-            if (password.length() < weMessage.MINIMUM_CONNECT_PASSWORD_LENGTH) {
+            if (validateType == AuthenticationUtils.PasswordValidateType.LENGTH_TOO_SMALL){
                 ServerLogger.log("The password you have provided is too short.");
-                ServerLogger.log("Please provide a password that is at least " + weMessage.MINIMUM_CONNECT_PASSWORD_LENGTH + " characters in length.");
+                ServerLogger.log("Please provide a password that is at least " + weMessage.MINIMUM_PASSWORD_LENGTH + " characters in length.");
                 ServerLogger.emptyLine();
-            } else {
+                continue;
+            }
+
+            if (validateType == AuthenticationUtils.PasswordValidateType.PASSWORD_TOO_EASY){
+                ServerLogger.log("The password you have provided is too easy to guess.");
+                ServerLogger.log("Please provide a more complex password.");
+                ServerLogger.emptyLine();
+                continue;
+            }
+
+            if (validateType == AuthenticationUtils.PasswordValidateType.MUST_HAVE_DIGITS_AND_LETTERS){
+                ServerLogger.log("Make sure your password contains both numbers and letters.");
+                ServerLogger.emptyLine();
+                continue;
+            }
+
+            if (validateType == AuthenticationUtils.PasswordValidateType.VALID) {
                 try {
                     String secret = BCrypt.generateSalt();
                     String passwordHash = BCrypt.hashPassword(password, secret);
