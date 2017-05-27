@@ -4,6 +4,8 @@ public abstract class Constants {
 
     public static final String WEMESSAGE_VERSION = "Alpha 0.1";
     public static final int WEMESSAGE_BUILD_VERSION = 1;
+    public static final int MINIMUM_PASSWORD_LENGTH = 8;
+    public static final String DEFAULT_PASSWORD = "password";
 
     public static final String JSON_INIT_CONNECT = "INIT CONNECT - ";
     public static final String JSON_VERIFY_PASSWORD_SECRET = "VERIFY PASSWORD - SECRET: ";
