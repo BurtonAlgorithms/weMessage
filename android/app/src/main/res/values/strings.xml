@@ -5,4 +5,11 @@
     <string name="login_email">Email</string>
     <string name="login_password">Password</string>
     <string name="sign_in">Sign In</string>
+    <string name="dismissButton">Dismiss</string>
+    <string name="no_ip">Please enter the IP address of the weServer.</string>
+    <string name="no_email">Please enter an email address to sign in with!</string>
+    <string name="no_password">Please enter a password to sign in with!</string>
+    <string name="invalid_email_format">The email entered is not a valid email address.</string>
+    <string name="password_too_short">The password is too short. Make sure it is %1$d characters long!</string>
+    <string name="password_too_easy">This password is too easy to guess. Enter a harder one.</string>
 </resources>

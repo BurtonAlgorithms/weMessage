@@ -65,6 +65,8 @@
             android:padding="16dp"
             android:background="@drawable/login_border"
             android:layout_marginTop="24dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/launchLoginText" >
@@ -85,6 +87,7 @@
                 android:layout_width="match_parent"
                 android:backgroundTint="@color/colorHeader"
                 android:inputType="text"
+                android:imeOptions="actionDone"
                 android:layout_marginBottom="8dp"/>
 
             <scott.wemessage.app.view.text.FontTextView
@@ -102,6 +105,7 @@
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/colorHeader"
                 android:inputType="textEmailAddress"
+                android:imeOptions="actionDone"
                 android:layout_marginBottom="8dp" />
 
             <scott.wemessage.app.view.text.FontTextView
@@ -119,6 +123,7 @@
                 android:id="@+id/launchPasswordEditText"
                 android:layout_columnWeight="20"
                 android:inputType="textPassword"
+                android:imeOptions="actionDone"
                 android:backgroundTint="@color/colorHeader"/>
         </LinearLayout>
 
@@ -127,7 +132,7 @@
             app:buttonFont="orkney_light.ttf"
             android:textAllCaps="false"
             android:textSize="24sp"
-            android:textColor="@drawable/sign_in_button"
+            android:textColor="@color/heavyBlue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"

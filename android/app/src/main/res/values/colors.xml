@@ -6,6 +6,11 @@
     <color name="borderColor">#c0058fff</color>
     <color name="heavyBlue">#055cff</color>
     <color name="heavierBlue">#053bff</color>
+
+    <color name="lightRed">#f70a32</color>
+    <color name="invalidRed">#b30522</color>
+    <color name="invalidRedLight">#3bff0544</color>
+
     <color name="lightBlack">#252525</color>
     <color name="lightGray">#787878</color>
 </resources>

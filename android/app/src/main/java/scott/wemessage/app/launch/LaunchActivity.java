@@ -13,13 +13,13 @@ public class LaunchActivity extends SingleFragmentActivity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_launch);
+    public Fragment createFragment() {
+        return new LaunchFragment();
     }
 
     @Override
-    public Fragment createFragment() {
-        return new LaunchFragment();
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_launch);
     }
 }
