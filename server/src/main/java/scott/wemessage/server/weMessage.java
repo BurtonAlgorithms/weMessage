@@ -4,10 +4,9 @@ import scott.wemessage.commons.Constants;
 
 public final class weMessage extends Constants {
 
-    private weMessage(){}
+    private weMessage(){ }
 
     public static final int WEMESSAGE_CONFIG_VERSION = 1;
-    public static final int DEFAULT_PORT = 2222;
 
     public static final String CONFIG_FILE_NAME = "config.json";
     public static final String SERVER_DATABASE_FILE_NAME = "weserver.db";
