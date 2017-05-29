@@ -13,7 +13,7 @@
     <string name="invalid_email_format">The email entered is not a valid email address.</string>
     <string name="password_too_short">The password is too short. Make sure it is %1$d characters long!</string>
     <string name="password_too_easy">This password is too easy to guess. Enter a harder one.</string>
-    <string name="connecting_dialog">Connecting to weServer &#8230;</string>
+    <string name="connecting_dialog">Connecting to weServer&#8230;</string>
     <string name="cancel_button">Cancel</string>
     <string name="ok_button">Okay</string>
     <string name="timeout_alert_title">Connection Timed Out</string>

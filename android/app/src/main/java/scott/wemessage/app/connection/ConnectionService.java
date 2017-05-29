@@ -140,7 +140,14 @@ public class ConnectionService extends Service {
             try {
                 getConnectionSocket().connect(new InetSocketAddress(ipAddress, port), weMessage.CONNECTION_TIMEOUT_WAIT * 1000);
 
-                //TODO: If we do this get secret send init connect stuff whatever also set input output stream go over code tmrw
+                synchronized (inputStreamLock){
+                    inputStream = new ObjectInputStream(getConnectionSocket().getInputStream());
+                }
+                synchronized (outputStreamLock){
+                    outputStream = new ObjectOutputStream(getConnectionSocket().getOutputStream());
+                }
+
+
             }catch(SocketTimeoutException ex){
                 Intent timeoutIntent = new Intent(weMessage.INTENT_LOGIN_TIMEOUT);
                 LocalBroadcastManager.getInstance(getParentService()).sendBroadcast(timeoutIntent);

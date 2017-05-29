@@ -37,6 +37,7 @@ import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.view.button.FontButton;
+import scott.wemessage.app.view.dialog.AlertDialogLayout;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.AuthenticationUtils.PasswordValidateType;
@@ -250,6 +251,7 @@ public class LaunchFragment extends Fragment {
                 getActivity().startService(startServiceIntent);
                 bindService();
 
+                //TODO: Custom lookin progress dialog?
                 loginProgressDialog = new ProgressDialog(getActivity());
 
                 loginProgressDialog.setMessage(getString(R.string.connecting_dialog));
@@ -269,6 +271,7 @@ public class LaunchFragment extends Fragment {
         return view;
     }
 
+    //TODO: Deal with rotations, already bound bundle arg
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -279,6 +282,7 @@ public class LaunchFragment extends Fragment {
     }
 
     //TODO: Unbind service and stuff, if service has not yet connected destroy it?
+    //TODO: Deal with rotations
     @Override
     public void onDestroy() {
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(launcherBroadcastReceiver);
@@ -395,19 +399,20 @@ public class LaunchFragment extends Fragment {
             String message = args.getString(weMessage.BUNDLE_ALERT_MESSAGE);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            AlertDialogLayout alertDialogLayout = (AlertDialogLayout) getActivity().getLayoutInflater().inflate(R.layout.alert_dialog_layout, null);
 
             if (title != null){
-                builder.setTitle(title);
+                alertDialogLayout.setTitle(title);
             }
+            alertDialogLayout.setMessage(message);
 
-            builder.setMessage(message);
+            builder.setView(alertDialogLayout);
             builder.setPositiveButton(R.string.ok_button, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     dialog.dismiss();
                 }
             });
-            builder.setIcon(R.drawable.ic_app_notification_white);
 
             return builder.create();
         }
