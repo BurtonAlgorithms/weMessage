@@ -1,4 +1,4 @@
-package scott.wemessage.app.utils;
+package scott.wemessage.app.utils.view;
 
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;

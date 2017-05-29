@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 
 import scott.wemessage.R;
-import scott.wemessage.app.utils.SingleFragmentActivity;
+import scott.wemessage.app.utils.view.SingleFragmentActivity;
 
 public class LaunchActivity extends SingleFragmentActivity {
 

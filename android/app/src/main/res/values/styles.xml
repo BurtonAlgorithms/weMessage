@@ -12,5 +12,5 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:statusBarColor">@color/colorHeader</item>
     </style>
-
+    
 </resources>
