@@ -7,7 +7,7 @@ import scott.wemessage.server.ServerLogger;
 public class CommandInfo extends CoreCommand {
 
     public CommandInfo(CommandManager manager){
-        super(manager, "info", "Displays version info about the weMessage Server", new String[]{ "version", "?" });
+        super(manager, "info", "Displays version info about the weServer", new String[]{ "version", "?" });
     }
 
     public void execute(String[] args){

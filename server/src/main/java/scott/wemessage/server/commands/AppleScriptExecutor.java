@@ -62,7 +62,7 @@ public final class AppleScriptExecutor extends Thread {
         }
 
         if (!getScriptsFolder().exists()){
-            ServerLogger.error(TAG, "weMessage Scripts folder could not be found. Shutting down!", new Exception());
+            ServerLogger.error(TAG, "weServer Scripts folder could not be found. Shutting down!", new Exception());
             messageServer.shutdown(-1, false);
         }
     }
@@ -196,7 +196,7 @@ public final class AppleScriptExecutor extends Thread {
 
                 if (returnType == ReturnType.UI_ERROR){
                     ServerLogger.log(ServerLogger.Level.ERROR, TAG, "A UI error occurred within the Messages App.");
-                    ServerLogger.log(ServerLogger.Level.ERROR, TAG, "In order to prevent further errors from occurring, weMessage will force close and relaunch it.");
+                    ServerLogger.log(ServerLogger.Level.ERROR, TAG, "In order to prevent further errors from occurring, weServer will force close and relaunch it.");
                     killMessagesApp(true);
                 }
             }else {
@@ -205,7 +205,7 @@ public final class AppleScriptExecutor extends Thread {
                 for (ReturnType returnType : resultReturnsList) {
                     if (returnType == ReturnType.UI_ERROR) {
                         ServerLogger.log(ServerLogger.Level.ERROR, TAG, "A UI error occurred within the Messages App.");
-                        ServerLogger.log(ServerLogger.Level.ERROR, TAG, "In order to prevent further errors from occurring, weMessage will force close and relaunch it.");
+                        ServerLogger.log(ServerLogger.Level.ERROR, TAG, "In order to prevent further errors from occurring, weServer will force close and relaunch it.");
                         killMessagesApp(true);
                         break;
                     }
@@ -251,7 +251,7 @@ public final class AppleScriptExecutor extends Thread {
                 return false;
             }
         }catch(Exception ex){
-            ServerLogger.error("An error occurred while checking to see if weMessage is configured to start.", ex);
+            ServerLogger.error("An error occurred while checking to see if weServer is configured to start.", ex);
             return false;
         }
     }

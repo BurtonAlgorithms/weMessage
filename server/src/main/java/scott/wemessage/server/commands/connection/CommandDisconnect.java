@@ -8,7 +8,7 @@ import scott.wemessage.server.ServerLogger;
 public class CommandDisconnect extends ConnectionCommand {
 
     public CommandDisconnect(CommandManager manager){
-        super(manager, "disconnect", "Disconnects a device from the weMessage Server", new String[]{ "killdevice" });
+        super(manager, "disconnect", "Disconnects a device from the weServer", new String[]{ "killdevice" });
     }
 
     public void execute(String[] args){

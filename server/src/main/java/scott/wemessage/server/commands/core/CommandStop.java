@@ -5,7 +5,7 @@ import scott.wemessage.server.commands.CommandManager;
 public class CommandStop extends CoreCommand {
 
     public CommandStop(CommandManager manager){
-        super(manager, "stop", "Stops the weMessage Server", new String[]{ "shutdown", "end" });
+        super(manager, "stop", "Stops the weServer", new String[]{ "shutdown", "end" });
     }
 
     public void execute(String[] args){
