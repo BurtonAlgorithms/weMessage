@@ -9,9 +9,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/colorHeader"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp"
-        android:paddingStart="6dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:paddingStart="12dp"
         android:paddingEnd="12dp">
 
         <ImageView
@@ -36,7 +36,7 @@
         android:id="@+id/alertDialogMessage"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp"
+        android:padding="24dp"
         android:textSize="15sp"
         android:text="Message Text"  />
 </scott.wemessage.app.view.dialog.AlertDialogLayout>

@@ -139,12 +139,14 @@ public class ConnectionService extends Service {
 
             try {
                 getConnectionSocket().connect(new InetSocketAddress(ipAddress, port), weMessage.CONNECTION_TIMEOUT_WAIT * 1000);
-
-                synchronized (inputStreamLock){
-                    inputStream = new ObjectInputStream(getConnectionSocket().getInputStream());
-                }
-                synchronized (outputStreamLock){
-                    outputStream = new ObjectOutputStream(getConnectionSocket().getOutputStream());
+                //TODO: Set connected stuff
+                if (isConnected.get()) {
+                    synchronized (inputStreamLock) {
+                        inputStream = new ObjectInputStream(getConnectionSocket().getInputStream());
+                    }
+                    synchronized (outputStreamLock) {
+                        outputStream = new ObjectOutputStream(getConnectionSocket().getOutputStream());
+                    }
                 }
 
 
@@ -164,7 +166,7 @@ public class ConnectionService extends Service {
                 }
             }
 
-
+            //TODO: Some stuffs here
         }
 
         public void endConnection(){

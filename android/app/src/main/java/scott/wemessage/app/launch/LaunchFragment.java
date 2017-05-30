@@ -38,6 +38,7 @@ import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.view.button.FontButton;
 import scott.wemessage.app.view.dialog.AlertDialogLayout;
+import scott.wemessage.app.view.dialog.ProgressDialogLayout;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.AuthenticationUtils.PasswordValidateType;
@@ -67,15 +68,19 @@ public class LaunchFragment extends Fragment {
     private BroadcastReceiver launcherBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (loginProgressDialog != null){
-                if(intent.getAction().equals(weMessage.INTENT_CONNECTION_SERVICE_STOPPED)){
-                    unbindService();
-                }else if (intent.getAction().equals(weMessage.INTENT_LOGIN_TIMEOUT)){
+            if(intent.getAction().equals(weMessage.INTENT_CONNECTION_SERVICE_STOPPED)) {
+                unbindService();
+            }else if (intent.getAction().equals(weMessage.INTENT_LOGIN_TIMEOUT)){
+                if (loginProgressDialog != null) {
                     loginProgressDialog.dismiss();
                     generateAlertDialog(getString(R.string.timeout_alert_title), getString(R.string.timeout_alert_content)).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
-                }else if(intent.getAction().equals(weMessage.INTENT_LOGIN_ERROR)){
+                    loginProgressDialog = null;
+                }
+            }else if(intent.getAction().equals(weMessage.INTENT_LOGIN_ERROR)){
+                if (loginProgressDialog != null) {
                     loginProgressDialog.dismiss();
                     generateAlertDialog(getString(R.string.login_error_alert_title), getString(R.string.login_error_alert_content)).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
+                    loginProgressDialog = null;
                 }
             }
         }
@@ -251,27 +256,14 @@ public class LaunchFragment extends Fragment {
                 getActivity().startService(startServiceIntent);
                 bindService();
 
-                //TODO: Custom lookin progress dialog?
-                loginProgressDialog = new ProgressDialog(getActivity());
-
-                loginProgressDialog.setMessage(getString(R.string.connecting_dialog));
-                loginProgressDialog.setCancelable(false);
-                loginProgressDialog.setButton(DialogInterface.BUTTON_NEGATIVE, getString(R.string.cancel_button), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        connectionService.endService();
-                        dialog.dismiss();
-                        generateInvalidSnackBar(view, getString(R.string.connection_cancelled)).show();
-                    }
-                });
-                loginProgressDialog.show();
+                showProgressDialog(view, getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
             }
         });
 
         return view;
     }
 
-    //TODO: Deal with rotations, already bound bundle arg
+    //TODO: Deal with rotations, already bound bundle arg, just relaunch progress dialog so above methods can execute (in onCreate)
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -320,20 +312,6 @@ public class LaunchFragment extends Fragment {
 
         colorAnimation.start();
         editText.startAnimation(invalidShake);
-    }
-
-    private Snackbar generateInvalidSnackBar(View view, String message){
-        final Snackbar snackbar = Snackbar.make(view, message, errorSnackbarDuration);
-
-        snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                snackbar.dismiss();
-            }
-        });
-        snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
-
-        return snackbar;
     }
 
     private void resetEditText( EditText editText){
@@ -388,6 +366,42 @@ public class LaunchFragment extends Fragment {
         return dialog;
     }
 
+    private Snackbar generateInvalidSnackBar(View view, String message){
+        final Snackbar snackbar = Snackbar.make(view, message, errorSnackbarDuration);
+
+        snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                snackbar.dismiss();
+            }
+        });
+        snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+
+        return snackbar;
+    }
+
+    private void showProgressDialog(final View view, String title, String message){
+        final ProgressDialog progressDialog = new ProgressDialog(getActivity());
+        ProgressDialogLayout progressDialogLayout = (ProgressDialogLayout) getActivity().getLayoutInflater().inflate(R.layout.progress_dialog_layout, null);
+
+        progressDialog.setCancelable(false);
+
+        progressDialogLayout.setTitle(title);
+        progressDialogLayout.setMessage(message);
+        progressDialogLayout.setButton(getString(R.string.cancel_button), new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                connectionService.endService();
+                progressDialog.dismiss();
+                generateInvalidSnackBar(view, getString(R.string.connection_cancelled)).show();
+                loginProgressDialog = null;
+            }
+        });
+        progressDialog.show();
+        progressDialog.setContentView(progressDialogLayout);
+        loginProgressDialog = progressDialog;
+    }
+
     public static class AlertDialogFragment extends DialogFragment {
 
         @NonNull
@@ -401,9 +415,7 @@ public class LaunchFragment extends Fragment {
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
             AlertDialogLayout alertDialogLayout = (AlertDialogLayout) getActivity().getLayoutInflater().inflate(R.layout.alert_dialog_layout, null);
 
-            if (title != null){
-                alertDialogLayout.setTitle(title);
-            }
+            alertDialogLayout.setTitle(title);
             alertDialogLayout.setMessage(message);
 
             builder.setView(alertDialogLayout);
