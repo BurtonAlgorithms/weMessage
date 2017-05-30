@@ -1,5 +1,6 @@
 package scott.wemessage.server.connection;
 
+import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.events.connection.DeviceJoinEvent;

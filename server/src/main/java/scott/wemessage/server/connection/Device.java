@@ -9,6 +9,8 @@ import scott.wemessage.commons.json.message.JSONAttachment;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.json.message.security.JSONEncryptedText;
 import scott.wemessage.commons.types.ActionType;
+import scott.wemessage.commons.types.DeviceType;
+import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.DateUtils;

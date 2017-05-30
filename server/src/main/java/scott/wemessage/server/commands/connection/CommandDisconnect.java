@@ -2,7 +2,7 @@ package scott.wemessage.server.commands.connection;
 
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.connection.Device;
-import scott.wemessage.server.connection.DisconnectReason;
+import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.server.ServerLogger;
 
 public class CommandDisconnect extends ConnectionCommand {
