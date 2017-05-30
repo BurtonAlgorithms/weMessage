@@ -13,6 +13,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -22,6 +23,7 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -29,6 +31,7 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.CycleInterpolator;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -57,13 +60,6 @@ public class LaunchFragment extends Fragment {
     private ProgressDialog loginProgressDialog;
     private int oldEditTextColor;
     private int errorSnackbarDuration = 5000;
-
-    /**
-     *
-     * TODO: GET FOCUS OFF OF EDIT TEXT
-     *
-     *
-     */
 
     private BroadcastReceiver launcherBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -123,9 +119,30 @@ public class LaunchFragment extends Fragment {
         oldEditTextColor = emailEditText.getCurrentTextColor();
 
         if (savedInstanceState != null){
-            ipEditText.setText(savedInstanceState.getString(weMessage.BUNDLE_HOST));
+            String ipUnformatted = savedInstanceState.getString(weMessage.BUNDLE_HOST);
+            boolean isServiceBound = savedInstanceState.getBoolean(weMessage.BUNDLE_IS_BOUND_TO_CONNECTION_SERVICE);
+
+            ipEditText.setText(ipUnformatted);
             emailEditText.setText(savedInstanceState.getString(weMessage.BUNDLE_EMAIL));
             passwordEditText.setText(savedInstanceState.getString(weMessage.BUNDLE_PASSWORD));
+
+            if (isServiceBound){
+                bindService();
+
+                String ipAddress;
+                int port;
+
+                if (ipUnformatted.contains(":")){
+                    String[] split = ipUnformatted.split(":");
+
+                    port = Integer.parseInt(split[1]);
+                    ipAddress = split[0];
+                }else {
+                    ipAddress = ipUnformatted;
+                    port = weMessage.DEFAULT_PORT;
+                }
+                showProgressDialog(view, getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
+            }
         }
 
         launchConstraintLayout.setOnTouchListener(new View.OnTouchListener() {
@@ -147,6 +164,16 @@ public class LaunchFragment extends Fragment {
             }
         });
 
+        ipEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if(actionId == EditorInfo.IME_ACTION_DONE){
+                    clearEditText(ipEditText, true);
+                }
+                return false;
+            }
+        });
+
         emailEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
@@ -156,12 +183,32 @@ public class LaunchFragment extends Fragment {
             }
         });
 
+        emailEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if(actionId == EditorInfo.IME_ACTION_DONE){
+                    clearEditText(emailEditText, true);
+                }
+                return false;
+            }
+        });
+
         passwordEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
                 if (hasFocus){
                     resetEditText(passwordEditText);
                 }
+            }
+        });
+
+        passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if(actionId == EditorInfo.IME_ACTION_DONE){
+                    clearEditText(passwordEditText, true);
+                }
+                return false;
             }
         });
 
@@ -263,7 +310,6 @@ public class LaunchFragment extends Fragment {
         return view;
     }
 
-    //TODO: Deal with rotations, already bound bundle arg, just relaunch progress dialog so above methods can execute (in onCreate)
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -271,10 +317,9 @@ public class LaunchFragment extends Fragment {
         outState.putString(weMessage.BUNDLE_HOST, ipEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_EMAIL, emailEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_PASSWORD, passwordEditText.getText().toString());
+        outState.putBoolean(weMessage.BUNDLE_IS_BOUND_TO_CONNECTION_SERVICE, (connectionService != null));
     }
 
-    //TODO: Unbind service and stuff, if service has not yet connected destroy it?
-    //TODO: Deal with rotations
     @Override
     public void onDestroy() {
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(launcherBroadcastReceiver);
@@ -319,7 +364,27 @@ public class LaunchFragment extends Fragment {
         editText.setTextColor(oldEditTextColor);
     }
 
-    private void clearEditTexts(){
+    private void clearEditTexts() {
+        closeKeyboard();
+        clearEditText(ipEditText, false);
+        clearEditText(emailEditText, false);
+        clearEditText(passwordEditText, false);
+    }
+
+    private void clearEditText(final EditText editText, boolean closeKeyboard){
+        if (closeKeyboard) {
+            closeKeyboard();
+        }
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                editText.clearFocus();
+            }
+        }, 100);
+    }
+
+    private void closeKeyboard(){
         InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(INPUT_METHOD_SERVICE);
 
         if (getActivity().getCurrentFocus() != null) {
