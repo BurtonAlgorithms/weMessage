@@ -77,6 +77,22 @@ public class LaunchFragment extends Fragment {
                     generateAlertDialog(getString(R.string.login_error_alert_title), getString(R.string.login_error_alert_content)).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
                     loginProgressDialog = null;
                 }
+            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ALREADY_CONNECTED)){
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_already_connected_message));
+            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_INVALID_LOGIN)){
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_invalid_login_message));
+            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message));
+            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message));
+            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message));
+            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message));
+            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_INCORRECT_VERSION)){
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_incorrect_version_message));
+            }else if (intent.getAction().equals(weMessage.BROADCAST_LOGIN_SUCCESSFUL)){
+                //TODO: Do something showing a successful login
             }
         }
     };
@@ -87,6 +103,16 @@ public class LaunchFragment extends Fragment {
         intentFilter.addAction(weMessage.INTENT_LOGIN_TIMEOUT);
         intentFilter.addAction(weMessage.INTENT_LOGIN_ERROR);
         intentFilter.addAction(weMessage.INTENT_CONNECTION_SERVICE_STOPPED);
+
+        intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_ALREADY_CONNECTED);
+        intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_INVALID_LOGIN);
+        intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED);
+        intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_ERROR);
+        intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_FORCED);
+        intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED);
+        intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_INCORRECT_VERSION);
+
+        intentFilter.addAction(weMessage.BROADCAST_LOGIN_SUCCESSFUL);
 
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(launcherBroadcastReceiver, intentFilter);
 
@@ -322,7 +348,7 @@ public class LaunchFragment extends Fragment {
     }
 
     private void bindService(){
-        Intent intent = new Intent(getActivity().getApplicationContext(), ConnectionService.class);
+        Intent intent = new Intent(getActivity(), ConnectionService.class);
         getActivity().bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
         isBoundToConnectionService = true;
     }
@@ -461,6 +487,23 @@ public class LaunchFragment extends Fragment {
         progressDialog.show();
         progressDialog.setContentView(progressDialogLayout);
         loginProgressDialog = progressDialog;
+    }
+
+    private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage){
+        if (loginProgressDialog != null){
+            loginProgressDialog.dismiss();
+
+            String message = defaultMessage;
+
+            if (bundledIntent.getExtras() != null){
+                String alternateMessageExtra = bundledIntent.getExtras().getString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE);
+                if (alternateMessageExtra != null){
+                    message = alternateMessageExtra;
+                }
+            }
+            generateAlertDialog(getString(R.string.login_error_alert_title), message).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
+            loginProgressDialog = null;
+        }
     }
 
     public static class AlertDialogFragment extends DialogFragment {

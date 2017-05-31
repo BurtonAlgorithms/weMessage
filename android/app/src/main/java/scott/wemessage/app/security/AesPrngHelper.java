@@ -1,4 +1,4 @@
-package scott.wemessage.app.utils.crypto;
+package scott.wemessage.app.security;
 
 import android.os.Build;
 import android.util.Log;

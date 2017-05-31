@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">weMessage</string>
-    <string name="login_text">Please enter your login details. Your email and password should match those set on your weServer.</string>
+    <string name="login_text">Please enter your login details. Your emailPlainText and passwordPlainText should match those set on your weServer.</string>
     <string name="login_IP">IP Address</string>
     <string name="login_email">Email</string>
     <string name="login_password">Password</string>
@@ -8,11 +8,11 @@
     <string name="dismiss_button">Dismiss</string>
     <string name="no_ip">Please enter the IP address of the weServer.</string>
     <string name="port_not_valid">The port entered is not a number!</string>
-    <string name="no_email">Please enter an email address to sign in with!</string>
-    <string name="no_password">Please enter a password to sign in with!</string>
-    <string name="invalid_email_format">The email entered is not a valid email address.</string>
-    <string name="password_too_short">The password is too short. Make sure it is %1$d characters long!</string>
-    <string name="password_too_easy">This password is too easy to guess. Enter a harder one.</string>
+    <string name="no_email">Please enter an emailPlainText address to sign in with!</string>
+    <string name="no_password">Please enter a passwordPlainText to sign in with!</string>
+    <string name="invalid_email_format">The emailPlainText entered is not a valid emailPlainText address.</string>
+    <string name="password_too_short">The passwordPlainText is too short. Make sure it is %1$d characters long!</string>
+    <string name="password_too_easy">This passwordPlainText is too easy to guess. Enter a harder one.</string>
     <string name="connecting_dialog_title">Connecting&#8230;</string>
     <string name="connecting_dialog_message">Connecting to weServer with IP: %1$s and Port: %2$d</string>
     <string name="cancel_button">Cancel</string>
@@ -23,4 +23,13 @@
     <string name="login_error_alert_title">Connection Error</string>
     <string name="login_error_alert_content">An error occurred while connecting to the weServer.</string>
     <string name="connection_cancelled">Connection cancelled.</string>
+    <string name="connection_error_server_side_message">A server-side error caused the connection to be lost.</string>
+    <string name="connection_error_authentication_message">An error occurred while authenticating the login information. \n\nPlease restart your app or weServer instance.</string>
+    <string name="connection_error_unknown_message">An unknown error occurred and has caused the connection to be dropped.</string>
+    <string name="connection_error_already_connected_message">This device is appears to be already connected to this weServer. \n\nIf it is not, try restarting your weServer to fix this message.</string>
+    <string name="connection_error_invalid_login_message">The username or password entered is not correct. Please try again.</string>
+    <string name="connection_error_server_closed_message">The weServer has shut down and closed the connection.</string>
+    <string name="connection_error_force_disconnect_message">This device has been forcefully disconnected by the weServer.</string>
+    <string name="connection_error_client_disconnect_message">You have disconnected from the weServer.</string>
+    <string name="connection_error_incorrect_version_message">weMessage could not connect because the server is running on a different version.</string>
 </resources>
