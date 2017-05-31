@@ -12,13 +12,13 @@ public enum DisconnectReason {
     CLIENT_DISCONNECTED(Constants.DISCONNECT_REASON_CLIENT_QUIT),
     INCORRECT_VERSION(Constants.DISCONNECT_REASON_INCORRECT_VERSION);
 
-    int code;
+    Integer code;
 
     DisconnectReason(Integer code){
         this.code = code;
     }
 
-    public int getCode(){
+    public Integer getCode(){
         return code;
     }
 
