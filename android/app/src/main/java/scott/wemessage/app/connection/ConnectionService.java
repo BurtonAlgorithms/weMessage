@@ -59,16 +59,13 @@ public class ConnectionService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        if (getConnectionThread().isRunning().get()){
-            return binder;
-        }
-        return null;
+        return binder;
     }
 
     public void endService(){
-        Intent serviceClosedIntent = new Intent(weMessage.INTENT_CONNECTION_SERVICE_STOPPED);
+        Intent serviceClosedIntent = new Intent();
+        serviceClosedIntent.setAction(weMessage.INTENT_CONNECTION_SERVICE_STOPPED);
         LocalBroadcastManager.getInstance(this).sendBroadcast(serviceClosedIntent);
-
         getConnectionThread().endConnection();
         stopSelf();
     }

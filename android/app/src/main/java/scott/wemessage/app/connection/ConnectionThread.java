@@ -96,19 +96,21 @@ public class ConnectionThread extends Thread {
 
 
         }catch(SocketTimeoutException ex){
-            Intent timeoutIntent = new Intent(weMessage.INTENT_LOGIN_TIMEOUT);
-            LocalBroadcastManager.getInstance(getParentService()).sendBroadcast(timeoutIntent);
-            getParentService().endService();
+            if (isRunning.get()) {
+                Intent timeoutIntent = new Intent(weMessage.INTENT_LOGIN_TIMEOUT);
+                LocalBroadcastManager.getInstance(getParentService()).sendBroadcast(timeoutIntent);
+                getParentService().endService();
+            }
             return;
         }catch(IOException ex){
-            Log.e(ConnectionService.TAG, "An error occurred while connecting to the weServer.", ex);
-
             if (isRunning.get()) {
+                Log.e(ConnectionService.TAG, "An error occurred while connecting to the weServer.", ex);
+
                 Intent timeoutIntent = new Intent(weMessage.INTENT_LOGIN_ERROR);
                 LocalBroadcastManager.getInstance(getParentService()).sendBroadcast(timeoutIntent);
                 getParentService().endService();
-                return;
             }
+            return;
         }
 
         //TODO: Some stuffs here
