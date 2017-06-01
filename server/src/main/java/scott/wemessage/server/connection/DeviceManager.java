@@ -79,7 +79,11 @@ public final class DeviceManager extends Thread {
         if(hasDevice(device.getAddress())) {
             EventManager eventManager = getMessageServer().getEventManager();
 
-            device.killDevice(reason);
+            if (reason == DisconnectReason.CLIENT_DISCONNECTED) {
+                device.killDeviceByClientMessage();
+            }else {
+                device.killDevice(reason);
+            }
             devices.remove(device.getAddress());
             eventManager.callEvent(new DeviceQuitEvent(eventManager, this, device, reason));
 

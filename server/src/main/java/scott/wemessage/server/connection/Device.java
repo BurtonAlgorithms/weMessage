@@ -270,6 +270,21 @@ public class Device extends Thread {
         }
     }
 
+    public void killDeviceByClientMessage(){
+        try {
+            isRunning.set(false);
+
+            getInputStream().close();
+            getOutputStream().close();
+            getSocket().close();
+
+            interrupt();
+        }catch(Exception ex){
+            ServerLogger.error(TAG, "An error occurred while disconnecting device with IP Address: " + getAddress(), ex);
+            interrupt();
+        }
+    }
+
     public void run(){
         try {
             isRunning.set(true);
