@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">weMessage</string>
-    <string name="login_text">Please enter your login details. Your emailPlainText and passwordPlainText should match those set on your weServer.</string>
+    <string name="login_text">Please enter your login details. Your email and password should match those set on your weServer.</string>
     <string name="login_IP">IP Address</string>
     <string name="login_email">Email</string>
     <string name="login_password">Password</string>
@@ -8,11 +8,11 @@
     <string name="dismiss_button">Dismiss</string>
     <string name="no_ip">Please enter the IP address of the weServer.</string>
     <string name="port_not_valid">The port entered is not a number!</string>
-    <string name="no_email">Please enter an emailPlainText address to sign in with!</string>
-    <string name="no_password">Please enter a passwordPlainText to sign in with!</string>
-    <string name="invalid_email_format">The emailPlainText entered is not a valid emailPlainText address.</string>
-    <string name="password_too_short">The passwordPlainText is too short. Make sure it is %1$d characters long!</string>
-    <string name="password_too_easy">This passwordPlainText is too easy to guess. Enter a harder one.</string>
+    <string name="no_email">Please enter an email address to sign in with!</string>
+    <string name="no_password">Please enter a password to sign in with!</string>
+    <string name="invalid_email_format">The email entered is not a valid email address.</string>
+    <string name="password_too_short">The password is too short. Make sure it is %1$d characters long!</string>
+    <string name="password_too_easy">This password is too easy to guess. Enter a harder one.</string>
     <string name="connecting_dialog_title">Connecting&#8230;</string>
     <string name="connecting_dialog_message">Connecting to weServer with IP: %1$s and Port: %2$d</string>
     <string name="cancel_button">Cancel</string>

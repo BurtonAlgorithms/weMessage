@@ -14,6 +14,7 @@ public final class weMessage extends Constants {
     public static final String BUNDLE_PASSWORD = IDENTIFIER_PREFIX + "bundlePassword";
     public static final String BUNDLE_ALERT_TITLE = IDENTIFIER_PREFIX + "bundleAlertTitle";
     public static final String BUNDLE_ALERT_MESSAGE = IDENTIFIER_PREFIX + "bundleAlertMessage";
+    public static final String BUNDLE_DIALOG_ANIMATION = IDENTIFIER_PREFIX + "bundleDialogAnimation";
     public static final String BUNDLE_IS_BOUND_TO_CONNECTION_SERVICE = IDENTIFIER_PREFIX + "bundleIsBoundToConnectionService";
     public static final String BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE = IDENTIFIER_PREFIX + "bundleDisconnectReasonAlternateMessage";
 

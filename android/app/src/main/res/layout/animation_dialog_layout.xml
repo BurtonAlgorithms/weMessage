@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scott.wemessage.app.view.dialog.AnimationDialogLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="120dp"
+    android:layout_height="120dp" >
+
+    <VideoView
+        android:id="@+id/animationDialogVideoView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="24dp" />
+</scott.wemessage.app.view.dialog.AnimationDialogLayout>

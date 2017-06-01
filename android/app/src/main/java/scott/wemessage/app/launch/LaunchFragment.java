@@ -10,6 +10,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PorterDuff;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -39,17 +40,17 @@ import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.view.button.FontButton;
 import scott.wemessage.app.view.dialog.AlertDialogLayout;
+import scott.wemessage.app.view.dialog.AnimationDialogLayout;
 import scott.wemessage.app.view.dialog.ProgressDialogLayout;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.AuthenticationUtils.PasswordValidateType;
 import scott.wemessage.commons.utils.StringUtils;
 
-import static android.content.Context.INPUT_METHOD_SERVICE;
-
 public class LaunchFragment extends Fragment {
 
     private final String LAUNCH_ALERT_DIALOG_TAG = "DialogLauncherAlert";
+    private final String LAUNCH_ANIMATION_DIALOG_TAG = "DialogAnimationTag";
 
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private ConstraintLayout launchConstraintLayout;
@@ -92,13 +93,25 @@ public class LaunchFragment extends Fragment {
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_INCORRECT_VERSION)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_incorrect_version_message));
             }else if (intent.getAction().equals(weMessage.BROADCAST_LOGIN_SUCCESSFUL)){
-                //TODO: Do something showing a successful login
+                AnimationDialogFragment dialogFragment = generateAnimationDialog(R.raw.checkmark_animation);
+
+                dialogFragment.setDialogCompleteListener(new Runnable() {
+                    @Override
+                    public void run() {
+                        //TODO: Go 2 Next Activity, destroy this one
+                    }
+                });
+                dialogFragment.show(getFragmentManager(), LAUNCH_ANIMATION_DIALOG_TAG);
             }
         }
     };
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
+
+        //TODO: Check to see if we are already connected, if so skip all this
+        //TODO: If not connected, and info is saved, click button for user
+
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(weMessage.INTENT_LOGIN_TIMEOUT);
         intentFilter.addAction(weMessage.INTENT_LOGIN_ERROR);
@@ -402,7 +415,7 @@ public class LaunchFragment extends Fragment {
     }
 
     private void closeKeyboard(){
-        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(INPUT_METHOD_SERVICE);
+        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
 
         if (getActivity().getCurrentFocus() != null) {
             imm.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
@@ -437,12 +450,22 @@ public class LaunchFragment extends Fragment {
         colorAnimation.start();
     }
 
-    private DialogFragment generateAlertDialog(String title, String message){
+    private AlertDialogFragment generateAlertDialog(String title, String message){
         Bundle bundle = new Bundle();
-        DialogFragment dialog = new AlertDialogFragment();
+        AlertDialogFragment dialog = new AlertDialogFragment();
 
         bundle.putString(weMessage.BUNDLE_ALERT_TITLE, title);
         bundle.putString(weMessage.BUNDLE_ALERT_MESSAGE, message);
+        dialog.setArguments(bundle);
+
+        return dialog;
+    }
+
+    private AnimationDialogFragment generateAnimationDialog(int animationSource){
+        Bundle bundle = new Bundle();
+        AnimationDialogFragment dialog = new AnimationDialogFragment();
+
+        bundle.putInt(weMessage.BUNDLE_DIALOG_ANIMATION, animationSource);
         dialog.setArguments(bundle);
 
         return dialog;
@@ -529,8 +552,44 @@ public class LaunchFragment extends Fragment {
                     dialog.dismiss();
                 }
             });
-
             return builder.create();
+        }
+    }
+
+    public static class AnimationDialogFragment extends DialogFragment {
+
+        private Runnable runnable;
+
+        @NonNull
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            Bundle args = getArguments();
+
+            int animationResource = args.getInt(weMessage.BUNDLE_DIALOG_ANIMATION);
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            AnimationDialogLayout animationDialogLayout = (AnimationDialogLayout) getActivity().getLayoutInflater().inflate(R.layout.animation_dialog_layout, null);
+
+            animationDialogLayout.setAnimationSource(animationResource);
+
+            final AlertDialog dialog = builder.create();
+
+            animationDialogLayout.getVideoView().setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    dialog.dismiss();
+
+                    if (runnable != null){
+                        runnable.run();
+                    }
+                }
+            });
+
+            return dialog;
+        }
+
+        public void setDialogCompleteListener(Runnable runnable){
+            this.runnable = runnable;
         }
     }
 }
