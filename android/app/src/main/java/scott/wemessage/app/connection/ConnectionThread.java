@@ -207,6 +207,7 @@ public class ConnectionThread extends Thread {
                         Bundle extras = new Bundle();
                         extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));
                         sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
+                        getParentService().endService();
                         return;
                     }
 
@@ -253,12 +254,11 @@ public class ConnectionThread extends Thread {
                 }
 
             }catch(Exception ex){
-                sendClientDisconnectMessage();
                 Bundle extras = new Bundle();
                 extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));
                 sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
-
                 AppLogger.error(TAG, "An unknown error occurred. Dropping connection to weServer", ex);
+                getParentService().endService();
             }
         }
     }
@@ -267,6 +267,11 @@ public class ConnectionThread extends Thread {
         if (isRunning.get()) {
             isRunning.set(false);
 
+            try {
+                sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, DisconnectReason.CLIENT_DISCONNECTED.getCode());
+            }catch(Exception ex){
+                AppLogger.error(TAG, "An error occurred while sending disconnect message to the server.", ex);
+            }
             try {
                 if (isConnected.get()) {
                     isConnected.set(false);
@@ -289,14 +294,5 @@ public class ConnectionThread extends Thread {
             timeoutIntent.putExtras(extras);
         }
         LocalBroadcastManager.getInstance(getParentService()).sendBroadcast(timeoutIntent);
-    }
-
-    public void sendClientDisconnectMessage(){
-        try {
-            sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, DisconnectReason.CLIENT_DISCONNECTED.getCode());
-        }catch(Exception ex){
-            AppLogger.error(TAG, "An error occurred while sending client disconnect message. Forcing connection close", ex);
-            getParentService().endService();
-        }
     }
 }

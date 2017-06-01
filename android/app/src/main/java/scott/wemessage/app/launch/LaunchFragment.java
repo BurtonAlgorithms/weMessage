@@ -102,6 +102,7 @@ public class LaunchFragment extends Fragment {
                     }
                 });
                 dialogFragment.show(getFragmentManager(), LAUNCH_ANIMATION_DIALOG_TAG);
+                dialogFragment.startAnimation();
             }
         }
     };
@@ -559,37 +560,50 @@ public class LaunchFragment extends Fragment {
     public static class AnimationDialogFragment extends DialogFragment {
 
         private Runnable runnable;
+        private AnimationDialogLayout dialogLayout;
 
         @NonNull
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             Bundle args = getArguments();
-
             int animationResource = args.getInt(weMessage.BUNDLE_DIALOG_ANIMATION);
-
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-            AnimationDialogLayout animationDialogLayout = (AnimationDialogLayout) getActivity().getLayoutInflater().inflate(R.layout.animation_dialog_layout, null);
-
+            final AnimationDialogLayout animationDialogLayout = (AnimationDialogLayout) getActivity().getLayoutInflater().inflate(R.layout.animation_dialog_layout, null);
             animationDialogLayout.setAnimationSource(animationResource);
+
+            builder.setView(animationDialogLayout);
 
             final AlertDialog dialog = builder.create();
 
             animationDialogLayout.getVideoView().setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
+                    animationDialogLayout.getVideoView().setZOrderOnTop(false);
                     dialog.dismiss();
-
                     if (runnable != null){
                         runnable.run();
                     }
                 }
             });
+            setCancelable(false);
+            dialog.setCanceledOnTouchOutside(false);
+            this.dialogLayout = animationDialogLayout;
 
             return dialog;
         }
 
         public void setDialogCompleteListener(Runnable runnable){
             this.runnable = runnable;
+        }
+
+        public void startAnimation(){
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    dialogLayout.getVideoView().setZOrderOnTop(true);
+                    dialogLayout.startAnimation();
+                }
+            }, 10);
         }
     }
 }
