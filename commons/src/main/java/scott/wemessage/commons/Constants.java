@@ -4,7 +4,7 @@ public abstract class Constants {
 
     public static final String WEMESSAGE_VERSION = "Alpha 0.1";
     public static final int WEMESSAGE_BUILD_VERSION = 1;
-    public static final int DEFAULT_PORT = 2222;
+    public static final int DEFAULT_PORT = 22222;
     public static final int MINIMUM_PASSWORD_LENGTH = 8;
     public static final String DEFAULT_PASSWORD = "password";
 
