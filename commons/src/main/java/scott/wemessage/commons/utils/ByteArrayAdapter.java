@@ -8,17 +8,23 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-import org.apache.commons.codec.binary.Base64;
-
 import java.lang.reflect.Type;
+
+import scott.wemessage.commons.crypto.Base64Wrapper;
 
 public class ByteArrayAdapter implements JsonSerializer<byte[]>, JsonDeserializer<byte[]> {
 
+    private Base64Wrapper base64Wrapper;
+
+    public ByteArrayAdapter(Base64Wrapper base64Wrapper){
+        this.base64Wrapper = base64Wrapper;
+    }
+
     public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        return Base64.decodeBase64(json.getAsString());
+        return base64Wrapper.decodeString(json.getAsString());
     }
 
     public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
-        return new JsonPrimitive(Base64.encodeBase64String(src));
+        return new JsonPrimitive(base64Wrapper.encodeToString(src));
     }
 }
