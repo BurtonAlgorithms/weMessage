@@ -4,7 +4,7 @@ import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.configuration.json.ConfigJSON;
-import scott.wemessage.server.configuration.Authenticator;
+import scott.wemessage.server.security.Authenticator;
 import scott.wemessage.commons.crypto.BCrypt;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.weMessage;

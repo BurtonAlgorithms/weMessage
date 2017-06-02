@@ -115,7 +115,7 @@ public final class AppleScriptExecutor extends Thread {
         }
     }
 
-    public Object runScript(ActionType actionType, String[] args){
+    public Object runScript(final ActionType actionType, String[] args){
         File scriptFile;
         try {
             File[] scriptFiles = getScriptsFolder().listFiles(new FilenameFilter() {

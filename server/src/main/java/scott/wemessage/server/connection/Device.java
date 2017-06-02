@@ -1,5 +1,7 @@
 package scott.wemessage.server.connection;
 
+import scott.wemessage.commons.crypto.AESCrypto;
+import scott.wemessage.commons.crypto.AESCrypto.CipherByteArrayIvMac;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.action.JSONResult;
 import scott.wemessage.commons.json.connection.ClientMessage;
@@ -14,7 +16,9 @@ import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.DateUtils;
+import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.AppleScriptExecutor;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.database.MessagesDatabase;
@@ -25,16 +29,14 @@ import scott.wemessage.server.messages.Message;
 import scott.wemessage.server.messages.chat.ChatBase;
 import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.messages.chat.PeerChat;
-import scott.wemessage.commons.crypto.AESCrypto;
-import scott.wemessage.commons.crypto.AESCrypto.CipherByteArrayIvMac;
-import scott.wemessage.commons.utils.FileUtils;
-import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.security.ServerBase64Wrapper;
 import scott.wemessage.server.weMessage;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Type;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -46,6 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 public class Device extends Thread {
 
@@ -117,13 +120,15 @@ public class Device extends Thread {
 
     public ClientMessage getIncomingMessage(String prefix, Object incoming) throws IOException, ClassNotFoundException {
         String data = ((String) incoming).split(prefix)[1];
-        return new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter()).create().fromJson(data, ClientMessage.class);
+        return new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().fromJson(data, ClientMessage.class);
     }
 
-    public void sendOutgoingMessage(String prefix, Object outgoingData){
+    public void sendOutgoingMessage(String prefix, Object outgoingData, Class<?> outgoingDataClass){
         try {
-            ServerMessage serverMessage = new ServerMessage(UUID.randomUUID().toString(), outgoingData);
-            String outgoingJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter()).create().toJson(serverMessage);
+            Type type = TypeToken.get(outgoingDataClass).getType();
+            String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().toJson(outgoingData, type);
+            ServerMessage serverMessage = new ServerMessage(UUID.randomUUID().toString(), outgoingDataJson);
+            String outgoingJson = new Gson().toJson(serverMessage);
 
             getOutputStream().writeObject(prefix + outgoingJson);
             getOutputStream().flush();
@@ -135,17 +140,17 @@ public class Device extends Thread {
     public void sendOutgoingMessage(Message message) throws Exception {
         JSONMessage jsonMessage = message.toJson();
 
-        sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, jsonMessage);
+        sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, jsonMessage, JSONMessage.class);
     }
 
     public void sendOutgoingMessage(JSONMessage message) {
-        sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, message);
+        sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, message, JSONMessage.class);
     }
 
     public void updateOutgoingMessage(Message message) throws Exception {
         JSONMessage jsonMessage = message.toJson();
 
-        sendOutgoingMessage(weMessage.JSON_MESSAGE_UPDATED, jsonMessage);
+        sendOutgoingMessage(weMessage.JSON_MESSAGE_UPDATED, jsonMessage, JSONMessage.class);
     }
 
     public List<Integer> relayIncomingMessage(JSONMessage message){
@@ -251,13 +256,13 @@ public class Device extends Thread {
     }
 
     public void sendOutgoingAction(JSONAction action){
-        sendOutgoingMessage(weMessage.JSON_ACTION, action);
+        sendOutgoingMessage(weMessage.JSON_ACTION, action, JSONAction.class);
     }
 
     public void killDevice(DisconnectReason reason){
         try {
             isRunning.set(false);
-            sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, reason.getCode());
+            sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, reason.getCode(), Integer.class);
 
             getInputStream().close();
             getOutputStream().close();
@@ -289,24 +294,24 @@ public class Device extends Thread {
         try {
             isRunning.set(true);
 
-            synchronized (inputStreamLock) {
-                inputStream = new ObjectInputStream(getSocket().getInputStream());
-            }
-
             synchronized (outputStreamLock) {
                 outputStream = new ObjectOutputStream(getSocket().getOutputStream());
+            }
+
+            synchronized (inputStreamLock) {
+                inputStream = new ObjectInputStream(getSocket().getInputStream());
             }
 
             while(!hasTriedVerifying.get() && isRunning.get()){
                 try {
                     String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
+                    String secret = getDeviceManager().getMessageServer().getConfiguration().getConfigJSON().getConfig().getAccountInfo().getSecret();
 
-                    String secretJson = new Gson().toJson(new JSONEncryptedText(
-                            AESCrypto.encryptString(getDeviceManager().getMessageServer().getConfiguration().getConfigJSON().getConfig().getAccountInfo().getSecret(), keys),
+                    JSONEncryptedText encryptedText = new JSONEncryptedText(
+                            AESCrypto.encryptString(secret, keys),
                             keys
-                    ));
-
-                    sendOutgoingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, secretJson);
+                    );
+                    sendOutgoingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, encryptedText, JSONEncryptedText.class);
                 }catch(Exception ex){
                     ServerLogger.error(TAG, "An error occurred while encrypting the secret key", ex);
                     return;
@@ -314,7 +319,7 @@ public class Device extends Thread {
 
                 try {
                     ServerConfiguration configuration = getDeviceManager().getMessageServer().getConfiguration();
-                    InitConnect initConnect = (InitConnect) getIncomingMessage(weMessage.JSON_INIT_CONNECT, getInputStream().readObject()).getIncoming();
+                    InitConnect initConnect = (InitConnect) getIncomingMessage(weMessage.JSON_INIT_CONNECT, getInputStream().readObject()).getIncoming(InitConnect.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
                     String email = AESCrypto.decryptString(initConnect.getEmail().getEncryptedText(), initConnect.getEmail().getKey());
                     String password = AESCrypto.decryptString(initConnect.getPassword().getEncryptedText(), initConnect.getPassword().getKey());
 
@@ -343,7 +348,7 @@ public class Device extends Thread {
 
                     boolean result = getDeviceManager().getDeviceByAddress(getAddress()) != null;
 
-                    if (!result) {
+                    if (result) {
                         ServerLogger.error(TAG, "Device with IP Address: " + getAddress() + " could not join because it already connected!", new Exception());
                         killDevice(DisconnectReason.ALREADY_CONNECTED);
                         return;
@@ -387,17 +392,17 @@ public class Device extends Thread {
                     }
                     if (input.startsWith(weMessage.JSON_NEW_MESSAGE)){
                         ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_NEW_MESSAGE, input);
-                        JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming();
+                        JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
                         List<Integer> returnedResult = relayIncomingMessage(jsonMessage);
 
-                        sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult));
+                        sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
                         eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage));
                     }else if (input.startsWith(weMessage.JSON_ACTION)){
                         ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_ACTION, input);
-                        JSONAction jsonAction = (JSONAction) clientMessage.getIncoming();
+                        JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
                         List<Integer> returnedResult =  performIncomingAction(jsonAction);
 
-                        sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult));
+                        sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
                         eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage));
                     }
                 }catch(Exception ex){

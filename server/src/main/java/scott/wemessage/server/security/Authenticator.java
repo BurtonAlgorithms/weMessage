@@ -1,9 +1,10 @@
-package scott.wemessage.server.configuration;
+package scott.wemessage.server.security;
 
 import scott.wemessage.commons.crypto.BCrypt;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.configuration.json.ConfigAccountJSON;
 import scott.wemessage.server.configuration.json.ConfigJSON;
 import scott.wemessage.server.weMessage;

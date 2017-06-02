@@ -8,6 +8,7 @@ import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.events.database.ServerDatabaseUpdateEvent;
 import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.security.ServerBase64Wrapper;
 import scott.wemessage.server.weMessage;
 
 import java.io.File;
@@ -314,7 +315,7 @@ public final class DatabaseManager extends Thread {
                 ResultSet resultSet = selectAwaitingDevicesStatement.getResultSet();
                 while(resultSet.next()) {
                     String actionJSON = resultSet.getString(COLUMN_QUEUE_ACTION_JSON);
-                    JSONAction jsonAction = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter()).create().fromJson(actionJSON, JSONAction.class);
+                    JSONAction jsonAction = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().fromJson(actionJSON, JSONAction.class);
                     actionQueue.add(jsonAction);
                 }
                 resultSet.close();
@@ -335,7 +336,7 @@ public final class DatabaseManager extends Thread {
 
         String insertStatementString = "INSERT INTO " + TABLE_ACTION_QUEUE + "(" + COLUMN_QUEUE_ACTION_JSON + ", " + COLUMN_QUEUE_ACTION_DEVICES_WAITING + ") VALUES (?, ?)";
         PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
-        insertStatement.setString(1, new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter()).create().toJson(jsonAction));
+        insertStatement.setString(1, new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().toJson(jsonAction));
         insertStatement.setString(2, StringUtils.join(getDisconnectedDevices(), ", ", 2));
 
         insertStatement.executeUpdate();
@@ -345,7 +346,7 @@ public final class DatabaseManager extends Thread {
 
     public void unQueueAction(JSONAction jsonAction, String deviceId) throws SQLException {
         String selectQuery = "SELECT * FROM " + TABLE_ACTION_QUEUE + " WHERE " + COLUMN_QUEUE_ACTION_JSON + " = ?";
-        String actionJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter()).create().toJson(jsonAction);
+        String actionJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().toJson(jsonAction);
         PreparedStatement findStatement = getServerDatabaseConnection().prepareStatement(selectQuery);
         findStatement.setString(1, actionJson);
         ResultSet resultSet = findStatement.executeQuery();

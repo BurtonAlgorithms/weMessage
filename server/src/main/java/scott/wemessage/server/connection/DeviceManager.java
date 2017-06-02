@@ -137,10 +137,6 @@ public final class DeviceManager extends Thread {
         }
     }
 
-    public void sendOutgoingMessage(Device device, String prefix, Object outgoingData){
-        device.sendOutgoingMessage(prefix, outgoingData);
-    }
-
     private <T, E> T getKeyByValue(Map<T, E> map, E value) {
         for (Map.Entry<T, E> entry : map.entrySet()) {
             if (Objects.equals(value, entry.getValue())) {

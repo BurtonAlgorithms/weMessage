@@ -558,7 +558,7 @@ on hasAssistiveAccess()
 			set securityPane to pane id "com.apple.preference.security"
 			tell securityPane to reveal anchor "Privacy_Accessibility"
 			activate
-			display dialog "In order to send group messages, weMessage uses macOS' GUI scripting feature (which is controlled by assistive access), which is currently disabled." & return & return & "You can enable assistive access by pressing \"Click the lock to make changes\", adding, and checking the app that launched the weMessage Server (often the Terminal app.)" with icon file (my getProjectRoot() & "assets:AppLogo.png") buttons {"Okay"} giving up after 12
+			display dialog "In order to send group messages, weServer uses macOS' GUI scripting feature (which is controlled by assistive access), which is currently disabled." & return & return & "You can enable assistive access by pressing \"Click the lock to make changes\", adding, and checking the app that launched the weServer (often the Terminal app.)" with icon file (my getProjectRoot() & "assets:AppLogo.png") buttons {"Okay"} giving up after 12
 			return false
 		end tell
 	else
@@ -624,7 +624,7 @@ on isServerRunning()
 			set textHistory to textHistory & (history of theTab as text)
 		end repeat
 
-		if ("[INFO] [weMessage Server] Starting weMessage Server on port" is in textHistory) then
+		if ("[INFO] [weServer] Starting weServer on port" is in textHistory) then
 			return true
 		else
 			return false
