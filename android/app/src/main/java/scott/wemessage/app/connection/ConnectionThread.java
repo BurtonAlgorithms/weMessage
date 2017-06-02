@@ -4,12 +4,16 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -19,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
+import scott.wemessage.app.security.AndroidBase64Wrapper;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.DecryptionTask;
 import scott.wemessage.app.security.EncryptionTask;
@@ -96,22 +101,18 @@ public class ConnectionThread extends Thread {
         }
     }
 
-    public boolean incomingStartsWith(String prefix, Object incomingStream){
-        return (((String) incomingStream).startsWith(prefix));
-    }
-
-    public ServerMessage getIncomingMessage(String prefix, Object incomingStream){
+    public ServerMessage getIncomingMessage(String prefix, Object incomingStream ){
         String data = ((String) incomingStream).split(prefix)[1];
-
-        return new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter()).create().fromJson(data, ServerMessage.class);
+        return new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().fromJson(data, ServerMessage.class);
 
         //TODO: Add to hashmap
     }
 
-    public void sendOutgoingMessage(String prefix, Object outgoingData) throws IOException {
-
-        ClientMessage clientMessage = new ClientMessage(UUID.randomUUID().toString(), outgoingData);
-        String outgoingJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter()).create().toJson(clientMessage);
+    public void sendOutgoingMessage(String prefix, Object outgoingData, Class<?> dataClass) throws IOException {
+        Type type = TypeToken.get(dataClass).getType();
+        String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().toJson(outgoingData, type);
+        ClientMessage clientMessage = new ClientMessage(UUID.randomUUID().toString(), outgoingDataJson);
+        String outgoingJson = new Gson().toJson(clientMessage);
 
         getOutputStream().writeObject(prefix + outgoingJson);
         getOutputStream().flush();
@@ -121,7 +122,7 @@ public class ConnectionThread extends Thread {
 
     public void run(){
         isRunning.set(true);
-
+        ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new AndroidBase64Wrapper());
         synchronized (socketLock) {
             connectionSocket = new Socket();
         }
@@ -129,11 +130,12 @@ public class ConnectionThread extends Thread {
         try {
             getConnectionSocket().connect(new InetSocketAddress(ipAddress, port), weMessage.CONNECTION_TIMEOUT_WAIT * 1000);
 
-            synchronized (inputStreamLock) {
-                inputStream = new ObjectInputStream(getConnectionSocket().getInputStream());
-            }
             synchronized (outputStreamLock) {
                 outputStream = new ObjectOutputStream(getConnectionSocket().getOutputStream());
+            }
+
+            synchronized (inputStreamLock) {
+                inputStream = new ObjectInputStream(getConnectionSocket().getInputStream());
             }
         }catch(SocketTimeoutException ex){
             if (isRunning.get()) {
@@ -152,11 +154,12 @@ public class ConnectionThread extends Thread {
 
         while (isRunning.get() && !hasTriedAuthenticating.get()){
             try {
-                if (incomingStartsWith(weMessage.JSON_VERIFY_PASSWORD_SECRET, getInputStream().readObject())){
-                    ServerMessage message = getIncomingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, getInputStream().readObject());
-                    JSONEncryptedText secretEncrypted = (JSONEncryptedText) message.getOutgoing();
+                String incoming = (String) getInputStream().readObject();
+                if (incoming.startsWith(weMessage.JSON_VERIFY_PASSWORD_SECRET)){
+                    ServerMessage message = getIncomingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, incoming);
+                    JSONEncryptedText secretEncrypted = (JSONEncryptedText) message.getOutgoing(JSONEncryptedText.class, byteArrayAdapter);
 
-                    DecryptionTask secretDecryptionTask = new DecryptionTask(new KeyTextPair(secretEncrypted.getEncryptedText(), secretEncrypted.getKey()), CryptoType.BCRYPT);
+                    DecryptionTask secretDecryptionTask = new DecryptionTask(new KeyTextPair(secretEncrypted.getEncryptedText(), secretEncrypted.getKey()), CryptoType.AES);
                     EncryptionTask emailEncryptionTask = new EncryptionTask(emailPlainText, null, CryptoType.AES);
 
                     secretDecryptionTask.runDecryptTask();
@@ -182,7 +185,7 @@ public class ConnectionThread extends Thread {
                             DeviceType.ANDROID.getTypeName()
                     );
 
-                    sendOutgoingMessage(weMessage.JSON_INIT_CONNECT, initConnect);
+                    sendOutgoingMessage(weMessage.JSON_INIT_CONNECT, initConnect, InitConnect.class);
                     hasTriedAuthenticating.set(true);
                 }
             }catch(Exception ex){
@@ -198,9 +201,10 @@ public class ConnectionThread extends Thread {
 
         while (isRunning.get()){
             try {
-                if (incomingStartsWith(weMessage.JSON_CONNECTION_TERMINATED, getInputStream().readObject())){
-                    ServerMessage serverMessage = getIncomingMessage(weMessage.JSON_CONNECTION_TERMINATED, getInputStream().readObject());
-                    DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer)serverMessage.getOutgoing()));
+                String incoming = (String) getInputStream().readObject();
+                if (incoming.startsWith(weMessage.JSON_CONNECTION_TERMINATED)){
+                    ServerMessage serverMessage = getIncomingMessage(weMessage.JSON_CONNECTION_TERMINATED, incoming);
+                    DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer)serverMessage.getOutgoing(Integer.class, byteArrayAdapter)));
 
                     if (disconnectReason == null){
                         AppLogger.error(TAG, "A null disconnect reason has caused the connection to be dropped", new NullPointerException());
@@ -267,22 +271,27 @@ public class ConnectionThread extends Thread {
         if (isRunning.get()) {
             isRunning.set(false);
 
-            try {
-                sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, DisconnectReason.CLIENT_DISCONNECTED.getCode());
-            }catch(Exception ex){
-                AppLogger.error(TAG, "An error occurred while sending disconnect message to the server.", ex);
-            }
-            try {
-                if (isConnected.get()) {
-                    isConnected.set(false);
-                    getInputStream().close();
-                    getOutputStream().close();
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, DisconnectReason.CLIENT_DISCONNECTED.getCode(), Integer.class);
+                    }catch(Exception ex){
+                        AppLogger.error(TAG, "An error occurred while sending disconnect message to the server.", ex);
+                    }
+                    try {
+                        if (isConnected.get()) {
+                            isConnected.set(false);
+                            getInputStream().close();
+                            getOutputStream().close();
+                        }
+                        getConnectionSocket().close();
+                    } catch (Exception ex) {
+                        AppLogger.error(TAG, "An error occurred while terminating the connection to the weServer.", ex);
+                        interrupt();
+                    }
                 }
-                getConnectionSocket().close();
-            } catch (Exception ex) {
-                AppLogger.error(TAG, "An error occurred while terminating the connection to the weServer.", ex);
-                interrupt();
-            }
+            }).start();
             interrupt();
         }
     }

@@ -14,7 +14,7 @@
     <string name="password_too_short">The password is too short. Make sure it is %1$d characters long!</string>
     <string name="password_too_easy">This password is too easy to guess. Enter a harder one.</string>
     <string name="connecting_dialog_title">Connecting&#8230;</string>
-    <string name="connecting_dialog_message">Connecting to weServer with IP: %1$s and Port: %2$d</string>
+    <string name="connecting_dialog_message">Connecting to weServer with IP: %1$s on Port: %2$d</string>
     <string name="cancel_button">Cancel</string>
     <string name="ok_button">Okay</string>
     <string name="timeout_alert_title">Connection Timed Out</string>

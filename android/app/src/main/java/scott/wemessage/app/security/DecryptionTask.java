@@ -18,6 +18,7 @@ public class DecryptionTask extends Thread {
         this.keyTextPair = keyTextPair;
 
         if (cryptoType == CryptoType.AES){
+            AESCrypto.setBase64Wrapper(new AndroidBase64Wrapper());
             AESCrypto.setPrngHelper(new AesPrngHelper());
         }
     }
@@ -53,10 +54,6 @@ public class DecryptionTask extends Thread {
     }
 
     public String getDecryptedText(){
-        if (!hasTaskStarted.get()){
-            return null;
-        }
-
         boolean loop = true;
         while (loop){
             if (hasTaskFinished.get()){

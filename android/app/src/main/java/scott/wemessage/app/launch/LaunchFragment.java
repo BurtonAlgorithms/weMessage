@@ -368,8 +368,10 @@ public class LaunchFragment extends Fragment {
     }
 
     private void unbindService(){
-        getActivity().unbindService(serviceConnection);
-        isBoundToConnectionService = false;
+        if (isBoundToConnectionService) {
+            getActivity().unbindService(serviceConnection);
+            isBoundToConnectionService = false;
+        }
     }
 
     private void invalidateField(final EditText editText){
