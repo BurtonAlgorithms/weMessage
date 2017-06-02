@@ -24,6 +24,12 @@ public class MessagesDatabaseListener extends Listener {
         DatabaseManager databaseManager  = event.getDatabaseManager();
 
         try {
+            databaseManager.reloadChatDatabaseConnection();
+        }catch(Exception ex){
+            ServerLogger.error("An error occurred while reloading the Messages database", ex);
+        }
+
+        try {
             DatabaseSnapshot oldSnapshot = messagesDb.getLastDatabaseSnapshot();
             DatabaseSnapshot newSnapshot = new DatabaseSnapshot(messagesDb.getMessagesByAmount(messagesDb.MESSAGE_COUNT_LIMIT));
 
@@ -47,7 +53,6 @@ public class MessagesDatabaseListener extends Listener {
                     }
                 }else {
                     Message oldMessage = oldSnapshot.getMessage(message.getGuid());
-
                     boolean comparison = isMessageSame(oldMessage, message);
 
                     if (!comparison){

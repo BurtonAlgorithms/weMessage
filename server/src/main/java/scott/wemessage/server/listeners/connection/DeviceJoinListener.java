@@ -36,7 +36,6 @@ public class DeviceJoinListener extends Listener {
 
                 insertStatement.executeUpdate();
                 insertStatement.close();
-                db.getServerDatabaseConnection().commit();
             }else {
                 String insertStatementString = "UPDATE " + db.TABLE_DEVICES + " SET " + db.COLUMN_DEVICE_ADDRESS + " = ? WHERE " + db.COLUMN_DEVICE_ID + " = ?";
                 PreparedStatement insertStatement = db.getServerDatabaseConnection().prepareStatement(insertStatementString);
@@ -45,7 +44,6 @@ public class DeviceJoinListener extends Listener {
 
                 insertStatement.executeUpdate();
                 insertStatement.close();
-                db.getServerDatabaseConnection().commit();
             }
 
             HashMap<String, Boolean>queuedMessages = db.getQueuedMessages(event.getDevice().getDeviceId());

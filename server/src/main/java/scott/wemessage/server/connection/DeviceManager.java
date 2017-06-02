@@ -6,6 +6,7 @@ import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.events.connection.DeviceJoinEvent;
 import scott.wemessage.server.events.connection.DeviceQuitEvent;
 import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.weMessage;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -68,6 +69,7 @@ public final class DeviceManager extends Thread {
         if (!hasDevice(device.getAddress())) {
             EventManager eventManager = getMessageServer().getEventManager();
 
+            device.sendOutgoingMessage(weMessage.JSON_SUCCESSFUL_CONNECTION, true, Boolean.class);
             devices.putIfAbsent(device.getAddress(), device);
             eventManager.callEvent(new DeviceJoinEvent(eventManager, this, device));
             return true;

@@ -67,6 +67,7 @@ public final class DatabaseManager extends Thread {
     private final Object chatDatabaseConnectionLock = new Object();
 
     private AtomicBoolean isRunning = new AtomicBoolean(false);
+    private AtomicBoolean isChatDbConnectionOpen = new AtomicBoolean(false);
     private MessageServer messageServer;
     private ServerConfiguration serverConfiguration;
     private Connection serverDatabaseConnection;
@@ -151,6 +152,7 @@ public final class DatabaseManager extends Thread {
                 if (chatDatabaseConnection == null) {
                     throw new NullPointerException("The database could not be found.");
                 }
+                isChatDbConnectionOpen.set(true);
             }
         }catch(Exception ex){
             ServerLogger.error(TAG, "An error occurred while connecting to the Messages Chat database. Shutting down!", ex);
@@ -169,6 +171,13 @@ public final class DatabaseManager extends Thread {
     }
 
     public Connection getChatDatabaseConnection(){
+        boolean loop = true;
+
+        while (loop){
+            if (isChatDbConnectionOpen.get()){
+                loop = false;
+            }
+        }
         synchronized (chatDatabaseConnectionLock) {
             return chatDatabaseConnection;
         }
@@ -252,7 +261,7 @@ public final class DatabaseManager extends Thread {
     public void queueMessage(String messageGuid, boolean update) throws SQLException {
         if (getDisconnectedDevices().isEmpty()) return;
 
-        String insertStatementString = "INSERT INTO " + TABLE_QUEUE + "(" + COLUMN_QUEUE_MESSAGE_GUID + ", " + COLUMN_QUEUE_MESSAGE_DEVICES_WAITING + ") VALUES (?, ?, ?)";
+        String insertStatementString = "INSERT INTO " + TABLE_QUEUE + "(" + COLUMN_QUEUE_MESSAGE_GUID + ", " + COLUMN_QUEUE_MESSAGE_UPDATE + ", " + COLUMN_QUEUE_MESSAGE_DEVICES_WAITING + ") VALUES (?, ?, ?)";
         PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
         insertStatement.setString(1, messageGuid);
         insertStatement.setString(2, Boolean.toString(update));
@@ -260,7 +269,6 @@ public final class DatabaseManager extends Thread {
 
         insertStatement.executeUpdate();
         insertStatement.close();
-        getServerDatabaseConnection().commit();
     }
 
     public void unQueueMessage(String messageGuid, String deviceId) throws SQLException {
@@ -286,7 +294,6 @@ public final class DatabaseManager extends Thread {
             deleteQueueStatement.setString(1, messageGuid);
             deleteQueueStatement.executeUpdate();
             deleteQueueStatement.close();
-            getServerDatabaseConnection().commit();
         }else {
             String insertStatementString = "UPDATE " + TABLE_QUEUE + " SET " + COLUMN_QUEUE_MESSAGE_DEVICES_WAITING + " = ? WHERE " + COLUMN_QUEUE_MESSAGE_GUID + " = ?";
             PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
@@ -295,7 +302,6 @@ public final class DatabaseManager extends Thread {
 
             insertStatement.executeUpdate();
             insertStatement.close();
-            getServerDatabaseConnection().commit();
         }
 
         resultSet.close();
@@ -341,7 +347,6 @@ public final class DatabaseManager extends Thread {
 
         insertStatement.executeUpdate();
         insertStatement.close();
-        getServerDatabaseConnection().commit();
     }
 
     public void unQueueAction(JSONAction jsonAction, String deviceId) throws SQLException {
@@ -368,7 +373,6 @@ public final class DatabaseManager extends Thread {
             deleteQueueStatement.setString(1, actionJson);
             deleteQueueStatement.executeUpdate();
             deleteQueueStatement.close();
-            getServerDatabaseConnection().commit();
         }else {
             String insertStatementString = "UPDATE " + TABLE_ACTION_QUEUE + " SET " + COLUMN_QUEUE_ACTION_DEVICES_WAITING + " = ? WHERE " + COLUMN_QUEUE_ACTION_JSON + " = ?";
             PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
@@ -377,11 +381,25 @@ public final class DatabaseManager extends Thread {
 
             insertStatement.executeUpdate();
             insertStatement.close();
-            getServerDatabaseConnection().commit();
         }
 
         resultSet.close();
         findStatement.close();
+    }
+
+    public void reloadChatDatabaseConnection() throws SQLException {
+        isChatDbConnectionOpen.set(false);
+
+        synchronized (chatDatabaseConnectionLock){
+            chatDatabaseConnection.close();
+            chatDatabaseConnection = null;
+            chatDatabaseConnection = DriverManager.getConnection("jdbc:sqlite:" + chatDatabaseDirectory + "chat.db");
+
+            if (chatDatabaseConnection == null) {
+                throw new NullPointerException("The database could not be found.");
+            }
+            isChatDbConnectionOpen.set(true);
+        }
     }
 
     public void run() {
@@ -423,6 +441,7 @@ public final class DatabaseManager extends Thread {
             try {
                 getServerDatabaseConnection().close();
                 getChatDatabaseConnection().close();
+                isChatDbConnectionOpen.set(false);
             }catch(Exception ex){
                 ServerLogger.error(TAG, "An error occurred while shutting down the database manager", ex);
             }

@@ -314,6 +314,7 @@ public class Device extends Thread {
                     sendOutgoingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, encryptedText, JSONEncryptedText.class);
                 }catch(Exception ex){
                     ServerLogger.error(TAG, "An error occurred while encrypting the secret key", ex);
+                    killDevice(DisconnectReason.ERROR);
                     return;
                 }
 
@@ -372,9 +373,11 @@ public class Device extends Thread {
 
                     getDeviceManager().addDevice(this);
                 }catch(Exception ex){
-                    ServerLogger.error(TAG, "Device with IP Address: " + getAddress() + " could not join because an error occurred.", ex);
-                    killDevice(DisconnectReason.ERROR);
-                    return;
+                    if (isRunning.get()) {
+                        ServerLogger.error(TAG, "Device with IP Address: " + getAddress() + " could not join because an error occurred.", ex);
+                        killDevice(DisconnectReason.ERROR);
+                        return;
+                    }
                 }
             }
 
@@ -405,13 +408,18 @@ public class Device extends Thread {
                         sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
                         eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage));
                     }
-                }catch(Exception ex){
-                    ServerLogger.error(TAG, "An error occurred while fetching a message from Device: " + getAddress(), ex);
+                }catch(Exception ex) {
+                    if (isRunning.get()) {
+                        ServerLogger.error(TAG, "An error occurred while fetching a message from Device: " + getAddress(), ex);
+                        getDeviceManager().removeDevice(this, DisconnectReason.ERROR, "Removing device in order to prevent error spam.");
+                    }
                 }
             }
-        }catch(IOException ex){
-            ServerLogger.error(TAG, "An error occurred while establishing a connection with Device " + getAddress(), ex);
-            killDevice(DisconnectReason.ERROR);
+        }catch(IOException ex) {
+            if (isRunning.get()) {
+                ServerLogger.error(TAG, "An error occurred while establishing a connection with Device " + getAddress(), ex);
+                killDevice(DisconnectReason.ERROR);
+            }
         }
     }
 

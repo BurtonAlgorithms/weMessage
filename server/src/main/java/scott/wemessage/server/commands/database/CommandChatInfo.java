@@ -95,6 +95,8 @@ public class CommandChatInfo extends DatabaseCommand {
                 ServerLogger.log("GUID: " + groupChat.getGuid());
                 ServerLogger.log("Chat ID: " + groupChat.getGroupID());
                 ServerLogger.log("Database Row ID: " + groupChat.getRowID());
+            }else if (args.length > 2){
+                ServerLogger.log("There were too many arguments provided. Make sure your arguments are surrounded in \"quotation marks.\"");
             }
         }catch(Exception ex){
             ServerLogger.error("An error occurred while fetching the Messages database", ex);

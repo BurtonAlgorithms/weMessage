@@ -19,7 +19,7 @@ public class CommandResetLoginInfo extends CoreCommand {
 
     public void execute(String[] args){
         ServerLogger.log("In order to change your account login information, please enter the password you are currently using.");
-
+        ServerLogger.emptyLine();
         ServerConfiguration configuration = getCommandManager().getMessageServer().getConfiguration();
         ConfigJSON configJSON;
         boolean isEmailNotAuthenticated = true;
