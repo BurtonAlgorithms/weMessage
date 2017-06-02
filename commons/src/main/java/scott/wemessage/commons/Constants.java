@@ -9,7 +9,8 @@ public abstract class Constants {
     public static final String DEFAULT_PASSWORD = "password";
 
     public static final String JSON_INIT_CONNECT = "INIT CONNECT - ";
-    public static final String JSON_VERIFY_PASSWORD_SECRET = "VERIFY PASSWORD - SECRET: ";
+    public static final String JSON_VERIFY_PASSWORD_SECRET = "VERIFY PASSWORD SECRET - ";
+    public static final String JSON_SUCCESSFUL_CONNECTION = "SUCCESSFUL CONNECTION - ";
     public static final String JSON_CONNECTION_TERMINATED = "CONNECTION TERMINATED - ";
     public static final String JSON_NEW_MESSAGE = "NEW MESSAGE - ";
     public static final String JSON_ACTION = "ACTION - ";
