@@ -93,16 +93,27 @@ public class LaunchFragment extends Fragment {
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_INCORRECT_VERSION)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_incorrect_version_message));
             }else if (intent.getAction().equals(weMessage.BROADCAST_LOGIN_SUCCESSFUL)){
-                AnimationDialogFragment dialogFragment = generateAnimationDialog(R.raw.checkmark_animation);
+                if (loginProgressDialog != null){
+                    loginProgressDialog.dismiss();
+                    loginProgressDialog = null;
+                }
 
-                dialogFragment.setDialogCompleteListener(new Runnable() {
+                new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        //TODO: Go 2 Next Activity, destroy this one
+
+                        AnimationDialogFragment dialogFragment = generateAnimationDialog(R.raw.checkmark_animation);
+
+                        dialogFragment.setDialogCompleteListener(new Runnable() {
+                            @Override
+                            public void run() {
+                                //TODO: Go 2 Next Activity, destroy this one
+                            }
+                        });
+                        dialogFragment.show(getFragmentManager(), LAUNCH_ANIMATION_DIALOG_TAG);
+                        dialogFragment.startAnimation();
                     }
-                });
-                dialogFragment.show(getFragmentManager(), LAUNCH_ANIMATION_DIALOG_TAG);
-                dialogFragment.startAnimation();
+                }, 100);
             }
         }
     };
@@ -518,18 +529,17 @@ public class LaunchFragment extends Fragment {
     private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage){
         if (loginProgressDialog != null){
             loginProgressDialog.dismiss();
-
-            String message = defaultMessage;
-
-            if (bundledIntent.getExtras() != null){
-                String alternateMessageExtra = bundledIntent.getExtras().getString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE);
-                if (alternateMessageExtra != null){
-                    message = alternateMessageExtra;
-                }
-            }
-            generateAlertDialog(getString(R.string.login_error_alert_title), message).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
             loginProgressDialog = null;
         }
+        String message = defaultMessage;
+
+        if (bundledIntent.getExtras() != null){
+            String alternateMessageExtra = bundledIntent.getExtras().getString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE);
+            if (alternateMessageExtra != null){
+                message = alternateMessageExtra;
+            }
+        }
+        generateAlertDialog(getString(R.string.login_error_alert_title), message).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
     }
 
     public static class AlertDialogFragment extends DialogFragment {

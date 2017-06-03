@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -128,6 +127,12 @@ public class ConnectionThread extends Thread {
         }
 
         try {
+            Thread.sleep(2000);
+        }catch(Exception ex){
+            AppLogger.error(TAG, "An error occurred while trying to make a thread sleep", ex);
+        }
+
+        try {
             getConnectionSocket().connect(new InetSocketAddress(ipAddress, port), weMessage.CONNECTION_TIMEOUT_WAIT * 1000);
 
             synchronized (outputStreamLock) {
@@ -202,61 +207,55 @@ public class ConnectionThread extends Thread {
         while (isRunning.get()){
             try {
                 String incoming = (String) getInputStream().readObject();
-                if (incoming.startsWith(weMessage.JSON_CONNECTION_TERMINATED)){
-                    ServerMessage serverMessage = getIncomingMessage(weMessage.JSON_CONNECTION_TERMINATED, incoming);
-                    DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer)serverMessage.getOutgoing(Integer.class, byteArrayAdapter)));
 
-                    if (disconnectReason == null){
+                if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)){
+                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_SUCCESSFUL, null);
+                    isConnected.set(true);
+                } else if (incoming.startsWith(weMessage.JSON_CONNECTION_TERMINATED)) {
+                    ServerMessage serverMessage = getIncomingMessage(weMessage.JSON_CONNECTION_TERMINATED, incoming);
+                    DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer) serverMessage.getOutgoing(Integer.class, byteArrayAdapter)));
+
+                    if (disconnectReason == null) {
                         AppLogger.error(TAG, "A null disconnect reason has caused the connection to be dropped", new NullPointerException());
                         Bundle extras = new Bundle();
                         extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));
                         sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
                         getParentService().endService();
-                        return;
+                    } else {
+                        switch (disconnectReason) {
+                            case ALREADY_CONNECTED:
+                                sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ALREADY_CONNECTED, null);
+                                getParentService().endService();
+                                break;
+                            case INVALID_LOGIN:
+                                sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_INVALID_LOGIN, null);
+                                getParentService().endService();
+                                break;
+                            case SERVER_CLOSED:
+                                sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED, null);
+                                getParentService().endService();
+                                break;
+                            case ERROR:
+                                Bundle extras = new Bundle();
+                                extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_server_side_message));
+                                sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
+                                getParentService().endService();
+                                break;
+                            case FORCED:
+                                sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_FORCED, null);
+                                getParentService().endService();
+                                break;
+                            case CLIENT_DISCONNECTED:
+                                sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED, null);
+                                getParentService().endService();
+                                break;
+                            case INCORRECT_VERSION:
+                                sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_INCORRECT_VERSION, null);
+                                getParentService().endService();
+                                break;
+                        }
                     }
-
-                    switch (disconnectReason){
-                        case ALREADY_CONNECTED:
-                            sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ALREADY_CONNECTED, null);
-                            getParentService().endService();
-                            break;
-                        case INVALID_LOGIN:
-                            sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_INVALID_LOGIN, null);
-                            getParentService().endService();
-                            break;
-                        case SERVER_CLOSED:
-                            sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED, null);
-                            getParentService().endService();
-                            break;
-                        case ERROR:
-                            Bundle extras = new Bundle();
-                            extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_server_side_message));
-                            sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
-                            getParentService().endService();
-                            break;
-                        case FORCED:
-                            sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_FORCED, null);
-                            getParentService().endService();
-                            break;
-                        case CLIENT_DISCONNECTED:
-                            sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED, null);
-                            getParentService().endService();
-                            break;
-                        case INCORRECT_VERSION:
-                            sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_INCORRECT_VERSION, null);
-                            getParentService().endService();
-                            break;
-                    }
-                    return;
                 }
-
-                if (!isConnected.get()){
-                    Thread.sleep(3000);
-
-                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_SUCCESSFUL, null);
-                    isConnected.set(true);
-                }
-
             }catch(Exception ex){
                 Bundle extras = new Bundle();
                 extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));
