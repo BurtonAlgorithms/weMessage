@@ -1,28 +1,32 @@
-package scott.wemessage.app.messages;
+package scott.wemessage.app.messages.text;
 
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import scott.wemessage.app.messages.chat.Conversation;
+import scott.wemessage.app.messages.text.chat.Chat;
 import scott.wemessage.commons.utils.DateUtils;
 
 public class Message {
 
     private UUID uuid;
     private String macGuid;
-    private Conversation conversation;
+    private Chat chat;
     private Contact sender;
     private List<Attachment> attachments;
     private String text;
     private Integer dateSent, dateDelivered, dateRead;
     private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe;
 
-    public Message(UUID uuid, String macGuid, Conversation conversation, Contact sender, List<Attachment> attachments, String text, Integer dateSent, Integer dateDelivered, Integer dateRead,
+    public Message(){
+
+    }
+
+    public Message(UUID uuid, String macGuid, Chat chat, Contact sender, List<Attachment> attachments, String text, Integer dateSent, Integer dateDelivered, Integer dateRead,
                    Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe){
         this.uuid = uuid;
         this.macGuid = macGuid;
-        this.conversation = conversation;
+        this.chat = chat;
         this.sender = sender;
         this.attachments = attachments;
         this.text = text;
@@ -45,8 +49,8 @@ public class Message {
         return macGuid;
     }
 
-    public Conversation getConversation() {
-        return conversation;
+    public Chat getChat() {
+        return chat;
     }
 
     public Contact getSender() {
@@ -115,63 +119,78 @@ public class Message {
         return isFromMe;
     }
 
-    public void setUuid(UUID uuid) {
+    public Message setUuid(UUID uuid) {
         this.uuid = uuid;
+        return this;
     }
 
-    public void setMacGuid(String macGuid) {
+    public Message setMacGuid(String macGuid) {
         this.macGuid = macGuid;
+        return this;
     }
 
-    public void setConversation(Conversation conversation) {
-        this.conversation = conversation;
+    public Message setChat(Chat chat) {
+        this.chat = chat;
+        return this;
     }
 
-    public void setSender(Contact sender) {
+    public Message setSender(Contact sender) {
         this.sender = sender;
+        return this;
     }
 
-    public void setAttachments(List<Attachment> attachments) {
+    public Message setAttachments(List<Attachment> attachments) {
         this.attachments = attachments;
+        return this;
     }
 
-    public void setText(String text) {
+    public Message setText(String text) {
         this.text = text;
+        return this;
     }
 
-    public void setDateSent(Integer dateSent) {
+    public Message setDateSent(Integer dateSent) {
         this.dateSent = dateSent;
+        return this;
     }
 
-    public void setDateDelivered(Integer dateDelivered) {
+    public Message setDateDelivered(Integer dateDelivered) {
         this.dateDelivered = dateDelivered;
+        return this;
     }
 
-    public void setDateRead(Integer dateRead) {
+    public Message setDateRead(Integer dateRead) {
         this.dateRead = dateRead;
+        return this;
     }
 
-    public void setHasErrored(Boolean errored) {
+    public Message setHasErrored(Boolean errored) {
         this.errored = errored;
+        return this;
     }
 
-    public void setIsSent(Boolean sent) {
+    public Message setIsSent(Boolean sent) {
         isSent = sent;
+        return this;
     }
 
-    public void setDelivered(Boolean delivered) {
+    public Message setDelivered(Boolean delivered) {
         isDelivered = delivered;
+        return this;
     }
 
-    public void setRead(Boolean read) {
+    public Message setRead(Boolean read) {
         isRead = read;
+        return this;
     }
 
-    public void setFinished(Boolean finished) {
+    public Message setFinished(Boolean finished) {
         isFinished = finished;
+        return this;
     }
 
-    public void setFromMe(Boolean fromMe) {
+    public Message setFromMe(Boolean fromMe) {
         isFromMe = fromMe;
+        return this;
     }
 }

@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages;
+package scott.wemessage.app.messages.text;
 
 import java.util.UUID;
 
@@ -13,12 +13,16 @@ public class Attachment {
     private String fileType;
     private int totalBytes;
 
+    public Attachment(){
+
+    }
+
     public Attachment(UUID uuid, String macGuid, String transferName, FileLocationContainer fileLocation, String fileType, int totalBytes){
         this.uuid = uuid;
         this.macGuid = macGuid;
         this.transferName = transferName;
         this.fileLocation = fileLocation;
-        this.fileLocation = fileLocation;
+        this.fileType = fileType;
         this.totalBytes = totalBytes;
     }
 
@@ -46,27 +50,33 @@ public class Attachment {
         return totalBytes;
     }
 
-    public void setUuid(UUID uuid) {
+    public Attachment setUuid(UUID uuid) {
         this.uuid = uuid;
+        return this;
     }
 
-    public void setMacGuid(String macGuid) {
+    public Attachment setMacGuid(String macGuid) {
         this.macGuid = macGuid;
+        return this;
     }
 
-    public void setTransferName(String transferName) {
+    public Attachment setTransferName(String transferName) {
         this.transferName = transferName;
+        return this;
     }
 
-    public void setFileLocation(FileLocationContainer fileLocation) {
+    public Attachment setFileLocation(FileLocationContainer fileLocation) {
         this.fileLocation = fileLocation;
+        return this;
     }
 
-    public void setFileType(String fileType) {
+    public Attachment setFileType(String fileType) {
         this.fileType = fileType;
+        return this;
     }
 
-    public void setTotalBytes(int totalBytes) {
+    public Attachment setTotalBytes(int totalBytes) {
         this.totalBytes = totalBytes;
+        return this;
     }
 }

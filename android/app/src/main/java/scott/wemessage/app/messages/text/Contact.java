@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages;
+package scott.wemessage.app.messages.text;
 
 import java.util.UUID;
 
@@ -11,6 +11,10 @@ public class Contact {
     private String lastName;
     private Handle handle;
     private FileLocationContainer contactPictureFileLocation;
+
+    public Contact(){
+
+    }
 
     public Contact(UUID uuid, String firstName, String lastName, Handle handle, FileLocationContainer contactPictureFileLocation) {
         this.uuid = uuid;
@@ -40,23 +44,28 @@ public class Contact {
         return contactPictureFileLocation;
     }
 
-    public void setUuid(UUID uuid) {
+    public Contact setUuid(UUID uuid) {
         this.uuid = uuid;
+        return this;
     }
 
-    public void setFirstName(String firstName) {
+    public Contact setFirstName(String firstName) {
         this.firstName = firstName;
+        return this;
     }
 
-    public void setLastName(String lastName) {
+    public Contact setLastName(String lastName) {
         this.lastName = lastName;
+        return this;
     }
 
-    public void setHandle(Handle handle) {
+    public Contact setHandle(Handle handle) {
         this.handle = handle;
+        return this;
     }
 
-    public void setContactPictureFileLocation(FileLocationContainer contactPictureFileLocation) {
+    public Contact setContactPictureFileLocation(FileLocationContainer contactPictureFileLocation) {
         this.contactPictureFileLocation = contactPictureFileLocation;
+        return this;
     }
 }

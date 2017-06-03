@@ -1,15 +1,19 @@
-package scott.wemessage.app.messages.chat;
+package scott.wemessage.app.messages.text.chat;
 
 import java.util.UUID;
 
-import scott.wemessage.app.messages.Contact;
+import scott.wemessage.app.messages.text.Contact;
 
-public class PeerChat extends Conversation {
+public class PeerChat extends Chat {
 
     private Contact contact;
 
+    public PeerChat(){
+
+    }
+
     public PeerChat(UUID uuid, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, Contact contact) {
-        super(uuid, macGuid, macGroupID, macChatIdentifier, isInChat);
+        super(uuid, ChatType.PEER, macGuid, macGroupID, macChatIdentifier, isInChat);
 
         this.contact = contact;
     }
@@ -18,7 +22,8 @@ public class PeerChat extends Conversation {
         return contact;
     }
 
-    public void setContact(Contact contact) {
+    public PeerChat setContact(Contact contact) {
         this.contact = contact;
+        return this;
     }
 }

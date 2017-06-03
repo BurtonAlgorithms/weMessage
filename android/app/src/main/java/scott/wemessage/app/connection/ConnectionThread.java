@@ -256,6 +256,7 @@ public class ConnectionThread extends Thread {
                         }
                     }
                 }
+                //TODO: Else do more stuff
             }catch(Exception ex){
                 Bundle extras = new Bundle();
                 extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));

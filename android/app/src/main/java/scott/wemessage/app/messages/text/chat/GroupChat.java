@@ -1,17 +1,21 @@
-package scott.wemessage.app.messages.chat;
+package scott.wemessage.app.messages.text.chat;
 
 import java.util.List;
 import java.util.UUID;
 
-import scott.wemessage.app.messages.Contact;
+import scott.wemessage.app.messages.text.Contact;
 
-public class GroupChat extends Conversation {
+public class GroupChat extends Chat {
 
     private String displayName;
     private List<Contact> participants;
 
+    public GroupChat(){
+
+    }
+
     public GroupChat(UUID uuid, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, String displayName, List<Contact> participants) {
-        super(uuid, macGuid, macGroupID, macChatIdentifier, isInChat);
+        super(uuid, ChatType.GROUP, macGuid, macGroupID, macChatIdentifier, isInChat);
 
         this.displayName = displayName;
         this.participants = participants;
@@ -25,11 +29,13 @@ public class GroupChat extends Conversation {
         return participants;
     }
 
-    public void setDisplayName(String displayName) {
+    public GroupChat setDisplayName(String displayName) {
         this.displayName = displayName;
+        return this;
     }
 
-    public void setParticipants(List<Contact> participants) {
+    public GroupChat setParticipants(List<Contact> participants) {
         this.participants = participants;
+        return this;
     }
 }

@@ -6,7 +6,9 @@ public final class weMessage extends Constants {
 
     private weMessage(){ }
 
+    public static final int DATABASE_VERSION = 1;
     public static final int CONNECTION_TIMEOUT_WAIT = 15;
+    public static final String DATABASE_NAME = "weMessage.db";
     public static final String IDENTIFIER_PREFIX = "scott.wemessage.app.";
 
     public static final String BUNDLE_HOST = IDENTIFIER_PREFIX + "bundleHost";
