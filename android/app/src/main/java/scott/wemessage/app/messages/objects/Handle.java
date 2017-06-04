@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages.text;
+package scott.wemessage.app.messages.objects;
 
 import java.util.UUID;
 
@@ -30,6 +30,10 @@ public class Handle {
         return handleType;
     }
 
+    public boolean isMe(){
+        return handleType == HandleType.ME;
+    }
+
     public Handle setUuid(UUID uuid) {
         this.uuid = uuid;
         return this;
@@ -47,7 +51,8 @@ public class Handle {
 
     public enum HandleType {
         IMESSAGE("iMessage"),
-        SMS("SMS");
+        SMS("SMS"),
+        ME("Me");
 
         String typeName;
 
@@ -67,6 +72,8 @@ public class Handle {
                     return HandleType.IMESSAGE;
                 case "sms":
                     return HandleType.SMS;
+                case "me":
+                    return HandleType.ME;
                 default:
                     return null;
             }

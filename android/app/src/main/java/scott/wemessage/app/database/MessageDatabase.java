@@ -1,8 +1,9 @@
-package scott.wemessage.app.messages;
+package scott.wemessage.app.database;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -11,14 +12,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import scott.wemessage.app.messages.text.Attachment;
-import scott.wemessage.app.messages.text.Contact;
-import scott.wemessage.app.messages.text.Handle;
-import scott.wemessage.app.messages.text.Message;
-import scott.wemessage.app.messages.text.chat.Chat;
-import scott.wemessage.app.messages.text.chat.Chat.ChatType;
-import scott.wemessage.app.messages.text.chat.GroupChat;
-import scott.wemessage.app.messages.text.chat.PeerChat;
+import scott.wemessage.app.database.objects.Account;
+import scott.wemessage.app.messages.objects.Attachment;
+import scott.wemessage.app.messages.objects.Contact;
+import scott.wemessage.app.messages.objects.Handle;
+import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.messages.objects.chat.Chat;
+import scott.wemessage.app.messages.objects.chat.Chat.ChatType;
+import scott.wemessage.app.messages.objects.chat.GroupChat;
+import scott.wemessage.app.messages.objects.chat.PeerChat;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.StringUtils;
@@ -26,16 +28,31 @@ import scott.wemessage.commons.utils.StringUtils;
 @SuppressWarnings("WeakerAccess")
 public class MessageDatabase extends SQLiteOpenHelper {
 
+    private final Object currentAccountLock = new Object();
+
+    private Account currentAccount;
+
     public MessageDatabase(Context context, SQLiteDatabase.CursorFactory factory) {
         super(context, weMessage.DATABASE_NAME, factory, weMessage.DATABASE_VERSION);
     }
 
-    //TODO: Make sure there is a default handle ID for the sender
+    //TODO: When loading db if handle is null delete contact too <--- or if anything is null
+    //TODO: Disable contact creation for self?
+    //TODO: Get contact info for account and stuff
+    //TODO: Deletion of chats = deletion of contacts just do null checks when loading data
+
     @Override
     public void onCreate(SQLiteDatabase db) {
+        String createAccountTable = "CREATE TABLE " + AccountTable.TABLE_NAME + " ("
+                + AccountTable._ID + " INTEGER PRIMARY KEY, "
+                + AccountTable.UUID + " TEXT, "
+                + AccountTable.ACCOUNT_EMAIL + " TEXT, "
+                + AccountTable.ACCOUNT_PASSWORD_CRYPTO + " TEXT );";
+
         String createAttachmentTable = "CREATE TABLE " + AttachmentTable.TABLE_NAME + " ("
                 + AttachmentTable._ID + " INTEGER PRIMARY KEY, "
                 + AttachmentTable.UUID + " TEXT, "
+                + AttachmentTable.ACCOUNT_UUID + " TEXT, "
                 + AttachmentTable.MAC_GUID + "TEXT, "
                 + AttachmentTable.TRANSFER_NAME + "TEXT, "
                 + AttachmentTable.FILE_LOCATION + "TEXT, "
@@ -45,6 +62,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         String createContactTable = "CREATE TABLE " + ContactTable.TABLE_NAME + " ("
                 + ContactTable._ID + " INTEGER PRIMARY KEY, "
                 + ContactTable.UUID + "TEXT, "
+                + ContactTable.ACCOUNT_UUID + "TEXT, "
                 + ContactTable.FIRST_NAME + "TEXT, "
                 + ContactTable.LAST_NAME + "TEXT, "
                 + ContactTable.HANDLE_UUID + "TEXT, "
@@ -53,6 +71,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         String createChatTable = "CREATE TABLE " + ChatTable.TABLE_NAME + " ("
                 + ChatTable._ID + " INTEGER PRIMARY KEY, "
                 + ChatTable.UUID + " TEXT, "
+                + ChatTable.ACCOUNT_UUID + "TEXT, "
                 + ChatTable.CHAT_TYPE + "TEXT, "
                 + ChatTable.MAC_GUID + "TEXT, "
                 + ChatTable.MAC_GROUP_ID + "TEXT, "
@@ -65,12 +84,14 @@ public class MessageDatabase extends SQLiteOpenHelper {
         String createHandleTable = "CREATE TABLE " + HandleTable.TABLE_NAME + " ("
                 + HandleTable._ID + " INTEGER PRIMARY KEY, "
                 + HandleTable.UUID + "TEXT, "
+                + HandleTable.ACCOUNT_UUID + "TEXT, "
                 + HandleTable.HANDLE_ID + "TEXT, "
                 + HandleTable.HANDLE_TYPE + "TEXT );";
 
         String createMessageTable = "CREATE TABLE " + MessageTable.TABLE_NAME + " ("
                 + MessageTable._ID + " INTEGER PRIMARY KEY, "
                 + MessageTable.UUID + "TEXT, "
+                + MessageTable.ACCOUNT_UUID + "TEXT, "
                 + MessageTable.MAC_GUID + "TEXT, "
                 + MessageTable.CHAT_UUID + "TEXT, "
                 + MessageTable.SENDER_UUID + "TEXT, "
@@ -86,6 +107,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
                 + MessageTable.IS_FINISHED + " INTEGER, "
                 + MessageTable.IS_FROM_ME + " INTEGER );";
 
+        db.execSQL(createAccountTable);
         db.execSQL(createAttachmentTable);
         db.execSQL(createContactTable);
         db.execSQL(createChatTable);
@@ -98,7 +120,177 @@ public class MessageDatabase extends SQLiteOpenHelper {
         //TODO: Parse all data store in objects and write them to db - not on main thread
     }
 
+    public Account getCurrentAccount(){
+        synchronized (currentAccountLock){
+            if (currentAccount == null) throw new AccountNotLoggedInException();
+
+            return currentAccount;
+        }
+    }
+
+    public void setCurrentAccount(Account account){
+        synchronized (currentAccountLock){
+            this.currentAccount = account;
+        }
+    }
+
+    //TODO: get chats, sort by time since last update
+
+    //TODO: Use chat as an argument too
+    public List<Message> getReversedMessages(int startIndex, int numberToFetch){
+        List<Message> messages = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        long totalRows = DatabaseUtils.queryNumEntries(db, MessageTable.TABLE_NAME);
+        long start = totalRows - startIndex;
+
+        String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? ORDER BY " + MessageTable._ID + " DESC LIMIT " + numberToFetch;
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {String.valueOf(start)} );
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+
+                Message message = buildMessage(cursor);
+
+                if (message != null) {
+                    messages.add(message);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return messages;
+    }
+
+    public Message getLastMessageFromChat(Chat chat){
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable.CHAT_UUID + " = ?";
+
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {chat.getUuid().toString()});
+        Message message = null;
+
+        if (cursor.getCount() > 0){
+            cursor.moveToLast();
+            message = buildMessage(cursor);
+        }
+        cursor.close();
+        return message;
+    }
+
+    public Account buildAccount(Cursor cursor){
+        Account account = new Account().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(AccountTable.UUID))))
+                .setEmail(cursor.getString(cursor.getColumnIndex(AccountTable.ACCOUNT_EMAIL)))
+                .setEncryptedPassword(cursor.getString(cursor.getColumnIndex(AccountTable.ACCOUNT_PASSWORD_CRYPTO)));
+        return account;
+    }
+
+    public ContentValues accountToContentValues(Account account){
+        ContentValues values = new ContentValues();
+
+        values.put(AccountTable.UUID, account.getUuid().toString());
+        values.put(AccountTable.ACCOUNT_EMAIL, account.getEmail());
+        values.put(AccountTable.ACCOUNT_PASSWORD_CRYPTO, account.getEncryptedPassword());
+
+        return values;
+    }
+
+    public Account getAccountByUuid(String uuid){
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + AccountTable.TABLE_NAME + " WHERE " + AccountTable.UUID + " = ?";
+
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {uuid});
+        Account account = null;
+
+        if (cursor.getCount() > 0){
+            cursor.moveToFirst();
+            account = buildAccount(cursor);
+        }
+        cursor.close();
+        return account;
+    }
+
+    public Account getAccountByEmail(String email){
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + AccountTable.TABLE_NAME + " WHERE " + AccountTable.ACCOUNT_EMAIL + " = ?";
+
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {email});
+        Account account = null;
+
+        if (cursor.getCount() > 0){
+            cursor.moveToFirst();
+            account = buildAccount(cursor);
+        }
+        cursor.close();
+        return account;
+    }
+
+    public Account getAccountByHandle(Handle handle){
+        if (handle.getHandleType() != Handle.HandleType.ME) return null;
+
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + AccountTable.TABLE_NAME + " WHERE " + AccountTable.ACCOUNT_EMAIL + " = ?";
+
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {handle.getHandleID()});
+        Account account = null;
+
+        if (cursor.getCount() > 0){
+            cursor.moveToFirst();
+            account = buildAccount(cursor);
+        }
+        cursor.close();
+        return account;
+    }
+
+    public void addAccount(Account account){
+        SQLiteDatabase db = getWritableDatabase();
+        db.insert(AccountTable.TABLE_NAME, null, accountToContentValues(account));
+
+        if (getHandleByAccount(account) == null){
+            addHandle(new Handle(UUID.randomUUID(), account.getEmail(), Handle.HandleType.ME));
+        }
+    }
+
+    public void updateAccount(String uuid, Account newData){
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = accountToContentValues(newData);
+        String selection = AccountTable.UUID + " = ?";
+
+        UUID oldHandleUuid = getHandleByAccount(getAccountByUuid(uuid)).getUuid();
+
+        db.update(AccountTable.TABLE_NAME, values, selection, new String[]{ uuid });
+        updateHandle(oldHandleUuid.toString(), new Handle(oldHandleUuid, newData.getEmail(), Handle.HandleType.ME));
+    }
+
+    public void updateAccountByEmail(String email, Account newData){
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = accountToContentValues(newData);
+        String selection = AccountTable.ACCOUNT_EMAIL + " = ?";
+
+        UUID oldHandleUuid = getHandleByAccount(getAccountByEmail(email)).getUuid();
+
+        db.update(AccountTable.TABLE_NAME, values, selection, new String[]{ email });
+        updateHandle(oldHandleUuid.toString(), new Handle(oldHandleUuid, newData.getEmail(), Handle.HandleType.ME));
+    }
+
+    public void deleteAccountByUuid(String uuid){
+        String whereClause = AccountTable.UUID + " = ?";
+
+        deleteHandleByUuid(getHandleByAccount(getAccountByUuid(uuid)).getUuid().toString());
+        getWritableDatabase().delete(AccountTable.TABLE_NAME, whereClause, new String[] { uuid });
+    }
+
+    public void deleteAccountByEmail(String email){
+        String whereClause = AccountTable.ACCOUNT_EMAIL + " = ?";
+        deleteHandleByHandleID(email);
+        getWritableDatabase().delete(AccountTable.TABLE_NAME, whereClause, new String[] { email });
+    }
+
     public Attachment buildAttachment(Cursor cursor){
+        if (!(cursor.getString(cursor.getColumnIndex(AttachmentTable.ACCOUNT_UUID)).equals(getCurrentAccount().getUuid().toString()))){
+            return null;
+        }
+
         Attachment attachment = new Attachment().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(AttachmentTable.UUID))))
                 .setMacGuid(cursor.getString(cursor.getColumnIndex(AttachmentTable.MAC_GUID))).setTransferName(cursor.getString(cursor.getColumnIndex(AttachmentTable.TRANSFER_NAME)))
                 .setFileLocation(new FileLocationContainer(cursor.getString(cursor.getColumnIndex(AttachmentTable.FILE_LOCATION))))
@@ -110,6 +302,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(AttachmentTable.UUID, attachment.getUuid().toString());
+        values.put(AttachmentTable.ACCOUNT_UUID, getCurrentAccount().getUuid().toString());
         values.put(AttachmentTable.MAC_GUID, attachment.getMacGuid());
         values.put(AttachmentTable.TRANSFER_NAME, attachment.getTransferName());
         values.put(AttachmentTable.FILE_LOCATION, attachment.getFileLocation().getFileLocation());
@@ -181,6 +374,10 @@ public class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Contact buildContact(Cursor cursor){
+        if (!(cursor.getString(cursor.getColumnIndex(ContactTable.ACCOUNT_UUID)).equals(getCurrentAccount().getUuid().toString()))){
+            return null;
+        }
+
         Contact contact = new Contact().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ContactTable.UUID))))
                 .setFirstName(cursor.getString(cursor.getColumnIndex(ContactTable.FIRST_NAME))).setLastName(cursor.getString(cursor.getColumnIndex(ContactTable.LAST_NAME)))
                 .setHandle(getHandleByUuid(cursor.getString(cursor.getColumnIndex(ContactTable.HANDLE_UUID))))
@@ -192,6 +389,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(ContactTable.UUID, contact.getUuid().toString());
+        values.put(ContactTable.ACCOUNT_UUID, getCurrentAccount().getUuid().toString());
         values.put(ContactTable.FIRST_NAME, contact.getFirstName());
         values.put(ContactTable.LAST_NAME, contact.getLastName());
         values.put(ContactTable.HANDLE_UUID, contact.getHandle().getUuid().toString());
@@ -262,6 +460,10 @@ public class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Handle buildHandle(Cursor cursor){
+        if (!(cursor.getString(cursor.getColumnIndex(HandleTable.ACCOUNT_UUID)).equals(getCurrentAccount().getUuid().toString()))){
+            return null;
+        }
+
         Handle handle = new Handle().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(HandleTable.UUID)))).setHandleID(cursor.getString(cursor.getColumnIndex(HandleTable.HANDLE_ID)))
                 .setHandleType(Handle.HandleType.stringToHandleType(cursor.getString(cursor.getColumnIndex(HandleTable.HANDLE_TYPE))));
         return handle;
@@ -271,6 +473,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(HandleTable.UUID, handle.getUuid().toString());
+        values.put(HandleTable.ACCOUNT_UUID, getCurrentAccount().getUuid().toString());
         values.put(HandleTable.HANDLE_ID, handle.getHandleID());
         values.put(HandleTable.HANDLE_TYPE, handle.getHandleType().getTypeName());
 
@@ -297,6 +500,21 @@ public class MessageDatabase extends SQLiteOpenHelper {
         String selectQuery = "SELECT * FROM " + HandleTable.TABLE_NAME + " WHERE " + HandleTable.HANDLE_ID + " = ?";
 
         Cursor cursor = db.rawQuery(selectQuery, new String[] { handleID });
+        Handle handle = null;
+
+        if (cursor.getCount() > 0){
+            cursor.moveToFirst();
+            handle = buildHandle(cursor);
+        }
+        cursor.close();
+        return handle;
+    }
+
+    public Handle getHandleByAccount(Account account){
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + HandleTable.TABLE_NAME + " WHERE " + HandleTable.HANDLE_ID + " = ? AND " + HandleTable.HANDLE_TYPE + " = ?";
+
+        Cursor cursor = db.rawQuery(selectQuery, new String[] { account.getEmail(), Handle.HandleType.ME.getTypeName() });
         Handle handle = null;
 
         if (cursor.getCount() > 0){
@@ -339,6 +557,10 @@ public class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Chat buildChat(Cursor cursor){
+        if (!(cursor.getString(cursor.getColumnIndex(ChatTable.ACCOUNT_UUID)).equals(getCurrentAccount().getUuid().toString()))){
+            return null;
+        }
+
         Chat chat = null;
         ChatType chatType = ChatType.stringToHandleType(cursor.getString(cursor.getColumnIndex(ChatTable.CHAT_TYPE)));
 
@@ -371,6 +593,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         }
 
         values.put(ChatTable.UUID, chat.getUuid().toString());
+        values.put(ChatTable.ACCOUNT_UUID, getCurrentAccount().getUuid().toString());
         values.put(ChatTable.CHAT_TYPE, chat.getChatType().getTypeName());
         values.put(ChatTable.MAC_GUID, chat.getMacGuid());
         values.put(ChatTable.MAC_GROUP_ID, chat.getMacGroupID());
@@ -498,6 +721,10 @@ public class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Message buildMessage(Cursor cursor){
+        if (!(cursor.getString(cursor.getColumnIndex(MessageTable.ACCOUNT_UUID)).equals(getCurrentAccount().getUuid().toString()))){
+            return null;
+        }
+
         Message message = new Message().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(MessageTable.UUID))))
                 .setMacGuid(cursor.getString(cursor.getColumnIndex(MessageTable.MAC_GUID))).setChat(getChatByUuid(cursor.getString(cursor.getColumnIndex(MessageTable.CHAT_UUID))))
                 .setSender(getContactByUuid(cursor.getString(cursor.getColumnIndex(MessageTable.SENDER_UUID))))
@@ -514,6 +741,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(MessageTable.UUID, message.getUuid().toString());
+        values.put(MessageTable.ACCOUNT_UUID, getCurrentAccount().getUuid().toString());
         values.put(MessageTable.MAC_GUID, message.getMacGuid());
         values.put(MessageTable.CHAT_UUID, message.getChat().getUuid().toString());
         values.put(MessageTable.SENDER_UUID, message.getSender().getUuid().toString());
@@ -639,10 +867,19 @@ public class MessageDatabase extends SQLiteOpenHelper {
         else return 0;
     }
 
+    public static class AccountTable {
+        public static final String TABLE_NAME = "accounts";
+        public static final String _ID = "_id";
+        public static final String UUID = "uuid";
+        public static final String ACCOUNT_EMAIL = "account_email";
+        public static final String ACCOUNT_PASSWORD_CRYPTO = "account_password_crypto";
+    }
+
     public static class AttachmentTable {
         public static final String TABLE_NAME = "attachments";
         public static final String _ID = "_id";
         public static final String UUID = "uuid";
+        public static final String ACCOUNT_UUID = "account_uuid";
         public static final String MAC_GUID = "mac_guid";
         public static final String TRANSFER_NAME = "transfer_name";
         public static final String FILE_LOCATION = "file_location";
@@ -654,6 +891,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         public static final String TABLE_NAME = "contacts";
         public static final String _ID = "_id";
         public static final String UUID = "uuid";
+        public static final String ACCOUNT_UUID = "account_uuid";
         public static final String FIRST_NAME = "first_name";
         public static final String LAST_NAME = "last_name";
         public static final String HANDLE_UUID = "handle_uuid";
@@ -664,6 +902,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         public static final String TABLE_NAME = "chats";
         public static final String _ID = "_id";
         public static final String UUID = "uuid";
+        public static final String ACCOUNT_UUID = "account_uuid";
         public static final String CHAT_TYPE = "chat_type";
         public static final String MAC_GUID = "mac_guid";
         public static final String MAC_GROUP_ID = "mac_group_id";
@@ -678,6 +917,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         public static final String TABLE_NAME = "handles";
         public static final String _ID = "_id";
         public static final String UUID = "uuid";
+        public static final String ACCOUNT_UUID = "account_uuid";
         public static final String HANDLE_ID = "handle_id";
         public static final String HANDLE_TYPE = "handle_type";
     }
@@ -686,6 +926,7 @@ public class MessageDatabase extends SQLiteOpenHelper {
         public static final String TABLE_NAME = "messages";
         public static final String _ID = "_id";
         public static final String UUID = "uuid";
+        public static final String ACCOUNT_UUID = "account_uuid";
         public static final String MAC_GUID = "mac_guid";
         public static final String CHAT_UUID = "chat_uuid";
         public static final String SENDER_UUID = "sender_uuid";
@@ -701,4 +942,6 @@ public class MessageDatabase extends SQLiteOpenHelper {
         public static final String IS_FINISHED = "is_finished";
         public static final String IS_FROM_ME = "is_from_me";
     }
+
+    public static class AccountNotLoggedInException extends NullPointerException { }
 }

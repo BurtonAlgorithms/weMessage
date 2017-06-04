@@ -1,13 +1,15 @@
-package scott.wemessage.app.messages.text;
+package scott.wemessage.app.messages.objects;
 
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import scott.wemessage.app.messages.text.chat.Chat;
+import scott.wemessage.app.messages.objects.chat.Chat;
 import scott.wemessage.commons.utils.DateUtils;
 
 public class Message {
+
+    //TODO: has ME read
 
     private UUID uuid;
     private String macGuid;

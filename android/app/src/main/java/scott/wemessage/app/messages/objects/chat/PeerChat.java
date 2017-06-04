@@ -1,8 +1,8 @@
-package scott.wemessage.app.messages.text.chat;
+package scott.wemessage.app.messages.objects.chat;
 
 import java.util.UUID;
 
-import scott.wemessage.app.messages.text.Contact;
+import scott.wemessage.app.messages.objects.Contact;
 
 public class PeerChat extends Chat {
 

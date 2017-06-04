@@ -123,6 +123,7 @@ public class LaunchFragment extends Fragment {
 
         //TODO: Check to see if we are already connected, if so skip all this
         //TODO: If not connected, and info is saved, click button for user
+        //TODO: Save account info and handle along with it
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(weMessage.INTENT_LOGIN_TIMEOUT);
