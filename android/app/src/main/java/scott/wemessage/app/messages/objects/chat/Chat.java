@@ -4,6 +4,8 @@ import java.util.UUID;
 
 public abstract class Chat {
 
+    //TODO: Contains unread messages boolean
+
     private UUID uuid;
     private ChatType chatType;
     private String macGuid;

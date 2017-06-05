@@ -9,6 +9,7 @@ public final class weMessage extends Constants {
     public static final int DATABASE_VERSION = 1;
     public static final int CONNECTION_TIMEOUT_WAIT = 15;
     public static final String DATABASE_NAME = "weMessage.db";
+    public static final String APP_IDENTIFIER = "scott.wemessage.app";
     public static final String IDENTIFIER_PREFIX = "scott.wemessage.app.";
 
     public static final String BUNDLE_HOST = IDENTIFIER_PREFIX + "bundleHost";
@@ -17,13 +18,14 @@ public final class weMessage extends Constants {
     public static final String BUNDLE_ALERT_TITLE = IDENTIFIER_PREFIX + "bundleAlertTitle";
     public static final String BUNDLE_ALERT_MESSAGE = IDENTIFIER_PREFIX + "bundleAlertMessage";
     public static final String BUNDLE_DIALOG_ANIMATION = IDENTIFIER_PREFIX + "bundleDialogAnimation";
-    public static final String BUNDLE_IS_BOUND_TO_CONNECTION_SERVICE = IDENTIFIER_PREFIX + "bundleIsBoundToConnectionService";
+    public static final String BUNDLE_IS_LAUNCHER_STILL_CONNECTING = IDENTIFIER_PREFIX + "bundleIsLauncherStillConnecting";
     public static final String BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE = IDENTIFIER_PREFIX + "bundleDisconnectReasonAlternateMessage";
 
     public static final String ARG_HOST = IDENTIFIER_PREFIX + "hostArg";
     public static final String ARG_PORT = IDENTIFIER_PREFIX + "portArg";
     public static final String ARG_EMAIL = IDENTIFIER_PREFIX + "emailArg";
     public static final String ARG_PASSWORD = IDENTIFIER_PREFIX + "passwordArg";
+    public static final String ARG_PASSWORD_ALREADY_HASHED = IDENTIFIER_PREFIX + "passwordAlreadyHashed";
 
     public static final String INTENT_LOGIN_TIMEOUT = IDENTIFIER_PREFIX + "LoginTimeout";
     public static final String INTENT_LOGIN_ERROR = IDENTIFIER_PREFIX + "LoginError";
@@ -38,4 +40,8 @@ public final class weMessage extends Constants {
     public static final String BROADCAST_DISCONNECT_REASON_INCORRECT_VERSION = IDENTIFIER_PREFIX + "DisconnectReasonIncorrectVersion";
 
     public static final String BROADCAST_LOGIN_SUCCESSFUL = IDENTIFIER_PREFIX + "LoginSuccessful";
+
+    public static final String SHARED_PREFERENCES_LAST_HOST = IDENTIFIER_PREFIX + "lastHost";
+    public static final String SHARED_PREFERENCES_LAST_EMAIL = IDENTIFIER_PREFIX + "lastEmail";
+    public static final String SHARED_PREFERENCES_LAST_HASHED_PASSWORD = IDENTIFIER_PREFIX + "lastHashedPassword";
 }

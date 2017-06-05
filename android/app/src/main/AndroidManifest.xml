@@ -11,14 +11,18 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:theme="@style/AppTheme.NoActionBar"
-            android:name=".app.launch.LaunchActivity">
+            android:name=".app.launch.LaunchActivity"
+            android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <service android:name=".app.connection.ConnectionService" />
+
+        <activity android:name=".app.messages.ChatListActivity"></activity>
     </application>
 
 </manifest>

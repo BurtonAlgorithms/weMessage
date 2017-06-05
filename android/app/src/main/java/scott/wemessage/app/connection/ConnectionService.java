@@ -47,7 +47,7 @@ public class ConnectionService extends Service {
 
         synchronized (connectionThreadLock){
             ConnectionThread connectionThread = new ConnectionThread(this, intent.getStringExtra(weMessage.ARG_HOST), intent.getIntExtra(weMessage.ARG_PORT, -1),
-                    intent.getStringExtra(weMessage.ARG_EMAIL), intent.getStringExtra(weMessage.ARG_PASSWORD));
+                    intent.getStringExtra(weMessage.ARG_EMAIL), intent.getStringExtra(weMessage.ARG_PASSWORD), intent.getBooleanExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, false));
 
             connectionThread.start();
             this.connectionThread = connectionThread;

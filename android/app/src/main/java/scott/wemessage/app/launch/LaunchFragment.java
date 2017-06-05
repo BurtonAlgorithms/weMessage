@@ -2,6 +2,7 @@ package scott.wemessage.app.launch;
 
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
+import android.app.ActivityManager;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -9,6 +10,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -35,8 +37,10 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import scott.wemessage.R;
+import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.messages.ChatListActivity;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.view.button.FontButton;
 import scott.wemessage.app.view.dialog.AlertDialogLayout;
@@ -44,11 +48,11 @@ import scott.wemessage.app.view.dialog.AnimationDialogLayout;
 import scott.wemessage.app.view.dialog.ProgressDialogLayout;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.AuthenticationUtils;
-import scott.wemessage.commons.utils.AuthenticationUtils.PasswordValidateType;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class LaunchFragment extends Fragment {
 
+    private final String TAG = "LaunchFragment";
     private final String LAUNCH_ALERT_DIALOG_TAG = "DialogLauncherAlert";
     private final String LAUNCH_ANIMATION_DIALOG_TAG = "DialogAnimationTag";
 
@@ -101,19 +105,18 @@ public class LaunchFragment extends Fragment {
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
-
                         AnimationDialogFragment dialogFragment = generateAnimationDialog(R.raw.checkmark_animation);
 
                         dialogFragment.setDialogCompleteListener(new Runnable() {
                             @Override
                             public void run() {
-                                //TODO: Go 2 Next Activity, destroy this one
+                                startChatListActivity();
                             }
                         });
                         dialogFragment.show(getFragmentManager(), LAUNCH_ANIMATION_DIALOG_TAG);
                         dialogFragment.startAnimation();
                     }
-                }, 100);
+                }, 100L);
             }
         }
     };
@@ -121,9 +124,18 @@ public class LaunchFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
 
-        //TODO: Check to see if we are already connected, if so skip all this
-        //TODO: If not connected, and info is saved, click button for user
-        //TODO: Save account info and handle along with it
+        if (isServiceRunning(ConnectionService.class)) {
+            bindService();
+        }
+
+        serviceConnection.scheduleTask(new Runnable() {
+            @Override
+            public void run() {
+                if (serviceConnection.getConnectionService().getConnectionThread().isConnected().get()) {
+                    startChatListActivity();
+                }
+            }
+        });
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(weMessage.INTENT_LOGIN_TIMEOUT);
@@ -157,37 +169,59 @@ public class LaunchFragment extends Fragment {
         signInButton = (FontButton) view.findViewById(R.id.signInButton);
         oldEditTextColor = emailEditText.getCurrentTextColor();
 
-        if (savedInstanceState != null){
+        if (savedInstanceState != null) {
             String ipUnformatted = savedInstanceState.getString(weMessage.BUNDLE_HOST);
-            boolean isServiceBound = savedInstanceState.getBoolean(weMessage.BUNDLE_IS_BOUND_TO_CONNECTION_SERVICE);
 
             ipEditText.setText(ipUnformatted);
             emailEditText.setText(savedInstanceState.getString(weMessage.BUNDLE_EMAIL));
             passwordEditText.setText(savedInstanceState.getString(weMessage.BUNDLE_PASSWORD));
-            isBoundToConnectionService = isServiceBound;
-            if (isServiceBound){
-                bindService();
 
+            if (savedInstanceState.getBoolean(weMessage.BUNDLE_IS_LAUNCHER_STILL_CONNECTING)) {
                 String ipAddress;
                 int port;
 
-                if (ipUnformatted.contains(":")){
+                if (ipUnformatted.contains(":")) {
                     String[] split = ipUnformatted.split(":");
 
                     port = Integer.parseInt(split[1]);
                     ipAddress = split[0];
-                }else {
+                } else {
                     ipAddress = ipUnformatted;
                     port = weMessage.DEFAULT_PORT;
                 }
                 showProgressDialog(view, getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
+            }
+        } else {
+            SharedPreferences sharedPreferences = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
+            String host = sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_HOST, "");
+            String email = sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, "");
+            String hashedPass = sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, "");
+
+            String ipAddress;
+            int port;
+
+            if (host.contains(":")) {
+                String[] split = host.split(":");
+
+                port = Integer.parseInt(split[1]);
+                ipAddress = split[0];
+            } else {
+                ipAddress = host;
+                port = weMessage.DEFAULT_PORT;
+            }
+
+            ipEditText.setText(host);
+            emailEditText.setText(email);
+
+            if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
+                startConnectionService(view, ipAddress, port, email, hashedPass, true);
             }
         }
 
         launchConstraintLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                if (!(v instanceof EditText)){
+                if (!(v instanceof EditText)) {
                     clearEditTexts();
                 }
                 return true;
@@ -206,7 +240,7 @@ public class LaunchFragment extends Fragment {
         ipEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if(actionId == EditorInfo.IME_ACTION_DONE){
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
                     clearEditText(ipEditText, true);
                 }
                 return false;
@@ -225,7 +259,7 @@ public class LaunchFragment extends Fragment {
         emailEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if(actionId == EditorInfo.IME_ACTION_DONE){
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
                     clearEditText(emailEditText, true);
                 }
                 return false;
@@ -235,7 +269,7 @@ public class LaunchFragment extends Fragment {
         passwordEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus){
+                if (hasFocus) {
                     resetEditText(passwordEditText);
                 }
             }
@@ -244,7 +278,7 @@ public class LaunchFragment extends Fragment {
         passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if(actionId == EditorInfo.IME_ACTION_DONE){
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
                     clearEditText(passwordEditText, true);
                 }
                 return false;
@@ -260,7 +294,7 @@ public class LaunchFragment extends Fragment {
                 String email = emailEditText.getText().toString();
                 String password = passwordEditText.getText().toString();
 
-                if (StringUtils.isEmpty(ipUnformatted)){
+                if (StringUtils.isEmpty(ipUnformatted)) {
                     invalidateField(ipEditText);
                     generateInvalidSnackBar(view, getString(R.string.no_ip)).show();
                     return;
@@ -269,49 +303,49 @@ public class LaunchFragment extends Fragment {
                 String ipAddress;
                 int port;
 
-                if (ipUnformatted.contains(":")){
+                if (ipUnformatted.contains(":")) {
                     String[] split = ipUnformatted.split(":");
 
                     try {
                         port = Integer.parseInt(split[1]);
                         ipAddress = split[0];
-                    }catch(Exception ex){
+                    } catch (Exception ex) {
                         invalidateField(ipEditText);
                         generateInvalidSnackBar(view, getString(R.string.port_not_valid)).show();
                         return;
                     }
-                }else {
+                } else {
                     ipAddress = ipUnformatted;
                     port = weMessage.DEFAULT_PORT;
                 }
 
-                if (StringUtils.isEmpty(email)){
+                if (StringUtils.isEmpty(email)) {
                     invalidateField(emailEditText);
                     generateInvalidSnackBar(view, getString(R.string.no_email)).show();
                     return;
                 }
 
-                if (!AuthenticationUtils.isValidEmailFormat(email)){
+                if (!AuthenticationUtils.isValidEmailFormat(email)) {
                     invalidateField(emailEditText);
                     generateInvalidSnackBar(view, getString(R.string.invalid_email_format)).show();
                     return;
                 }
 
-                if (StringUtils.isEmpty(password)){
+                if (StringUtils.isEmpty(password)) {
                     invalidateField(passwordEditText);
                     generateInvalidSnackBar(view, getString(R.string.no_password)).show();
                     return;
                 }
 
-                PasswordValidateType validateType = AuthenticationUtils.isValidPasswordFormat(password);
+                AuthenticationUtils.PasswordValidateType validateType = AuthenticationUtils.isValidPasswordFormat(password);
 
-                if (validateType == PasswordValidateType.LENGTH_TOO_SMALL){
+                if (validateType == AuthenticationUtils.PasswordValidateType.LENGTH_TOO_SMALL) {
                     invalidateField(passwordEditText);
                     generateInvalidSnackBar(view, getString(R.string.password_too_short, weMessage.MINIMUM_PASSWORD_LENGTH)).show();
                     return;
                 }
 
-                if (validateType == PasswordValidateType.PASSWORD_TOO_EASY){
+                if (validateType == AuthenticationUtils.PasswordValidateType.PASSWORD_TOO_EASY) {
                     invalidateField(passwordEditText);
                     generateInvalidSnackBar(view, getString(R.string.password_too_easy)).show();
                     return;
@@ -333,19 +367,9 @@ public class LaunchFragment extends Fragment {
                 startTextSizeAnimation(signInButton, 150L, 150L, finalTextSize, currentTextSize);
                 startTextColorAnimation(signInButton, 150L, 150L, finalTextColor, currentTextColor);
 
-                Intent startServiceIntent = new Intent(getActivity(), ConnectionService.class);
-                startServiceIntent.putExtra(weMessage.ARG_HOST, ipAddress);
-                startServiceIntent.putExtra(weMessage.ARG_PORT, port);
-                startServiceIntent.putExtra(weMessage.ARG_EMAIL, email);
-                startServiceIntent.putExtra(weMessage.ARG_PASSWORD, password);
-
-                getActivity().startService(startServiceIntent);
-                bindService();
-
-                showProgressDialog(view, getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
+                startConnectionService(view, ipAddress, port, email, password, false);
             }
         });
-
         return view;
     }
 
@@ -356,7 +380,7 @@ public class LaunchFragment extends Fragment {
         outState.putString(weMessage.BUNDLE_HOST, ipEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_EMAIL, emailEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_PASSWORD, passwordEditText.getText().toString());
-        outState.putBoolean(weMessage.BUNDLE_IS_BOUND_TO_CONNECTION_SERVICE, isBoundToConnectionService);
+        outState.putBoolean(weMessage.BUNDLE_IS_LAUNCHER_STILL_CONNECTING, loginProgressDialog != null);
 
         if (loginProgressDialog != null){
             loginProgressDialog.dismiss();
@@ -384,6 +408,32 @@ public class LaunchFragment extends Fragment {
             getActivity().unbindService(serviceConnection);
             isBoundToConnectionService = false;
         }
+    }
+
+    private void startConnectionService(View view, String ipAddress, int port, String email, String password, boolean alreadyHashed){
+        if (isServiceRunning(ConnectionService.class)){
+            AppLogger.log(AppLogger.Level.ERROR, TAG, "The connection service is already running");
+            return;
+        }
+
+        Intent startServiceIntent = new Intent(getActivity(), ConnectionService.class);
+        startServiceIntent.putExtra(weMessage.ARG_HOST, ipAddress);
+        startServiceIntent.putExtra(weMessage.ARG_PORT, port);
+        startServiceIntent.putExtra(weMessage.ARG_EMAIL, email);
+        startServiceIntent.putExtra(weMessage.ARG_PASSWORD, password);
+        startServiceIntent.putExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, alreadyHashed);
+
+        getActivity().startService(startServiceIntent);
+        bindService();
+
+        showProgressDialog(view, getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
+    }
+
+    private void startChatListActivity(){
+        Intent chatListIntent = new Intent(getActivity(), ChatListActivity.class);
+
+        startActivity(chatListIntent);
+        getActivity().finish();
     }
 
     private void invalidateField(final EditText editText){
@@ -543,6 +593,16 @@ public class LaunchFragment extends Fragment {
         generateAlertDialog(getString(R.string.login_error_alert_title), message).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
     }
 
+    private boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static class AlertDialogFragment extends DialogFragment {
 
         @NonNull
@@ -593,8 +653,8 @@ public class LaunchFragment extends Fragment {
                 public void onCompletion(MediaPlayer mp) {
                     animationDialogLayout.getVideoView().setZOrderOnTop(false);
                     dialog.dismiss();
-                    if (runnable != null){
-                        runnable.run();
+                    if (runnable != null) {
+                        new Handler().postDelayed(runnable, 100L);
                     }
                 }
             });

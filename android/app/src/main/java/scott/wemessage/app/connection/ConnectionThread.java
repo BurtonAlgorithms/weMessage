@@ -1,9 +1,12 @@
 package scott.wemessage.app.connection;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -22,6 +25,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
+import scott.wemessage.app.database.DatabaseManager;
+import scott.wemessage.app.database.MessageDatabase;
+import scott.wemessage.app.database.objects.Account;
 import scott.wemessage.app.security.AndroidBase64Wrapper;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.DecryptionTask;
@@ -57,15 +63,20 @@ public class ConnectionThread extends Thread {
 
     private final String ipAddress;
     private final int port;
-    private String emailPlainText, emailEncryptedText;
-    private String passwordPlainText, passwordEncryptedText;
+    private String emailPlainText;
+    private String passwordPlainText, passwordHashedText;
 
-    protected ConnectionThread(ConnectionService service, String ipAddress, int port, String emailPlainText, String passwordPlainText){
+    protected ConnectionThread(ConnectionService service, String ipAddress, int port, String emailPlainText, String password, boolean alreadyHashed){
         this.service = service;
         this.ipAddress = ipAddress;
         this.port = port;
         this.emailPlainText = emailPlainText;
-        this.passwordPlainText = passwordPlainText;
+
+        if (alreadyHashed){
+            this.passwordHashedText = password;
+        }else {
+            this.passwordPlainText = password;
+        }
     }
 
     public AtomicBoolean isRunning(){
@@ -172,11 +183,19 @@ public class ConnectionThread extends Thread {
 
                     String secretString = secretDecryptionTask.getDecryptedText();
 
-                    //TODO: Later on store this in shared preferences <--- so one does not have to reconnect every time
-                    EncryptionTask hashPasswordTask = new EncryptionTask(passwordPlainText, secretString, CryptoType.BCRYPT);
-                    hashPasswordTask.runEncryptTask();
+                    String hashedPass;
 
-                    EncryptionTask encryptHashedPasswordTask = new EncryptionTask(hashPasswordTask.getEncryptedText().getEncryptedText(), null, CryptoType.AES);
+                    if (passwordPlainText == null){
+                        hashedPass = passwordHashedText;
+                    }else {
+                        EncryptionTask hashPasswordTask = new EncryptionTask(passwordPlainText, secretString, CryptoType.BCRYPT);
+                        hashPasswordTask.runEncryptTask();
+
+                        hashedPass = hashPasswordTask.getEncryptedText().getEncryptedText();
+                        this.passwordHashedText = hashedPass;
+                    }
+
+                    EncryptionTask encryptHashedPasswordTask = new EncryptionTask(hashedPass, null, CryptoType.AES);
                     encryptHashedPasswordTask.runEncryptTask();
 
                     KeyTextPair encryptedEmail = emailEncryptionTask.getEncryptedText();
@@ -204,13 +223,45 @@ public class ConnectionThread extends Thread {
             }
         }
 
+        MessageDatabase database = DatabaseManager.getInstance(getParentService()).getMessageDatabase();
+
         while (isRunning.get()){
             try {
                 String incoming = (String) getInputStream().readObject();
 
                 if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)){
-                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_SUCCESSFUL, null);
                     isConnected.set(true);
+                    Account currentAccount = new Account().setEmail(emailPlainText).setEncryptedPassword(passwordHashedText);
+
+                    if (database.getAccountByEmail(emailPlainText) == null){
+                        currentAccount.setUuid(UUID.randomUUID());
+
+                        database.setCurrentAccount(currentAccount);
+                        database.addAccount(currentAccount);
+                    }else {
+                        UUID oldUUID = database.getAccountByEmail(emailPlainText).getUuid();
+                        currentAccount.setUuid(oldUUID);
+
+                        database.setCurrentAccount(currentAccount);
+                        database.updateAccount(oldUUID.toString(), currentAccount);
+                    }
+
+                    String hostToSave;
+
+                    if (port == weMessage.DEFAULT_PORT){
+                        hostToSave = ipAddress;
+                    }else {
+                        hostToSave = ipAddress + ":" + port;
+                    }
+
+                    SharedPreferences.Editor editor = getParentService().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+                    editor.putString(weMessage.SHARED_PREFERENCES_LAST_HOST, hostToSave);
+                    editor.putString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, emailPlainText);
+                    editor.putString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, passwordHashedText);
+
+                    editor.apply();
+
+                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_SUCCESSFUL, null);
                 } else if (incoming.startsWith(weMessage.JSON_CONNECTION_TERMINATED)) {
                     ServerMessage serverMessage = getIncomingMessage(weMessage.JSON_CONNECTION_TERMINATED, incoming);
                     DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer) serverMessage.getOutgoing(Integer.class, byteArrayAdapter)));
@@ -292,8 +343,8 @@ public class ConnectionThread extends Thread {
                     }
                 }
             }).start();
-            interrupt();
         }
+        interrupt();
     }
 
     private void sendLocalBroadcast(String action, Bundle extras){

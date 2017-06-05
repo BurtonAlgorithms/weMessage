@@ -9,8 +9,6 @@ import scott.wemessage.commons.utils.DateUtils;
 
 public class Message {
 
-    //TODO: has ME read
-
     private UUID uuid;
     private String macGuid;
     private Chat chat;
