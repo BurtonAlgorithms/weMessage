@@ -4,26 +4,26 @@ import java.util.UUID;
 
 public abstract class Chat {
 
-    //TODO: Contains unread messages boolean
-
     private UUID uuid;
     private ChatType chatType;
     private String macGuid;
     private String macGroupID;
     private String macChatIdentifier;
     private boolean isInChat;
+    private boolean hasUnreadMessages;
 
     public Chat(){
 
     }
 
-    public Chat(UUID uuid, ChatType chatType, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat){
+    public Chat(UUID uuid, ChatType chatType, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages){
         this.uuid = uuid;
         this.chatType = chatType;
         this.macGuid = macGuid;
         this.macGroupID = macGroupID;
         this.macChatIdentifier = macChatIdentifier;
         this.isInChat = isInChat;
+        this.hasUnreadMessages = hasUnreadMessages;
     }
 
     public UUID getUuid() {
@@ -50,6 +50,10 @@ public abstract class Chat {
         return isInChat;
     }
 
+    public boolean hasUnreadMessages() {
+        return hasUnreadMessages;
+    }
+
     public Chat setUuid(UUID uuid) {
         this.uuid = uuid;
         return this;
@@ -72,6 +76,11 @@ public abstract class Chat {
 
     public Chat setIsInChat(boolean isInChat) {
         this.isInChat = isInChat;
+        return this;
+    }
+
+    public Chat setHasUnreadMessages(boolean hasUnreadMessages) {
+        this.hasUnreadMessages = hasUnreadMessages;
         return this;
     }
 

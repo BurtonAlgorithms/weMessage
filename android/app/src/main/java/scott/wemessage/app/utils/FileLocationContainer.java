@@ -1,6 +1,9 @@
 package scott.wemessage.app.utils;
 
 import java.io.File;
+import java.io.IOException;
+
+import scott.wemessage.commons.utils.FileUtils;
 
 public class FileLocationContainer {
 
@@ -20,6 +23,14 @@ public class FileLocationContainer {
             loadFile();
         }
         return file;
+    }
+
+    public void writeBytesToFile(byte[] bytes) throws IOException {
+        FileUtils.writeBytesToFile(getFile(), bytes);
+    }
+
+    public byte[] readBytesFromFile() throws IOException {
+        return FileUtils.readBytesFromFile(getFile());
     }
 
     private void loadFile(){

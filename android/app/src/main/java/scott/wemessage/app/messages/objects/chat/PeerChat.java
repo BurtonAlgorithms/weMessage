@@ -12,8 +12,8 @@ public class PeerChat extends Chat {
 
     }
 
-    public PeerChat(UUID uuid, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, Contact contact) {
-        super(uuid, ChatType.PEER, macGuid, macGroupID, macChatIdentifier, isInChat);
+    public PeerChat(UUID uuid, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages, Contact contact) {
+        super(uuid, ChatType.PEER, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
 
         this.contact = contact;
     }

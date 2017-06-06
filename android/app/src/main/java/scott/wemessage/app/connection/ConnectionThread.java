@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -113,9 +112,10 @@ public class ConnectionThread extends Thread {
 
     public ServerMessage getIncomingMessage(String prefix, Object incomingStream ){
         String data = ((String) incomingStream).split(prefix)[1];
-        return new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().fromJson(data, ServerMessage.class);
+        ServerMessage serverMessage = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().fromJson(data, ServerMessage.class);
 
-        //TODO: Add to hashmap
+        serverMessagesMap.put(serverMessage.getMessageUuid(), serverMessage);
+        return serverMessage;
     }
 
     public void sendOutgoingMessage(String prefix, Object outgoingData, Class<?> dataClass) throws IOException {
@@ -127,7 +127,7 @@ public class ConnectionThread extends Thread {
         getOutputStream().writeObject(prefix + outgoingJson);
         getOutputStream().flush();
 
-        //TODO: Add to hashmap
+        clientMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
     }
 
     public void run(){
@@ -306,8 +306,13 @@ public class ConnectionThread extends Thread {
                                 break;
                         }
                     }
+                }else if (incoming.startsWith(weMessage.JSON_NEW_MESSAGE)){
+
+
+
                 }
-                //TODO: Else do more stuff
+
+                //TODO: More stuff
             }catch(Exception ex){
                 Bundle extras = new Bundle();
                 extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));

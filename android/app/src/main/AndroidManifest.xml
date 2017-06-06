@@ -19,10 +19,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".app.messages.ChatListActivity">
 
+        </activity>
         <service android:name=".app.connection.ConnectionService" />
-
-        <activity android:name=".app.messages.ChatListActivity"></activity>
     </application>
 
 </manifest>

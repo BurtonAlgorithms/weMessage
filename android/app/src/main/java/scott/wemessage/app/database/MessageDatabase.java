@@ -72,6 +72,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + ChatTable.MAC_GROUP_ID + " TEXT, "
                 + ChatTable.MAC_CHAT_IDENTIFIER + " TEXT, "
                 + ChatTable.IS_IN_CHAT + " INTEGER, "
+                + ChatTable.HAS_UNREAD_MESSAGES + " INTEGER, "
                 + ChatTable.CONTACT_UUID + " TEXT, "
                 + ChatTable.DISPLAY_NAME + " TEXT, "
                 + ChatTable.PARTICIPANTS + " TEXT );";
@@ -127,6 +128,28 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         synchronized (currentAccountLock){
             this.currentAccount = account;
         }
+    }
+
+    public List<Contact> getContacts(){
+        List<Contact> contacts = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + ContactTable.TABLE_NAME;
+        Cursor cursor = db.rawQuery(selectQuery, null );
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                Contact contact = buildContact(cursor);
+
+                if (contact != null) {
+                    contacts.add(contact);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return contacts;
     }
 
     public List<Chat> getChats(){
@@ -549,13 +572,15 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             chat = new PeerChat().setContact(getContactByUuid(cursor.getString(cursor.getColumnIndex(ChatTable.CONTACT_UUID))))
                     .setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ChatTable.UUID)))).setMacGuid(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GUID)))
                     .setMacGroupID(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GROUP_ID))).setMacChatIdentifier(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_CHAT_IDENTIFIER)))
-                    .setIsInChat(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_IN_CHAT))));
+                    .setIsInChat(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_IN_CHAT))))
+                    .setHasUnreadMessages(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.HAS_UNREAD_MESSAGES))));
         }else if(chatType == ChatType.GROUP){
             chat = new GroupChat().setDisplayName(cursor.getString(cursor.getColumnIndex(ChatTable.DISPLAY_NAME)))
                     .setParticipants(stringListToContacts(Arrays.asList(cursor.getString(cursor.getColumnIndex(ChatTable.PARTICIPANTS)).split(", "))))
                     .setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ChatTable.UUID)))).setMacGuid(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GUID)))
                     .setMacGroupID(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GROUP_ID))).setMacChatIdentifier(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_CHAT_IDENTIFIER)))
-                    .setIsInChat(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_IN_CHAT))));
+                    .setIsInChat(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_IN_CHAT))))
+                    .setHasUnreadMessages(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.HAS_UNREAD_MESSAGES))));
         }
         return chat;
     }
@@ -580,6 +605,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         values.put(ChatTable.MAC_GROUP_ID, chat.getMacGroupID());
         values.put(ChatTable.MAC_CHAT_IDENTIFIER, chat.getMacChatIdentifier());
         values.put(ChatTable.IS_IN_CHAT, booleanToInteger(chat.isInChat()));
+        values.put(ChatTable.HAS_UNREAD_MESSAGES, booleanToInteger(chat.hasUnreadMessages()));
 
         return values;
     }
@@ -939,6 +965,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         public static final String MAC_GROUP_ID = "mac_group_id";
         public static final String MAC_CHAT_IDENTIFIER = "mac_chat_identifier";
         public static final String IS_IN_CHAT = "is_in_chat";
+        public static final String HAS_UNREAD_MESSAGES = "has_unread_messages";
         public static final String CONTACT_UUID = "contact_uuid";
         public static final String DISPLAY_NAME = "display_name";
         public static final String PARTICIPANTS = "participants";

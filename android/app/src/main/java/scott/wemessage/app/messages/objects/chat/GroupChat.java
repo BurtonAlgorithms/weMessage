@@ -14,8 +14,8 @@ public class GroupChat extends Chat {
 
     }
 
-    public GroupChat(UUID uuid, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, String displayName, List<Contact> participants) {
-        super(uuid, ChatType.GROUP, macGuid, macGroupID, macChatIdentifier, isInChat);
+    public GroupChat(UUID uuid, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages, String displayName, List<Contact> participants) {
+        super(uuid, ChatType.GROUP, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
 
         this.displayName = displayName;
         this.participants = participants;
@@ -36,6 +36,16 @@ public class GroupChat extends Chat {
 
     public GroupChat setParticipants(List<Contact> participants) {
         this.participants = participants;
+        return this;
+    }
+
+    public GroupChat addParticipant(Contact contact){
+        participants.add(contact);
+        return this;
+    }
+
+    public GroupChat removeParticipant(Contact contact){
+        participants.remove(contact);
         return this;
     }
 }

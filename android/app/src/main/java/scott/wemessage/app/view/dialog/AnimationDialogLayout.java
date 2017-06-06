@@ -34,6 +34,7 @@ public class AnimationDialogLayout extends LinearLayout {
 
     public void startAnimation(){
         VideoView videoView = (VideoView) findViewById(R.id.animationDialogVideoView);
+        videoView.seekTo(0);
         videoView.start();
     }
 }
