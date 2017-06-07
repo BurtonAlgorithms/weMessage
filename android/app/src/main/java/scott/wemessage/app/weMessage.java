@@ -11,6 +11,7 @@ public final class weMessage extends Constants {
     public static final String DATABASE_NAME = "weMessage.db";
     public static final String APP_IDENTIFIER = "scott.wemessage.app";
     public static final String IDENTIFIER_PREFIX = "scott.wemessage.app.";
+    public static final String ATTACHMENT_FOLDER_NAME = "attachments";
 
     public static final String BUNDLE_HOST = IDENTIFIER_PREFIX + "bundleHost";
     public static final String BUNDLE_EMAIL = IDENTIFIER_PREFIX + "bundleEmail";
@@ -38,8 +39,8 @@ public final class weMessage extends Constants {
     public static final String BROADCAST_DISCONNECT_REASON_FORCED = IDENTIFIER_PREFIX + "DisconnectReasonForced";
     public static final String BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED = IDENTIFIER_PREFIX + "DisconnectReasonClientDisconnected";
     public static final String BROADCAST_DISCONNECT_REASON_INCORRECT_VERSION = IDENTIFIER_PREFIX + "DisconnectReasonIncorrectVersion";
-
     public static final String BROADCAST_LOGIN_SUCCESSFUL = IDENTIFIER_PREFIX + "LoginSuccessful";
+    public static final String BROADCAST_MESSAGE_UPDATE_ERROR = IDENTIFIER_PREFIX + "MessageUpdateError";
 
     public static final String SHARED_PREFERENCES_LAST_HOST = IDENTIFIER_PREFIX + "lastHost";
     public static final String SHARED_PREFERENCES_LAST_EMAIL = IDENTIFIER_PREFIX + "lastEmail";

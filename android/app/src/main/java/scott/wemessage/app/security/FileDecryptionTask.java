@@ -7,18 +7,18 @@ import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.security.util.CryptoException;
 import scott.wemessage.commons.crypto.AESCrypto;
 
-public class DecryptionTask extends Thread {
+public class FileDecryptionTask extends Thread {
 
     private AtomicBoolean hasTaskStarted = new AtomicBoolean(false);
     private AtomicBoolean hasTaskFinished = new AtomicBoolean(false);
     private final CryptoType cryptoType;
-    private final KeyTextPair keyTextPair;
-    private final Object decryptedTextLock = new Object();
-    private String decryptedText = null;
+    private final CryptoFile cryptoFile;
+    private final Object decryptedBytesLock = new Object();
+    private byte[] decryptedBytes = null;
 
-    public DecryptionTask(KeyTextPair keyTextPair, CryptoType type){
+    public FileDecryptionTask(CryptoFile cryptoFile, CryptoType type){
         this.cryptoType = type;
-        this.keyTextPair = keyTextPair;
+        this.cryptoFile = cryptoFile;
 
         if (cryptoType == CryptoType.AES){
             AESCrypto.setBase64Wrapper(new AndroidBase64Wrapper());
@@ -31,20 +31,21 @@ public class DecryptionTask extends Thread {
         hasTaskStarted.set(true);
         try {
             if (cryptoType == CryptoType.AES) {
-                if (keyTextPair.getKey() == null) {
+                if (cryptoFile.getKey() == null) {
                     hasTaskFinished.set(true);
                     throw new CryptoException("Key cannot be null");
                 }
-                synchronized (decryptedTextLock) {
-                    decryptedText = AESCrypto.decryptString(keyTextPair.getEncryptedText(), keyTextPair.getKey());
+                if (cryptoFile.getIvMac() == null){
+                    hasTaskFinished.set(true);
+                    throw new CryptoException("Iv Mac cannot be null");
+                }
+                synchronized (decryptedBytesLock) {
+                    decryptedBytes = AESCrypto.decryptBytes(new AESCrypto.CipherByteArrayIvMac(cryptoFile.getEncryptedBytes(), cryptoFile.getIvMac()), cryptoFile.getKey());
                 }
                 hasTaskFinished.set(true);
-            } else if (cryptoType == CryptoType.BCRYPT) {
-                hasTaskFinished.set(true);
-                throw new CryptoException("You cannot decrypt a hash");
             } else {
                 hasTaskFinished.set(true);
-                throw new CryptoException("The Crypto Type asked for is unsupported");
+                throw new CryptoException("The Crypto Type asked for is unsupported for file decryption");
             }
         }catch(Exception ex) {
             hasTaskFinished.set(true);
@@ -56,15 +57,15 @@ public class DecryptionTask extends Thread {
         start();
     }
 
-    public String getDecryptedText(){
+    public byte[] getDecryptedBytes(){
         boolean loop = true;
         while (loop){
             if (hasTaskFinished.get()){
                 loop = false;
             }
         }
-        synchronized (decryptedTextLock) {
-            return decryptedText;
+        synchronized (decryptedBytesLock) {
+            return decryptedBytes;
         }
     }
 }

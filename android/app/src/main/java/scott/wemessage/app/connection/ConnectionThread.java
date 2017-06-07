@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -18,6 +19,11 @@ import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,19 +33,35 @@ import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.database.DatabaseManager;
 import scott.wemessage.app.database.MessageDatabase;
 import scott.wemessage.app.database.objects.Account;
-import scott.wemessage.app.security.AndroidBase64Wrapper;
+import scott.wemessage.app.messages.MessageManager;
+import scott.wemessage.app.messages.objects.Attachment;
+import scott.wemessage.app.messages.objects.Contact;
+import scott.wemessage.app.messages.objects.Handle;
+import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.messages.objects.chat.Chat;
+import scott.wemessage.app.messages.objects.chat.GroupChat;
+import scott.wemessage.app.messages.objects.chat.PeerChat;
+import scott.wemessage.app.security.CryptoFile;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.DecryptionTask;
 import scott.wemessage.app.security.EncryptionTask;
+import scott.wemessage.app.security.FileDecryptionTask;
 import scott.wemessage.app.security.KeyTextPair;
+import scott.wemessage.app.security.util.AndroidBase64Wrapper;
+import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.connection.ClientMessage;
 import scott.wemessage.commons.json.connection.InitConnect;
 import scott.wemessage.commons.json.connection.ServerMessage;
+import scott.wemessage.commons.json.message.JSONAttachment;
+import scott.wemessage.commons.json.message.JSONChat;
+import scott.wemessage.commons.json.message.JSONMessage;
+import scott.wemessage.commons.json.message.security.JSONEncryptedFile;
 import scott.wemessage.commons.json.message.security.JSONEncryptedText;
 import scott.wemessage.commons.types.DeviceType;
 import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
+import scott.wemessage.commons.utils.StringUtils;
 
 public class ConnectionThread extends Thread {
 
@@ -131,8 +153,10 @@ public class ConnectionThread extends Thread {
     }
 
     public void run(){
+        final ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new AndroidBase64Wrapper());
+
         isRunning.set(true);
-        ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new AndroidBase64Wrapper());
+
         synchronized (socketLock) {
             connectionSocket = new Socket();
         }
@@ -223,11 +247,10 @@ public class ConnectionThread extends Thread {
             }
         }
 
-        MessageDatabase database = DatabaseManager.getInstance(getParentService()).getMessageDatabase();
-
         while (isRunning.get()){
             try {
-                String incoming = (String) getInputStream().readObject();
+                MessageDatabase database = DatabaseManager.getInstance(getParentService()).getMessageDatabase();
+                final String incoming = (String) getInputStream().readObject();
 
                 if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)){
                     isConnected.set(true);
@@ -307,11 +330,178 @@ public class ConnectionThread extends Thread {
                         }
                     }
                 }else if (incoming.startsWith(weMessage.JSON_NEW_MESSAGE)){
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_NEW_MESSAGE, incoming).getOutgoing(JSONMessage.class, byteArrayAdapter);
 
+                            JSONEncryptedText encryptedText = jsonMessage.getEncryptedText();
+                            DecryptionTask textDecryptionTask = new DecryptionTask(new KeyTextPair(encryptedText.getEncryptedText(), encryptedText.getKey()), CryptoType.AES);
+                            textDecryptionTask.runDecryptTask();
 
+                            MessageDatabase messageDatabase = DatabaseManager.getInstance(getParentService()).getMessageDatabase();
+                            MessageManager messageManager = MessageManager.getInstance(getParentService());
 
+                            for (String s : jsonMessage.getChat().getParticipants()){
+                                if (messageDatabase.getHandleByHandleID(s) == null){
+                                    messageDatabase.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE));
+                                }
+                            }
+
+                            for (String s : jsonMessage.getChat().getParticipants()){
+                                if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null){
+                                    messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null));
+                                }
+                            }
+
+                            JSONChat jsonChat = jsonMessage.getChat();
+
+                            if (messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()) == null){
+                                Chat newChat;
+                                UUID newChatUUID = UUID.randomUUID();
+                                String newChatMacGuid = jsonChat.getMacGuid();
+                                String newChatMacGroupID = jsonChat.getMacGroupID();
+                                String newChatMacChatIdentifier = jsonChat.getMacChatIdentifier();
+
+                                if (jsonChat.getDisplayName() == null && jsonChat.getParticipants().size() == 1){
+                                    newChat = new PeerChat(newChatUUID, newChatMacGuid, newChatMacGroupID, newChatMacChatIdentifier,
+                                            true, true, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonChat.getParticipants().get(0))));
+                                }else {
+                                    ArrayList<Contact> contactList = new ArrayList<>();
+
+                                    for(String s : jsonChat.getParticipants()){
+                                        contactList.add(messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
+                                    }
+                                    newChat = new GroupChat(newChatUUID, newChatMacGuid, newChatMacGroupID, newChatMacChatIdentifier, true, true, jsonChat.getDisplayName(), contactList);
+                                }
+                                messageManager.addChat(newChat);
+                            }else {
+                                Chat existingChat = messageDatabase.getChatByMacGuid(jsonChat.getMacGuid());
+
+                                if (existingChat.getChatType() == Chat.ChatType.GROUP){
+                                    GroupChat groupChat = (GroupChat) existingChat;
+                                    ArrayList<String> existingChatParticipantList = new ArrayList<>();
+                                    ArrayList<String> newChatParticipantList = new ArrayList<>(jsonChat.getParticipants());
+
+                                    for (Contact c : groupChat.getParticipants()){
+                                        existingChatParticipantList.add(c.getHandle().getHandleID());
+                                    }
+
+                                    List<String> removedParticipantsList = new ArrayList<>(existingChatParticipantList);
+                                    List<String> addedParticipantsList = new ArrayList<>(newChatParticipantList);
+
+                                    removedParticipantsList.removeAll(addedParticipantsList);
+                                    addedParticipantsList.removeAll(removedParticipantsList);
+
+                                    for (String s : addedParticipantsList){
+                                        messageManager.addParticipantToGroup(groupChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
+                                    }
+                                    for (String s : removedParticipantsList){
+                                        messageManager.removeParticipantFromGroup(groupChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
+                                    }
+
+                                    if (!groupChat.getDisplayName().equals(jsonChat.getDisplayName())){
+                                        messageManager.renameGroupChat(groupChat, jsonChat.getDisplayName());
+                                    }
+                                }
+                                messageManager.setHasUnreadMessages(existingChat, true);
+                            }
+                            Contact sender;
+
+                            if (StringUtils.isEmpty(jsonMessage.getHandle())){
+                                Handle meHandle = messageDatabase.getHandleByAccount(messageDatabase.getCurrentAccount());
+
+                                if (messageDatabase.getContactByHandle(meHandle) == null){
+                                    messageManager.addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null));
+                                }
+                                sender = messageDatabase.getContactByHandle(meHandle);
+                            }else {
+                                sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+                            }
+                            String attachmentNamePrefix = new SimpleDateFormat("MM-dd-yy", Locale.US).format(Calendar.getInstance().getTime());
+                            ArrayList<Attachment> attachments = new ArrayList<>();
+
+                            for (JSONAttachment jsonAttachment : jsonMessage.getAttachments()){
+                                Attachment attachment = new Attachment(UUID.randomUUID(), jsonAttachment.getMacGuid(), jsonAttachment.getTransferName(),
+                                        new FileLocationContainer(
+                                                new File(DatabaseManager.getInstance(getParentService()).getAttachmentFolder(), attachmentNamePrefix + "-" + jsonAttachment.getTransferName())),
+                                        jsonAttachment.getFileType(), jsonAttachment.getTotalBytes());
+
+                                JSONEncryptedFile jsonEncryptedFile = jsonAttachment.getFileData();
+                                FileDecryptionTask fileDecryptionTask = new FileDecryptionTask(new CryptoFile(jsonEncryptedFile.getEncryptedData(), jsonEncryptedFile.getKey(),
+                                        jsonEncryptedFile.getIvParams()), CryptoType.AES);
+                                fileDecryptionTask.runDecryptTask();
+
+                                try {
+                                    attachment.getFileLocation().writeBytesToFile(fileDecryptionTask.getDecryptedBytes());
+                                }catch(IOException ex){
+                                    AppLogger.error(TAG, "An error occurred while writing the attachment to the file", ex);
+                                }
+                                attachments.add(attachment);
+                            }
+
+                            Message message = new Message(UUID.randomUUID(), jsonMessage.getMacGuid(), messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, attachments,
+                                    textDecryptionTask.getDecryptedText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(), jsonMessage.getDateRead(), jsonMessage.getErrored(),
+                                    jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe());
+
+                            messageManager.addMessage(message);
+                        }
+                    }).start();
+                }else if (incoming.startsWith(weMessage.JSON_MESSAGE_UPDATED)){
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_NEW_MESSAGE, incoming).getOutgoing(JSONMessage.class, byteArrayAdapter);
+                            MessageDatabase messageDatabase = DatabaseManager.getInstance(getParentService()).getMessageDatabase();
+                            MessageManager messageManager = MessageManager.getInstance(getParentService());
+                            Message oldMessage = messageDatabase.getMessageByMacGuid(jsonMessage.getMacGuid());
+
+                            if (oldMessage == null){
+                                sendLocalBroadcast(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR, null);
+                                AppLogger.error("Could not find Message to update with Mac GUID: " + jsonMessage.getMacGuid(), new NullPointerException());
+                                return;
+                            }
+                            JSONChat jsonChat = jsonMessage.getChat();
+                            Chat existingChat = messageDatabase.getChatByMacGuid(jsonChat.getMacGuid());
+
+                            if (existingChat.getChatType() == Chat.ChatType.GROUP){
+                                GroupChat groupChat = (GroupChat) existingChat;
+                                ArrayList<String> existingChatParticipantList = new ArrayList<>();
+                                ArrayList<String> newChatParticipantList = new ArrayList<>(jsonChat.getParticipants());
+
+                                for (Contact c : groupChat.getParticipants()){
+                                    existingChatParticipantList.add(c.getHandle().getHandleID());
+                                }
+
+                                List<String> removedParticipantsList = new ArrayList<>(existingChatParticipantList);
+                                List<String> addedParticipantsList = new ArrayList<>(newChatParticipantList);
+
+                                removedParticipantsList.removeAll(addedParticipantsList);
+                                addedParticipantsList.removeAll(removedParticipantsList);
+
+                                for (String s : addedParticipantsList){
+                                    messageManager.addParticipantToGroup(groupChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
+                                }
+                                for (String s : removedParticipantsList){
+                                    messageManager.removeParticipantFromGroup(groupChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
+                                }
+
+                                if (!groupChat.getDisplayName().equals(jsonChat.getDisplayName())){
+                                    messageManager.renameGroupChat(groupChat, jsonChat.getDisplayName());
+                                }
+                            }
+
+                            Message newMessage = new Message(oldMessage.getUuid(), oldMessage.getMacGuid(), oldMessage.getChat(), oldMessage.getSender(), oldMessage.getAttachments(),
+                                    oldMessage.getText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(), jsonMessage.getDateRead(), jsonMessage.getErrored(),
+                                    jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), oldMessage.isFromMe());
+
+                            messageManager.updateMessage(oldMessage.getUuid().toString(), newMessage);
+                        }
+                    }).start();
+                }else if (incoming.startsWith(weMessage.JSON_ACTION)){
+
+                    
                 }
-
                 //TODO: More stuff
             }catch(Exception ex){
                 Bundle extras = new Bundle();

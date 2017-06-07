@@ -6,22 +6,23 @@ import scott.wemessage.app.security.util.AesPrngHelper;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.security.util.CryptoException;
 import scott.wemessage.commons.crypto.AESCrypto;
-import scott.wemessage.commons.crypto.BCrypt;
 
-public class EncryptionTask extends Thread {
+public class FileEncryptionTask extends Thread {
 
     private AtomicBoolean hasTaskStarted = new AtomicBoolean(false);
     private AtomicBoolean hasTaskFinished = new AtomicBoolean(false);
     private final CryptoType cryptoType;
-    private final String plainText;
+    private final byte[] bytes;
     private final String key;
-    private final Object keyTextPairLock = new Object();
-    private KeyTextPair keyTextPair = null;
+    private final String ivMac;
+    private final Object cryptoFileLock = new Object();
+    private CryptoFile cryptoFile = null;
 
-    public EncryptionTask(String plainText, String key, CryptoType type){
+    public FileEncryptionTask(byte[] bytes, String key, String ivMac, CryptoType type){
         this.cryptoType = type;
-        this.plainText = plainText;
+        this.bytes = bytes;
         this.key = key;
+        this.ivMac = ivMac;
 
         if (cryptoType == CryptoType.AES){
             AESCrypto.setBase64Wrapper(new AndroidBase64Wrapper());
@@ -34,7 +35,7 @@ public class EncryptionTask extends Thread {
         hasTaskStarted.set(true);
         try {
             String returnKey;
-            String encryptedText;
+            AESCrypto.CipherByteArrayIvMac byteArrayIvMac;
 
             if (cryptoType == CryptoType.AES) {
                 if (key == null) {
@@ -42,21 +43,14 @@ public class EncryptionTask extends Thread {
                 } else {
                     returnKey = key;
                 }
-                encryptedText = AESCrypto.encryptString(plainText, returnKey);
-            } else if (cryptoType == CryptoType.BCRYPT) {
-                if (key == null) {
-                    returnKey = BCrypt.generateSalt();
-                } else {
-                    returnKey = key;
-                }
-                encryptedText = BCrypt.hashPassword(plainText, returnKey);
+                byteArrayIvMac = AESCrypto.encryptBytes(bytes, returnKey);
             } else {
                 hasTaskFinished.set(true);
-                throw new CryptoException("The Crypto Type asked for is unsupported");
+                throw new CryptoException("The Crypto Type asked for is unsupported for file encryption");
             }
 
-            synchronized (keyTextPairLock) {
-                keyTextPair = new KeyTextPair(encryptedText, returnKey);
+            synchronized (cryptoFileLock) {
+                cryptoFile = new CryptoFile(byteArrayIvMac.getCipherBytes(), returnKey, byteArrayIvMac.joinedIvAndMac());
             }
             hasTaskFinished.set(true);
         }catch(Exception ex) {
@@ -69,15 +63,15 @@ public class EncryptionTask extends Thread {
         start();
     }
 
-    public KeyTextPair getEncryptedText(){
+    public CryptoFile getEncryptedFile(){
         boolean loop = true;
         while (loop){
             if (hasTaskFinished.get()){
                 loop = false;
             }
         }
-        synchronized (keyTextPairLock) {
-            return keyTextPair;
+        synchronized (cryptoFileLock) {
+            return cryptoFile;
         }
     }
 }

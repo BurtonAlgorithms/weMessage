@@ -1,4 +1,4 @@
-package scott.wemessage.app.security;
+package scott.wemessage.app.security.util;
 
 public class CryptoException extends SecurityException {
 

@@ -14,6 +14,10 @@ public class FileLocationContainer {
         this.fileLocation = fileLocation;
     }
 
+    public FileLocationContainer(File file){
+        this.fileLocation = file.getAbsolutePath();
+    }
+
     public String getFileLocation(){
         return fileLocation;
     }
@@ -35,5 +39,13 @@ public class FileLocationContainer {
 
     private void loadFile(){
         file = new File(fileLocation);
+
+        try {
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }
     }
 }
