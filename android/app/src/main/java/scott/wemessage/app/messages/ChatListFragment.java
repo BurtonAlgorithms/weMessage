@@ -16,6 +16,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     public void onCreate(@Nullable Bundle savedInstanceState) {
         //TODO: Add callback hook
         //TODO: Listen for broadcast of message update error
+        //TODO: Listen for broadcast of new message error; intent filter don't forget
 
         super.onCreate(savedInstanceState);
     }
@@ -37,6 +38,11 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onChatAdd(Chat chat) {
+
+    }
+
+    @Override
+    public void onChatUpdate(Chat oldData, Chat newData) {
 
     }
 

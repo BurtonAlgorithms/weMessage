@@ -135,7 +135,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         SQLiteDatabase db = getWritableDatabase();
         String selectQuery = "SELECT * FROM " + ContactTable.TABLE_NAME;
-        Cursor cursor = db.rawQuery(selectQuery, null );
+        Cursor cursor = db.rawQuery(selectQuery, null);
 
         if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {
@@ -157,7 +157,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         SQLiteDatabase db = getWritableDatabase();
         String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME;
-        Cursor cursor = db.rawQuery(selectQuery, null );
+        Cursor cursor = db.rawQuery(selectQuery, null);
 
         if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {
@@ -174,6 +174,65 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return chats;
     }
 
+    public List<GroupChat> getGroupChatsWithName(String displayName){
+        List<GroupChat> chats = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME + " WHERE " + ChatTable.DISPLAY_NAME + " = ?";
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{displayName});
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                Chat chat = buildChat(cursor);
+
+                if (chat != null) {
+                    chats.add((GroupChat) chat);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return chats;
+    }
+
+    public PeerChat getChatByHandle(Handle handle){
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME + " WHERE " + ChatTable.CONTACT_UUID + " = ?";
+
+        Cursor cursor = db.rawQuery(selectQuery, new String[]{getContactByHandle(handle).getUuid().toString()});
+        PeerChat chat = null;
+
+        if (cursor.getCount() > 0) {
+            cursor.moveToLast();
+            chat = (PeerChat) buildChat(cursor);
+        }
+        cursor.close();
+        return chat;
+    }
+
+    public GroupChat getGroupChatByName(String displayName, String lastMessage){
+        List<GroupChat> chats = getGroupChatsWithName(displayName);
+
+        if (chats.isEmpty()) return null;
+
+        if (chats.size() == 1) {
+            return chats.get(0);
+        } else {
+            if (lastMessage == null) return null;
+
+            for (Chat chat : chats) {
+                Message chatLastMessage = getLastMessageFromChat(chat);
+
+                if (chatLastMessage == null) return null;
+                if (lastMessage.equals(chatLastMessage.getText())) {
+                    return (GroupChat) chat;
+                }
+            }
+        }
+        return null;
+    }
+
     public List<Message> getReversedMessages(Chat chat, int startIndex, int numberToFetch){
         List<Message> messages = new ArrayList<>();
 
@@ -184,6 +243,34 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
                 + MessageTable.CHAT_UUID + " = ? ORDER BY " + MessageTable._ID + " DESC LIMIT " + numberToFetch;
         Cursor cursor = db.rawQuery(selectQuery, new String[] {String.valueOf(start), chat.getUuid().toString()} );
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                Message message = buildMessage(cursor);
+
+                if (message != null) {
+                    messages.add(message);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return messages;
+    }
+
+    public List<Message> getReversedMessagesWithSearchParameters(Chat chat, String matchingText, boolean isFromMe, int startIndex, int numberToFetch){
+        List<Message> messages = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        long totalRows = DatabaseUtils.queryNumEntries(db, MessageTable.TABLE_NAME);
+        long start = totalRows - startIndex;
+
+        String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
+                + MessageTable.CHAT_UUID + " = ? AND " + MessageTable.TEXT + " = ? AND " + MessageTable.IS_FROM_ME + " = ? ORDER BY "
+                + MessageTable._ID + " DESC LIMIT " + numberToFetch;
+
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {String.valueOf(start), chat.getUuid().toString(), matchingText, String.valueOf(booleanToInteger(isFromMe))} );
 
         if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {

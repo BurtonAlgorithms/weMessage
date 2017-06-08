@@ -39,7 +39,7 @@ public final class MessageManager {
         this.context = context;
     }
 
-    private MessageDatabase getMessageDatabase(){
+    public MessageDatabase getMessageDatabase(){
         return DatabaseManager.getInstance(context).getMessageDatabase();
     }
 
@@ -51,314 +51,199 @@ public final class MessageManager {
         callbacksList.remove(callbacks);
     }
 
-    public void addContact(final Contact contact){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                contacts.put(contact.getUuid().toString(), contact);
-                getMessageDatabase().addContact(contact);
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onContactCreate(contact);
-                    }
+    public void addContact(final Contact contact, boolean threaded){
+        if (threaded){
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    addContactTask(contact);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            addContactTask(contact);
+        }
     }
 
-    public void updateContact(final String uuid, final Contact newData){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                Contact oldContact = getMessageDatabase().getContactByUuid(uuid);
-
-                contacts.put(uuid, newData);
-                getMessageDatabase().updateContact(uuid, newData);
-
-                for (Chat chat : chats.values()){
-                    if (chat instanceof PeerChat){
-                        PeerChat peerChat = (PeerChat) chat;
-
-                        if (peerChat.getContact().getUuid().equals(oldContact.getUuid())){
-                            peerChat.setContact(newData);
-                            chats.put(peerChat.getUuid().toString(), peerChat);
-                            getMessageDatabase().updateChat(peerChat.getUuid().toString(), peerChat);
-                        }
-                    }else if(chat instanceof GroupChat){
-                        GroupChat groupChat = (GroupChat) chat;
-                        ArrayList<Contact> newContactList = new ArrayList<>();
-
-                        for (Contact c : groupChat.getParticipants()){
-                            if (c.getUuid().equals(oldContact.getUuid())){
-                                newContactList.add(newData);
-                            }else {
-                                newContactList.add(c);
-                            }
-                        }
-                        groupChat.setParticipants(newContactList);
-                        chats.put(groupChat.getUuid().toString(), groupChat);
-                        getMessageDatabase().updateChat(groupChat.getUuid().toString(), groupChat);
-                    }
+    public void updateContact(final String uuid, final Contact newData, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    updateContactTask(uuid, newData);
                 }
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onContactUpdate(oldContact, newData);
-                    }
-                }
-            }
-        }).start();
+            }).start();
+        }else {
+            updateContactTask(uuid, newData);
+        }
     }
 
-    public void addChat(final Chat chat){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                chats.put(chat.getUuid().toString(), chat);
-                getMessageDatabase().addChat(chat);
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onChatAdd(chat);
-                    }
+    public void addChat(final Chat chat, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    addChatTask(chat);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            addChatTask(chat);
+        }
     }
 
-    public void setHasUnreadMessages(final Chat chat, final boolean hasUnreadMessages){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                chat.setHasUnreadMessages(hasUnreadMessages);
-                chats.put(chat.getUuid().toString(), chat);
-                getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onUnreadMessagesUpdate(chat, hasUnreadMessages);
-                    }
+    public void updateChat(final String uuid, final Chat newData, boolean threaded) {
+        if (threaded){
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    updateChatTask(uuid, newData);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            updateChatTask(uuid, newData);
+        }
     }
 
-    public void renameGroupChat(final GroupChat chat, final String newName){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                chat.setDisplayName(newName);
-                chats.put(chat.getUuid().toString(), chat);
-                getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onChatRename(chat, newName);
-                    }
+    public void setHasUnreadMessages(final Chat chat, final boolean hasUnreadMessages, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    setHasUnreadMessagesTask(chat, hasUnreadMessages);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            setHasUnreadMessagesTask(chat, hasUnreadMessages);
+        }
     }
 
-    public void addParticipantToGroup(final GroupChat chat, final Contact contact){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                chat.addParticipant(contact);
-                chats.put(chat.getUuid().toString(), chat);
-                getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onParticipantAdd(chat, contact);
-                    }
+    public void renameGroupChat(final GroupChat chat, final String newName, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    renameGroupChatTask(chat, newName);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            renameGroupChatTask(chat, newName);
+        }
     }
 
-    public void removeParticipantFromGroup(final GroupChat chat, final Contact contact){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                chat.removeParticipant(contact);
-                chats.put(chat.getUuid().toString(), chat);
-                getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onParticipantRemove(chat, contact);
-                    }
+    public void addParticipantToGroup(final GroupChat chat, final Contact contact, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    addParticipantToGroupTask(chat, contact);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            addParticipantToGroupTask(chat, contact);
+        }
     }
 
-    public void leaveGroup(final GroupChat chat){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                chat.setIsInChat(false);
-                chats.put(chat.getUuid().toString(), chat);
-                getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onLeaveGroup(chat);
-                    }
+    public void removeParticipantFromGroup(final GroupChat chat, final Contact contact, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    removeParticipantFromGroupTask(chat, contact);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            removeParticipantFromGroupTask(chat, contact);
+        }
     }
 
-    public void deleteChat(final Chat chat){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                chats.remove(chat.getUuid().toString());
-                getMessageDatabase().deleteChatByUuid(chat.getUuid().toString());
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onChatDelete(chat);
-                    }
+    public void leaveGroup(final GroupChat chat, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    leaveGroupTask(chat);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            leaveGroupTask(chat);
+        }
     }
 
-    public void refreshChats(){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                for (Chat c : getMessageDatabase().getChats()){
-                    chats.put(c.getUuid().toString(), c);
+    public void deleteChat(final Chat chat, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    deleteChatTask(chat);
                 }
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onChatListRefresh(chats);
-                    }
-                }
-            }
-        }).start();
+            }).start();
+        }else {
+            deleteChatTask(chat);
+        }
     }
 
-    public void addMessage(final Message message){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                messages.put(message.getUuid().toString(), message);
-                for (Attachment a : message.getAttachments()){
-                    if (getMessageDatabase().getAttachmentByMacGuid(a.getMacGuid()) == null){
-                        getMessageDatabase().addAttachment(a);
-                    }
+    public void refreshChats(boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    refreshChatsTask();
                 }
-                getMessageDatabase().addMessage(message);
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onMessageAdd(message);
-                    }
-                }
-            }
-        }).start();
+            }).start();
+        }else {
+            refreshChatsTask();
+        }
     }
 
-    public void updateMessage(final String uuid, final Message newData){
-        createThreadedTask(new Runnable(){
-            @Override
-            public void run() {
-                Message oldMessage = getMessageDatabase().getMessageByUuid(uuid);
-
-                messages.put(uuid, newData);
-                getMessageDatabase().updateMessage(uuid, newData);
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onMessageUpdate(oldMessage, newData);
-                    }
+    public void addMessage(final Message message, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    addMessageTask(message);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            addMessageTask(message);
+        }
     }
 
-    public void removeMessage(final Message message){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                messages.remove(message.getUuid().toString());
-                getMessageDatabase().deleteMessageByUuid(message.getUuid().toString());
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onMessageDelete(message);
-                    }
+    public void updateMessage(final String uuid, final Message newData, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    updateMessageTask(uuid, newData);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            updateMessageTask(uuid, newData);
+        }
     }
 
-    public void queueMessages(final Chat chat, final int startIndex, final int requestAmount){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                List<Message> messageList = getMessageDatabase().getReversedMessages(chat, startIndex, requestAmount);
-
-                for (Message m : messageList){
-                    messages.put(m.getUuid().toString(), m);
+    public void removeMessage(final Message message, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    removeMessageTask(message);
                 }
+            }).start();
+        }else {
+            removeMessageTask(message);
+        }
+    }
 
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onMessagesQueueFinish(messages);
-                    }
+    public void queueMessages(final Chat chat, final int startIndex, final int requestAmount, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    queueMessagesTask(chat, startIndex, requestAmount);
                 }
-            }
-        }).start();
+            }).start();
+        }else {
+            queueMessagesTask(chat, startIndex, requestAmount);
+        }
     }
 
     private void init(){
@@ -399,6 +284,264 @@ public final class MessageManager {
         }).start();
     }
 
+    private void addContactTask(Contact contact){
+        contacts.put(contact.getUuid().toString(), contact);
+        getMessageDatabase().addContact(contact);
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onContactCreate(contact);
+            }
+        }
+    }
+
+    private void updateContactTask(String uuid, Contact newData){
+        Contact oldContact = getMessageDatabase().getContactByUuid(uuid);
+
+        contacts.put(uuid, newData);
+        getMessageDatabase().updateContact(uuid, newData);
+
+        for (Chat chat : chats.values()) {
+            if (chat instanceof PeerChat) {
+                PeerChat peerChat = (PeerChat) chat;
+
+                if (peerChat.getContact().getUuid().equals(oldContact.getUuid())) {
+                    peerChat.setContact(newData);
+                    chats.put(peerChat.getUuid().toString(), peerChat);
+                    getMessageDatabase().updateChat(peerChat.getUuid().toString(), peerChat);
+                }
+            } else if (chat instanceof GroupChat) {
+                GroupChat groupChat = (GroupChat) chat;
+                ArrayList<Contact> newContactList = new ArrayList<>();
+
+                for (Contact c : groupChat.getParticipants()) {
+                    if (c.getUuid().equals(oldContact.getUuid())) {
+                        newContactList.add(newData);
+                    } else {
+                        newContactList.add(c);
+                    }
+                }
+                groupChat.setParticipants(newContactList);
+                chats.put(groupChat.getUuid().toString(), groupChat);
+                getMessageDatabase().updateChat(groupChat.getUuid().toString(), groupChat);
+            }
+        }
+
+        synchronized (callbacksList) {
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()) {
+                Callbacks callbacks = i.next();
+                callbacks.onContactUpdate(oldContact, newData);
+            }
+        }
+    }
+
+    private void addChatTask(Chat chat){
+        chats.put(chat.getUuid().toString(), chat);
+        getMessageDatabase().addChat(chat);
+
+        synchronized (callbacksList) {
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()) {
+                Callbacks callbacks = i.next();
+                callbacks.onChatAdd(chat);
+            }
+        }
+    }
+
+    private void updateChatTask(String uuid, Chat newData){
+        Chat oldChat = getMessageDatabase().getChatByUuid(uuid);
+
+        chats.put(uuid, newData);
+        getMessageDatabase().updateChat(uuid, newData);
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onChatUpdate(oldChat, newData);
+            }
+        }
+    }
+
+    private void setHasUnreadMessagesTask(Chat chat, boolean hasUnreadMessages){
+        chat.setHasUnreadMessages(hasUnreadMessages);
+        chats.put(chat.getUuid().toString(), chat);
+        getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onUnreadMessagesUpdate(chat, hasUnreadMessages);
+            }
+        }
+    }
+
+    private void renameGroupChatTask(GroupChat chat, String newName){
+        chat.setDisplayName(newName);
+        chats.put(chat.getUuid().toString(), chat);
+        getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onChatRename(chat, newName);
+            }
+        }
+    }
+
+    private void addParticipantToGroupTask(GroupChat chat, Contact contact){
+        chat.addParticipant(contact);
+        chats.put(chat.getUuid().toString(), chat);
+        getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onParticipantAdd(chat, contact);
+            }
+        }
+    }
+
+    private void removeParticipantFromGroupTask(GroupChat chat, Contact contact){
+        chat.removeParticipant(contact);
+        chats.put(chat.getUuid().toString(), chat);
+        getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onParticipantRemove(chat, contact);
+            }
+        }
+    }
+
+    private void leaveGroupTask(GroupChat chat){
+        chat.setIsInChat(false);
+        chats.put(chat.getUuid().toString(), chat);
+        getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onLeaveGroup(chat);
+            }
+        }
+    }
+
+    private void deleteChatTask(Chat chat){
+        chats.remove(chat.getUuid().toString());
+        getMessageDatabase().deleteChatByUuid(chat.getUuid().toString());
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onChatDelete(chat);
+            }
+        }
+    }
+
+    private void refreshChatsTask(){
+        for (Chat c : getMessageDatabase().getChats()){
+            chats.put(c.getUuid().toString(), c);
+        }
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onChatListRefresh(chats);
+            }
+        }
+    }
+
+    private void addMessageTask(Message message){
+        messages.put(message.getUuid().toString(), message);
+        for (Attachment a : message.getAttachments()){
+            if (getMessageDatabase().getAttachmentByMacGuid(a.getMacGuid()) == null){
+                getMessageDatabase().addAttachment(a);
+            }
+        }
+        getMessageDatabase().addMessage(message);
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onMessageAdd(message);
+            }
+        }
+    }
+
+    private void updateMessageTask(String uuid, Message newData){
+        Message oldMessage = getMessageDatabase().getMessageByUuid(uuid);
+
+        messages.put(uuid, newData);
+        getMessageDatabase().updateMessage(uuid, newData);
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onMessageUpdate(oldMessage, newData);
+            }
+        }
+    }
+
+    //TODO: Delete attachments too
+
+    private void removeMessageTask(Message message){
+        messages.remove(message.getUuid().toString());
+        getMessageDatabase().deleteMessageByUuid(message.getUuid().toString());
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onMessageDelete(message);
+            }
+        }
+    }
+
+    private void queueMessagesTask(Chat chat, int startIndex, int requestAmount){
+        List<Message> messageList = getMessageDatabase().getReversedMessages(chat, startIndex, requestAmount);
+
+        for (Message m : messageList){
+            messages.put(m.getUuid().toString(), m);
+        }
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onMessagesQueueFinish(messages);
+            }
+        }
+    }
+
     private Thread createThreadedTask(Runnable runnable){
         return new Thread(runnable);
     }
@@ -412,6 +555,8 @@ public final class MessageManager {
         void onContactListRefresh(ConcurrentHashMap<String, Contact> contacts);
 
         void onChatAdd(Chat chat);
+
+        void onChatUpdate(Chat oldData, Chat newData);
 
         void onUnreadMessagesUpdate(Chat chat, boolean hasUnreadMessages);
 

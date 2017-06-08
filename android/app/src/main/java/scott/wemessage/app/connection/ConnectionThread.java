@@ -66,6 +66,8 @@ import scott.wemessage.commons.utils.StringUtils;
 public class ConnectionThread extends Thread {
 
     private final String TAG = ConnectionService.TAG;
+    private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
+
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
     private final Object inputStreamLock = new Object();
@@ -150,6 +152,14 @@ public class ConnectionThread extends Thread {
         getOutputStream().flush();
 
         clientMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
+    }
+
+    public void sendOutgoingMessage(){
+
+    }
+
+    public void sendOutgoingAction(){
+        //TODO: When doing the args for the action type, make sure they are all specified <--- TODO: Date Util thing weServer does, so date is not null
     }
 
     public void run(){
@@ -249,7 +259,7 @@ public class ConnectionThread extends Thread {
 
         while (isRunning.get()){
             try {
-                MessageDatabase database = DatabaseManager.getInstance(getParentService()).getMessageDatabase();
+                MessageDatabase database = MessageManager.getInstance(getParentService()).getMessageDatabase();
                 final String incoming = (String) getInputStream().readObject();
 
                 if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)){
@@ -333,176 +343,166 @@ public class ConnectionThread extends Thread {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_NEW_MESSAGE, incoming).getOutgoing(JSONMessage.class, byteArrayAdapter);
+                            try {
+                                JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_NEW_MESSAGE, incoming).getOutgoing(JSONMessage.class, byteArrayAdapter);
 
-                            JSONEncryptedText encryptedText = jsonMessage.getEncryptedText();
-                            DecryptionTask textDecryptionTask = new DecryptionTask(new KeyTextPair(encryptedText.getEncryptedText(), encryptedText.getKey()), CryptoType.AES);
-                            textDecryptionTask.runDecryptTask();
+                                JSONEncryptedText encryptedText = jsonMessage.getEncryptedText();
+                                DecryptionTask textDecryptionTask = new DecryptionTask(new KeyTextPair(encryptedText.getEncryptedText(), encryptedText.getKey()), CryptoType.AES);
+                                textDecryptionTask.runDecryptTask();
 
-                            MessageDatabase messageDatabase = DatabaseManager.getInstance(getParentService()).getMessageDatabase();
-                            MessageManager messageManager = MessageManager.getInstance(getParentService());
+                                MessageManager messageManager = MessageManager.getInstance(getParentService());
+                                MessageDatabase messageDatabase = messageManager.getMessageDatabase();
 
-                            for (String s : jsonMessage.getChat().getParticipants()){
-                                if (messageDatabase.getHandleByHandleID(s) == null){
-                                    messageDatabase.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE));
-                                }
-                            }
-
-                            for (String s : jsonMessage.getChat().getParticipants()){
-                                if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null){
-                                    messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null));
-                                }
-                            }
-
-                            JSONChat jsonChat = jsonMessage.getChat();
-
-                            if (messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()) == null){
-                                Chat newChat;
-                                UUID newChatUUID = UUID.randomUUID();
-                                String newChatMacGuid = jsonChat.getMacGuid();
-                                String newChatMacGroupID = jsonChat.getMacGroupID();
-                                String newChatMacChatIdentifier = jsonChat.getMacChatIdentifier();
-
-                                if (jsonChat.getDisplayName() == null && jsonChat.getParticipants().size() == 1){
-                                    newChat = new PeerChat(newChatUUID, newChatMacGuid, newChatMacGroupID, newChatMacChatIdentifier,
-                                            true, true, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonChat.getParticipants().get(0))));
-                                }else {
-                                    ArrayList<Contact> contactList = new ArrayList<>();
-
-                                    for(String s : jsonChat.getParticipants()){
-                                        contactList.add(messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
-                                    }
-                                    newChat = new GroupChat(newChatUUID, newChatMacGuid, newChatMacGroupID, newChatMacChatIdentifier, true, true, jsonChat.getDisplayName(), contactList);
-                                }
-                                messageManager.addChat(newChat);
-                            }else {
-                                Chat existingChat = messageDatabase.getChatByMacGuid(jsonChat.getMacGuid());
-
-                                if (existingChat.getChatType() == Chat.ChatType.GROUP){
-                                    GroupChat groupChat = (GroupChat) existingChat;
-                                    ArrayList<String> existingChatParticipantList = new ArrayList<>();
-                                    ArrayList<String> newChatParticipantList = new ArrayList<>(jsonChat.getParticipants());
-
-                                    for (Contact c : groupChat.getParticipants()){
-                                        existingChatParticipantList.add(c.getHandle().getHandleID());
-                                    }
-
-                                    List<String> removedParticipantsList = new ArrayList<>(existingChatParticipantList);
-                                    List<String> addedParticipantsList = new ArrayList<>(newChatParticipantList);
-
-                                    removedParticipantsList.removeAll(addedParticipantsList);
-                                    addedParticipantsList.removeAll(removedParticipantsList);
-
-                                    for (String s : addedParticipantsList){
-                                        messageManager.addParticipantToGroup(groupChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
-                                    }
-                                    for (String s : removedParticipantsList){
-                                        messageManager.removeParticipantFromGroup(groupChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
-                                    }
-
-                                    if (!groupChat.getDisplayName().equals(jsonChat.getDisplayName())){
-                                        messageManager.renameGroupChat(groupChat, jsonChat.getDisplayName());
+                                for (String s : jsonMessage.getChat().getParticipants()) {
+                                    if (messageDatabase.getHandleByHandleID(s) == null) {
+                                        messageDatabase.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE));
                                     }
                                 }
-                                messageManager.setHasUnreadMessages(existingChat, true);
-                            }
-                            Contact sender;
 
-                            if (StringUtils.isEmpty(jsonMessage.getHandle())){
-                                Handle meHandle = messageDatabase.getHandleByAccount(messageDatabase.getCurrentAccount());
-
-                                if (messageDatabase.getContactByHandle(meHandle) == null){
-                                    messageManager.addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null));
+                                for (String s : jsonMessage.getChat().getParticipants()) {
+                                    if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
+                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null), false);
+                                    }
                                 }
-                                sender = messageDatabase.getContactByHandle(meHandle);
-                            }else {
-                                sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
-                            }
-                            String attachmentNamePrefix = new SimpleDateFormat("MM-dd-yy", Locale.US).format(Calendar.getInstance().getTime());
-                            ArrayList<Attachment> attachments = new ArrayList<>();
 
-                            for (JSONAttachment jsonAttachment : jsonMessage.getAttachments()){
-                                Attachment attachment = new Attachment(UUID.randomUUID(), jsonAttachment.getMacGuid(), jsonAttachment.getTransferName(),
-                                        new FileLocationContainer(
-                                                new File(DatabaseManager.getInstance(getParentService()).getAttachmentFolder(), attachmentNamePrefix + "-" + jsonAttachment.getTransferName())),
-                                        jsonAttachment.getFileType(), jsonAttachment.getTotalBytes());
+                                JSONChat jsonChat = jsonMessage.getChat();
+                                runChatCheck(messageManager, jsonChat);
 
-                                JSONEncryptedFile jsonEncryptedFile = jsonAttachment.getFileData();
-                                FileDecryptionTask fileDecryptionTask = new FileDecryptionTask(new CryptoFile(jsonEncryptedFile.getEncryptedData(), jsonEncryptedFile.getKey(),
-                                        jsonEncryptedFile.getIvParams()), CryptoType.AES);
-                                fileDecryptionTask.runDecryptTask();
+                                messageManager.setHasUnreadMessages(messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), true, false);
 
-                                try {
+                                Contact sender;
+
+                                if (StringUtils.isEmpty(jsonMessage.getHandle())) {
+                                    Handle meHandle = messageDatabase.getHandleByAccount(messageDatabase.getCurrentAccount());
+
+                                    if (messageDatabase.getContactByHandle(meHandle) == null) {
+                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null), false);
+                                    }
+                                    sender = messageDatabase.getContactByHandle(meHandle);
+                                } else {
+                                    sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+                                }
+
+
+                                String attachmentNamePrefix = new SimpleDateFormat("MM-dd-yy", Locale.US).format(Calendar.getInstance().getTime());
+                                ArrayList<Attachment> attachments = new ArrayList<>();
+
+                                for (JSONAttachment jsonAttachment : jsonMessage.getAttachments()) {
+                                    Attachment attachment = new Attachment(UUID.randomUUID(), jsonAttachment.getMacGuid(), jsonAttachment.getTransferName(),
+                                            new FileLocationContainer(
+                                                    new File(DatabaseManager.getInstance(getParentService()).getAttachmentFolder(), attachmentNamePrefix + "-" + jsonAttachment.getTransferName())),
+                                            jsonAttachment.getFileType(), jsonAttachment.getTotalBytes());
+
+                                    JSONEncryptedFile jsonEncryptedFile = jsonAttachment.getFileData();
+                                    FileDecryptionTask fileDecryptionTask = new FileDecryptionTask(new CryptoFile(jsonEncryptedFile.getEncryptedData(), jsonEncryptedFile.getKey(),
+                                            jsonEncryptedFile.getIvParams()), CryptoType.AES);
+                                    fileDecryptionTask.runDecryptTask();
+
                                     attachment.getFileLocation().writeBytesToFile(fileDecryptionTask.getDecryptedBytes());
-                                }catch(IOException ex){
-                                    AppLogger.error(TAG, "An error occurred while writing the attachment to the file", ex);
+                                    attachments.add(attachment);
                                 }
-                                attachments.add(attachment);
+
+                                Message message = new Message(UUID.randomUUID(), jsonMessage.getMacGuid(), messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, attachments,
+                                        textDecryptionTask.getDecryptedText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(), jsonMessage.getDateRead(), jsonMessage.getErrored(),
+                                        jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe());
+
+                                messageManager.addMessage(message, false);
+                            }catch(Exception ex){
+                                sendLocalBroadcast(weMessage.BROADCAST_NEW_MESSAGE_ERROR, null);
+                                AppLogger.error(TAG, "An error occurred while fetching a new message from the server", ex);
                             }
-
-                            Message message = new Message(UUID.randomUUID(), jsonMessage.getMacGuid(), messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, attachments,
-                                    textDecryptionTask.getDecryptedText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(), jsonMessage.getDateRead(), jsonMessage.getErrored(),
-                                    jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe());
-
-                            messageManager.addMessage(message);
                         }
                     }).start();
                 }else if (incoming.startsWith(weMessage.JSON_MESSAGE_UPDATED)){
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_NEW_MESSAGE, incoming).getOutgoing(JSONMessage.class, byteArrayAdapter);
-                            MessageDatabase messageDatabase = DatabaseManager.getInstance(getParentService()).getMessageDatabase();
-                            MessageManager messageManager = MessageManager.getInstance(getParentService());
-                            Message oldMessage = messageDatabase.getMessageByMacGuid(jsonMessage.getMacGuid());
+                            try {
+                                JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_MESSAGE_UPDATED, incoming).getOutgoing(JSONMessage.class, byteArrayAdapter);
+                                MessageManager messageManager = MessageManager.getInstance(getParentService());
+                                MessageDatabase messageDatabase = messageManager.getMessageDatabase();
 
-                            if (oldMessage == null){
+                                for (String s : jsonMessage.getChat().getParticipants()) {
+                                    if (messageDatabase.getHandleByHandleID(s) == null) {
+                                        messageDatabase.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE));
+                                    }
+                                }
+
+                                for (String s : jsonMessage.getChat().getParticipants()) {
+                                    if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
+                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null), false);
+                                    }
+                                }
+
+                                if (StringUtils.isEmpty(jsonMessage.getHandle())) {
+                                    Handle meHandle = messageDatabase.getHandleByAccount(messageDatabase.getCurrentAccount());
+
+                                    if (messageDatabase.getContactByHandle(meHandle) == null) {
+                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null), false);
+                                    }
+                                }
+
+                                JSONChat jsonChat = jsonMessage.getChat();
+                                runChatCheck(messageManager, jsonChat);
+
+                                if (messageDatabase.getMessageByMacGuid(jsonMessage.getMacGuid()) == null){
+
+                                    JSONEncryptedText encryptedText = jsonMessage.getEncryptedText();
+                                    DecryptionTask textDecryptionTask = new DecryptionTask(new KeyTextPair(encryptedText.getEncryptedText(), encryptedText.getKey()), CryptoType.AES);
+                                    textDecryptionTask.runDecryptTask();
+                                    String decryptedText = textDecryptionTask.getDecryptedText();
+
+                                    List<Message> messageCandidates = messageDatabase.getReversedMessagesWithSearchParameters(
+                                            messageDatabase.getChatByMacGuid(jsonMessage.getChat().getMacGuid()), decryptedText, jsonMessage.isFromMe(), 0, UPDATE_MESSAGES_ATTEMPT_QUEUE);
+
+                                    boolean updated = false;
+
+                                    for (Message candidate : messageCandidates){
+                                        if (candidate.getMacGuid() == null){
+                                            updateMessage(messageManager, candidate, jsonMessage, true);
+                                            updated = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!updated){
+                                        sendLocalBroadcast(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR, null);
+                                        AppLogger.log(AppLogger.Level.ERROR, TAG, "An error occurred while updating a message with Mac GUID: " + jsonMessage.getMacGuid() +
+                                                "  Reason: Previous message not found on system");
+                                    }
+                                }else {
+                                    updateMessage(messageManager, messageDatabase.getMessageByMacGuid(jsonMessage.getMacGuid()), jsonMessage, false);
+                                }
+                            }catch(Exception ex){
                                 sendLocalBroadcast(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR, null);
-                                AppLogger.error("Could not find Message to update with Mac GUID: " + jsonMessage.getMacGuid(), new NullPointerException());
-                                return;
+                                AppLogger.error("An error occurred while updating the message", ex);
                             }
-                            JSONChat jsonChat = jsonMessage.getChat();
-                            Chat existingChat = messageDatabase.getChatByMacGuid(jsonChat.getMacGuid());
-
-                            if (existingChat.getChatType() == Chat.ChatType.GROUP){
-                                GroupChat groupChat = (GroupChat) existingChat;
-                                ArrayList<String> existingChatParticipantList = new ArrayList<>();
-                                ArrayList<String> newChatParticipantList = new ArrayList<>(jsonChat.getParticipants());
-
-                                for (Contact c : groupChat.getParticipants()){
-                                    existingChatParticipantList.add(c.getHandle().getHandleID());
-                                }
-
-                                List<String> removedParticipantsList = new ArrayList<>(existingChatParticipantList);
-                                List<String> addedParticipantsList = new ArrayList<>(newChatParticipantList);
-
-                                removedParticipantsList.removeAll(addedParticipantsList);
-                                addedParticipantsList.removeAll(removedParticipantsList);
-
-                                for (String s : addedParticipantsList){
-                                    messageManager.addParticipantToGroup(groupChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
-                                }
-                                for (String s : removedParticipantsList){
-                                    messageManager.removeParticipantFromGroup(groupChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
-                                }
-
-                                if (!groupChat.getDisplayName().equals(jsonChat.getDisplayName())){
-                                    messageManager.renameGroupChat(groupChat, jsonChat.getDisplayName());
-                                }
-                            }
-
-                            Message newMessage = new Message(oldMessage.getUuid(), oldMessage.getMacGuid(), oldMessage.getChat(), oldMessage.getSender(), oldMessage.getAttachments(),
-                                    oldMessage.getText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(), jsonMessage.getDateRead(), jsonMessage.getErrored(),
-                                    jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), oldMessage.isFromMe());
-
-                            messageManager.updateMessage(oldMessage.getUuid().toString(), newMessage);
                         }
                     }).start();
                 }else if (incoming.startsWith(weMessage.JSON_ACTION)){
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
 
-                    
+                                //TODO: DO stuff
+
+                            }catch(Exception ex){
+                                sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+                                AppLogger.error("An error occurred while performing a JSONAction", ex);
+                            }
+                        }
+                    }).start();
+                }else if (incoming.startsWith(weMessage.JSON_RETURN_RESULT)){
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            //TODO: More stuff
+
+                        }
+                    }).start();
                 }
-                //TODO: More stuff
             }catch(Exception ex){
                 Bundle extras = new Bundle();
                 extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));
@@ -515,11 +515,10 @@ public class ConnectionThread extends Thread {
 
     protected void endConnection(){
         if (isRunning.get()) {
-            isRunning.set(false);
-
             new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    isRunning.set(false);
                     try {
                         sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, DisconnectReason.CLIENT_DISCONNECTED.getCode(), Integer.class);
                     }catch(Exception ex){
@@ -532,14 +531,14 @@ public class ConnectionThread extends Thread {
                             getOutputStream().close();
                         }
                         getConnectionSocket().close();
+                        ConnectionThread.this.interrupt();
                     } catch (Exception ex) {
                         AppLogger.error(TAG, "An error occurred while terminating the connection to the weServer.", ex);
-                        interrupt();
+                        ConnectionThread.this.interrupt();
                     }
                 }
             }).start();
         }
-        interrupt();
     }
 
     private void sendLocalBroadcast(String action, Bundle extras){
@@ -549,5 +548,125 @@ public class ConnectionThread extends Thread {
             timeoutIntent.putExtras(extras);
         }
         LocalBroadcastManager.getInstance(getParentService()).sendBroadcast(timeoutIntent);
+    }
+
+    private void newGroupChat(MessageManager messageManager, JSONChat jsonChat){
+        ArrayList<Contact> contactList = new ArrayList<>();
+
+        for (String s : jsonChat.getParticipants()) {
+            contactList.add(messageManager.getMessageDatabase().getContactByHandle(messageManager.getMessageDatabase().getHandleByHandleID(s)));
+        }
+        GroupChat newChat = new GroupChat(UUID.randomUUID(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
+                true, true, jsonChat.getDisplayName(), contactList);
+
+        messageManager.addChat(newChat, false);
+    }
+
+    private void updateGroupChat(MessageManager messageManager, GroupChat existingChat, JSONChat jsonChat, boolean overrideAll){
+        MessageDatabase messageDatabase = messageManager.getMessageDatabase();
+
+        ArrayList<String> existingChatParticipantList = new ArrayList<>();
+        ArrayList<String> newChatParticipantList = new ArrayList<>(jsonChat.getParticipants());
+
+        for (Contact c : existingChat.getParticipants()) {
+            existingChatParticipantList.add(c.getHandle().getHandleID());
+        }
+
+        List<String> removedParticipantsList = new ArrayList<>(existingChatParticipantList);
+        List<String> addedParticipantsList = new ArrayList<>(newChatParticipantList);
+
+        removedParticipantsList.removeAll(addedParticipantsList);
+        addedParticipantsList.removeAll(removedParticipantsList);
+
+        for (String s : addedParticipantsList) {
+            messageManager.addParticipantToGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), false);
+        }
+        for (String s : removedParticipantsList) {
+            messageManager.removeParticipantFromGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), false);
+        }
+
+        if (!existingChat.getDisplayName().equals(jsonChat.getDisplayName())) {
+            messageManager.renameGroupChat(existingChat, jsonChat.getDisplayName(), false);
+        }
+
+        if (overrideAll){
+            GroupChat updatedChat = (GroupChat) messageDatabase.getChatByUuid(existingChat.getUuid().toString());
+
+            messageManager.updateChat(existingChat.getUuid().toString(), new GroupChat(existingChat.getUuid(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
+                    updatedChat.isInChat(), updatedChat.hasUnreadMessages(), updatedChat.getDisplayName(), updatedChat.getParticipants()), false);
+        }
+    }
+
+    private void runChatCheck(MessageManager messageManager, JSONChat jsonChat){
+        MessageDatabase messageDatabase = messageManager.getMessageDatabase();
+
+        if (messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()) == null) {
+            if (jsonChat.getDisplayName() == null && jsonChat.getParticipants().size() == 1) {
+
+                PeerChat peerChat = messageDatabase.getChatByHandle(messageDatabase.getHandleByHandleID(jsonChat.getParticipants().get(0)));
+                if (peerChat != null){
+
+                    PeerChat updatedChat = new PeerChat(peerChat.getUuid(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
+                            peerChat.isInChat(), peerChat.hasUnreadMessages(), peerChat.getContact());
+                    messageManager.updateChat(peerChat.getUuid().toString(), updatedChat, false);
+
+                }else {
+                    PeerChat newChat = new PeerChat(UUID.randomUUID(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
+                            true, true, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonChat.getParticipants().get(0))));
+                    messageManager.addChat(newChat, false);
+                }
+
+            } else {
+                ArrayList<GroupChat> groupChats = new ArrayList<>(messageDatabase.getGroupChatsWithName(jsonChat.getDisplayName()));
+
+                if (groupChats.size() == 0) {
+                    newGroupChat(messageManager, jsonChat);
+
+                } else if (groupChats.size() == 1) {
+
+                    if (groupChats.get(0).getMacGuid() == null) {
+                        updateGroupChat(messageManager, groupChats.get(0), jsonChat, true);
+                    } else {
+                        newGroupChat(messageManager, jsonChat);
+                    }
+                } else {
+                    boolean updated = false;
+
+                    for (GroupChat groupChat : groupChats) {
+                        if (groupChat.getMacGuid() == null) {
+                            updateGroupChat(messageManager, groupChat, jsonChat, true);
+                            updated = true;
+                            break;
+                        }
+                    }
+                    if (!updated) {
+                        newGroupChat(messageManager, jsonChat);
+                    }
+                }
+            }
+        } else {
+            Chat existingChat = messageDatabase.getChatByMacGuid(jsonChat.getMacGuid());
+
+            if (existingChat.getChatType() == Chat.ChatType.GROUP) {
+                updateGroupChat(messageManager, (GroupChat) existingChat, jsonChat, false);
+            }
+        }
+    }
+
+    private void updateMessage(MessageManager messageManager, Message existingMessage, JSONMessage jsonMessage, boolean overrideAll){
+        MessageDatabase messageDatabase = messageManager.getMessageDatabase();
+        Message newData = new Message().setUuid(existingMessage.getUuid()).setAttachments(existingMessage.getAttachments()).setText(existingMessage.getText())
+                .setDateSent(jsonMessage.getDateSent()).setDateDelivered(jsonMessage.getDateDelivered()).setDateRead(jsonMessage.getDateRead()).setHasErrored(jsonMessage.getErrored())
+                .setIsSent(jsonMessage.isSent()).setDelivered(jsonMessage.isDelivered()).setRead(jsonMessage.isRead()).setFinished(jsonMessage.isFinished()).setFromMe(existingMessage.isFromMe());
+
+        if (overrideAll){
+            newData.setMacGuid(jsonMessage.getMacGuid()).setChat(messageDatabase.getChatByMacGuid(jsonMessage.getChat().getMacGuid()))
+                    .setSender(messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle())));
+        }else {
+            newData.setMacGuid(existingMessage.getMacGuid()).setChat(messageDatabase.getChatByUuid(existingMessage.getChat().getUuid().toString()))
+                    .setSender(messageDatabase.getContactByHandle(existingMessage.getSender().getHandle()));
+        }
+
+        messageManager.updateMessage(existingMessage.getUuid().toString(), newData, false);
     }
 }
