@@ -21,6 +21,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -50,6 +51,7 @@ import scott.wemessage.app.security.KeyTextPair;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
+import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.connection.ClientMessage;
 import scott.wemessage.commons.json.connection.InitConnect;
 import scott.wemessage.commons.json.connection.ServerMessage;
@@ -58,6 +60,7 @@ import scott.wemessage.commons.json.message.JSONChat;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.json.message.security.JSONEncryptedFile;
 import scott.wemessage.commons.json.message.security.JSONEncryptedText;
+import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.DeviceType;
 import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
@@ -155,11 +158,11 @@ public class ConnectionThread extends Thread {
     }
 
     public void sendOutgoingMessage(){
-
+        //TODO: Thread this
     }
 
     public void sendOutgoingAction(){
-        //TODO: When doing the args for the action type, make sure they are all specified <--- TODO: Date Util thing weServer does, so date is not null
+        //TODO: When doing the args for the action type, make sure they are all specified <--- TODO: Date Util thing weServer does, so date is not null <-- Thread this
     }
 
     public void run(){
@@ -259,7 +262,7 @@ public class ConnectionThread extends Thread {
 
         while (isRunning.get()){
             try {
-                MessageDatabase database = MessageManager.getInstance(getParentService()).getMessageDatabase();
+                final MessageDatabase database = MessageManager.getInstance(getParentService()).getMessageDatabase();
                 final String incoming = (String) getInputStream().readObject();
 
                 if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)){
@@ -484,9 +487,118 @@ public class ConnectionThread extends Thread {
                         @Override
                         public void run() {
                             try {
+                                MessageManager messageManager = MessageManager.getInstance(getParentService());
+                                MessageDatabase messageDatabase = messageManager.getMessageDatabase();
 
-                                //TODO: DO stuff
+                                JSONAction jsonAction = (JSONAction) getIncomingMessage(weMessage.JSON_ACTION, incoming).getOutgoing(JSONAction.class, byteArrayAdapter);
+                                ActionType actionType = ActionType.fromCode(jsonAction.getMethodType());
+                                String[] args = jsonAction.getArgs();
 
+                                if (actionType == null){
+                                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+                                    AppLogger.error("Could not find action type with code: " + jsonAction.getMethodType(), new NullPointerException());
+                                    return;
+                                }
+
+                                switch (actionType){
+                                    case ADD_PARTICIPANT:
+                                        GroupChat apGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
+                                        Contact apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
+
+                                        if (messageDatabase.getHandleByHandleID(args[3]) == null) {
+                                            messageDatabase.addHandle(new Handle(UUID.randomUUID(), args[3], Handle.HandleType.IMESSAGE));
+                                        }
+
+                                        if (apContact == null) {
+                                            messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(args[3]), null), false);
+                                            apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
+                                        }
+
+                                        if (apGroupChat == null){
+                                            Bundle extras = new Bundle();
+                                            extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
+                                                    getParentService().getString(R.string.action_add_participant)));
+                                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
+                                            AppLogger.error("Could not perform JSONAction Add Participant because group chat was not found with name: " + args[0] + " and last message: " + args[2],
+                                                    new NullPointerException());
+                                            return;
+                                        }
+                                        messageManager.addParticipantToGroup(apGroupChat, apContact, false);
+                                        break;
+                                    case REMOVE_PARTICIPANT:
+                                        GroupChat rpGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
+                                        Contact rpContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
+
+                                        if (rpGroupChat == null){
+                                            Bundle extras = new Bundle();
+                                            extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
+                                                    getParentService().getString(R.string.action_remove_participant)));
+                                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
+                                            AppLogger.error("Could not perform JSONAction Remove Participant because group chat was not found with name: " + args[0] + " and last message: " + args[2],
+                                                    new NullPointerException());
+                                            return;
+                                        }
+
+                                        if (rpContact == null) {
+                                            Bundle extras = new Bundle();
+                                            extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_contact_not_found,
+                                                    getParentService().getString(R.string.action_remove_participant)));
+                                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
+                                            AppLogger.error("Could not perform JSONAction Remove Participant because contact with Handle ID: " + args[3] + " was not found.", new NullPointerException());
+                                            return;
+                                        }
+                                        messageManager.removeParticipantFromGroup(rpGroupChat, rpContact, false);
+                                        break;
+                                    case RENAME_GROUP:
+                                        GroupChat rnGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
+
+                                        if (rnGroupChat == null){
+                                            Bundle extras = new Bundle();
+                                            extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
+                                                    getParentService().getString(R.string.action_rename_group)));
+                                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
+                                            AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with name: " + args[0] + " and last message: " + args[2],
+                                                    new NullPointerException());
+                                            return;
+                                        }
+                                        messageManager.renameGroupChat(rnGroupChat, args[3], false);
+                                        break;
+                                    case CREATE_GROUP:
+                                        List<String> participants = new ArrayList<>(Arrays.asList(args[1].split(",")));
+                                        List<Contact> contacts = new ArrayList<>();
+
+                                        for (String s : participants) {
+                                            if (messageDatabase.getHandleByHandleID(s) == null) {
+                                                messageDatabase.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE));
+                                            }
+                                        }
+
+                                        for (String s : participants) {
+                                            if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
+                                                messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null), false);
+                                                contacts.add(messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
+                                            }
+                                        }
+                                        messageManager.addChat(new GroupChat(UUID.randomUUID(), null, null, null, true, true, args[0], contacts), false);
+                                        break;
+                                    case LEAVE_GROUP:
+                                        GroupChat lvGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
+
+                                        if (lvGroupChat == null){
+                                            Bundle extras = new Bundle();
+                                            extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
+                                                    getParentService().getString(R.string.action_leave_group)));
+                                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
+                                            AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with name: " + args[0] + " and last message: " + args[2],
+                                                    new NullPointerException());
+                                            return;
+                                        }
+                                        messageManager.leaveGroup(lvGroupChat, false);
+                                        break;
+                                    default:
+                                        AppLogger.error("Could not perform JSONAction because an unsupported action type was received", new NullPointerException());
+                                        break;
+                                }
                             }catch(Exception ex){
                                 sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
                                 AppLogger.error("An error occurred while performing a JSONAction", ex);
@@ -498,7 +610,7 @@ public class ConnectionThread extends Thread {
                         @Override
                         public void run() {
 
-                            //TODO: More stuff
+                            //TODO: DO Stuff
 
                         }
                     }).start();
@@ -542,12 +654,12 @@ public class ConnectionThread extends Thread {
     }
 
     private void sendLocalBroadcast(String action, Bundle extras){
-        Intent timeoutIntent = new Intent(action);
+        Intent broadcastIntent = new Intent(action);
 
         if (extras != null) {
-            timeoutIntent.putExtras(extras);
+            broadcastIntent.putExtras(extras);
         }
-        LocalBroadcastManager.getInstance(getParentService()).sendBroadcast(timeoutIntent);
+        LocalBroadcastManager.getInstance(getParentService()).sendBroadcast(broadcastIntent);
     }
 
     private void newGroupChat(MessageManager messageManager, JSONChat jsonChat){

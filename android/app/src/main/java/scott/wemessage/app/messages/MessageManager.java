@@ -509,9 +509,10 @@ public final class MessageManager {
         }
     }
 
-    //TODO: Delete attachments too
-
     private void removeMessageTask(Message message){
+        for (Attachment a : message.getAttachments()){
+            a.getFileLocation().getFile().delete();
+        }
         messages.remove(message.getUuid().toString());
         getMessageDatabase().deleteMessageByUuid(message.getUuid().toString());
 

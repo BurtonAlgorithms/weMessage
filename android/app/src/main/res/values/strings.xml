@@ -32,4 +32,11 @@
     <string name="connection_error_force_disconnect_message">This device has been forcefully disconnected by the weServer.</string>
     <string name="connection_error_client_disconnect_message">You have disconnected from the weServer.</string>
     <string name="connection_error_incorrect_version_message">weMessage could not connect because the server is running on a different version.</string>
+    <string name="action_rename_group">Rename Group</string>
+    <string name="action_add_participant">Add Participant</string>
+    <string name="action_remove_participant">Remove Participant</string>
+    <string name="action_create_group">Create Group</string>
+    <string name="action_leave_group">Leave Group</string>
+    <string name="action_perform_error_group_not_found">Action: %1$s could not be performed because the group chat was not found.</string>
+    <string name="action_perform_error_contact_not_found">Action: %1$s could not be performed because the requested contact was not found.</string>
 </resources>

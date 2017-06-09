@@ -17,6 +17,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         //TODO: Add callback hook
         //TODO: Listen for broadcast of message update error
         //TODO: Listen for broadcast of new message error; intent filter don't forget
+        //TODO: On listen events, listen for message failure bundles
 
         super.onCreate(savedInstanceState);
     }
