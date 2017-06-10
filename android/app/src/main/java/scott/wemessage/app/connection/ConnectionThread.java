@@ -52,7 +52,9 @@ import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
+import scott.wemessage.commons.json.action.JSONResult;
 import scott.wemessage.commons.json.connection.ClientMessage;
+import scott.wemessage.commons.json.connection.ConnectionMessage;
 import scott.wemessage.commons.json.connection.InitConnect;
 import scott.wemessage.commons.json.connection.ServerMessage;
 import scott.wemessage.commons.json.message.JSONAttachment;
@@ -63,6 +65,7 @@ import scott.wemessage.commons.json.message.security.JSONEncryptedText;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.DeviceType;
 import scott.wemessage.commons.types.DisconnectReason;
+import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.StringUtils;
 
@@ -79,8 +82,7 @@ public class ConnectionThread extends Thread {
     private AtomicBoolean isRunning = new AtomicBoolean(false);
     private AtomicBoolean hasTriedAuthenticating = new AtomicBoolean(false);
     private AtomicBoolean isConnected = new AtomicBoolean(false);
-    private ConcurrentHashMap<String, ClientMessage>clientMessagesMap = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, ServerMessage>serverMessagesMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, ConnectionMessage>connectionMessagesMap = new ConcurrentHashMap<>();
 
     private ConnectionService service;
     private Socket connectionSocket;
@@ -141,7 +143,7 @@ public class ConnectionThread extends Thread {
         String data = ((String) incomingStream).split(prefix)[1];
         ServerMessage serverMessage = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().fromJson(data, ServerMessage.class);
 
-        serverMessagesMap.put(serverMessage.getMessageUuid(), serverMessage);
+        connectionMessagesMap.put(serverMessage.getMessageUuid(), serverMessage);
         return serverMessage;
     }
 
@@ -154,7 +156,7 @@ public class ConnectionThread extends Thread {
         getOutputStream().writeObject(prefix + outgoingJson);
         getOutputStream().flush();
 
-        clientMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
+        connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
     }
 
     public void sendOutgoingMessage(){
@@ -162,7 +164,7 @@ public class ConnectionThread extends Thread {
     }
 
     public void sendOutgoingAction(){
-        //TODO: When doing the args for the action type, make sure they are all specified <--- TODO: Date Util thing weServer does, so date is not null <-- Thread this
+        //TODO: When doing the args for the action type, make sure they are all specified; Date Util thing weServer does, so date is not null <-- Thread this
     }
 
     public void run(){
@@ -262,7 +264,7 @@ public class ConnectionThread extends Thread {
 
         while (isRunning.get()){
             try {
-                final MessageDatabase database = MessageManager.getInstance(getParentService()).getMessageDatabase();
+                MessageDatabase database = MessageManager.getInstance(getParentService()).getMessageDatabase();
                 final String incoming = (String) getInputStream().readObject();
 
                 if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)){
@@ -609,8 +611,73 @@ public class ConnectionThread extends Thread {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
+                            MessageManager messageManager = MessageManager.getInstance(getParentService());
+                            JSONResult jsonResult = (JSONResult) getIncomingMessage(weMessage.JSON_RETURN_RESULT, incoming).getOutgoing(JSONResult.class, byteArrayAdapter);
+                            List<ReturnType> returnTypes = parseResults(jsonResult.getResult());
+                            ConnectionMessage connectionMessage = connectionMessagesMap.get(jsonResult.getCorrespondingUUID());
 
-                            //TODO: DO Stuff
+                            if (connectionMessage == null){
+                                sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
+                                AppLogger.error("Could not process result because the connection message was null", new NullPointerException());
+                                return;
+                            }
+
+                            if (connectionMessage instanceof ServerMessage){
+                                ServerMessage serverMessage = (ServerMessage) connectionMessage;
+
+                                boolean isAMessage;
+
+                                try {
+                                    JSONMessage m = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class, byteArrayAdapter);
+                                    isAMessage = true;
+
+                                }catch (Exception ex){
+                                    try {
+                                        JSONAction a = (JSONAction) serverMessage.getOutgoing(JSONAction.class, byteArrayAdapter);
+                                        isAMessage = false;
+                                    }catch(Exception e){
+                                        sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
+                                        AppLogger.error("Could not process result because an error occurred while parsing JSON", e);
+                                        return;
+                                    }
+                                }
+
+                                if (isAMessage){
+                                    JSONMessage jsonMessage = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class, byteArrayAdapter);
+                                    messageManager.onMessageResultReceived(serverMessage, jsonMessage, returnTypes);
+                                } else {
+                                    JSONAction jsonAction = (JSONAction) serverMessage.getOutgoing(JSONAction.class, byteArrayAdapter);
+                                    messageManager.onActionResultReceived(serverMessage, jsonAction, returnTypes);
+                                }
+                            }else if (connectionMessage instanceof ClientMessage){
+
+                                ClientMessage clientMessage = (ClientMessage) connectionMessage;
+
+                                boolean isAMessage;
+
+                                try {
+                                    JSONMessage m = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, byteArrayAdapter);
+                                    isAMessage = true;
+
+                                }catch (Exception ex){
+                                    try {
+                                        JSONAction a = (JSONAction) clientMessage.getIncoming(JSONAction.class, byteArrayAdapter);
+                                        isAMessage = false;
+                                    }catch(Exception e){
+                                        sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
+                                        AppLogger.error("Could not process result because an error occurred while parsing JSON", e);
+                                        return;
+                                    }
+                                }
+
+                                if (isAMessage){
+                                    JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, byteArrayAdapter);
+                                    messageManager.onMessageResultReceived(clientMessage, jsonMessage, returnTypes);
+                                } else {
+                                    JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class, byteArrayAdapter);
+                                    messageManager.onActionResultReceived(clientMessage, jsonAction, returnTypes);
+                                }
+                            }
 
                         }
                     }).start();
@@ -780,5 +847,15 @@ public class ConnectionThread extends Thread {
         }
 
         messageManager.updateMessage(existingMessage.getUuid().toString(), newData, false);
+    }
+
+    private List<ReturnType> parseResults(List<Integer> integerList){
+        List<ReturnType> returnList = new ArrayList<>();
+
+        for (Integer i : integerList){
+            returnList.add(ReturnType.fromCode(i));
+        }
+
+        return returnList;
     }
 }

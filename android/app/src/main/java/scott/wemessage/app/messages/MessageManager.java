@@ -16,6 +16,10 @@ import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.chat.Chat;
 import scott.wemessage.app.messages.objects.chat.GroupChat;
 import scott.wemessage.app.messages.objects.chat.PeerChat;
+import scott.wemessage.commons.json.action.JSONAction;
+import scott.wemessage.commons.json.connection.ConnectionMessage;
+import scott.wemessage.commons.json.message.JSONMessage;
+import scott.wemessage.commons.types.ReturnType;
 
 public final class MessageManager {
 
@@ -340,6 +344,28 @@ public final class MessageManager {
         }
     }
 
+    public void onActionResultReceived(ConnectionMessage connectionMessage, JSONAction jsonAction, List<ReturnType> returnTypes){
+        synchronized (callbacksList) {
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()) {
+                Callbacks callbacks = i.next();
+                callbacks.onActionResultReceived(connectionMessage, jsonAction, returnTypes);
+            }
+        }
+    }
+
+    public void onMessageResultReceived(ConnectionMessage connectionMessage, JSONMessage jsonMessage, List<ReturnType> returnTypes){
+        synchronized (callbacksList) {
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()) {
+                Callbacks callbacks = i.next();
+                callbacks.onMessageResultReceived(connectionMessage, jsonMessage, returnTypes);
+            }
+        }
+    }
+
     private void addChatTask(Chat chat){
         chats.put(chat.getUuid().toString(), chat);
         getMessageDatabase().addChat(chat);
@@ -580,5 +606,9 @@ public final class MessageManager {
         void onMessageDelete(Message message);
 
         void onMessagesQueueFinish(ConcurrentHashMap<String, Message> messages);
+
+        void onActionResultReceived(ConnectionMessage connectionMessage, JSONAction jsonAction, List<ReturnType> returnTypes);
+
+        void onMessageResultReceived(ConnectionMessage connectionMessage, JSONMessage jsonMessage, List<ReturnType> returnTypes);
     }
 }
