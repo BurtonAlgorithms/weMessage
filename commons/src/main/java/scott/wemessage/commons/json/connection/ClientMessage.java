@@ -1,24 +1,19 @@
 package scott.wemessage.commons.json.connection;
 
-import scott.wemessage.commons.utils.ByteArrayAdapter;
-
-import java.lang.reflect.Type;
-
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-public class ClientMessage {
+import java.lang.reflect.Type;
 
-    private String messageUuid;
+import scott.wemessage.commons.utils.ByteArrayAdapter;
+
+public class ClientMessage extends ConnectionMessage {
+
     private String incomingJson;
 
     public ClientMessage(String messageUuid, String incomingJson){
-        this.messageUuid = messageUuid;
+        super(messageUuid);
         this.incomingJson = incomingJson;
-    }
-
-    public String getMessageUuid() {
-        return messageUuid;
     }
 
     public Object getIncoming(Class<?> objectClass, ByteArrayAdapter byteArrayAdapter) {
@@ -33,10 +28,6 @@ public class ClientMessage {
         }catch(Exception ex){
             return false;
         }
-    }
-
-    public void setMessageUuid(String messageUuid) {
-        this.messageUuid = messageUuid;
     }
 
     public void setIncomingJson(String incomingJson) {

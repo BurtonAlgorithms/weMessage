@@ -4,16 +4,16 @@ import java.util.List;
 
 public class JSONResult {
     
-    private String correspondingActionUUID;
+    private String correspondingUUID;
     private List<Integer> result;
     
     public JSONResult(String correspondingActionUUID, List<Integer> results){
-        this.correspondingActionUUID = correspondingActionUUID;
+        this.correspondingUUID = correspondingActionUUID;
         this.result = results;
     }
 
-    public String getCorrespondingActionUUID() {
-        return correspondingActionUUID;
+    public String getCorrespondingUUID() {
+        return correspondingUUID;
     }
 
     public List<Integer> getResult() {
@@ -24,7 +24,7 @@ public class JSONResult {
         this.result = result;
     }
 
-    public void setCorrespondingActionUUID(String correspondingActionUUID) {
-        this.correspondingActionUUID = correspondingActionUUID;
+    public void setCorrespondingUUID(String correspondingUUID) {
+        this.correspondingUUID = correspondingUUID;
     }
 }
