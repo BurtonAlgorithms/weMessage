@@ -181,7 +181,7 @@ public final class AppleScriptExecutor extends Thread {
             }
             bufferedReader.close();
 
-            List<String> resultReturns = Arrays.asList(returnCode.split(", "));
+            ArrayList<String> resultReturns = new ArrayList<>(Arrays.asList(returnCode.split(", ")));
             List<ReturnType> resultReturnsList = new ArrayList<>();
 
             for (String s : resultReturns) {

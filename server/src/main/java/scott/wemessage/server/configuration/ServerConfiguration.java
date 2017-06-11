@@ -21,21 +21,25 @@ public final class ServerConfiguration {
 
     private final Object parentDirectoryLock = new Object();
     private final Object configFileLock = new Object();
+    private final Object logFileLock = new Object();
 
     private final String version = weMessage.WEMESSAGE_VERSION;
     private final String configFileName = weMessage.CONFIG_FILE_NAME;
+    private final String logFileName = weMessage.LOG_FILE_NAME;
     private final int buildVersion = weMessage.WEMESSAGE_BUILD_VERSION;
     private final int port;
 
     private final String parentPathDirectory;
     private File parentDirectory;
     private File configFile;
+    private File logFile;
 
     public ServerConfiguration(MessageServer messageServer) throws IOException {
         this.parentPathDirectory = Paths.get("").toAbsolutePath().toString();
         this.parentDirectory = new File(parentPathDirectory);
 
         File configFile = new File(parentDirectory, configFileName);
+        File logFile = new File(parentDirectory, logFileName);
 
         if(!configFile.exists()){
             createConfig(configFile);
@@ -57,6 +61,14 @@ public final class ServerConfiguration {
         synchronized (configFileLock) {
             this.configFile = configFile;
         }
+
+        if (configJSON.getConfig().getCreateLogFiles()){
+            configFile.createNewFile();
+
+            synchronized (logFileLock){
+                this.logFile = logFile;
+            }
+        }
         this.port = configJSON.getConfig().getPort();
     }
 
@@ -76,6 +88,15 @@ public final class ServerConfiguration {
         return port;
     }
 
+    public boolean saveLogFiles() {
+        try {
+            return getConfigJSON().getConfig().getCreateLogFiles();
+        }catch(Exception ex){
+            ServerLogger.error("An error occurred while trying to see if log files should be saved", ex);
+            return false;
+        }
+    }
+
     public final String getParentDirectoryPath(){
         return parentPathDirectory;
     }
@@ -89,6 +110,12 @@ public final class ServerConfiguration {
     public File getConfigFile(){
         synchronized (configFileLock) {
             return configFile;
+        }
+    }
+
+    public File getLogFile(){
+        synchronized (logFileLock){
+            return logFile;
         }
     }
 
@@ -110,7 +137,7 @@ public final class ServerConfiguration {
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         ConfigJSON configJSON = new ConfigJSON(
-                new ConfigJSONData(weMessage.WEMESSAGE_CONFIG_VERSION, weMessage.DEFAULT_PORT,
+                new ConfigJSONData(weMessage.WEMESSAGE_CONFIG_VERSION, weMessage.DEFAULT_PORT, weMessage.CREATE_LOG_FILES,
                         new ConfigAccountJSON(
                                 weMessage.DEFAULT_EMAIL,
                                 weMessage.DEFAULT_PASSWORD,

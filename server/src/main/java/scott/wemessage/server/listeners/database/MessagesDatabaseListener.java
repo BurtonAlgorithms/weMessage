@@ -69,9 +69,9 @@ public class MessagesDatabaseListener extends Listener {
     }
 
     private boolean isMessageSame(Message one, Message two){
-        if(one.getDateSent() != two.getDateSent()) return false;
-        if(one.getDateDelivered() != two.getDateSent()) return false;
-        if(one.getDateRead() != two.getDateRead()) return false;
+        if(!one.getDateSent().equals(two.getDateSent())) return false;
+        if(!one.getDateDelivered().equals(two.getDateSent())) return false;
+        if(!one.getDateRead().equals(two.getDateRead())) return false;
         if(one.hasErrored() != two.hasErrored()) return false;
         if(one.isFinished() != two.isFinished()) return false;
 

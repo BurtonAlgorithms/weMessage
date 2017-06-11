@@ -283,7 +283,7 @@ public final class DatabaseManager extends Thread {
             return;
         }
         String devicesString = resultSet.getString(COLUMN_QUEUE_MESSAGE_DEVICES_WAITING);
-        List<String> devices = Arrays.asList(devicesString.split(", "));
+        ArrayList<String> devices = new ArrayList<>(Arrays.asList(devicesString.split(", ")));
 
         devices.remove(deviceId);
 
@@ -362,7 +362,7 @@ public final class DatabaseManager extends Thread {
             return;
         }
         String devicesString = resultSet.getString(COLUMN_QUEUE_ACTION_DEVICES_WAITING);
-        List<String> devices = Arrays.asList(devicesString.split(", "));
+        ArrayList<String> devices = new ArrayList<>(Arrays.asList(devicesString.split(", ")));
 
         devices.remove(deviceId);
 

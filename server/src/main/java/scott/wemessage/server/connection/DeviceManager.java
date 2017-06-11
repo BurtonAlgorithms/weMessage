@@ -91,8 +91,10 @@ public final class DeviceManager extends Thread {
 
             if (reasonMessage == null) {
                 ServerLogger.log(ServerLogger.Level.INFO, TAG, "Disconnecting device with IP Address: " + device.getAddress());
+                ServerLogger.emptyLine();
             }else {
                 ServerLogger.log(ServerLogger.Level.INFO, TAG, reasonMessage);
+                ServerLogger.emptyLine();
             }
             return true;
         }

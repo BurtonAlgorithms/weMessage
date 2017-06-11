@@ -52,6 +52,7 @@ public final class MessageServer {
     protected MessageServer() {
         if (init()) {
             try {
+                ServerLogger.setServerHook(this);
                 AESCrypto.setBase64Wrapper(new ServerBase64Wrapper());
 
                 this.serverConfiguration = new ServerConfiguration(this);
