@@ -4,6 +4,7 @@
     <color name="colorStatusBar">#054cff</color>
     <color name="colorAccent">#058fff</color>
     <color name="borderColor">#c0058fff</color>
+    <color name="unreadBubble">#037aff</color>
     <color name="heavyBlue">#055cff</color>
     <color name="heavierBlue">#053bff</color>
     <color name="superHeavyBlue">#0013e2</color>
@@ -14,4 +15,5 @@
 
     <color name="lightBlack">#252525</color>
     <color name="lightGray">#787878</color>
+    <color name="dialogDivider">#a6a6a6</color>
 </resources>

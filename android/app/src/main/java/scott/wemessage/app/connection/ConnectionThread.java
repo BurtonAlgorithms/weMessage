@@ -39,9 +39,9 @@ import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Handle;
 import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.chat.Chat;
-import scott.wemessage.app.messages.objects.chat.GroupChat;
-import scott.wemessage.app.messages.objects.chat.PeerChat;
+import scott.wemessage.app.chats.objects.Chat;
+import scott.wemessage.app.chats.objects.GroupChat;
+import scott.wemessage.app.chats.objects.PeerChat;
 import scott.wemessage.app.security.CryptoFile;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.DecryptionTask;
@@ -194,14 +194,14 @@ public class ConnectionThread extends Thread {
             }
         }catch(SocketTimeoutException ex){
             if (isRunning.get()) {
-                sendLocalBroadcast(weMessage.INTENT_LOGIN_TIMEOUT, null);
+                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_TIMEOUT, null);
                 getParentService().endService();
             }
             return;
         }catch(IOException ex){
             if (isRunning.get()) {
                 AppLogger.error(TAG, "An error occurred while connecting to the weServer.", ex);
-                sendLocalBroadcast(weMessage.INTENT_LOGIN_ERROR, null);
+                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_ERROR, null);
                 getParentService().endService();
             }
             return;
@@ -699,12 +699,9 @@ public class ConnectionThread extends Thread {
                 public void run() {
                     isRunning.set(false);
                     try {
-                        sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, DisconnectReason.CLIENT_DISCONNECTED.getCode(), Integer.class);
-                    }catch(Exception ex){
-                        AppLogger.error(TAG, "An error occurred while sending disconnect message to the server.", ex);
-                    }
-                    try {
                         if (isConnected.get()) {
+                            sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, DisconnectReason.CLIENT_DISCONNECTED.getCode(), Integer.class);
+
                             isConnected.set(false);
                             getInputStream().close();
                             getOutputStream().close();

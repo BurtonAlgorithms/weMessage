@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import scott.wemessage.app.messages.objects.chat.Chat;
+import scott.wemessage.app.chats.objects.Chat;
 import scott.wemessage.commons.utils.DateUtils;
 
 public class Message {

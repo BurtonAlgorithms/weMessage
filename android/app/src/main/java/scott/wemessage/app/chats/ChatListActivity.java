@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages;
+package scott.wemessage.app.chats;
 
 import android.support.v4.app.Fragment;
 

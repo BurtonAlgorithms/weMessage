@@ -7,7 +7,6 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -38,13 +37,13 @@ import android.widget.TextView;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
+import scott.wemessage.app.chats.ChatListActivity;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
-import scott.wemessage.app.messages.ChatListActivity;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.view.button.FontButton;
-import scott.wemessage.app.view.dialog.AlertDialogLayout;
 import scott.wemessage.app.view.dialog.AnimationDialogLayout;
+import scott.wemessage.app.view.dialog.DialogDisplayer;
 import scott.wemessage.app.view.dialog.ProgressDialogLayout;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.AuthenticationUtils;
@@ -64,19 +63,20 @@ public class LaunchFragment extends Fragment {
     private int oldEditTextColor;
     private int errorSnackbarDuration = 5000;
     private boolean isBoundToConnectionService = false;
+    private boolean isStillConnecting = false;
 
     private BroadcastReceiver launcherBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getAction().equals(weMessage.INTENT_CONNECTION_SERVICE_STOPPED)) {
+            if(intent.getAction().equals(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED)) {
                 unbindService();
-            }else if (intent.getAction().equals(weMessage.INTENT_LOGIN_TIMEOUT)){
+            }else if (intent.getAction().equals(weMessage.BROADCAST_LOGIN_TIMEOUT)){
                 if (loginProgressDialog != null) {
                     loginProgressDialog.dismiss();
                     generateAlertDialog(getString(R.string.timeout_alert_title), getString(R.string.timeout_alert_content)).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
                     loginProgressDialog = null;
                 }
-            }else if(intent.getAction().equals(weMessage.INTENT_LOGIN_ERROR)){
+            }else if(intent.getAction().equals(weMessage.BROADCAST_LOGIN_ERROR)){
                 if (loginProgressDialog != null) {
                     loginProgressDialog.dismiss();
                     generateAlertDialog(getString(R.string.login_error_alert_title), getString(R.string.login_error_alert_content)).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
@@ -138,9 +138,9 @@ public class LaunchFragment extends Fragment {
         });
 
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(weMessage.INTENT_LOGIN_TIMEOUT);
-        intentFilter.addAction(weMessage.INTENT_LOGIN_ERROR);
-        intentFilter.addAction(weMessage.INTENT_CONNECTION_SERVICE_STOPPED);
+        intentFilter.addAction(weMessage.BROADCAST_LOGIN_TIMEOUT);
+        intentFilter.addAction(weMessage.BROADCAST_LOGIN_ERROR);
+        intentFilter.addAction(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED);
 
         intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_ALREADY_CONNECTED);
         intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_INVALID_LOGIN);
@@ -374,6 +374,34 @@ public class LaunchFragment extends Fragment {
     }
 
     @Override
+    public void onPause() {
+        isStillConnecting = loginProgressDialog != null;
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        if (isStillConnecting){
+            String ipUnformatted = ipEditText.getText().toString();
+            String ipAddress;
+            int port;
+
+            if (ipUnformatted.contains(":")) {
+                String[] split = ipUnformatted.split(":");
+
+                port = Integer.parseInt(split[1]);
+                ipAddress = split[0];
+            } else {
+                ipAddress = ipUnformatted;
+                port = weMessage.DEFAULT_PORT;
+            }
+            showProgressDialog(getView(), getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
+        }
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
@@ -515,17 +543,6 @@ public class LaunchFragment extends Fragment {
         colorAnimation.start();
     }
 
-    private AlertDialogFragment generateAlertDialog(String title, String message){
-        Bundle bundle = new Bundle();
-        AlertDialogFragment dialog = new AlertDialogFragment();
-
-        bundle.putString(weMessage.BUNDLE_ALERT_TITLE, title);
-        bundle.putString(weMessage.BUNDLE_ALERT_MESSAGE, message);
-        dialog.setArguments(bundle);
-
-        return dialog;
-    }
-
     private AnimationDialogFragment generateAnimationDialog(int animationSource){
         Bundle bundle = new Bundle();
         AnimationDialogFragment dialog = new AnimationDialogFragment();
@@ -577,20 +594,16 @@ public class LaunchFragment extends Fragment {
         loginProgressDialog = progressDialog;
     }
 
+    public static DialogDisplayer.AlertDialogFragment generateAlertDialog(String title, String message){
+        return DialogDisplayer.generateAlertDialog(title, message);
+    }
+
     private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage){
         if (loginProgressDialog != null){
             loginProgressDialog.dismiss();
             loginProgressDialog = null;
         }
-        String message = defaultMessage;
-
-        if (bundledIntent.getExtras() != null){
-            String alternateMessageExtra = bundledIntent.getExtras().getString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE);
-            if (alternateMessageExtra != null){
-                message = alternateMessageExtra;
-            }
-        }
-        generateAlertDialog(getString(R.string.login_error_alert_title), message).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
+        DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage);
     }
 
     private boolean isServiceRunning(Class<?> serviceClass) {
@@ -601,33 +614,6 @@ public class LaunchFragment extends Fragment {
             }
         }
         return false;
-    }
-
-    public static class AlertDialogFragment extends DialogFragment {
-
-        @NonNull
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            Bundle args = getArguments();
-
-            String title = args.getString(weMessage.BUNDLE_ALERT_TITLE);
-            String message = args.getString(weMessage.BUNDLE_ALERT_MESSAGE);
-
-            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-            AlertDialogLayout alertDialogLayout = (AlertDialogLayout) getActivity().getLayoutInflater().inflate(R.layout.alert_dialog_layout, null);
-
-            alertDialogLayout.setTitle(title);
-            alertDialogLayout.setMessage(message);
-
-            builder.setView(alertDialogLayout);
-            builder.setPositiveButton(R.string.ok_button, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.dismiss();
-                }
-            });
-            return builder.create();
-        }
     }
 
     public static class AnimationDialogFragment extends DialogFragment {

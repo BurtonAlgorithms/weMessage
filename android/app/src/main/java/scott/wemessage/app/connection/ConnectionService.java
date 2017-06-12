@@ -31,7 +31,7 @@ public class ConnectionService extends Service {
     @Override
     public void onDestroy() {
         if (getConnectionThread().isRunning().get()){
-            Intent serviceClosedIntent = new Intent(weMessage.INTENT_CONNECTION_SERVICE_STOPPED);
+            Intent serviceClosedIntent = new Intent(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED);
             LocalBroadcastManager.getInstance(this).sendBroadcast(serviceClosedIntent);
 
             getConnectionThread().endConnection();
@@ -53,8 +53,7 @@ public class ConnectionService extends Service {
             this.connectionThread = connectionThread;
         }
 
-        //TODO: Should we do a start sticky? Make sure same params are passed
-        return START_NOT_STICKY;
+        return START_REDELIVER_INTENT;
     }
 
     @Override
@@ -64,7 +63,7 @@ public class ConnectionService extends Service {
 
     public void endService(){
         Intent serviceClosedIntent = new Intent();
-        serviceClosedIntent.setAction(weMessage.INTENT_CONNECTION_SERVICE_STOPPED);
+        serviceClosedIntent.setAction(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED);
         LocalBroadcastManager.getInstance(this).sendBroadcast(serviceClosedIntent);
         getConnectionThread().endConnection();
         stopSelf();

@@ -12,10 +12,11 @@ import scott.wemessage.app.database.DatabaseManager;
 import scott.wemessage.app.database.MessageDatabase;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
+import scott.wemessage.app.messages.objects.Handle;
 import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.chat.Chat;
-import scott.wemessage.app.messages.objects.chat.GroupChat;
-import scott.wemessage.app.messages.objects.chat.PeerChat;
+import scott.wemessage.app.chats.objects.Chat;
+import scott.wemessage.app.chats.objects.GroupChat;
+import scott.wemessage.app.chats.objects.PeerChat;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.connection.ConnectionMessage;
 import scott.wemessage.commons.json.message.JSONMessage;
@@ -37,6 +38,16 @@ public final class MessageManager {
             instance = messageManager;
         }
         return instance;
+    }
+
+    public static void dump(Context context){
+        if (instance != null) {
+            getInstance(context).contacts.clear();
+            getInstance(context).chats.clear();
+            getInstance(context).messages.clear();
+            getInstance(context).callbacksList.clear();
+            instance = null;
+        }
     }
 
     private MessageManager(Context context){
@@ -78,6 +89,19 @@ public final class MessageManager {
             }).start();
         }else {
             updateContactTask(uuid, newData);
+        }
+    }
+
+    public void updateHandle(final String uuid, final Handle newData, final boolean threaded){
+        if (threaded){
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    updateHandleTask(uuid, newData, threaded);
+                }
+            }).start();
+        }else {
+            updateHandleTask(uuid, newData, threaded);
         }
     }
 
@@ -250,6 +274,41 @@ public final class MessageManager {
         }
     }
 
+    public void refreshMessages(boolean threaded){
+        if (threaded){
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    refreshMessagesTask();
+                }
+            }).start();
+        }else {
+            refreshMessagesTask();
+        }
+    }
+
+    public void onActionResultReceived(ConnectionMessage connectionMessage, JSONAction jsonAction, List<ReturnType> returnTypes){
+        synchronized (callbacksList) {
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()) {
+                Callbacks callbacks = i.next();
+                callbacks.onActionResultReceived(connectionMessage, jsonAction, returnTypes);
+            }
+        }
+    }
+
+    public void onMessageResultReceived(ConnectionMessage connectionMessage, JSONMessage jsonMessage, List<ReturnType> returnTypes){
+        synchronized (callbacksList) {
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()) {
+                Callbacks callbacks = i.next();
+                callbacks.onMessageResultReceived(connectionMessage, jsonMessage, returnTypes);
+            }
+        }
+    }
+
     private void init(){
         createThreadedTask(new Runnable() {
             @Override
@@ -302,6 +361,17 @@ public final class MessageManager {
         }
     }
 
+    private void updateHandleTask(String uuid, Handle newData, boolean threaded){
+        getMessageDatabase().updateHandle(uuid, newData);
+
+        for (Contact c : contacts.values()){
+            if (c.getHandle().getUuid().toString().equals(uuid)){
+                c.setHandle(newData);
+                updateContact(uuid, c, threaded);
+            }
+        }
+    }
+
     private void updateContactTask(String uuid, Contact newData){
         Contact oldContact = getMessageDatabase().getContactByUuid(uuid);
 
@@ -314,8 +384,7 @@ public final class MessageManager {
 
                 if (peerChat.getContact().getUuid().equals(oldContact.getUuid())) {
                     peerChat.setContact(newData);
-                    chats.put(peerChat.getUuid().toString(), peerChat);
-                    getMessageDatabase().updateChat(peerChat.getUuid().toString(), peerChat);
+                    updateChatTask(peerChat.getUuid().toString(), peerChat);
                 }
             } else if (chat instanceof GroupChat) {
                 GroupChat groupChat = (GroupChat) chat;
@@ -329,8 +398,14 @@ public final class MessageManager {
                     }
                 }
                 groupChat.setParticipants(newContactList);
-                chats.put(groupChat.getUuid().toString(), groupChat);
-                getMessageDatabase().updateChat(groupChat.getUuid().toString(), groupChat);
+                updateChatTask(groupChat.getUuid().toString(), groupChat);
+            }
+        }
+
+        for (Message message : messages.values()){
+            if (message.getSender().getUuid().toString().equals(uuid)){
+                message.setSender(newData);
+                updateMessageTask(message.getUuid().toString(), message);
             }
         }
 
@@ -340,28 +415,6 @@ public final class MessageManager {
             while (i.hasNext()) {
                 Callbacks callbacks = i.next();
                 callbacks.onContactUpdate(oldContact, newData);
-            }
-        }
-    }
-
-    public void onActionResultReceived(ConnectionMessage connectionMessage, JSONAction jsonAction, List<ReturnType> returnTypes){
-        synchronized (callbacksList) {
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()) {
-                Callbacks callbacks = i.next();
-                callbacks.onActionResultReceived(connectionMessage, jsonAction, returnTypes);
-            }
-        }
-    }
-
-    public void onMessageResultReceived(ConnectionMessage connectionMessage, JSONMessage jsonMessage, List<ReturnType> returnTypes){
-        synchronized (callbacksList) {
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()) {
-                Callbacks callbacks = i.next();
-                callbacks.onMessageResultReceived(connectionMessage, jsonMessage, returnTypes);
             }
         }
     }
@@ -569,6 +622,19 @@ public final class MessageManager {
         }
     }
 
+    private void refreshMessagesTask(){
+        messages.clear();
+
+        synchronized (callbacksList){
+            Iterator<Callbacks> i = callbacksList.iterator();
+
+            while (i.hasNext()){
+                Callbacks callbacks = i.next();
+                callbacks.onMessagesRefresh();
+            }
+        }
+    }
+
     private Thread createThreadedTask(Runnable runnable){
         return new Thread(runnable);
     }
@@ -606,6 +672,8 @@ public final class MessageManager {
         void onMessageDelete(Message message);
 
         void onMessagesQueueFinish(ConcurrentHashMap<String, Message> messages);
+
+        void onMessagesRefresh();
 
         void onActionResultReceived(ConnectionMessage connectionMessage, JSONAction jsonAction, List<ReturnType> returnTypes);
 
