@@ -581,7 +581,7 @@ public class ConnectionThread extends Thread {
                                                 contacts.add(messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
                                             }
                                         }
-                                        messageManager.addChat(new GroupChat(UUID.randomUUID(), null, null, null, true, true, args[0], contacts), false);
+                                        messageManager.addChat(new GroupChat(UUID.randomUUID(), null, null, null, null, true, true, args[0], contacts), false);
                                         break;
                                     case LEAVE_GROUP:
                                         GroupChat lvGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
@@ -732,7 +732,7 @@ public class ConnectionThread extends Thread {
         for (String s : jsonChat.getParticipants()) {
             contactList.add(messageManager.getMessageDatabase().getContactByHandle(messageManager.getMessageDatabase().getHandleByHandleID(s)));
         }
-        GroupChat newChat = new GroupChat(UUID.randomUUID(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
+        GroupChat newChat = new GroupChat(UUID.randomUUID(), null, jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
                 true, true, jsonChat.getDisplayName(), contactList);
 
         messageManager.addChat(newChat, false);
@@ -768,7 +768,7 @@ public class ConnectionThread extends Thread {
         if (overrideAll){
             GroupChat updatedChat = (GroupChat) messageDatabase.getChatByUuid(existingChat.getUuid().toString());
 
-            messageManager.updateChat(existingChat.getUuid().toString(), new GroupChat(existingChat.getUuid(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
+            messageManager.updateChat(existingChat.getUuid().toString(), new GroupChat(existingChat.getUuid(), null, jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
                     updatedChat.isInChat(), updatedChat.hasUnreadMessages(), updatedChat.getDisplayName(), updatedChat.getParticipants()), false);
         }
     }

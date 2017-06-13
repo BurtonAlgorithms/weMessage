@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import scott.wemessage.app.messages.objects.Contact;
+import scott.wemessage.app.utils.FileLocationContainer;
 
 public class GroupChat extends Chat {
 
@@ -14,8 +15,10 @@ public class GroupChat extends Chat {
 
     }
 
-    public GroupChat(UUID uuid, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages, String displayName, List<Contact> participants) {
-        super(uuid, ChatType.GROUP, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
+    public GroupChat(UUID uuid, FileLocationContainer groupChatPictureFileLocation, String macGuid, String macGroupID, String macChatIdentifier,
+                     boolean isInChat, boolean hasUnreadMessages, String displayName, List<Contact> participants) {
+
+        super(uuid, ChatType.GROUP, groupChatPictureFileLocation, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
 
         this.displayName = displayName;
         this.participants = participants;

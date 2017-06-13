@@ -2,6 +2,8 @@ package scott.wemessage.app.chats.objects;
 
 import java.util.UUID;
 
+import scott.wemessage.app.utils.FileLocationContainer;
+
 public abstract class Chat {
 
     private UUID uuid;
@@ -11,14 +13,16 @@ public abstract class Chat {
     private String macChatIdentifier;
     private boolean isInChat;
     private boolean hasUnreadMessages;
+    private FileLocationContainer chatPictureFileLocation;
 
     public Chat(){
 
     }
 
-    public Chat(UUID uuid, ChatType chatType, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages){
+    public Chat(UUID uuid, ChatType chatType, FileLocationContainer chatPictureFileLocation, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages){
         this.uuid = uuid;
         this.chatType = chatType;
+        this.chatPictureFileLocation = chatPictureFileLocation;
         this.macGuid = macGuid;
         this.macGroupID = macGroupID;
         this.macChatIdentifier = macChatIdentifier;
@@ -32,6 +36,10 @@ public abstract class Chat {
 
     public ChatType getChatType() {
         return chatType;
+    }
+
+    public FileLocationContainer getChatPictureFileLocation() {
+        return chatPictureFileLocation;
     }
 
     public String getMacGuid() {
@@ -56,6 +64,11 @@ public abstract class Chat {
 
     public Chat setUuid(UUID uuid) {
         this.uuid = uuid;
+        return this;
+    }
+
+    public Chat setChatPictureFileLocation(FileLocationContainer chatPictureFileLocation) {
+        this.chatPictureFileLocation = chatPictureFileLocation;
         return this;
     }
 

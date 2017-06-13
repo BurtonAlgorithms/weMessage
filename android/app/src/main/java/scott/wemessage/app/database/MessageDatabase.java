@@ -75,7 +75,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + ChatTable.HAS_UNREAD_MESSAGES + " INTEGER, "
                 + ChatTable.CONTACT_UUID + " TEXT, "
                 + ChatTable.DISPLAY_NAME + " TEXT, "
-                + ChatTable.PARTICIPANTS + " TEXT );";
+                + ChatTable.PARTICIPANTS + " TEXT, "
+                + ChatTable.CHAT_PICTURE_FILE_LOCATION + " TEXT );";
 
         String createHandleTable = "CREATE TABLE " + HandleTable.TABLE_NAME + " ("
                 + HandleTable._ID + " INTEGER PRIMARY KEY, "
@@ -657,13 +658,16 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         if (chatType == ChatType.PEER){
             chat = new PeerChat().setContact(getContactByUuid(cursor.getString(cursor.getColumnIndex(ChatTable.CONTACT_UUID))))
-                    .setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ChatTable.UUID)))).setMacGuid(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GUID)))
-                    .setMacGroupID(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GROUP_ID))).setMacChatIdentifier(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_CHAT_IDENTIFIER)))
+                    .setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ChatTable.UUID))))
+                    .setChatPictureFileLocation(new FileLocationContainer(cursor.getString(cursor.getColumnIndex(ChatTable.CHAT_PICTURE_FILE_LOCATION))))
+                    .setMacGuid(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GUID))).setMacGroupID(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GROUP_ID)))
+                    .setMacChatIdentifier(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_CHAT_IDENTIFIER)))
                     .setIsInChat(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_IN_CHAT))))
                     .setHasUnreadMessages(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.HAS_UNREAD_MESSAGES))));
         }else if(chatType == ChatType.GROUP){
             chat = new GroupChat().setDisplayName(cursor.getString(cursor.getColumnIndex(ChatTable.DISPLAY_NAME)))
                     .setParticipants(stringListToContacts(Arrays.asList(cursor.getString(cursor.getColumnIndex(ChatTable.PARTICIPANTS)).split(", "))))
+                    .setChatPictureFileLocation(new FileLocationContainer(cursor.getString(cursor.getColumnIndex(ChatTable.CHAT_PICTURE_FILE_LOCATION))))
                     .setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ChatTable.UUID)))).setMacGuid(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GUID)))
                     .setMacGroupID(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GROUP_ID))).setMacChatIdentifier(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_CHAT_IDENTIFIER)))
                     .setIsInChat(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_IN_CHAT))))
@@ -693,6 +697,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         values.put(ChatTable.MAC_CHAT_IDENTIFIER, chat.getMacChatIdentifier());
         values.put(ChatTable.IS_IN_CHAT, booleanToInteger(chat.isInChat()));
         values.put(ChatTable.HAS_UNREAD_MESSAGES, booleanToInteger(chat.hasUnreadMessages()));
+        values.put(ChatTable.CHAT_PICTURE_FILE_LOCATION, chat.getChatPictureFileLocation().getFileLocation());
 
         return values;
     }
@@ -1056,6 +1061,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         public static final String CONTACT_UUID = "contact_uuid";
         public static final String DISPLAY_NAME = "display_name";
         public static final String PARTICIPANTS = "participants";
+        public static final String CHAT_PICTURE_FILE_LOCATION = "chat_picture_file_location";
     }
 
     public static class HandleTable {

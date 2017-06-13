@@ -3,6 +3,7 @@ package scott.wemessage.app.chats.objects;
 import java.util.UUID;
 
 import scott.wemessage.app.messages.objects.Contact;
+import scott.wemessage.app.utils.FileLocationContainer;
 
 public class PeerChat extends Chat {
 
@@ -13,9 +14,14 @@ public class PeerChat extends Chat {
     }
 
     public PeerChat(UUID uuid, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages, Contact contact) {
-        super(uuid, ChatType.PEER, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
+        super(uuid, ChatType.PEER, contact.getContactPictureFileLocation(), macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
 
         this.contact = contact;
+    }
+
+    @Override
+    public FileLocationContainer getChatPictureFileLocation() {
+        return contact.getContactPictureFileLocation();
     }
 
     public Contact getContact() {

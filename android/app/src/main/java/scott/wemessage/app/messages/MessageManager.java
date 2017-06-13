@@ -54,6 +54,10 @@ public final class MessageManager {
         this.context = context;
     }
 
+    public Context getContext(){
+        return context;
+    }
+
     public MessageDatabase getMessageDatabase(){
         return DatabaseManager.getInstance(context).getMessageDatabase();
     }

@@ -1,5 +1,7 @@
 package scott.wemessage.app.view.chat;
 
+import android.net.Uri;
+
 import com.stfalcon.chatkit.commons.models.IDialog;
 import com.stfalcon.chatkit.commons.models.IMessage;
 import com.stfalcon.chatkit.commons.models.IUser;
@@ -7,11 +9,13 @@ import com.stfalcon.chatkit.commons.models.IUser;
 import java.util.ArrayList;
 import java.util.List;
 
+import scott.wemessage.R;
 import scott.wemessage.app.chats.objects.Chat;
 import scott.wemessage.app.chats.objects.GroupChat;
 import scott.wemessage.app.chats.objects.PeerChat;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Contact;
+import scott.wemessage.app.utils.AndroidIOUtils;
 import scott.wemessage.app.view.messages.ContactView;
 import scott.wemessage.app.view.messages.MessageView;
 import scott.wemessage.commons.utils.StringUtils;
@@ -25,15 +29,15 @@ public class ChatDialogView implements IDialog {
 
     public ChatDialogView(MessageManager messageManager, Chat chat){
         this.chat = chat;
-        this.lastMessage = new MessageView(messageManager.getMessageDatabase().getLastMessageFromChat(chat));
+        this.lastMessage = new MessageView(messageManager, messageManager.getMessageDatabase().getLastMessageFromChat(chat));
 
         if (chat.getChatType() == Chat.ChatType.PEER){
-            users.add(new ContactView(((PeerChat) chat).getContact()));
+            users.add(new ContactView(messageManager, ((PeerChat) chat).getContact()));
         }else {
             GroupChat groupChat = (GroupChat) chat;
 
             for (Contact c : groupChat.getParticipants()){
-                users.add(new ContactView(c));
+                users.add(new ContactView(messageManager, c));
             }
         }
     }
@@ -45,7 +49,15 @@ public class ChatDialogView implements IDialog {
 
     @Override
     public String getDialogPhoto() {
-        return null;
+        if (chat.getChatType() == Chat.ChatType.PEER) {
+            return users.get(0).getAvatar();
+        } else {
+            if (chat.getChatPictureFileLocation() == null){
+                return AndroidIOUtils.getUriFromResource(messageManager.getContext(), R.drawable.ic_group_chat_icon).toString();
+            }else {
+                return Uri.fromFile(messageManager.getMessageDatabase().getChatByUuid(getId()).getChatPictureFileLocation().getFile()).toString();
+            }
+        }
     }
 
     @Override
@@ -89,7 +101,7 @@ public class ChatDialogView implements IDialog {
 
     @Override
     public int getUnreadCount() {
-        return booleanToInteger(chat.hasUnreadMessages());
+        return booleanToInteger(messageManager.getMessageDatabase().getChatByUuid(getId());
     }
 
     private int booleanToInteger(boolean bool){

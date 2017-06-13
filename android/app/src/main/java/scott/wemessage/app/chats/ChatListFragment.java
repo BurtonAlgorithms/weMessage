@@ -14,6 +14,13 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+
+import com.bumptech.glide.Glide;
+import com.stfalcon.chatkit.commons.ImageLoader;
+import com.stfalcon.chatkit.commons.models.IDialog;
+import com.stfalcon.chatkit.dialogs.DialogsList;
+import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,6 +32,7 @@ import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.view.chat.ChatDialogView;
 import scott.wemessage.app.view.dialog.DialogDisplayer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
@@ -39,6 +47,8 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     private final String TAG = "ChatListFragment";
 
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
+    private DialogsList dialogsList;
+    private DialogsListAdapter<IDialog> dialogsListAdapter;
     private boolean isBoundToConnectionService = false;
 
     private BroadcastReceiver chatListBroadcastReceiver = new BroadcastReceiver() {
@@ -120,7 +130,17 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_chat_list, container, false);
 
+        dialogsList = (DialogsList) view.findViewById(R.id.chatDialogsList);
 
+        DialogsListAdapter<IDialog> dialogsListAdapter = new DialogsListAdapter<>(R.layout.list_item_chat, new ImageLoader() {
+            @Override
+            public void loadImage(ImageView imageView, String url) {
+                Glide.with(ChatListFragment.this).load(url).into(imageView);
+            }
+        });
+        dialogsList.setAdapter(dialogsListAdapter);
+
+        this.dialogsListAdapter = dialogsListAdapter;
 
         return view;
     }
@@ -158,14 +178,17 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     }
 
+    //TODO: More work here
+
     @Override
     public void onChatAdd(Chat chat) {
-
+        dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
     }
 
     @Override
     public void onChatUpdate(Chat oldData, Chat newData) {
-
+        ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), newData);
+        dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
     }
 
     @Override
@@ -175,32 +198,40 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onChatRename(Chat chat, String displayName) {
-
+        ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+        dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
     }
 
     @Override
     public void onParticipantAdd(Chat chat, Contact contact) {
-
+        ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+        dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
     }
 
     @Override
     public void onParticipantRemove(Chat chat, Contact contact) {
-
+        ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+        dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
     }
 
     @Override
     public void onLeaveGroup(Chat chat) {
-
+        ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+        dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
     }
 
     @Override
     public void onChatDelete(Chat chat) {
-
+        dialogsListAdapter.deleteById(chat.getUuid().toString());
     }
 
     @Override
     public void onChatListRefresh(ConcurrentHashMap<String, Chat> chats) {
+        dialogsListAdapter.clear();
 
+        for (Chat chat : chats.values()){
+            dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+        }
     }
 
     @Override
