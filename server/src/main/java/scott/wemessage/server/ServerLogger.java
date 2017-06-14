@@ -2,7 +2,8 @@ package scott.wemessage.server;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -24,7 +25,7 @@ public final class ServerLogger {
     public static void log(String prefix, String message){
         log(null, prefix, message);
     }
-
+    
     public static void log(Level level, String prefix, String message){
         if (level == null){
             if(prefix == null) {
@@ -93,14 +94,15 @@ public final class ServerLogger {
 
     public static void emptyLine(){
         System.out.println(" ");
+        logToFile(" ");
     }
 
     private static void logToFile(String text){
-        if (messageServer != null){
-            if (messageServer.getConfiguration().saveLogFiles()){
-                try(PrintWriter out = new PrintWriter(weMessage.LOG_FILE_NAME)){
-                    out.println("[ " + getCurrentTimeStamp() + " ] " + text);
-                }catch (Exception ex){
+        if (messageServer != null) {
+            if (messageServer.getConfiguration().saveLogFiles()) {
+                try {
+                    Files.write(messageServer.getConfiguration().getLogFile().toPath(), ("\n" + text).getBytes(), StandardOpenOption.APPEND);
+                }catch(Exception ex){
                     ex.printStackTrace();
                 }
             }

@@ -28,6 +28,7 @@ public final class ServerConfiguration {
     private final String logFileName = weMessage.LOG_FILE_NAME;
     private final int buildVersion = weMessage.WEMESSAGE_BUILD_VERSION;
     private final int port;
+    private final boolean saveLogsToFile;
 
     private final String parentPathDirectory;
     private File parentDirectory;
@@ -62,14 +63,17 @@ public final class ServerConfiguration {
             this.configFile = configFile;
         }
 
+        logFile.delete();
+
         if (configJSON.getConfig().getCreateLogFiles()){
-            configFile.createNewFile();
+            logFile.createNewFile();
 
             synchronized (logFileLock){
                 this.logFile = logFile;
             }
         }
         this.port = configJSON.getConfig().getPort();
+        this.saveLogsToFile = configJSON.getConfig().getCreateLogFiles();
     }
 
     public final String getVersion(){
@@ -89,12 +93,7 @@ public final class ServerConfiguration {
     }
 
     public boolean saveLogFiles() {
-        try {
-            return getConfigJSON().getConfig().getCreateLogFiles();
-        }catch(Exception ex){
-            ServerLogger.error("An error occurred while trying to see if log files should be saved", ex);
-            return false;
-        }
+        return saveLogsToFile;
     }
 
     public final String getParentDirectoryPath(){
