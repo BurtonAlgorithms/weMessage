@@ -8,15 +8,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import scott.wemessage.app.database.DatabaseManager;
-import scott.wemessage.app.database.MessageDatabase;
+import scott.wemessage.app.chats.objects.Chat;
+import scott.wemessage.app.chats.objects.GroupChat;
+import scott.wemessage.app.chats.objects.PeerChat;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Handle;
 import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.chats.objects.Chat;
-import scott.wemessage.app.chats.objects.GroupChat;
-import scott.wemessage.app.chats.objects.PeerChat;
+import scott.wemessage.app.weMessageApplication;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.connection.ConnectionMessage;
 import scott.wemessage.commons.json.message.JSONMessage;
@@ -58,8 +57,8 @@ public final class MessageManager {
         return context;
     }
 
-    public MessageDatabase getMessageDatabase(){
-        return DatabaseManager.getInstance(context).getMessageDatabase();
+    public ConcurrentHashMap<String, Chat> getChats(){
+        return chats;
     }
 
     public void hookCallbacks(Callbacks callbacks){
@@ -317,7 +316,7 @@ public final class MessageManager {
         createThreadedTask(new Runnable() {
             @Override
             public void run() {
-                for (Contact c : getMessageDatabase().getContacts()){
+                for (Contact c : weMessageApplication.get().getMessageDatabase().getContacts()){
                     contacts.put(c.getUuid().toString(), c);
                 }
 
@@ -332,28 +331,12 @@ public final class MessageManager {
             }
         }).start();
 
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                for (Chat c : getMessageDatabase().getChats()){
-                    chats.put(c.getUuid().toString(), c);
-                }
-
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onChatListRefresh(chats);
-                    }
-                }
-            }
-        }).start();
+        refreshChats(true);
     }
 
     private void addContactTask(Contact contact){
         contacts.put(contact.getUuid().toString(), contact);
-        getMessageDatabase().addContact(contact);
+        weMessageApplication.get().getMessageDatabase().addContact(contact);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -366,7 +349,7 @@ public final class MessageManager {
     }
 
     private void updateHandleTask(String uuid, Handle newData, boolean threaded){
-        getMessageDatabase().updateHandle(uuid, newData);
+        weMessageApplication.get().getMessageDatabase().updateHandle(uuid, newData);
 
         for (Contact c : contacts.values()){
             if (c.getHandle().getUuid().toString().equals(uuid)){
@@ -377,10 +360,10 @@ public final class MessageManager {
     }
 
     private void updateContactTask(String uuid, Contact newData){
-        Contact oldContact = getMessageDatabase().getContactByUuid(uuid);
+        Contact oldContact = weMessageApplication.get().getMessageDatabase().getContactByUuid(uuid);
 
         contacts.put(uuid, newData);
-        getMessageDatabase().updateContact(uuid, newData);
+        weMessageApplication.get().getMessageDatabase().updateContact(uuid, newData);
 
         for (Chat chat : chats.values()) {
             if (chat instanceof PeerChat) {
@@ -425,7 +408,7 @@ public final class MessageManager {
 
     private void addChatTask(Chat chat){
         chats.put(chat.getUuid().toString(), chat);
-        getMessageDatabase().addChat(chat);
+        weMessageApplication.get().getMessageDatabase().addChat(chat);
 
         synchronized (callbacksList) {
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -438,10 +421,10 @@ public final class MessageManager {
     }
 
     private void updateChatTask(String uuid, Chat newData){
-        Chat oldChat = getMessageDatabase().getChatByUuid(uuid);
+        Chat oldChat = weMessageApplication.get().getMessageDatabase().getChatByUuid(uuid);
 
         chats.put(uuid, newData);
-        getMessageDatabase().updateChat(uuid, newData);
+        weMessageApplication.get().getMessageDatabase().updateChat(uuid, newData);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -456,7 +439,7 @@ public final class MessageManager {
     private void setHasUnreadMessagesTask(Chat chat, boolean hasUnreadMessages){
         chat.setHasUnreadMessages(hasUnreadMessages);
         chats.put(chat.getUuid().toString(), chat);
-        getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        weMessageApplication.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -471,7 +454,7 @@ public final class MessageManager {
     private void renameGroupChatTask(GroupChat chat, String newName){
         chat.setDisplayName(newName);
         chats.put(chat.getUuid().toString(), chat);
-        getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        weMessageApplication.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -486,7 +469,7 @@ public final class MessageManager {
     private void addParticipantToGroupTask(GroupChat chat, Contact contact){
         chat.addParticipant(contact);
         chats.put(chat.getUuid().toString(), chat);
-        getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        weMessageApplication.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -501,7 +484,7 @@ public final class MessageManager {
     private void removeParticipantFromGroupTask(GroupChat chat, Contact contact){
         chat.removeParticipant(contact);
         chats.put(chat.getUuid().toString(), chat);
-        getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        weMessageApplication.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -516,7 +499,7 @@ public final class MessageManager {
     private void leaveGroupTask(GroupChat chat){
         chat.setIsInChat(false);
         chats.put(chat.getUuid().toString(), chat);
-        getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        weMessageApplication.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -530,7 +513,7 @@ public final class MessageManager {
 
     private void deleteChatTask(Chat chat){
         chats.remove(chat.getUuid().toString());
-        getMessageDatabase().deleteChatByUuid(chat.getUuid().toString());
+        weMessageApplication.get().getMessageDatabase().deleteChatByUuid(chat.getUuid().toString());
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -543,7 +526,9 @@ public final class MessageManager {
     }
 
     private void refreshChatsTask(){
-        for (Chat c : getMessageDatabase().getChats()){
+        chats.clear();
+
+        for (Chat c : weMessageApplication.get().getMessageDatabase().getChats()){
             chats.put(c.getUuid().toString(), c);
         }
 
@@ -560,11 +545,11 @@ public final class MessageManager {
     private void addMessageTask(Message message){
         messages.put(message.getUuid().toString(), message);
         for (Attachment a : message.getAttachments()){
-            if (getMessageDatabase().getAttachmentByMacGuid(a.getMacGuid()) == null){
-                getMessageDatabase().addAttachment(a);
+            if (weMessageApplication.get().getMessageDatabase().getAttachmentByMacGuid(a.getMacGuid()) == null){
+                weMessageApplication.get().getMessageDatabase().addAttachment(a);
             }
         }
-        getMessageDatabase().addMessage(message);
+        weMessageApplication.get().getMessageDatabase().addMessage(message);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -577,10 +562,10 @@ public final class MessageManager {
     }
 
     private void updateMessageTask(String uuid, Message newData){
-        Message oldMessage = getMessageDatabase().getMessageByUuid(uuid);
+        Message oldMessage = weMessageApplication.get().getMessageDatabase().getMessageByUuid(uuid);
 
         messages.put(uuid, newData);
-        getMessageDatabase().updateMessage(uuid, newData);
+        weMessageApplication.get().getMessageDatabase().updateMessage(uuid, newData);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -597,7 +582,7 @@ public final class MessageManager {
             a.getFileLocation().getFile().delete();
         }
         messages.remove(message.getUuid().toString());
-        getMessageDatabase().deleteMessageByUuid(message.getUuid().toString());
+        weMessageApplication.get().getMessageDatabase().deleteMessageByUuid(message.getUuid().toString());
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -610,7 +595,7 @@ public final class MessageManager {
     }
 
     private void queueMessagesTask(Chat chat, int startIndex, int requestAmount){
-        List<Message> messageList = getMessageDatabase().getReversedMessages(chat, startIndex, requestAmount);
+        List<Message> messageList = weMessageApplication.get().getMessageDatabase().getReversedMessages(chat, startIndex, requestAmount);
 
         for (Message m : messageList){
             messages.put(m.getUuid().toString(), m);

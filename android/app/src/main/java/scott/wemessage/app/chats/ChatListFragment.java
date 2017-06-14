@@ -21,7 +21,9 @@ import com.stfalcon.chatkit.commons.ImageLoader;
 import com.stfalcon.chatkit.commons.models.IDialog;
 import com.stfalcon.chatkit.dialogs.DialogsList;
 import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
+import com.stfalcon.chatkit.utils.DateFormatter;
 
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,6 +36,7 @@ import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.view.chat.ChatDialogView;
 import scott.wemessage.app.view.dialog.DialogDisplayer;
+import scott.wemessage.app.view.messages.MessageView;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.connection.ConnectionMessage;
@@ -128,9 +131,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_chat_list, container, false);
-
-        dialogsList = (DialogsList) view.findViewById(R.id.chatDialogsList);
+        final View view = inflater.inflate(R.layout.fragment_chat_list, container, false);
 
         DialogsListAdapter<IDialog> dialogsListAdapter = new DialogsListAdapter<>(R.layout.list_item_chat, new ImageLoader() {
             @Override
@@ -138,9 +139,31 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
                 Glide.with(ChatListFragment.this).load(url).into(imageView);
             }
         });
+
+        dialogsListAdapter.setDatesFormatter(new DateFormatter.Formatter() {
+            @Override
+            public String format(Date date) {
+                if (DateFormatter.isToday(date)){
+                    return DateFormatter.format(date, "HH:mm a");
+                }else if (DateFormatter.isYesterday(date)){
+                    return getString(R.string.yesterday);
+                }else {
+                    if (DateFormatter.isCurrentYear(date)){
+                        return DateFormatter.format(date, "MMMM d");
+                    }else {
+                        return DateFormatter.format(date, "MMMM d yyyy");
+                    }
+                }
+            }
+        });
+
         dialogsList.setAdapter(dialogsListAdapter);
 
         this.dialogsListAdapter = dialogsListAdapter;
+
+        for (Chat chat : MessageManager.getInstance(getContext()).getChats().values()){
+            dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+        }
 
         return view;
     }
@@ -154,6 +177,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     public void onDestroy() {
         MessageManager messageManager = MessageManager.getInstance(getActivity());
 
+        dialogsListAdapter.clear();
         messageManager.unhookCallbacks(this);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(chatListBroadcastReceiver);
 
@@ -178,8 +202,6 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     }
 
-    //TODO: More work here
-
     @Override
     public void onChatAdd(Chat chat) {
         dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
@@ -200,6 +222,8 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     public void onChatRename(Chat chat, String displayName) {
         ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
         dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+
+        //TODO: Send message saying this, for rest too
     }
 
     @Override
@@ -227,16 +251,19 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onChatListRefresh(ConcurrentHashMap<String, Chat> chats) {
-        dialogsListAdapter.clear();
+        if (dialogsListAdapter != null) {
+            dialogsListAdapter.clear();
 
-        for (Chat chat : chats.values()){
-            dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+            for (Chat chat : chats.values()) {
+                dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+            }
         }
     }
 
     @Override
     public void onMessageAdd(Message message) {
-
+        MessageView messageView = new MessageView(MessageManager.getInstance(getContext()), message);
+        dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
     }
 
     @Override
@@ -261,7 +288,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onActionResultReceived(ConnectionMessage connectionMessage, JSONAction jsonAction, List<ReturnType> returnTypes) {
-
+        //TODO: Work here
     }
 
     @Override

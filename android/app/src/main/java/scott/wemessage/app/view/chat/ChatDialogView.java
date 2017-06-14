@@ -4,7 +4,6 @@ import android.net.Uri;
 
 import com.stfalcon.chatkit.commons.models.IDialog;
 import com.stfalcon.chatkit.commons.models.IMessage;
-import com.stfalcon.chatkit.commons.models.IUser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +17,7 @@ import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.utils.AndroidIOUtils;
 import scott.wemessage.app.view.messages.ContactView;
 import scott.wemessage.app.view.messages.MessageView;
+import scott.wemessage.app.weMessageApplication;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ChatDialogView implements IDialog {
@@ -25,11 +25,11 @@ public class ChatDialogView implements IDialog {
     private MessageManager messageManager;
     private Chat chat;
     private List<ContactView> users = new ArrayList<>();
-    private IMessage lastMessage;
+    private MessageView lastMessage;
 
     public ChatDialogView(MessageManager messageManager, Chat chat){
         this.chat = chat;
-        this.lastMessage = new MessageView(messageManager, messageManager.getMessageDatabase().getLastMessageFromChat(chat));
+        this.lastMessage = new MessageView(messageManager, weMessageApplication.get().getMessageDatabase().getLastMessageFromChat(chat));
 
         if (chat.getChatType() == Chat.ChatType.PEER){
             users.add(new ContactView(messageManager, ((PeerChat) chat).getContact()));
@@ -53,9 +53,9 @@ public class ChatDialogView implements IDialog {
             return users.get(0).getAvatar();
         } else {
             if (chat.getChatPictureFileLocation() == null){
-                return AndroidIOUtils.getUriFromResource(messageManager.getContext(), R.drawable.ic_group_chat_icon).toString();
+                return AndroidIOUtils.getUriFromResource(weMessageApplication.get(), R.drawable.ic_group_chat_icon).toString();
             }else {
-                return Uri.fromFile(messageManager.getMessageDatabase().getChatByUuid(getId()).getChatPictureFileLocation().getFile()).toString();
+                return Uri.fromFile(weMessageApplication.get().getMessageDatabase().getChatByUuid(getId()).getChatPictureFileLocation().getFile()).toString();
             }
         }
     }
@@ -85,23 +85,23 @@ public class ChatDialogView implements IDialog {
     }
 
     @Override
-    public List<? extends IUser> getUsers() {
+    public List<? extends ContactView> getUsers() {
         return users;
     }
 
     @Override
-    public IMessage getLastMessage() {
+    public MessageView getLastMessage() {
         return lastMessage;
     }
 
     @Override
     public void setLastMessage(IMessage message) {
-        this.lastMessage = message;
+        this.lastMessage = (MessageView) message;
     }
 
     @Override
     public int getUnreadCount() {
-        return booleanToInteger(messageManager.getMessageDatabase().getChatByUuid(getId());
+        return booleanToInteger(weMessageApplication.get().getMessageDatabase().getChatByUuid(getId()).hasUnreadMessages());
     }
 
     private int booleanToInteger(boolean bool){

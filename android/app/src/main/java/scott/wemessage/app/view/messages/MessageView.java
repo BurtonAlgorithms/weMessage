@@ -1,8 +1,8 @@
 package scott.wemessage.app.view.messages;
 
 import com.stfalcon.chatkit.commons.models.IMessage;
-import com.stfalcon.chatkit.commons.models.IUser;
 
+import java.util.Calendar;
 import java.util.Date;
 
 import scott.wemessage.app.messages.MessageManager;
@@ -27,16 +27,28 @@ public class MessageView implements IMessage {
 
     @Override
     public String getText() {
-        return message.getText();
+        try {
+            return message.getText();
+        }catch(Exception ex){
+            return null;
+        }
     }
 
     @Override
-    public IUser getUser() {
-        return new ContactView(messageManager, message.getSender());
+    public ContactView getUser() {
+        try {
+            return new ContactView(messageManager, message.getSender());
+        }catch (Exception ex){
+            return new ContactView(messageManager, null);
+        }
     }
 
     @Override
     public Date getCreatedAt() {
-        return message.getModernDateSent();
+        try {
+            return message.getModernDateSent();
+        }catch(Exception ex){
+            return Calendar.getInstance().getTime();
+        }
     }
 }

@@ -39,4 +39,6 @@
     <string name="action_leave_group">Leave Group</string>
     <string name="action_perform_error_group_not_found">Action: %1$s could not be performed because the group chat was not found.</string>
     <string name="action_perform_error_contact_not_found">Action: %1$s could not be performed because the requested contact was not found.</string>
+    <string name="yesterday">Yesterday</string>
+
 </resources>

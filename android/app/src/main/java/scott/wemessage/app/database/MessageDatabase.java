@@ -12,25 +12,22 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import scott.wemessage.app.chats.objects.Chat;
+import scott.wemessage.app.chats.objects.Chat.ChatType;
+import scott.wemessage.app.chats.objects.GroupChat;
+import scott.wemessage.app.chats.objects.PeerChat;
 import scott.wemessage.app.database.objects.Account;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Handle;
 import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.chats.objects.Chat;
-import scott.wemessage.app.chats.objects.Chat.ChatType;
-import scott.wemessage.app.chats.objects.GroupChat;
-import scott.wemessage.app.chats.objects.PeerChat;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
+import scott.wemessage.app.weMessageApplication;
 import scott.wemessage.commons.utils.StringUtils;
 
 @SuppressWarnings("WeakerAccess")
 public final class MessageDatabase extends SQLiteOpenHelper {
-
-    private final Object currentAccountLock = new Object();
-
-    private Account currentAccount;
 
     public MessageDatabase(Context context) {
         super(context, weMessage.DATABASE_NAME, null, weMessage.DATABASE_VERSION);
@@ -117,20 +114,6 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         //When it comes time for it alter tables
     }
 
-    public Account getCurrentAccount(){
-        synchronized (currentAccountLock){
-            if (currentAccount == null) throw new AccountNotLoggedInException();
-
-            return currentAccount;
-        }
-    }
-
-    public void setCurrentAccount(Account account){
-        synchronized (currentAccountLock){
-            this.currentAccount = account;
-        }
-    }
-
     public List<Contact> getContacts(){
         List<Contact> contacts = new ArrayList<>();
 
@@ -179,8 +162,15 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         List<GroupChat> chats = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME + " WHERE " + ChatTable.DISPLAY_NAME + " = ?";
-        Cursor cursor = db.rawQuery(selectQuery, new String[]{displayName});
+        Cursor cursor;
+
+        if (displayName == null) {
+            String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME + " WHERE " + ChatTable.DISPLAY_NAME + " IS NULL";
+            cursor = db.rawQuery(selectQuery, null);
+        }else {
+            String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME + " WHERE " + ChatTable.DISPLAY_NAME + " = ?";
+            cursor = db.rawQuery(selectQuery, new String[]{displayName});
+        }
 
         if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {
@@ -399,7 +389,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Attachment buildAttachment(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(AttachmentTable.ACCOUNT_UUID)).equals(getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(AttachmentTable.ACCOUNT_UUID)).equals(weMessageApplication.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
@@ -414,7 +404,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(AttachmentTable.UUID, attachment.getUuid().toString());
-        values.put(AttachmentTable.ACCOUNT_UUID, getCurrentAccount().getUuid().toString());
+        values.put(AttachmentTable.ACCOUNT_UUID, weMessageApplication.get().getCurrentAccount().getUuid().toString());
         values.put(AttachmentTable.MAC_GUID, attachment.getMacGuid());
         values.put(AttachmentTable.TRANSFER_NAME, attachment.getTransferName());
         values.put(AttachmentTable.FILE_LOCATION, attachment.getFileLocation().getFileLocation());
@@ -486,7 +476,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Contact buildContact(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(ContactTable.ACCOUNT_UUID)).equals(getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(ContactTable.ACCOUNT_UUID)).equals(weMessageApplication.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
@@ -501,12 +491,16 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(ContactTable.UUID, contact.getUuid().toString());
-        values.put(ContactTable.ACCOUNT_UUID, getCurrentAccount().getUuid().toString());
+        values.put(ContactTable.ACCOUNT_UUID, weMessageApplication.get().getCurrentAccount().getUuid().toString());
         values.put(ContactTable.FIRST_NAME, contact.getFirstName());
         values.put(ContactTable.LAST_NAME, contact.getLastName());
         values.put(ContactTable.HANDLE_UUID, contact.getHandle().getUuid().toString());
-        values.put(ContactTable.CONTACT_PICTURE_FILE_LOCATION, contact.getContactPictureFileLocation().getFileLocation());
 
+        if (contact.getContactPictureFileLocation() != null) {
+            values.put(ContactTable.CONTACT_PICTURE_FILE_LOCATION, contact.getContactPictureFileLocation().getFileLocation());
+        }else {
+            values.putNull(ContactTable.CONTACT_PICTURE_FILE_LOCATION);
+        }
         return values;
     }
 
@@ -562,7 +556,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Handle buildHandle(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(HandleTable.ACCOUNT_UUID)).equals(getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(HandleTable.ACCOUNT_UUID)).equals(weMessageApplication.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
@@ -575,7 +569,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(HandleTable.UUID, handle.getUuid().toString());
-        values.put(HandleTable.ACCOUNT_UUID, getCurrentAccount().getUuid().toString());
+        values.put(HandleTable.ACCOUNT_UUID, weMessageApplication.get().getCurrentAccount().getUuid().toString());
         values.put(HandleTable.HANDLE_ID, handle.getHandleID());
         values.put(HandleTable.HANDLE_TYPE, handle.getHandleType().getTypeName());
 
@@ -649,29 +643,33 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Chat buildChat(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(ChatTable.ACCOUNT_UUID)).equals(getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(ChatTable.ACCOUNT_UUID)).equals(weMessageApplication.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
-        Chat chat = null;
+        Chat chat;
         ChatType chatType = ChatType.stringToHandleType(cursor.getString(cursor.getColumnIndex(ChatTable.CHAT_TYPE)));
 
         if (chatType == ChatType.PEER){
             chat = new PeerChat().setContact(getContactByUuid(cursor.getString(cursor.getColumnIndex(ChatTable.CONTACT_UUID))))
                     .setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ChatTable.UUID))))
-                    .setChatPictureFileLocation(new FileLocationContainer(cursor.getString(cursor.getColumnIndex(ChatTable.CHAT_PICTURE_FILE_LOCATION))))
                     .setMacGuid(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GUID))).setMacGroupID(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GROUP_ID)))
                     .setMacChatIdentifier(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_CHAT_IDENTIFIER)))
                     .setIsInChat(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_IN_CHAT))))
                     .setHasUnreadMessages(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.HAS_UNREAD_MESSAGES))));
-        }else if(chatType == ChatType.GROUP){
+        }else {
             chat = new GroupChat().setDisplayName(cursor.getString(cursor.getColumnIndex(ChatTable.DISPLAY_NAME)))
                     .setParticipants(stringListToContacts(Arrays.asList(cursor.getString(cursor.getColumnIndex(ChatTable.PARTICIPANTS)).split(", "))))
-                    .setChatPictureFileLocation(new FileLocationContainer(cursor.getString(cursor.getColumnIndex(ChatTable.CHAT_PICTURE_FILE_LOCATION))))
                     .setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ChatTable.UUID)))).setMacGuid(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GUID)))
                     .setMacGroupID(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GROUP_ID))).setMacChatIdentifier(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_CHAT_IDENTIFIER)))
                     .setIsInChat(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_IN_CHAT))))
                     .setHasUnreadMessages(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.HAS_UNREAD_MESSAGES))));
+        }
+
+        if (StringUtils.isEmpty(cursor.getString(cursor.getColumnIndex(ChatTable.CHAT_PICTURE_FILE_LOCATION)))) {
+            chat.setChatPictureFileLocation(null);
+        }else {
+            chat.setChatPictureFileLocation(new FileLocationContainer(cursor.getString(cursor.getColumnIndex(ChatTable.CHAT_PICTURE_FILE_LOCATION))));
         }
         return chat;
     }
@@ -690,14 +688,19 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         }
 
         values.put(ChatTable.UUID, chat.getUuid().toString());
-        values.put(ChatTable.ACCOUNT_UUID, getCurrentAccount().getUuid().toString());
+        values.put(ChatTable.ACCOUNT_UUID, weMessageApplication.get().getCurrentAccount().getUuid().toString());
         values.put(ChatTable.CHAT_TYPE, chat.getChatType().getTypeName());
         values.put(ChatTable.MAC_GUID, chat.getMacGuid());
         values.put(ChatTable.MAC_GROUP_ID, chat.getMacGroupID());
         values.put(ChatTable.MAC_CHAT_IDENTIFIER, chat.getMacChatIdentifier());
         values.put(ChatTable.IS_IN_CHAT, booleanToInteger(chat.isInChat()));
         values.put(ChatTable.HAS_UNREAD_MESSAGES, booleanToInteger(chat.hasUnreadMessages()));
-        values.put(ChatTable.CHAT_PICTURE_FILE_LOCATION, chat.getChatPictureFileLocation().getFileLocation());
+
+        if (chat.getChatPictureFileLocation() != null) {
+            values.put(ChatTable.CHAT_PICTURE_FILE_LOCATION, chat.getChatPictureFileLocation().getFileLocation());
+        }else {
+            values.putNull(ChatTable.CHAT_PICTURE_FILE_LOCATION);
+        }
 
         return values;
     }
@@ -862,7 +865,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Message buildMessage(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(MessageTable.ACCOUNT_UUID)).equals(getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(MessageTable.ACCOUNT_UUID)).equals(weMessageApplication.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
@@ -882,7 +885,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(MessageTable.UUID, message.getUuid().toString());
-        values.put(MessageTable.ACCOUNT_UUID, getCurrentAccount().getUuid().toString());
+        values.put(MessageTable.ACCOUNT_UUID, weMessageApplication.get().getCurrentAccount().getUuid().toString());
         values.put(MessageTable.MAC_GUID, message.getMacGuid());
         values.put(MessageTable.CHAT_UUID, message.getChat().getUuid().toString());
         values.put(MessageTable.SENDER_UUID, message.getSender().getUuid().toString());
@@ -1006,12 +1009,13 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return attachments;
     }
 
-    private boolean integerToBoolean(int integer){
+    private boolean integerToBoolean(Integer integer){
         if (integer > 1 || integer < 0) throw new ArrayIndexOutOfBoundsException("Parsing a boolean from an int must be either 0 or 1. Found: " + integer);
         return integer == 1;
     }
 
-    private int booleanToInteger(boolean bool){
+    private int booleanToInteger(Boolean bool){
+        if (bool == null) return 0;
         if (bool) return 1;
         else return 0;
     }
