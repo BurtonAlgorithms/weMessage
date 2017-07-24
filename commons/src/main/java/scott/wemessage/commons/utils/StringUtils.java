@@ -31,6 +31,8 @@ public class StringUtils {
         }
         String builtString = sb.toString();
 
+        if (builtString.length() == 0) return builtString;
+
         if(trimAmount > 0) {
             return builtString.substring(0, builtString.length() - trimAmount);
         }else {
