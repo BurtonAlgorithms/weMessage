@@ -7,14 +7,14 @@ import java.io.File;
 import scott.wemessage.app.database.MessageDatabase;
 import scott.wemessage.app.database.objects.Account;
 
-public class weMessageApplication extends Application {
+public class WeApp extends Application {
 
     private Account currentAccount;
     private File attachmentFolder;
     private MessageDatabase messageDatabase;
-    private static weMessageApplication instance;
+    private static WeApp instance;
 
-    public static weMessageApplication get(){
+    public static WeApp get(){
         return instance;
     }
 

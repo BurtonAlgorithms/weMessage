@@ -2,10 +2,8 @@ package scott.wemessage.app.chats;
 
 import android.app.ActionBar;
 import android.app.ActivityManager;
-import android.app.LauncherActivity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -30,9 +28,11 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
+import scott.wemessage.app.WeApp;
 import scott.wemessage.app.chats.objects.Chat;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.launch.LaunchActivity;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
@@ -62,30 +62,30 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
             if (intent.getAction().equals(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED)){
                 unbindService();
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
-                showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new DialogInterface.OnDismissListener(){
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
-                    public void onDismiss(DialogInterface dialog) {
+                    public void run() {
                         goToLauncher();
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
-                showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new DialogInterface.OnDismissListener() {
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new Runnable() {
                     @Override
-                    public void onDismiss(DialogInterface dialog) {
+                    public void run() {
                         goToLauncher();
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
-                showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new DialogInterface.OnDismissListener() {
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new Runnable() {
                     @Override
-                    public void onDismiss(DialogInterface dialog) {
+                    public void run() {
                         goToLauncher();
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
-                showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new DialogInterface.OnDismissListener() {
+                showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new Runnable() {
                     @Override
-                    public void onDismiss(DialogInterface dialog) {
+                    public void run() {
                         goToLauncher();
                     }
                 });
@@ -210,14 +210,25 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     }
 
     @Override
-    public void onChatAdd(Chat chat) {
-        dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+    public void onChatAdd(final Chat chat) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+            }
+        });
     }
 
     @Override
     public void onChatUpdate(Chat oldData, Chat newData) {
-        ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), newData);
-        dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), newData);
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+            }
+        });
     }
 
     @Override
@@ -227,50 +238,89 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onChatRename(Chat chat, String displayName) {
-        ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
-        dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+            }
+        });
 
         //TODO: Send message saying this, for rest too
     }
 
     @Override
     public void onParticipantAdd(Chat chat, Contact contact) {
-        ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
-        dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+            }
+        });
     }
 
     @Override
     public void onParticipantRemove(Chat chat, Contact contact) {
-        ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
-        dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+            }
+        });
     }
 
     @Override
     public void onLeaveGroup(Chat chat) {
-        ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
-        dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
-    }
+        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
 
-    @Override
-    public void onChatDelete(Chat chat) {
-        dialogsListAdapter.deleteById(chat.getUuid().toString());
-    }
-
-    @Override
-    public void onChatListRefresh(ConcurrentHashMap<String, Chat> chats) {
-        if (dialogsListAdapter != null) {
-            dialogsListAdapter.clear();
-
-            for (Chat chat : chats.values()) {
-                dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
             }
-        }
+        });
     }
 
     @Override
-    public void onMessageAdd(Message message) {
-        MessageView messageView = new MessageView(MessageManager.getInstance(getContext()), message);
-        dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
+    public void onChatDelete(final Chat chat) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialogsListAdapter.deleteById(chat.getUuid().toString());
+            }
+        });
+    }
+
+    @Override
+    public void onChatListRefresh(final ConcurrentHashMap<String, Chat> chats) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (dialogsListAdapter != null) {
+                    dialogsListAdapter.clear();
+
+                    for (Chat chat : chats.values()) {
+                        dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+                    }
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onMessageAdd(final Message message) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MessageView messageView = new MessageView(MessageManager.getInstance(getContext()), message);
+                dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
+            }
+        });
     }
 
     @Override
@@ -317,15 +367,15 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     }
 
     private void goToLauncher(){
-        Intent launcherIntent = new Intent(getActivity(), LauncherActivity.class);
+        Intent launcherIntent = new Intent(WeApp.get(), LaunchActivity.class);
 
         MessageManager.dump(getContext());
         startActivity(launcherIntent);
         getActivity().finish();
     }
 
-    private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, DialogInterface.OnDismissListener onDismissListener){
-        DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage, onDismissListener);
+    private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
+        DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage, runnable);
     }
 
     private boolean isServiceRunning(Class<?> serviceClass) {

@@ -14,9 +14,14 @@ public class PeerChat extends Chat {
     }
 
     public PeerChat(UUID uuid, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages, Contact contact) {
-        super(uuid, ChatType.PEER, contact.getContactPictureFileLocation(), macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
+        super(uuid, contact.getContactPictureFileLocation(), macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
 
         this.contact = contact;
+    }
+
+    @Override
+    public ChatType getChatType() {
+        return ChatType.PEER;
     }
 
     @Override

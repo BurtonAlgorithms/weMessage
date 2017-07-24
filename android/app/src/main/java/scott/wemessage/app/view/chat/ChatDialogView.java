@@ -17,7 +17,7 @@ import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.utils.AndroidIOUtils;
 import scott.wemessage.app.view.messages.ContactView;
 import scott.wemessage.app.view.messages.MessageView;
-import scott.wemessage.app.weMessageApplication;
+import scott.wemessage.app.WeApp;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ChatDialogView implements IDialog {
@@ -29,7 +29,7 @@ public class ChatDialogView implements IDialog {
 
     public ChatDialogView(MessageManager messageManager, Chat chat){
         this.chat = chat;
-        this.lastMessage = new MessageView(messageManager, weMessageApplication.get().getMessageDatabase().getLastMessageFromChat(chat));
+        this.lastMessage = new MessageView(messageManager, WeApp.get().getMessageDatabase().getLastMessageFromChat(chat));
 
         if (chat.getChatType() == Chat.ChatType.PEER){
             users.add(new ContactView(messageManager, ((PeerChat) chat).getContact()));
@@ -53,9 +53,9 @@ public class ChatDialogView implements IDialog {
             return users.get(0).getAvatar();
         } else {
             if (chat.getChatPictureFileLocation() == null){
-                return AndroidIOUtils.getUriFromResource(weMessageApplication.get(), R.drawable.ic_group_chat_icon_v2).toString();
+                return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_group_chat_icon_v2).toString();
             }else {
-                return Uri.fromFile(weMessageApplication.get().getMessageDatabase().getChatByUuid(getId()).getChatPictureFileLocation().getFile()).toString();
+                return Uri.fromFile(WeApp.get().getMessageDatabase().getChatByUuid(getId()).getChatPictureFileLocation().getFile()).toString();
             }
         }
     }
@@ -101,7 +101,7 @@ public class ChatDialogView implements IDialog {
 
     @Override
     public int getUnreadCount() {
-        return booleanToInteger(weMessageApplication.get().getMessageDatabase().getChatByUuid(getId()).hasUnreadMessages());
+        return booleanToInteger(WeApp.get().getMessageDatabase().getChatByUuid(getId()).hasUnreadMessages());
     }
 
     private int booleanToInteger(boolean bool){

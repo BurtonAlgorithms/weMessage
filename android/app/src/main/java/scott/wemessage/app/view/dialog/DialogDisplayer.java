@@ -40,7 +40,7 @@ public class DialogDisplayer {
         generateAlertDialog(context.getString(R.string.login_error_alert_title), message).show(fragmentManager, LAUNCH_ALERT_DIALOG_TAG);
     }
 
-    public static void showDisconnectReasonDialog(Context context, FragmentManager fragmentManager, Intent bundledIntent, String defaultMessage, DialogInterface.OnDismissListener onDismissListener){
+    public static void showDisconnectReasonDialog(Context context, FragmentManager fragmentManager, Intent bundledIntent, String defaultMessage, Runnable runnable){
         String message = defaultMessage;
 
         if (bundledIntent.getExtras() != null){
@@ -51,11 +51,13 @@ public class DialogDisplayer {
         }
         AlertDialogFragment alertDialogFragment = generateAlertDialog(context.getString(R.string.login_error_alert_title), message);
 
-        alertDialogFragment.getDialog().setOnDismissListener(onDismissListener);
+        alertDialogFragment.setOnDismiss(runnable);
         alertDialogFragment.show(fragmentManager, LAUNCH_ALERT_DIALOG_TAG);
     }
 
     public static class AlertDialogFragment extends DialogFragment {
+
+        private Runnable runnable;
 
         @NonNull
         @Override
@@ -79,6 +81,17 @@ public class DialogDisplayer {
                 }
             });
             return builder.create();
+        }
+
+        @Override
+        public void onDismiss(DialogInterface dialog) {
+            runnable.run();
+
+            super.onDismiss(dialog);
+        }
+
+        public void setOnDismiss(Runnable runnable){
+            this.runnable = runnable;
         }
     }
 }

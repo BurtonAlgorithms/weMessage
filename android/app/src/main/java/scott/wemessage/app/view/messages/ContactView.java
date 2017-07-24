@@ -8,7 +8,7 @@ import scott.wemessage.R;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.utils.AndroidIOUtils;
-import scott.wemessage.app.weMessageApplication;
+import scott.wemessage.app.WeApp;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ContactView implements IUser {
@@ -57,11 +57,11 @@ public class ContactView implements IUser {
     public String getAvatar() {
         try {
             if (contact.getContactPictureFileLocation() == null) {
-                return AndroidIOUtils.getUriFromResource(weMessageApplication.get(), R.drawable.ic_user_icon_v2).toString();
+                return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_user_icon_v2).toString();
             }
             return Uri.fromFile(contact.getContactPictureFileLocation().getFile()).toString();
         }catch(Exception ex){
-            return AndroidIOUtils.getUriFromResource(weMessageApplication.get(), R.drawable.ic_user_icon_v2).toString();
+            return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_user_icon_v2).toString();
         }
     }
 }

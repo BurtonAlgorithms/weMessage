@@ -18,10 +18,15 @@ public class GroupChat extends Chat {
     public GroupChat(UUID uuid, FileLocationContainer groupChatPictureFileLocation, String macGuid, String macGroupID, String macChatIdentifier,
                      boolean isInChat, boolean hasUnreadMessages, String displayName, List<Contact> participants) {
 
-        super(uuid, ChatType.GROUP, groupChatPictureFileLocation, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
+        super(uuid, groupChatPictureFileLocation, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
 
         this.displayName = displayName;
         this.participants = participants;
+    }
+
+    @Override
+    public ChatType getChatType() {
+        return ChatType.GROUP;
     }
 
     public String getDisplayName() {
