@@ -4,6 +4,6 @@
     <solid android:color="@color/unreadBubble" />
 
     <size
-        android:width="12dp"
-        android:height="12dp" />
+        android:width="16dp"
+        android:height="16dp" />
 </shape>

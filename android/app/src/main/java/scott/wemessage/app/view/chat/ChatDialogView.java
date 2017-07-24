@@ -53,7 +53,7 @@ public class ChatDialogView implements IDialog {
             return users.get(0).getAvatar();
         } else {
             if (chat.getChatPictureFileLocation() == null){
-                return AndroidIOUtils.getUriFromResource(weMessageApplication.get(), R.drawable.ic_group_chat_icon).toString();
+                return AndroidIOUtils.getUriFromResource(weMessageApplication.get(), R.drawable.ic_group_chat_icon_v2).toString();
             }else {
                 return Uri.fromFile(weMessageApplication.get().getMessageDatabase().getChatByUuid(getId()).getChatPictureFileLocation().getFile()).toString();
             }

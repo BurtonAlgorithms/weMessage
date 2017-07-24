@@ -1,5 +1,6 @@
 package scott.wemessage.app.chats;
 
+import android.app.ActionBar;
 import android.app.ActivityManager;
 import android.app.LauncherActivity;
 import android.content.BroadcastReceiver;
@@ -11,6 +12,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -125,6 +127,9 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         messageManager.hookCallbacks(this);
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(chatListBroadcastReceiver, broadcastIntentFilter);
 
+        ((AppCompatActivity)getActivity()).getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
+        ((AppCompatActivity)getActivity()).getSupportActionBar().setCustomView(R.layout.action_bar_chat_list);
+
         super.onCreate(savedInstanceState);
     }
 
@@ -132,6 +137,8 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_chat_list, container, false);
+
+        dialogsList = (DialogsList) view.findViewById(R.id.chatDialogsList);
 
         DialogsListAdapter<IDialog> dialogsListAdapter = new DialogsListAdapter<>(R.layout.list_item_chat, new ImageLoader() {
             @Override
@@ -144,7 +151,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
             @Override
             public String format(Date date) {
                 if (DateFormatter.isToday(date)){
-                    return DateFormatter.format(date, "HH:mm a");
+                    return DateFormatter.format(date, "h:mm a");
                 }else if (DateFormatter.isYesterday(date)){
                     return getString(R.string.yesterday);
                 }else {

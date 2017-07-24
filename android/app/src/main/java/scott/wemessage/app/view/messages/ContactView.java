@@ -57,11 +57,11 @@ public class ContactView implements IUser {
     public String getAvatar() {
         try {
             if (contact.getContactPictureFileLocation() == null) {
-                return AndroidIOUtils.getUriFromResource(weMessageApplication.get(), R.drawable.ic_user_icon).toString();
+                return AndroidIOUtils.getUriFromResource(weMessageApplication.get(), R.drawable.ic_user_icon_v2).toString();
             }
             return Uri.fromFile(contact.getContactPictureFileLocation().getFile()).toString();
         }catch(Exception ex){
-            return AndroidIOUtils.getUriFromResource(weMessageApplication.get(), R.drawable.ic_user_icon).toString();
+            return AndroidIOUtils.getUriFromResource(weMessageApplication.get(), R.drawable.ic_user_icon_v2).toString();
         }
     }
 }
