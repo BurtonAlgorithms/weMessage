@@ -219,6 +219,7 @@ public class Message {
 
         if(chat instanceof PeerChat){
             displayName = null;
+            participants.add(((PeerChat) chat).getPeer().getHandleID());
         } else {
             GroupChat groupChat = (GroupChat) chat;
 
