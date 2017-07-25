@@ -34,8 +34,8 @@ public class MessagesDatabaseListener extends Listener {
             DatabaseSnapshot newSnapshot = new DatabaseSnapshot(messagesDb.getMessagesByAmount(messagesDb.MESSAGE_COUNT_LIMIT));
 
             for (Message message : newSnapshot.getMessages()){
-                if (message == null) return;
-                if ((message.getText() == null || message.getText().equals("")) && (message.getAttachments() == null || message.getAttachments().isEmpty())) return;
+                if (message == null) continue;
+                if ((message.getText() == null || message.getText().equals("")) && (message.getAttachments() == null || message.getAttachments().isEmpty())) continue;
 
                 if (oldSnapshot.getMessage(message.getGuid()) == null){
                     if (message.isFromMe()){
@@ -71,14 +71,14 @@ public class MessagesDatabaseListener extends Listener {
     private boolean isMessageSame(Message one, Message two){
         try {
             if (!one.getDateSent().equals(two.getDateSent())) return false;
-            if (!one.getDateDelivered().equals(two.getDateSent())) return false;
+            if (!one.getDateDelivered().equals(two.getDateDelivered())) return false;
             if (!one.getDateRead().equals(two.getDateRead())) return false;
             if (one.hasErrored() != two.hasErrored()) return false;
             if (one.isFinished() != two.isFinished()) return false;
 
             return true;
-        }catch(Exception ex){
-            return false;
+        }catch(NullPointerException ex){
+            return true;
         }
     }
 }
