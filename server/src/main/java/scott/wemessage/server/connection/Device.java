@@ -32,6 +32,7 @@ import scott.wemessage.server.messages.chat.PeerChat;
 import scott.wemessage.server.security.ServerBase64Wrapper;
 import scott.wemessage.server.weMessage;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -250,7 +251,7 @@ public class Device extends Thread {
 
     public List<Integer> performIncomingAction(JSONAction jsonAction){
         AppleScriptExecutor executor = getDeviceManager().getMessageServer().getScriptExecutor();
-        Object result = executor.runScript(ActionType.fromCode(jsonAction.getMethodType()), jsonAction.getArgs());
+        Object result = executor.runScript(ActionType.fromCode(jsonAction.getActionType()), jsonAction.getArgs());
 
         return parseResult(result);
     }
@@ -408,7 +409,9 @@ public class Device extends Thread {
                         sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
                         eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage));
                     }
-                }catch(Exception ex) {
+                }catch(EOFException ex){
+                    getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);
+                }catch (Exception ex) {
                     if (isRunning.get()) {
                         ServerLogger.error(TAG, "An error occurred while fetching a message from Device: " + getAddress(), ex);
                         getDeviceManager().removeDevice(this, DisconnectReason.ERROR, "Removing device in order to prevent error spam.");

@@ -81,14 +81,6 @@ public final class DeviceManager extends Thread {
         if(hasDevice(device.getAddress())) {
             EventManager eventManager = getMessageServer().getEventManager();
 
-            if (reason == DisconnectReason.CLIENT_DISCONNECTED) {
-                device.killDeviceByClientMessage();
-            }else {
-                device.killDevice(reason);
-            }
-            devices.remove(device.getAddress());
-            eventManager.callEvent(new DeviceQuitEvent(eventManager, this, device, reason));
-
             if (reasonMessage == null) {
                 ServerLogger.log(ServerLogger.Level.INFO, TAG, "Disconnecting device with IP Address: " + device.getAddress());
                 ServerLogger.emptyLine();
@@ -96,6 +88,15 @@ public final class DeviceManager extends Thread {
                 ServerLogger.log(ServerLogger.Level.INFO, TAG, reasonMessage);
                 ServerLogger.emptyLine();
             }
+
+            devices.remove(device.getAddress());
+
+            if (reason == DisconnectReason.CLIENT_DISCONNECTED) {
+                device.killDeviceByClientMessage();
+            }else {
+                device.killDevice(reason);
+            }
+            eventManager.callEvent(new DeviceQuitEvent(eventManager, this, device, reason));
             return true;
         }
         return false;
