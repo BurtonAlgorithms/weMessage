@@ -22,7 +22,6 @@ import scott.wemessage.commons.utils.StringUtils;
 
 public class ChatDialogView implements IDialog {
 
-    private MessageManager messageManager;
     private Chat chat;
     private List<ContactView> users = new ArrayList<>();
     private MessageView lastMessage;

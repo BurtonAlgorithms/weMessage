@@ -959,7 +959,9 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         String whereClause = MessageTable.UUID + " = ?";
 
         for (Attachment a : getMessageByUuid(uuid).getAttachments()){
-            deleteAttachmentByUuid(a.getUuid().toString());
+            if (a != null) {
+                deleteAttachmentByUuid(a.getUuid().toString());
+            }
         }
         getWritableDatabase().delete(MessageTable.TABLE_NAME, whereClause, new String[] { uuid });
     }
@@ -968,7 +970,9 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         String whereClause = MessageTable.MAC_GUID + " = ?";
 
         for (Attachment a : getMessageByMacGuid(macGuid).getAttachments()){
-            deleteAttachmentByUuid(a.getUuid().toString());
+            if (a != null) {
+                deleteAttachmentByUuid(a.getUuid().toString());
+            }
         }
         getWritableDatabase().delete(MessageTable.TABLE_NAME, whereClause, new String[] { macGuid });
     }

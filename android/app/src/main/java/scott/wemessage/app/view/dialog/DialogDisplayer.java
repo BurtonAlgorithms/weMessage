@@ -11,6 +11,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
 
 import scott.wemessage.R;
+import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.weMessage;
 
 public class DialogDisplayer {
@@ -90,6 +91,15 @@ public class DialogDisplayer {
             }
 
             super.onDismiss(dialog);
+        }
+
+        @Override
+        public void show(FragmentManager manager, String tag) {
+            try {
+                super.show(manager, tag);
+            }catch(Exception ex){
+                AppLogger.log(AppLogger.Level.ERROR, null, "Attempted to show a dialog when display was exited.");
+            }
         }
 
         public void setOnDismiss(Runnable runnable){

@@ -20,6 +20,7 @@ import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.view.KeyEvent;
@@ -169,8 +170,6 @@ public class LaunchFragment extends Fragment {
         passwordEditText = (EditText) view.findViewById(R.id.launchPasswordEditText);
         signInButton = (FontButton) view.findViewById(R.id.signInButton);
         oldEditTextColor = emailEditText.getCurrentTextColor();
-
-        //TODO: Check to see if it isnt coming back from a dead activity or whatever, listen for kill intent
 
         if (savedInstanceState != null) {
             String ipUnformatted = savedInstanceState.getString(weMessage.BUNDLE_HOST);
@@ -668,6 +667,15 @@ public class LaunchFragment extends Fragment {
                     dialogLayout.startAnimation();
                 }
             }, 10);
+        }
+
+        @Override
+        public void show(FragmentManager manager, String tag) {
+            try {
+                super.show(manager, tag);
+            }catch(Exception ex){
+                AppLogger.log(AppLogger.Level.ERROR, null, "Attempted to show a dialog when display was exited.");
+            }
         }
     }
 }

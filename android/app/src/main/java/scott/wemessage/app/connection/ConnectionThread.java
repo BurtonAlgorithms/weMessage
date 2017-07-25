@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -493,12 +494,12 @@ public class ConnectionThread extends Thread {
                                 MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
 
                                 JSONAction jsonAction = (JSONAction) getIncomingMessage(weMessage.JSON_ACTION, incoming).getOutgoing(JSONAction.class, byteArrayAdapter);
-                                ActionType actionType = ActionType.fromCode(jsonAction.getMethodType());
+                                ActionType actionType = ActionType.fromCode(jsonAction.getActionType());
                                 String[] args = jsonAction.getArgs();
 
                                 if (actionType == null){
                                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
-                                    AppLogger.error("Could not find action type with code: " + jsonAction.getMethodType(), new NullPointerException());
+                                    AppLogger.error("Could not find action type with code: " + jsonAction.getActionType(), new NullPointerException());
                                     return;
                                 }
 
@@ -682,7 +683,10 @@ public class ConnectionThread extends Thread {
                         }
                     }).start();
                 }
-            }catch(Exception ex){
+            }catch(EOFException ex){
+                sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED, null);
+                getParentService().endService();
+            }catch (Exception ex){
                 Bundle extras = new Bundle();
                 extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));
                 sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);

@@ -8,9 +8,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +38,8 @@ import scott.wemessage.app.launch.LaunchActivity;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.utils.reflection.ChatKitHelper;
+import scott.wemessage.app.utils.view.RecyclerSwiper;
 import scott.wemessage.app.view.chat.ChatDialogView;
 import scott.wemessage.app.view.dialog.DialogDisplayer;
 import scott.wemessage.app.view.messages.MessageView;
@@ -47,14 +51,13 @@ import scott.wemessage.commons.types.ReturnType;
 
 public class ChatListFragment extends Fragment implements MessageManager.Callbacks {
 
-    //TODO: Listen for broadcast of new message error; message update error; listen for message failure bundles
-
     private final String TAG = "ChatListFragment";
 
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private DialogsList dialogsList;
     private DialogsListAdapter<IDialog> dialogsListAdapter;
     private boolean isBoundToConnectionService = false;
+    private int errorSnackbarDuration = 5000;
 
     private BroadcastReceiver chatListBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -90,17 +93,25 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_NEW_MESSAGE_ERROR)){
-
-
+                if (getView() != null) {
+                    generateErroredSnackBar(getView(), getString(R.string.new_message_error));
+                }
             }else if(intent.getAction().equals(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR)) {
-
-
+                if (getView() != null) {
+                    generateErroredSnackBar(getView(), getString(R.string.message_update_error));
+                }
             }else if(intent.getAction().equals(weMessage.BROADCAST_ACTION_PERFORM_ERROR)){
-
-
+                if (getView() != null) {
+                    if (intent.getExtras() != null){
+                        generateErroredSnackBar(getView(), intent.getStringExtra(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE));
+                    }else {
+                        generateErroredSnackBar(getView(), getString(R.string.action_perform_error_default));
+                    }
+                }
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
-
-
+                if (getView() != null) {
+                    generateErroredSnackBar(getView(), getString(R.string.result_process_error));
+                }
             }
         }
     };
@@ -140,6 +151,24 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
         dialogsList = (DialogsList) view.findViewById(R.id.chatDialogsList);
 
+        new RecyclerSwiper(getActivity(), dialogsList) {
+            @Override
+            public void instantiateUnderlayButtons(final RecyclerView.ViewHolder viewHolder, List<UnderlayButton> underlayButtons) {
+                underlayButtons.add(new RecyclerSwiper.UnderlayButton(
+                        null,
+                        R.drawable.trash_icon,
+                        getResources().getColor(R.color.deleteButtonRed),
+                        new RecyclerSwiper.UnderlayButtonClickListener() {
+                            @Override
+                            public void onClick(int pos) {
+                                MessageManager.getInstance(getActivity()).deleteChat(WeApp.get().getMessageDatabase().
+                                        getChatByUuid(ChatKitHelper.getChatIdFromPosition(dialogsListAdapter, viewHolder.getAdapterPosition())), true);
+                            }
+                        }
+                ));
+            }
+        };
+
         DialogsListAdapter<IDialog> dialogsListAdapter = new DialogsListAdapter<>(R.layout.list_item_chat, new ImageLoader() {
             @Override
             public void loadImage(ImageView imageView, String url) {
@@ -165,7 +194,6 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         });
 
         dialogsList.setAdapter(dialogsListAdapter);
-
         this.dialogsListAdapter = dialogsListAdapter;
 
         for (Chat chat : MessageManager.getInstance(getContext()).getChats().values()){
@@ -178,6 +206,13 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onResume() {
+        dialogsListAdapter.sortByLastMessageDate();
+
+        super.onResume();
     }
 
     @Override
@@ -226,14 +261,21 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+                dialogsListAdapter.updateItemById(chatDialogView);
             }
         });
     }
 
     @Override
     public void onUnreadMessagesUpdate(Chat chat, boolean hasUnreadMessages) {
+        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
 
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                dialogsListAdapter.updateItemById(chatDialogView);
+            }
+        });
     }
 
     @Override
@@ -243,11 +285,9 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+                dialogsListAdapter.updateItemById(chatDialogView);
             }
         });
-
-        //TODO: Send message saying this, for rest too
     }
 
     @Override
@@ -257,7 +297,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+                dialogsListAdapter.updateItemById(chatDialogView);
             }
         });
     }
@@ -269,7 +309,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+                dialogsListAdapter.updateItemById(chatDialogView);
             }
         });
     }
@@ -281,7 +321,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                dialogsListAdapter.updateDialogWithMessage(chatDialogView.getId(), chatDialogView.getLastMessage());
+                dialogsListAdapter.updateItemById(chatDialogView);
             }
         });
     }
@@ -329,8 +369,14 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     }
 
     @Override
-    public void onMessageDelete(Message message) {
-
+    public void onMessageDelete(final Message message) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MessageView messageView = new MessageView(MessageManager.getInstance(getContext()), WeApp.get().getMessageDatabase().getLastMessageFromChat(message.getChat()));
+                dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
+            }
+        });
     }
 
     @Override
@@ -345,7 +391,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onActionResultReceived(ConnectionMessage connectionMessage, JSONAction jsonAction, List<ReturnType> returnTypes) {
-        //TODO: Work here
+
     }
 
     @Override
@@ -391,5 +437,19 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
             }
         }
         return false;
+    }
+
+    private Snackbar generateErroredSnackBar(View view, String message){
+        final Snackbar snackbar = Snackbar.make(view, message, errorSnackbarDuration);
+
+        snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                snackbar.dismiss();
+            }
+        });
+        snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+
+        return snackbar;
     }
 }
