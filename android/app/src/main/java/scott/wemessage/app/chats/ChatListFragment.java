@@ -367,11 +367,16 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     }
 
     private void goToLauncher(){
-        Intent launcherIntent = new Intent(WeApp.get(), LaunchActivity.class);
+        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
+            Intent launcherIntent = new Intent(WeApp.get(), LaunchActivity.class);
 
-        MessageManager.dump(getContext());
-        startActivity(launcherIntent);
-        getActivity().finish();
+            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
+
+            MessageManager.dump(getContext());
+            startActivity(launcherIntent);
+
+            getActivity().finish();
+        }
     }
 
     private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){

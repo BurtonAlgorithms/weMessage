@@ -91,7 +91,7 @@
                     android:id="@id/dialogLastMessage"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="4dp"
                     android:textSize="12sp"
                     android:ellipsize="end"
                     android:lines="2"

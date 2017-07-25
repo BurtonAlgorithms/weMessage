@@ -170,6 +170,8 @@ public class LaunchFragment extends Fragment {
         signInButton = (FontButton) view.findViewById(R.id.signInButton);
         oldEditTextColor = emailEditText.getCurrentTextColor();
 
+        //TODO: Check to see if it isnt coming back from a dead activity or whatever, listen for kill intent
+
         if (savedInstanceState != null) {
             String ipUnformatted = savedInstanceState.getString(weMessage.BUNDLE_HOST);
 
@@ -214,8 +216,10 @@ public class LaunchFragment extends Fragment {
             ipEditText.setText(host);
             emailEditText.setText(email);
 
-            if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
-                startConnectionService(view, ipAddress, port, email, hashedPass, true);
+            if (!(getActivity().getIntent().getExtras() != null && getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false))){
+                if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
+                    startConnectionService(view, ipAddress, port, email, hashedPass, true);
+                }
             }
         }
 

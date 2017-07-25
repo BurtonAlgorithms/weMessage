@@ -14,7 +14,7 @@
         app:dialogUnreadTitleTextColor="@color/dark_gray"
         app:dialogUnreadTitleTextStyle="bold"
 
-        app:dialogMessageTextSize="14sp"
+        app:dialogMessageTextSize="16sp"
         app:dialogMessageAvatarEnabled="false"
 
         app:dialogUnreadBubbleTextSize="0sp"
