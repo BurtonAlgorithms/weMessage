@@ -46,5 +46,6 @@
     <string name="yesterday">Yesterday</string>
     <string name="conversations">Conversations</string>
     <string name="delete">Delete</string>
+    <string name="no_conversations_message">You currently have no messages. Click the New Message button to start a new conversation.</string>
 
 </resources>

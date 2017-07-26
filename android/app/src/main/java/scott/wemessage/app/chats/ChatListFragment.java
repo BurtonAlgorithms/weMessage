@@ -17,6 +17,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 
 import com.bumptech.glide.Glide;
 import com.stfalcon.chatkit.commons.ImageLoader;
@@ -54,6 +55,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     private final String TAG = "ChatListFragment";
 
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
+    private LinearLayout noConversationsView;
     private DialogsList dialogsList;
     private DialogsListAdapter<IDialog> dialogsListAdapter;
     private boolean isBoundToConnectionService = false;
@@ -150,6 +152,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         final View view = inflater.inflate(R.layout.fragment_chat_list, container, false);
 
         dialogsList = (DialogsList) view.findViewById(R.id.chatDialogsList);
+        noConversationsView = (LinearLayout) view.findViewById(R.id.noConversationsView);
 
         new RecyclerSwiper(getActivity(), dialogsList) {
             @Override
@@ -210,6 +213,11 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onResume() {
+        if (!isServiceRunning(ConnectionService.class)){
+            goToLauncher();
+        }
+
+        toggleNoConversations(dialogsListAdapter.isEmpty());
         dialogsListAdapter.sortByLastMessageDate();
 
         super.onResume();
@@ -249,6 +257,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                toggleNoConversations(false);
                 dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
             }
         });
@@ -332,6 +341,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
             @Override
             public void run() {
                 dialogsListAdapter.deleteById(chat.getUuid().toString());
+                toggleNoConversations(dialogsListAdapter.isEmpty());
             }
         });
     }
@@ -437,6 +447,24 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
             }
         }
         return false;
+    }
+
+    private void toggleNoConversations(boolean bool){
+        if (bool){
+            if (dialogsList.getVisibility() != View.GONE) {
+                dialogsList.setVisibility(View.GONE);
+            }
+            if (noConversationsView.getVisibility() != View.VISIBLE) {
+                noConversationsView.setVisibility(View.VISIBLE);
+            }
+        }else {
+            if (dialogsList.getVisibility() != View.VISIBLE) {
+                dialogsList.setVisibility(View.VISIBLE);
+            }
+            if (noConversationsView.getVisibility() != View.GONE) {
+                noConversationsView.setVisibility(View.GONE);
+            }
+        }
     }
 
     private Snackbar generateErroredSnackBar(View view, String message){
