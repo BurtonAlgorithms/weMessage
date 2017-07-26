@@ -17,6 +17,7 @@ import scott.wemessage.app.chats.objects.Chat.ChatType;
 import scott.wemessage.app.chats.objects.GroupChat;
 import scott.wemessage.app.chats.objects.PeerChat;
 import scott.wemessage.app.database.objects.Account;
+import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Handle;
@@ -40,6 +41,14 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + AccountTable.UUID + " TEXT, "
                 + AccountTable.ACCOUNT_EMAIL + " TEXT, "
                 + AccountTable.ACCOUNT_PASSWORD_CRYPTO + " TEXT );";
+
+        String createActionMessageTable = "CREATE TABLE " + ActionMessageTable.TABLE_NAME + " ("
+                + ActionMessageTable._ID + " INTEGER PRIMARY KEY, "
+                + ActionMessageTable.UUID + " TEXT, "
+                + ActionMessageTable.ACCOUNT_UUID + " TEXT, "
+                + ActionMessageTable.CHAT_UUID + " TEXT, "
+                + ActionMessageTable.ACTION_TEXT + " TEXT, "
+                + ActionMessageTable.DATE + " TEXT );";
 
         String createAttachmentTable = "CREATE TABLE " + AttachmentTable.TABLE_NAME + " ("
                 + AttachmentTable._ID + " INTEGER PRIMARY KEY, "
@@ -102,6 +111,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + MessageTable.IS_FROM_ME + " INTEGER );";
 
         db.execSQL(createAccountTable);
+        db.execSQL(createActionMessageTable);
         db.execSQL(createAttachmentTable);
         db.execSQL(createContactTable);
         db.execSQL(createChatTable);
@@ -222,6 +232,32 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             }
         }
         return null;
+    }
+
+    public List<ActionMessage> getReversedActionMessages(Chat chat, int startIndex, int numberToFetch){
+        List<ActionMessage> actionMessages = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        long totalRows = DatabaseUtils.queryNumEntries(db, ActionMessageTable.TABLE_NAME);
+        long start = totalRows - startIndex;
+
+        String selectQuery = "SELECT * FROM " + ActionMessageTable.TABLE_NAME + " WHERE " + ActionMessageTable._ID + " <= ? AND "
+                + ActionMessageTable.CHAT_UUID + " = ? ORDER BY " + ActionMessageTable._ID + " DESC LIMIT " + numberToFetch;
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {String.valueOf(start), chat.getUuid().toString()} );
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                ActionMessage message = buildActionMessage(cursor);
+
+                if (message != null) {
+                    actionMessages.add(message);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return actionMessages;
     }
 
     public List<Message> getReversedMessages(Chat chat, int startIndex, int numberToFetch){
@@ -386,6 +422,63 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         db.update(AccountTable.TABLE_NAME, values, selection, new String[]{ email });
         updateHandle(oldHandleUuid.toString(), new Handle(oldHandleUuid, newData.getEmail(), Handle.HandleType.ME));
+    }
+
+    public ActionMessage buildActionMessage(Cursor cursor){
+        if (!(cursor.getString(cursor.getColumnIndex(ActionMessageTable.ACCOUNT_UUID)).equals(WeApp.get().getCurrentAccount().getUuid().toString()))){
+            return null;
+        }
+
+        ActionMessage actionMessage = new ActionMessage().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ActionMessageTable.UUID))))
+                .setChat(getChatByUuid(cursor.getString(cursor.getColumnIndex(ActionMessageTable.CHAT_UUID)))).setActionText(cursor.getString(cursor.getColumnIndex(ActionMessageTable.ACTION_TEXT)))
+                .setDate(cursor.getInt(cursor.getColumnIndex(ActionMessageTable.DATE)));
+
+        return actionMessage;
+    }
+
+    public ContentValues actionMessageToContentValues(ActionMessage actionMessage){
+        ContentValues values = new ContentValues();
+
+        values.put(ActionMessageTable.UUID, actionMessage.getUuid().toString());
+        values.put(ActionMessageTable.ACCOUNT_UUID, WeApp.get().getCurrentAccount().getUuid().toString());
+        values.put(ActionMessageTable.CHAT_UUID, actionMessage.getChat().getUuid().toString());
+        values.put(ActionMessageTable.ACTION_TEXT, actionMessage.getActionText());
+        values.put(ActionMessageTable.DATE, actionMessage.getDate());
+
+        return values;
+    }
+
+    public ActionMessage getActionMessageByUuid(String uuid){
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + ActionMessageTable.TABLE_NAME + " WHERE " + ActionMessageTable.UUID + " = ?";
+
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {uuid});
+        ActionMessage actionMessage = null;
+
+        if (cursor.getCount() > 0){
+            cursor.moveToFirst();
+            actionMessage = buildActionMessage(cursor);
+        }
+        cursor.close();
+        return actionMessage;
+    }
+
+    public void addActionMessage(ActionMessage actionMessage){
+        SQLiteDatabase db = getWritableDatabase();
+        db.insert(ActionMessageTable.TABLE_NAME, null, actionMessageToContentValues(actionMessage));
+    }
+
+    public void updateActionMessage(String uuid, ActionMessage newData){
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = actionMessageToContentValues(newData);
+        String selection = ActionMessageTable.UUID + " = ?";
+
+        db.update(ActionMessageTable.TABLE_NAME, values, selection, new String[]{ uuid });
+    }
+
+    private void deleteActionMessage(String uuid){
+        String whereClause = ActionMessageTable.UUID + " = ?";
+        getWritableDatabase().delete(ActionMessageTable.TABLE_NAME, whereClause, new String[] { uuid });
     }
 
     public Attachment buildAttachment(Cursor cursor){
@@ -812,6 +905,9 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 for (Message message : getReversedMessages(chat, 0, Integer.MAX_VALUE)){
                     deleteMessageByUuid(message.getUuid().toString());
                 }
+                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0, Integer.MAX_VALUE)){
+                    deleteActionMessage(actionMessage.getUuid().toString());
+                }
             }
         }.start();
 
@@ -827,6 +923,9 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             public void run() {
                 for (Message message : getReversedMessages(chat, 0, Integer.MAX_VALUE)){
                     deleteMessageByUuid(message.getUuid().toString());
+                }
+                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0, Integer.MAX_VALUE)){
+                    deleteActionMessage(actionMessage.getUuid().toString());
                 }
             }
         }.start();
@@ -844,6 +943,9 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 for (Message message : getReversedMessages(chat, 0, Integer.MAX_VALUE)){
                     deleteMessageByUuid(message.getUuid().toString());
                 }
+                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0, Integer.MAX_VALUE)){
+                    deleteActionMessage(actionMessage.getUuid().toString());
+                }
             }
         }.start();
         getWritableDatabase().delete(ChatTable.TABLE_NAME, whereClause, new String[] { macGroupID });
@@ -858,6 +960,9 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             public void run() {
                 for (Message message : getReversedMessages(chat, 0, Integer.MAX_VALUE)){
                     deleteMessageByUuid(message.getUuid().toString());
+                }
+                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0, Integer.MAX_VALUE)){
+                    deleteActionMessage(actionMessage.getUuid().toString());
                 }
             }
         }.start();
@@ -1010,7 +1115,11 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         List<Attachment> attachments = new ArrayList<>();
 
         for (String s : stringList){
-            attachments.add(getAttachmentByUuid(s));
+            Attachment a = getAttachmentByUuid(s);
+
+            if (a != null) {
+                attachments.add(a);
+            }
         }
         return attachments;
     }
@@ -1032,6 +1141,16 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         public static final String UUID = "uuid";
         public static final String ACCOUNT_EMAIL = "account_email";
         public static final String ACCOUNT_PASSWORD_CRYPTO = "account_password_crypto";
+    }
+
+    public static class ActionMessageTable {
+        public static final String TABLE_NAME = "action_messages";
+        public static final String _ID = "_id";
+        public static final String UUID = "uuid";
+        public static final String ACCOUNT_UUID = "account_uuid";
+        public static final String CHAT_UUID = "chat_uuid";
+        public static final String ACTION_TEXT = "action_text";
+        public static final String DATE = "date";
     }
 
     public static class AttachmentTable {

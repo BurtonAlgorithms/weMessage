@@ -166,6 +166,7 @@ public class ConnectionThread extends Thread {
 
     public void sendOutgoingAction(){
         //TODO: When doing the args for the action type, make sure they are all specified; Date Util thing weServer does, so date is not null <-- Thread this
+        //TODO: Do not run messageManager.doWhatever(), instead wait for return result check uuid and make sure its right, then do messageManager.doWhatever() there
     }
 
     public void run(){

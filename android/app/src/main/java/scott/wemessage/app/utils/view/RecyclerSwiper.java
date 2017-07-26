@@ -27,7 +27,7 @@ import scott.wemessage.commons.utils.StringUtils;
 
 /**
  *
- * Created by Stackoverflow user Wenxi Zang
+ * Created by StackOverflow user Wenxi Zang
  *
  * Modified by Roman Scott for the weMessage Android Application
  *

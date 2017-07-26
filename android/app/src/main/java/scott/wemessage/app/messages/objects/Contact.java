@@ -3,6 +3,7 @@ package scott.wemessage.app.messages.objects;
 import java.util.UUID;
 
 import scott.wemessage.app.utils.FileLocationContainer;
+import scott.wemessage.commons.utils.StringUtils;
 
 public class Contact {
 
@@ -26,6 +27,28 @@ public class Contact {
 
     public UUID getUuid() {
         return uuid;
+    }
+
+    public String getDisplayName(){
+        try {
+            String fullString = "";
+
+            if (!StringUtils.isEmpty(getFirstName())) {
+                fullString = getFirstName();
+            }
+
+            if (!StringUtils.isEmpty(getLastName())) {
+                fullString += " " + getLastName();
+            }
+
+            if (StringUtils.isEmpty(fullString)) {
+                fullString = getHandle().getHandleID();
+            }
+
+            return fullString;
+        }catch(Exception ex){
+            return "";
+        }
     }
 
     public String getFirstName() {

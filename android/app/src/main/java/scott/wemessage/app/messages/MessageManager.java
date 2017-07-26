@@ -3,14 +3,18 @@ package scott.wemessage.app.messages;
 import android.content.Context;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import scott.wemessage.R;
 import scott.wemessage.app.chats.objects.Chat;
 import scott.wemessage.app.chats.objects.GroupChat;
 import scott.wemessage.app.chats.objects.PeerChat;
+import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Handle;
@@ -20,6 +24,7 @@ import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.connection.ConnectionMessage;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.commons.utils.DateUtils;
 
 public final class MessageManager {
 
@@ -455,6 +460,9 @@ public final class MessageManager {
         chat.setDisplayName(newName);
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        WeApp.get().getMessageDatabase().addActionMessage(new ActionMessage(
+                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_rename_group, newName), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
+        ));
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -470,6 +478,9 @@ public final class MessageManager {
         chat.addParticipant(contact);
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        WeApp.get().getMessageDatabase().addActionMessage(new ActionMessage(
+                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_add_participant, contact.getDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
+        ));
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -485,6 +496,9 @@ public final class MessageManager {
         chat.removeParticipant(contact);
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        WeApp.get().getMessageDatabase().addActionMessage(new ActionMessage(
+                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_remove_participant, contact.getDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
+        ));
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -500,6 +514,9 @@ public final class MessageManager {
         chat.setIsInChat(false);
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        WeApp.get().getMessageDatabase().addActionMessage(new ActionMessage(
+                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_leave_group), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
+        ));
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();

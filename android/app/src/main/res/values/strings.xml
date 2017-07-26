@@ -47,5 +47,9 @@
     <string name="conversations">Conversations</string>
     <string name="delete">Delete</string>
     <string name="no_conversations_message">You currently have no messages. Click the New Message button to start a new conversation.</string>
+    <string name="action_message_add_participant">%1$s has been added to the group.</string>
+    <string name="action_message_remove_participant">%1$s has been removed from the group.</string>
+    <string name="action_message_rename_group">This chat has been renamed to \"%1$s\".</string>
+    <string name="action_message_leave_group">You have left this chat.</string>
 
 </resources>
