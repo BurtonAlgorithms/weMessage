@@ -48,15 +48,13 @@ public class FileUtils {
         try {
             ios = new FileInputStream(file);
             if (ios.read(buffer) == -1) {
-                throw new IOException(
-                        "EOF reached while trying to read the whole file");
+                throw new IOException("EOF reached while trying to read the whole file");
             }
         } finally {
             try {
                 if (ios != null)
                     ios.close();
-            } catch (IOException e) {
-            }
+            } catch (IOException e) { }
         }
         return buffer;
     }
