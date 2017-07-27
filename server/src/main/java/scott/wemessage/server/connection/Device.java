@@ -162,6 +162,13 @@ public class Device extends Thread {
             Message lastMessage = messagesDb.getLastMessageFromChat(chat);
             Date lastMessageDate = lastMessage.getModernDateSent();
             String timeArgument;
+            String lastMessageText;
+
+            if (lastMessage.getText() == null){
+                lastMessageText = "";
+            }else {
+                lastMessageText = lastMessage.getText();
+            }
 
             if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)){
                 timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
@@ -231,14 +238,14 @@ public class Device extends Thread {
                 }
             }else {
                 if (attachments.isEmpty()){
-                    result = executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[]{ firstArg, timeArgument, lastMessage.getText(), "", decryptedMessage});
+                    result = executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[]{ firstArg, timeArgument, lastMessageText, "", decryptedMessage});
                 }else if (attachments.size() == 1){
-                    result = executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { firstArg, timeArgument, lastMessage.getText(), attachments.get(0).getAbsolutePath(), decryptedMessage });
+                    result = executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { firstArg, timeArgument, lastMessageText, attachments.get(0).getAbsolutePath(), decryptedMessage });
                 }else {
                     for (File file : attachments){
-                        executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { firstArg, timeArgument, lastMessage.getText(), file.getAbsolutePath(), "" });
+                        executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { firstArg, timeArgument, lastMessageText, file.getAbsolutePath(), "" });
                     }
-                    result = executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { firstArg, timeArgument, lastMessage.getText(), "", decryptedMessage });
+                    result = executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { firstArg, timeArgument, lastMessageText, "", decryptedMessage });
                 }
             }
 
@@ -400,14 +407,17 @@ public class Device extends Thread {
                         List<Integer> returnedResult = relayIncomingMessage(jsonMessage);
 
                         sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
-                        eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage));
+                        eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, null));
+
                     }else if (input.startsWith(weMessage.JSON_ACTION)){
                         ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_ACTION, input);
                         JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
                         List<Integer> returnedResult =  performIncomingAction(jsonAction);
+                        JSONResult jsonResult = new JSONResult(clientMessage.getMessageUuid(), returnedResult);
+                        boolean wasRight = jsonResult.getResult().get(0).equals(ReturnType.ACTION_PERFORMED.getCode());
 
-                        sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
-                        eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage));
+                        sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, jsonResult, JSONResult.class);
+                        eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, wasRight));
                     }
                 }catch(EOFException ex){
                     getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);

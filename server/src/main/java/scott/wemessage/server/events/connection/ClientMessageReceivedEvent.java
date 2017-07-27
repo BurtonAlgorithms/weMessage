@@ -11,12 +11,14 @@ public class ClientMessageReceivedEvent extends Event {
     private DeviceManager deviceManager;
     private Device device;
     private ClientMessage clientMessage;
+    private Boolean wasActionSuccessful;
 
-    public ClientMessageReceivedEvent(EventManager eventManager, DeviceManager deviceManager, Device device, ClientMessage clientMessage){
+    public ClientMessageReceivedEvent(EventManager eventManager, DeviceManager deviceManager, Device device, ClientMessage clientMessage, Boolean wasActionSuccessful){
         super(eventManager);
         this.deviceManager = deviceManager;
         this.device = device;
         this.clientMessage = clientMessage;
+        this.wasActionSuccessful = wasActionSuccessful;
     }
 
     public DeviceManager getDeviceManager() {
@@ -29,5 +31,9 @@ public class ClientMessageReceivedEvent extends Event {
 
     public ClientMessage getClientMessage() {
         return clientMessage;
+    }
+
+    public Boolean getWasActionSuccessful() {
+        return wasActionSuccessful;
     }
 }

@@ -1,17 +1,16 @@
 package scott.wemessage.server.configuration;
 
+import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.server.MessageServer;
+import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.configuration.json.ConfigAccountJSON;
 import scott.wemessage.server.configuration.json.ConfigJSON;
 import scott.wemessage.server.configuration.json.ConfigJSONData;
-import scott.wemessage.server.configuration.json.ConfigAccountJSON;
-import scott.wemessage.commons.utils.FileUtils;
-import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.weMessage;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 
 import com.google.gson.Gson;
@@ -47,7 +46,7 @@ public final class ServerConfiguration {
         }
 
         Gson gson = new Gson();
-        String jsonString = FileUtils.readFile(configFile.getPath(), StandardCharsets.UTF_8);
+        String jsonString = FileUtils.readFile(configFile.getPath());
         ConfigJSON configJSON = gson.fromJson(jsonString, ConfigJSON.class);
 
         if (configJSON.getConfig().getConfigVersion() != weMessage.WEMESSAGE_CONFIG_VERSION){
@@ -119,7 +118,7 @@ public final class ServerConfiguration {
     }
 
     public ConfigJSON getConfigJSON() throws IOException {
-        String jsonString = FileUtils.readFile(getConfigFile().getPath(), StandardCharsets.UTF_8);
+        String jsonString = FileUtils.readFile(getConfigFile().getPath());
         return new Gson().fromJson(jsonString, ConfigJSON.class);
     }
 

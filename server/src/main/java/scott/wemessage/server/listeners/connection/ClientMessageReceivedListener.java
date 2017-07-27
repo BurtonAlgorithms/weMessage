@@ -19,19 +19,23 @@ public class ClientMessageReceivedListener extends Listener {
     public void onEvent(Event event){
         ClientMessageReceivedEvent e = (ClientMessageReceivedEvent) event;
 
-        try {
-            if (e.getClientMessage().isJsonOfType(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper()))) {
-                e.getDeviceManager().getMessageServer().getDatabaseManager().queueAction((JSONAction) e.getClientMessage().getIncoming(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper())));
+        if (e.getWasActionSuccessful() != null && e.getWasActionSuccessful()) {
+            try {
+                if (e.getClientMessage().isJsonOfType(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper()))) {
+                    e.getDeviceManager().getMessageServer().getDatabaseManager().queueAction((JSONAction) e.getClientMessage().getIncoming(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper())));
+                }
+            } catch (Exception ex) {
+                ServerLogger.error("An error occurred while listening for a client message receive event", ex);
             }
-        }catch(Exception ex){
-            ServerLogger.error("An error occurred while listening for a client message receive event", ex);
         }
 
         for (Device device : e.getDeviceManager().getDevices().values()){
             if (!e.getDevice().getAddress().equals(device.getAddress())){
                 try {
                     if (e.getClientMessage().isJsonOfType(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper()))) {
-                        e.getDevice().sendOutgoingAction((JSONAction) e.getClientMessage().getIncoming(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper())));
+                        if (e.getWasActionSuccessful() != null && e.getWasActionSuccessful()) {
+                            e.getDevice().sendOutgoingAction((JSONAction) e.getClientMessage().getIncoming(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper())));
+                        }
                     } else if (e.getClientMessage().isJsonOfType(JSONMessage.class, new ByteArrayAdapter(new ServerBase64Wrapper()))) {
                         e.getDevice().sendOutgoingMessage((JSONMessage) e.getClientMessage().getIncoming(JSONMessage.class, new ByteArrayAdapter(new ServerBase64Wrapper())));
                     }
