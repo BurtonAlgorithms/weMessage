@@ -1,20 +1,31 @@
 package scott.wemessage.commons.utils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.InputStream;
 
 public class FileUtils {
 
-    public static String readFile(String path, Charset encoding) throws IOException {
-        byte[] encoded = Files.readAllBytes(Paths.get(path));
-        return new String(encoded, encoding);
+    public static String readFile(String path) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(path));
+        try {
+            StringBuilder sb = new StringBuilder();
+            String line = br.readLine();
+
+            while (line != null) {
+                sb.append(line);
+                sb.append(System.lineSeparator());
+                line = br.readLine();
+            }
+            return sb.toString();
+        } finally {
+            br.close();
+        }
     }
 
     public static FileInputStream openInputStream(final File file) throws IOException {
@@ -32,9 +43,22 @@ public class FileUtils {
     }
 
     public static byte[] readBytesFromFile(File file) throws IOException {
-        Path path = Paths.get(file.getAbsolutePath());
-
-        return Files.readAllBytes(path);
+        byte[] buffer = new byte[(int) file.length()];
+        InputStream ios = null;
+        try {
+            ios = new FileInputStream(file);
+            if (ios.read(buffer) == -1) {
+                throw new IOException(
+                        "EOF reached while trying to read the whole file");
+            }
+        } finally {
+            try {
+                if (ios != null)
+                    ios.close();
+            } catch (IOException e) {
+            }
+        }
+        return buffer;
     }
 
     public static void writeBytesToFile(File file, byte[] bytes) throws IOException {
