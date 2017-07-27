@@ -29,7 +29,7 @@ public class Contact {
         return uuid;
     }
 
-    public String getDisplayName(){
+    public String getUIDisplayName(){
         try {
             String fullString = "";
 

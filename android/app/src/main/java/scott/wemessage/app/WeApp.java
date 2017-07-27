@@ -4,8 +4,8 @@ import android.app.Application;
 
 import java.io.File;
 
-import scott.wemessage.app.database.MessageDatabase;
-import scott.wemessage.app.database.objects.Account;
+import scott.wemessage.app.messages.MessageDatabase;
+import scott.wemessage.app.messages.objects.Account;
 
 public class WeApp extends Application {
 

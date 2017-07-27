@@ -1,11 +1,26 @@
 package scott.wemessage.app.messages.objects;
 
+import java.io.File;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import scott.wemessage.app.chats.objects.Chat;
+import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.objects.chats.GroupChat;
+import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.security.CryptoFile;
+import scott.wemessage.app.security.CryptoType;
+import scott.wemessage.app.security.EncryptionTask;
+import scott.wemessage.app.security.FileEncryptionTask;
+import scott.wemessage.app.security.KeyTextPair;
+import scott.wemessage.commons.json.message.JSONAttachment;
+import scott.wemessage.commons.json.message.JSONChat;
+import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.utils.DateUtils;
+import scott.wemessage.commons.utils.FileUtils;
 
 public class Message {
 
@@ -192,5 +207,74 @@ public class Message {
     public Message setFromMe(Boolean fromMe) {
         isFromMe = fromMe;
         return this;
+    }
+
+    public JSONMessage toJson() throws IOException, GeneralSecurityException {
+        Chat chat = getChat();
+        List<String> participants = new ArrayList<>();
+        List<JSONAttachment> attachments = new ArrayList<>();
+        String displayName;
+        String handle;
+
+        if(chat instanceof PeerChat){
+            displayName = null;
+            participants.add(((PeerChat) chat).getContact().getHandle().getHandleID());
+        } else {
+            GroupChat groupChat = (GroupChat) chat;
+
+            displayName = groupChat.getDisplayName();
+
+            for (Contact c : groupChat.getParticipants()){
+                participants.add(c.getHandle().getHandleID());
+            }
+        }
+
+        if (getSender() == null || getSender().getHandle().getHandleType() == Handle.HandleType.ME){
+            handle = null;
+        }else {
+            handle = getSender().getHandle().getHandleID();
+        }
+
+        for (Attachment attachment : getAttachments()){
+            byte[] fileBytes = FileUtils.readBytesFromFile(new File(attachment.getFileLocation().getFileLocation()));
+            FileEncryptionTask fileEncryptionTask = new FileEncryptionTask(fileBytes, null, CryptoType.AES);
+
+            fileEncryptionTask.runEncryptTask();
+
+            JSONAttachment jsonAttachment = new JSONAttachment(
+                    attachment.getMacGuid(),
+                    attachment.getTransferName(),
+                    attachment.getFileType(),
+                    CryptoFile.toEncryptedJSON(fileEncryptionTask.getEncryptedFile()),
+                    attachment.getTotalBytes()
+            );
+            attachments.add(jsonAttachment);
+        }
+
+        EncryptionTask encryptionTask = new EncryptionTask(getText(), null, CryptoType.AES);
+        encryptionTask.runEncryptTask();
+
+        return new JSONMessage(
+                getMacGuid(),
+                new JSONChat(
+                        getChat().getMacGuid(),
+                        getChat().getMacGroupID(),
+                        getChat().getMacChatIdentifier(),
+                        displayName,
+                        participants
+                ),
+                handle,
+                attachments,
+                KeyTextPair.toEncryptedJSON(encryptionTask.getEncryptedText()),
+                getDateSent(),
+                getDateDelivered(),
+                getDateRead(),
+                hasErrored(),
+                isSent(),
+                isDelivered(),
+                isRead(),
+                isFinished(),
+                isFromMe()
+        );
     }
 }

@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -32,16 +33,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.chats.objects.Chat;
-import scott.wemessage.app.chats.objects.GroupChat;
-import scott.wemessage.app.chats.objects.PeerChat;
-import scott.wemessage.app.database.MessageDatabase;
-import scott.wemessage.app.database.objects.Account;
+import scott.wemessage.app.WeApp;
+import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
+import scott.wemessage.app.messages.objects.Account;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Handle;
 import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.objects.chats.GroupChat;
+import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.security.CryptoFile;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.DecryptionTask;
@@ -51,7 +53,6 @@ import scott.wemessage.app.security.KeyTextPair;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
-import scott.wemessage.app.WeApp;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.action.JSONResult;
 import scott.wemessage.commons.json.connection.ClientMessage;
@@ -68,6 +69,7 @@ import scott.wemessage.commons.types.DeviceType;
 import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
+import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ConnectionThread extends Thread {
@@ -84,6 +86,7 @@ public class ConnectionThread extends Thread {
     private AtomicBoolean hasTriedAuthenticating = new AtomicBoolean(false);
     private AtomicBoolean isConnected = new AtomicBoolean(false);
     private ConcurrentHashMap<String, ConnectionMessage>connectionMessagesMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, String>messageAndConnectionMessageMap = new ConcurrentHashMap<>();
 
     private ConnectionService service;
     private Socket connectionSocket;
@@ -140,7 +143,7 @@ public class ConnectionThread extends Thread {
         }
     }
 
-    public ServerMessage getIncomingMessage(String prefix, Object incomingStream ){
+    public ServerMessage getIncomingMessage(String prefix, Object incomingStream){
         String data = ((String) incomingStream).split(prefix)[1];
         ServerMessage serverMessage = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().fromJson(data, ServerMessage.class);
 
@@ -160,13 +163,220 @@ public class ConnectionThread extends Thread {
         connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
     }
 
-    public void sendOutgoingMessage(){
-        //TODO: Thread this
+    //TODO: If not registered with imessage, use sms factory to send message see if that works if not add message failure etc.
+
+    public void sendOutgoingMessage(final Message message){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Type type = TypeToken.get(JSONMessage.class).getType();
+                    String clientMessageUuid = UUID.randomUUID().toString();
+                    String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().toJson(message.toJson(), type);
+                    ClientMessage clientMessage = new ClientMessage(clientMessageUuid, outgoingDataJson);
+                    String outgoingJson = new Gson().toJson(clientMessage);
+
+                    connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
+                    messageAndConnectionMessageMap.put(clientMessageUuid, message.getUuid().toString());
+                    MessageManager.getInstance(getParentService()).addMessage(message, false);
+
+                    getOutputStream().writeObject(weMessage.JSON_NEW_MESSAGE + outgoingJson);
+                    getOutputStream().flush();
+                }catch(Exception ex){
+                    sendLocalBroadcast(weMessage.BROADCAST_SEND_MESSAGE_ERROR, null);
+                    AppLogger.error(TAG, "An error occurred while trying to send a new message", ex);
+                }
+
+            }
+        }).start();
     }
 
-    public void sendOutgoingAction(){
-        //TODO: When doing the args for the action type, make sure they are all specified; Date Util thing weServer does, so date is not null <-- Thread this
-        //TODO: Do not run messageManager.doWhatever(), instead wait for return result check uuid and make sure its right, then do messageManager.doWhatever() there
+    public void sendOutgoingGenericAction(final ActionType actionType, final String... args){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    JSONAction jsonAction;
+
+                    switch (actionType) {
+                        case ADD_PARTICIPANT:
+                            jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
+                            break;
+                        case CREATE_GROUP:
+                            jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2]});
+                            break;
+                        case LEAVE_GROUP:
+                            jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2]});
+                            break;
+                        case REMOVE_PARTICIPANT:
+                            jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
+                            break;
+                        case RENAME_GROUP:
+                            jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
+                            break;
+                        default:
+                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+                            AppLogger.error(TAG, "Could not perform action due to an unknown Action Type", new NullPointerException());
+                            return;
+                    }
+
+                    sendOutgoingMessage(weMessage.JSON_ACTION, jsonAction, JSONAction.class);
+                }catch(Exception ex){
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+                    AppLogger.error(TAG, "An error occurred while trying to send an action to be performed", ex);
+                }
+            }
+        }).start();
+    }
+
+    public void sendOutgoingAddParticipantAction(final GroupChat chat, final String participant){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Message lastMessage = WeApp.get().getMessageDatabase().getLastMessageFromChat(chat);
+                    Date lastMessageDate = lastMessage.getModernDateSent();
+                    String timeArgument;
+                    String lastMessageText;
+
+                    if (lastMessage.getText() == null){
+                        lastMessageText = "";
+                    }else {
+                        lastMessageText = lastMessage.getText();
+                    }
+
+                    if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)) {
+                        timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
+                    } else {
+                        if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
+                            timeArgument = getParentService().getString(R.string.yesterday);
+                        } else {
+                            timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
+                        }
+                    }
+                    sendOutgoingGenericAction(ActionType.ADD_PARTICIPANT, chat.getUIDisplayName(true), timeArgument, lastMessageText, participant);
+                }catch(Exception ex){
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+                    AppLogger.error(TAG, "An error occurred while trying to perform the AddParticipant action", ex);
+                }
+            }
+        }).start();
+    }
+
+    public void sendOutgoingRemoveParticipantAction(final GroupChat chat, final String participant){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Message lastMessage = WeApp.get().getMessageDatabase().getLastMessageFromChat(chat);
+                    Date lastMessageDate = lastMessage.getModernDateSent();
+                    String timeArgument;
+                    String lastMessageText;
+
+                    if (lastMessage.getText() == null){
+                        lastMessageText = "";
+                    }else {
+                        lastMessageText = lastMessage.getText();
+                    }
+
+                    if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)) {
+                        timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
+                    } else {
+                        if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
+                            timeArgument = getParentService().getString(R.string.yesterday);
+                        } else {
+                            timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
+                        }
+                    }
+                    sendOutgoingGenericAction(ActionType.REMOVE_PARTICIPANT, chat.getUIDisplayName(true), timeArgument, lastMessageText, participant);
+                }catch(Exception ex){
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+                    AppLogger.error(TAG, "An error occurred while trying to perform the RemoveParticipant action", ex);
+                }
+            }
+        }).start();
+    }
+
+    public void sendOutgoingRenameGroupAction(final GroupChat chat, final String newTitle){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Message lastMessage = WeApp.get().getMessageDatabase().getLastMessageFromChat(chat);
+                    Date lastMessageDate = lastMessage.getModernDateSent();
+                    String timeArgument;
+                    String lastMessageText;
+
+                    if (lastMessage.getText() == null){
+                        lastMessageText = "";
+                    }else {
+                        lastMessageText = lastMessage.getText();
+                    }
+
+                    if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)) {
+                        timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
+                    } else {
+                        if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
+                            timeArgument = getParentService().getString(R.string.yesterday);
+                        } else {
+                            timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
+                        }
+                    }
+                    sendOutgoingGenericAction(ActionType.RENAME_GROUP, chat.getUIDisplayName(true), timeArgument, lastMessageText, newTitle);
+                }catch(Exception ex){
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+                    AppLogger.error(TAG, "An error occurred while trying to perform the RenameGroup action", ex);
+                }
+            }
+        }).start();
+    }
+
+    public void sendOutgoingCreateGroupAction(final String groupName, final List<String>participants, final String initMessage){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    sendOutgoingGenericAction(ActionType.CREATE_GROUP, groupName, StringUtils.join(participants, ",", 1), initMessage);
+                }catch(Exception ex){
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+                    AppLogger.error(TAG, "An error occurred while trying to perform the CreateGroup action", ex);
+                }
+            }
+        }).start();
+    }
+
+    public void sendOutgoingLeaveGroupAction(final GroupChat chat){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Message lastMessage = WeApp.get().getMessageDatabase().getLastMessageFromChat(chat);
+                    Date lastMessageDate = lastMessage.getModernDateSent();
+                    String timeArgument;
+                    String lastMessageText;
+
+                    if (lastMessage.getText() == null){
+                        lastMessageText = "";
+                    }else {
+                        lastMessageText = lastMessage.getText();
+                    }
+
+                    if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)) {
+                        timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
+                    } else {
+                        if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
+                            timeArgument = getParentService().getString(R.string.yesterday);
+                        } else {
+                            timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
+                        }
+                    }
+                    sendOutgoingGenericAction(ActionType.LEAVE_GROUP, chat.getUIDisplayName(true), timeArgument, lastMessageText);
+                }catch(Exception ex){
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+                    AppLogger.error(TAG, "An error occurred while trying to perform the LeaveGroup action", ex);
+                }
+            }
+        }).start();
     }
 
     public void run(){
@@ -492,117 +702,9 @@ public class ConnectionThread extends Thread {
                         public void run() {
                             try {
                                 MessageManager messageManager = MessageManager.getInstance(getParentService());
-                                MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
-
                                 JSONAction jsonAction = (JSONAction) getIncomingMessage(weMessage.JSON_ACTION, incoming).getOutgoing(JSONAction.class, byteArrayAdapter);
-                                ActionType actionType = ActionType.fromCode(jsonAction.getActionType());
-                                String[] args = jsonAction.getArgs();
 
-                                if (actionType == null){
-                                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
-                                    AppLogger.error("Could not find action type with code: " + jsonAction.getActionType(), new NullPointerException());
-                                    return;
-                                }
-
-                                switch (actionType){
-                                    case ADD_PARTICIPANT:
-                                        GroupChat apGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
-                                        Contact apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
-
-                                        if (messageDatabase.getHandleByHandleID(args[3]) == null) {
-                                            messageDatabase.addHandle(new Handle(UUID.randomUUID(), args[3], Handle.HandleType.IMESSAGE));
-                                        }
-
-                                        if (apContact == null) {
-                                            messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(args[3]), null), false);
-                                            apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
-                                        }
-
-                                        if (apGroupChat == null){
-                                            Bundle extras = new Bundle();
-                                            extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
-                                                    getParentService().getString(R.string.action_add_participant)));
-                                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                                            AppLogger.error("Could not perform JSONAction Add Participant because group chat was not found with name: " + args[0] + " and last message: " + args[2],
-                                                    new NullPointerException());
-                                            return;
-                                        }
-                                        messageManager.addParticipantToGroup(apGroupChat, apContact, false);
-                                        break;
-                                    case REMOVE_PARTICIPANT:
-                                        GroupChat rpGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
-                                        Contact rpContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
-
-                                        if (rpGroupChat == null){
-                                            Bundle extras = new Bundle();
-                                            extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
-                                                    getParentService().getString(R.string.action_remove_participant)));
-                                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                                            AppLogger.error("Could not perform JSONAction Remove Participant because group chat was not found with name: " + args[0] + " and last message: " + args[2],
-                                                    new NullPointerException());
-                                            return;
-                                        }
-
-                                        if (rpContact == null) {
-                                            Bundle extras = new Bundle();
-                                            extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_contact_not_found,
-                                                    getParentService().getString(R.string.action_remove_participant)));
-                                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                                            AppLogger.error("Could not perform JSONAction Remove Participant because contact with Handle ID: " + args[3] + " was not found.", new NullPointerException());
-                                            return;
-                                        }
-                                        messageManager.removeParticipantFromGroup(rpGroupChat, rpContact, false);
-                                        break;
-                                    case RENAME_GROUP:
-                                        GroupChat rnGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
-
-                                        if (rnGroupChat == null){
-                                            Bundle extras = new Bundle();
-                                            extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
-                                                    getParentService().getString(R.string.action_rename_group)));
-                                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                                            AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with name: " + args[0] + " and last message: " + args[2],
-                                                    new NullPointerException());
-                                            return;
-                                        }
-                                        messageManager.renameGroupChat(rnGroupChat, args[3], false);
-                                        break;
-                                    case CREATE_GROUP:
-                                        List<String> participants = new ArrayList<>(Arrays.asList(args[1].split(",")));
-                                        List<Contact> contacts = new ArrayList<>();
-
-                                        for (String s : participants) {
-                                            if (messageDatabase.getHandleByHandleID(s) == null) {
-                                                messageDatabase.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE));
-                                            }
-                                        }
-
-                                        for (String s : participants) {
-                                            if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
-                                                messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null), false);
-                                                contacts.add(messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
-                                            }
-                                        }
-                                        messageManager.addChat(new GroupChat(UUID.randomUUID(), null, null, null, null, true, true, args[0], contacts), false);
-                                        break;
-                                    case LEAVE_GROUP:
-                                        GroupChat lvGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
-
-                                        if (lvGroupChat == null){
-                                            Bundle extras = new Bundle();
-                                            extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
-                                                    getParentService().getString(R.string.action_leave_group)));
-                                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                                            AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with name: " + args[0] + " and last message: " + args[2],
-                                                    new NullPointerException());
-                                            return;
-                                        }
-                                        messageManager.leaveGroup(lvGroupChat, false);
-                                        break;
-                                    default:
-                                        AppLogger.error("Could not perform JSONAction because an unsupported action type was received", new NullPointerException());
-                                        break;
-                                }
+                                performAction(messageManager, jsonAction);
                             }catch(Exception ex){
                                 sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
                                 AppLogger.error("An error occurred while performing a JSONAction", ex);
@@ -613,74 +715,15 @@ public class ConnectionThread extends Thread {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            MessageManager messageManager = MessageManager.getInstance(getParentService());
-                            JSONResult jsonResult = (JSONResult) getIncomingMessage(weMessage.JSON_RETURN_RESULT, incoming).getOutgoing(JSONResult.class, byteArrayAdapter);
-                            List<ReturnType> returnTypes = parseResults(jsonResult.getResult());
-                            ConnectionMessage connectionMessage = connectionMessagesMap.get(jsonResult.getCorrespondingUUID());
+                            try {
+                                MessageManager messageManager = MessageManager.getInstance(getParentService());
+                                JSONResult jsonResult = (JSONResult) getIncomingMessage(weMessage.JSON_RETURN_RESULT, incoming).getOutgoing(JSONResult.class, byteArrayAdapter);
 
-                            if (connectionMessage == null){
+                                processResults(messageManager, jsonResult);
+                            }catch(Exception ex){
                                 sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
-                                AppLogger.error("Could not process result because the connection message was null", new NullPointerException());
-                                return;
+                                AppLogger.error(TAG, "An error occurred while trying to process a return result", ex);
                             }
-
-                            if (connectionMessage instanceof ServerMessage){
-                                ServerMessage serverMessage = (ServerMessage) connectionMessage;
-
-                                boolean isAMessage;
-
-                                try {
-                                    JSONMessage m = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class, byteArrayAdapter);
-                                    isAMessage = true;
-
-                                }catch (Exception ex){
-                                    try {
-                                        JSONAction a = (JSONAction) serverMessage.getOutgoing(JSONAction.class, byteArrayAdapter);
-                                        isAMessage = false;
-                                    }catch(Exception e){
-                                        sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
-                                        AppLogger.error("Could not process result because an error occurred while parsing JSON", e);
-                                        return;
-                                    }
-                                }
-
-                                if (isAMessage){
-                                    JSONMessage jsonMessage = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class, byteArrayAdapter);
-                                    messageManager.onMessageResultReceived(serverMessage, jsonMessage, returnTypes);
-                                } else {
-                                    JSONAction jsonAction = (JSONAction) serverMessage.getOutgoing(JSONAction.class, byteArrayAdapter);
-                                    messageManager.onActionResultReceived(serverMessage, jsonAction, returnTypes);
-                                }
-                            }else if (connectionMessage instanceof ClientMessage){
-
-                                ClientMessage clientMessage = (ClientMessage) connectionMessage;
-
-                                boolean isAMessage;
-
-                                try {
-                                    JSONMessage m = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, byteArrayAdapter);
-                                    isAMessage = true;
-
-                                }catch (Exception ex){
-                                    try {
-                                        JSONAction a = (JSONAction) clientMessage.getIncoming(JSONAction.class, byteArrayAdapter);
-                                        isAMessage = false;
-                                    }catch(Exception e){
-                                        sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
-                                        AppLogger.error("Could not process result because an error occurred while parsing JSON", e);
-                                        return;
-                                    }
-                                }
-
-                                if (isAMessage){
-                                    JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, byteArrayAdapter);
-                                    messageManager.onMessageResultReceived(clientMessage, jsonMessage, returnTypes);
-                                } else {
-                                    JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class, byteArrayAdapter);
-                                    messageManager.onActionResultReceived(clientMessage, jsonAction, returnTypes);
-                                }
-                            }
-
                         }
                     }).start();
                 }
@@ -832,6 +875,328 @@ public class ConnectionThread extends Thread {
                 updateGroupChat(messageManager, (GroupChat) existingChat, jsonChat, false);
             }
         }
+    }
+
+    private void processResults(MessageManager messageManager, JSONResult jsonResult){
+        ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new AndroidBase64Wrapper());
+        List<ReturnType> returnTypes = parseResults(jsonResult.getResult());
+        ConnectionMessage connectionMessage = connectionMessagesMap.get(jsonResult.getCorrespondingUUID());
+
+        if (connectionMessage == null){
+            sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
+            AppLogger.error("Could not process result because the connection message was null", new NullPointerException());
+            return;
+        }
+
+        if (connectionMessage instanceof ServerMessage){
+            ServerMessage serverMessage = (ServerMessage) connectionMessage;
+            boolean isAMessage;
+
+            try {
+                JSONMessage m = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class, byteArrayAdapter);
+                isAMessage = true;
+            }catch (Exception ex){
+                try {
+                    JSONAction a = (JSONAction) serverMessage.getOutgoing(JSONAction.class, byteArrayAdapter);
+                    isAMessage = false;
+                }catch(Exception e){
+                    sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
+                    AppLogger.error("Could not process result because an error occurred while parsing JSON", e);
+                    return;
+                }
+            }
+
+            if (isAMessage){
+                JSONMessage jsonMessage = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class, byteArrayAdapter);
+                boolean isValid = (validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(0)) && validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(1)));
+
+                if (!isValid){
+                    String correspondingMessageUUID = messageAndConnectionMessageMap.get(jsonResult.getCorrespondingUUID());
+                    Message message = WeApp.get().getMessageDatabase().getMessageByUuid(correspondingMessageUUID);
+
+                    message.setHasErrored(true);
+                    messageManager.updateMessage(correspondingMessageUUID, message, false);
+                }
+
+            } else {
+                JSONAction jsonAction = (JSONAction) serverMessage.getOutgoing(JSONAction.class, byteArrayAdapter);
+                boolean isValid = validateActionReturnType(messageManager, jsonAction, returnTypes.get(0));
+
+                if (isValid) {
+                    performAction(messageManager, jsonAction);
+                }
+            }
+
+        }else if (connectionMessage instanceof ClientMessage){
+            ClientMessage clientMessage = (ClientMessage) connectionMessage;
+            boolean isAMessage;
+
+            try {
+                JSONMessage m = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, byteArrayAdapter);
+                isAMessage = true;
+            }catch (Exception ex){
+                try {
+                    JSONAction a = (JSONAction) clientMessage.getIncoming(JSONAction.class, byteArrayAdapter);
+                    isAMessage = false;
+                }catch(Exception e){
+                    sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
+                    AppLogger.error("Could not process result because an error occurred while parsing JSON", e);
+                    return;
+                }
+            }
+
+            if (isAMessage){
+                JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, byteArrayAdapter);
+                boolean isValid = (validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(0)) && validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(1)));
+
+                if (!isValid){
+                    String correspondingMessageUUID = messageAndConnectionMessageMap.get(jsonResult.getCorrespondingUUID());
+                    Message message = WeApp.get().getMessageDatabase().getMessageByUuid(correspondingMessageUUID);
+
+                    message.setHasErrored(true);
+                    messageManager.updateMessage(correspondingMessageUUID, message, false);
+                }
+
+            } else {
+                JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class, byteArrayAdapter);
+                boolean isValid = validateActionReturnType(messageManager, jsonAction, returnTypes.get(0));
+
+                if (isValid) {
+                    performAction(messageManager, jsonAction);
+                }
+            }
+        }
+    }
+
+    private void performAction(MessageManager messageManager, JSONAction jsonAction){
+        MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
+        ActionType actionType = ActionType.fromCode(jsonAction.getActionType());
+        String[] args = jsonAction.getArgs();
+
+        if (actionType == null){
+            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+            AppLogger.error("The JSONAction could not be performed because ActionType was null", new NullPointerException());
+            return;
+        }
+
+        switch (actionType) {
+            case ADD_PARTICIPANT:
+                GroupChat apGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
+                Contact apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
+
+                if (messageDatabase.getHandleByHandleID(args[3]) == null) {
+                    messageDatabase.addHandle(new Handle(UUID.randomUUID(), args[3], Handle.HandleType.IMESSAGE));
+                }
+
+                if (apContact == null) {
+                    messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(args[3]), null), false);
+                    apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
+                }
+
+                if (apGroupChat == null) {
+                    Bundle extras = new Bundle();
+                    extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
+                            getParentService().getString(R.string.action_add_participant)));
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
+                    AppLogger.error("Could not perform JSONAction Add Participant because group chat was not found with name: " + args[0] + " and last message: " + args[2],
+                            new NullPointerException());
+                    return;
+                }
+                messageManager.addParticipantToGroup(apGroupChat, apContact, false);
+                break;
+
+            case REMOVE_PARTICIPANT:
+                GroupChat rpGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
+                Contact rpContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
+
+                if (rpGroupChat == null) {
+                    Bundle extras = new Bundle();
+                    extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
+                            getParentService().getString(R.string.action_remove_participant)));
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
+                    AppLogger.error("Could not perform JSONAction Remove Participant because group chat was not found with name: " + args[0] + " and last message: " + args[2],
+                            new NullPointerException());
+                    return;
+                }
+
+                if (rpContact == null) {
+                    Bundle extras = new Bundle();
+                    extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_contact_not_found,
+                            getParentService().getString(R.string.action_remove_participant)));
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
+                    AppLogger.error("Could not perform JSONAction Remove Participant because contact with Handle ID: " + args[3] + " was not found.", new NullPointerException());
+                    return;
+                }
+                messageManager.removeParticipantFromGroup(rpGroupChat, rpContact, false);
+                break;
+
+            case RENAME_GROUP:
+                GroupChat rnGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
+
+                if (rnGroupChat == null) {
+                    Bundle extras = new Bundle();
+                    extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
+                            getParentService().getString(R.string.action_rename_group)));
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
+                    AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with name: " + args[0] + " and last message: " + args[2],
+                            new NullPointerException());
+                    return;
+                }
+                messageManager.renameGroupChat(rnGroupChat, args[3], false);
+                break;
+
+            case CREATE_GROUP:
+                List<String> participants = new ArrayList<>(Arrays.asList(args[1].split(",")));
+                List<Contact> contacts = new ArrayList<>();
+
+                for (String s : participants) {
+                    if (messageDatabase.getHandleByHandleID(s) == null) {
+                        messageDatabase.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE));
+                    }
+                }
+
+                for (String s : participants) {
+                    if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
+                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null), false);
+                        contacts.add(messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
+                    }
+                }
+                messageManager.addChat(new GroupChat(UUID.randomUUID(), null, null, null, null, true, true, args[0], contacts), false);
+                break;
+
+            case LEAVE_GROUP:
+                GroupChat lvGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
+
+                if (lvGroupChat == null) {
+                    Bundle extras = new Bundle();
+                    extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
+                            getParentService().getString(R.string.action_leave_group)));
+                    sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
+                    AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with name: " + args[0] + " and last message: " + args[2],
+                            new NullPointerException());
+                    return;
+                }
+                messageManager.leaveGroup(lvGroupChat, false);
+                break;
+
+            default:
+                sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+                AppLogger.error("Could not perform JSONAction because an unsupported action type was received", new NullPointerException());
+                break;
+        }
+    }
+
+    private boolean validateMessageReturnType(MessageManager messageManager, JSONMessage jsonMessage, ReturnType returnType){
+        if (returnType == null){
+            messageManager.alertMessageSendFailure(jsonMessage, ReturnType.UNKNOWN_ERROR);
+            AppLogger.error(TAG, "No return type was found", new Exception());
+            return false;
+        }
+
+        switch (returnType){
+            case UNKNOWN_ERROR:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.UNKNOWN_ERROR);
+                return false;
+            case SENT:
+                break;
+            case DELIVERED:
+                break;
+            case NO_INTERNET:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.NO_INTERNET);
+                return false;
+            case MESSAGE_SERVER_NOT_AVAILABLE:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.MESSAGE_SERVER_NOT_AVAILABLE);
+                return false;
+            case INVALID_NUMBER:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.INVALID_NUMBER);
+                return false;
+            case NUMBER_NOT_IMESSAGE:
+                //TODO: Add SMS Implementation Later
+
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.NUMBER_NOT_IMESSAGE);
+                return false;
+            case GROUP_CHAT_NOT_FOUND:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.GROUP_CHAT_NOT_FOUND);
+                return false;
+            case NOT_DELIVERED:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.NOT_DELIVERED);
+                return false;
+            case NOT_SENT:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.NOT_SENT);
+                return false;
+            case SERVICE_NOT_AVAILABLE:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.SERVICE_NOT_AVAILABLE);
+                return false;
+            case FILE_NOT_FOUND:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.FILE_NOT_FOUND);
+                return false;
+            case NULL_MESSAGE:
+                break;
+            case ASSISTIVE_ACCESS_DISABLED:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.ASSISTIVE_ACCESS_DISABLED);
+                return false;
+            case UI_ERROR:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.UI_ERROR);
+                return false;
+            case ACTION_PERFORMED:
+                break;
+            default:
+                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.UNKNOWN_ERROR);
+                AppLogger.error(TAG, "An unsupported ReturnType enum was found", new Exception());
+                return false;
+        }
+        return true;
+    }
+
+    private boolean validateActionReturnType(MessageManager messageManager, JSONAction jsonAction, ReturnType returnType){
+        if (returnType == null){
+            messageManager.alertActionPerformFailure(jsonAction, ReturnType.UNKNOWN_ERROR);
+            AppLogger.error(TAG, "No return type was found", new Exception());
+            return false;
+        }
+
+        switch (returnType){
+            case UNKNOWN_ERROR:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.UNKNOWN_ERROR);
+                return false;
+            case NO_INTERNET:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.NO_INTERNET);
+                return false;
+            case MESSAGE_SERVER_NOT_AVAILABLE:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.MESSAGE_SERVER_NOT_AVAILABLE);
+                return false;
+            case INVALID_NUMBER:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.INVALID_NUMBER);
+                return false;
+            case NUMBER_NOT_IMESSAGE:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.NUMBER_NOT_IMESSAGE);
+                return false;
+            case GROUP_CHAT_NOT_FOUND:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.GROUP_CHAT_NOT_FOUND);
+                return false;
+            case NOT_DELIVERED:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.NOT_DELIVERED);
+                return false;
+            case NOT_SENT:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.NOT_SENT);
+                return false;
+            case SERVICE_NOT_AVAILABLE:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.SERVICE_NOT_AVAILABLE);
+                return false;
+            case ASSISTIVE_ACCESS_DISABLED:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.ASSISTIVE_ACCESS_DISABLED);
+                return false;
+            case UI_ERROR:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.UI_ERROR);
+                return false;
+            case ACTION_PERFORMED:
+                break;
+            default:
+                messageManager.alertActionPerformFailure(jsonAction, ReturnType.UNKNOWN_ERROR);
+                AppLogger.error(TAG, "An unsupported ReturnType enum was found", new Exception());
+                return false;
+        }
+        return true;
     }
 
     private void updateMessage(MessageManager messageManager, Message existingMessage, JSONMessage jsonMessage, boolean overrideAll){

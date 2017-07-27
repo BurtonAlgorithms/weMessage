@@ -3,7 +3,7 @@ package scott.wemessage.app.messages.objects;
 import java.util.Date;
 import java.util.UUID;
 
-import scott.wemessage.app.chats.objects.Chat;
+import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.commons.utils.DateUtils;
 
 public class ActionMessage {

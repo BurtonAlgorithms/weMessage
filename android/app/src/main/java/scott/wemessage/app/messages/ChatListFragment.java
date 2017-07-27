@@ -1,4 +1,4 @@
-package scott.wemessage.app.chats;
+package scott.wemessage.app.messages;
 
 import android.app.ActionBar;
 import android.app.ActivityManager;
@@ -32,13 +32,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
 import scott.wemessage.app.WeApp;
-import scott.wemessage.app.chats.objects.Chat;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.launch.LaunchActivity;
-import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.utils.reflection.ChatKitHelper;
 import scott.wemessage.app.utils.view.RecyclerSwiper;
 import scott.wemessage.app.view.chat.ChatDialogView;
@@ -46,7 +45,6 @@ import scott.wemessage.app.view.dialog.DialogDisplayer;
 import scott.wemessage.app.view.messages.MessageView;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
-import scott.wemessage.commons.json.connection.ConnectionMessage;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 
@@ -400,12 +398,20 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     }
 
     @Override
-    public void onActionResultReceived(ConnectionMessage connectionMessage, JSONAction jsonAction, List<ReturnType> returnTypes) {
+    public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) {
+
+
+        //TODO: Impl Soon
+
 
     }
 
     @Override
-    public void onMessageResultReceived(ConnectionMessage connectionMessage, JSONMessage jsonMessage, List<ReturnType> returnTypes) {
+    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
+
+
+        //TODO: Impl Soon
+
 
     }
 

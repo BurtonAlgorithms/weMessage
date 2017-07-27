@@ -31,7 +31,7 @@ public class ContactView implements IUser {
 
     @Override
     public String getName() {
-        return contact.getDisplayName();
+        return contact.getUIDisplayName();
     }
 
     @Override

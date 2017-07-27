@@ -1,4 +1,4 @@
-package scott.wemessage.app.database;
+package scott.wemessage.app.messages;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -12,11 +12,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import scott.wemessage.app.chats.objects.Chat;
-import scott.wemessage.app.chats.objects.Chat.ChatType;
-import scott.wemessage.app.chats.objects.GroupChat;
-import scott.wemessage.app.chats.objects.PeerChat;
-import scott.wemessage.app.database.objects.Account;
+import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.objects.chats.Chat.ChatType;
+import scott.wemessage.app.messages.objects.chats.GroupChat;
+import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.messages.objects.Account;
 import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;

@@ -9,16 +9,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import scott.wemessage.R;
-import scott.wemessage.app.chats.objects.Chat;
-import scott.wemessage.app.chats.objects.GroupChat;
-import scott.wemessage.app.chats.objects.PeerChat;
+import scott.wemessage.app.WeApp;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Contact;
+import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.objects.chats.GroupChat;
+import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.utils.AndroidIOUtils;
 import scott.wemessage.app.view.messages.ContactView;
 import scott.wemessage.app.view.messages.MessageView;
-import scott.wemessage.app.WeApp;
-import scott.wemessage.commons.utils.StringUtils;
 
 public class ChatDialogView implements IDialog {
 
@@ -65,21 +64,7 @@ public class ChatDialogView implements IDialog {
             return users.get(0).getName();
         } else {
             GroupChat groupChat = (GroupChat) chat;
-            String fullString;
-
-            if (!StringUtils.isEmpty(groupChat.getDisplayName())){
-                fullString = groupChat.getDisplayName();
-            } else {
-                ArrayList<String> dummyParticipantList = new ArrayList<>();
-
-                for (ContactView c : users){
-                    dummyParticipantList.add(c.getName());
-                }
-                dummyParticipantList.remove(dummyParticipantList.size() - 1);
-
-                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + groupChat.getParticipants().get(groupChat.getParticipants().size() - 1).getHandle().getHandleID();
-            }
-            return fullString;
+            return groupChat.getUIDisplayName(false);
         }
     }
 

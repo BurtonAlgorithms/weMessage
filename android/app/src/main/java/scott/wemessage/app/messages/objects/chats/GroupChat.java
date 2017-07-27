@@ -1,10 +1,12 @@
-package scott.wemessage.app.chats.objects;
+package scott.wemessage.app.messages.objects.chats;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.utils.FileLocationContainer;
+import scott.wemessage.commons.utils.StringUtils;
 
 public class GroupChat extends Chat {
 
@@ -31,6 +33,33 @@ public class GroupChat extends Chat {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public String getUIDisplayName(boolean macUI){
+        String fullString;
+
+        if (!StringUtils.isEmpty(getDisplayName())){
+            fullString = getDisplayName();
+        } else {
+            ArrayList<String> dummyParticipantList = new ArrayList<>();
+
+            if (macUI) {
+                for (Contact c : participants) {
+                    dummyParticipantList.add(c.getUIDisplayName());
+                }
+                dummyParticipantList.remove(dummyParticipantList.size() - 1);
+
+                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + getParticipants().get(getParticipants().size() - 1).getUIDisplayName();
+            }else {
+                for (Contact c : participants) {
+                    dummyParticipantList.add(c.getHandle().getHandleID());
+                }
+                dummyParticipantList.remove(dummyParticipantList.size() - 1);
+
+                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + getParticipants().get(getParticipants().size() - 1).getHandle().getHandleID();
+            }
+        }
+        return fullString;
     }
 
     public List<Contact> getParticipants() {

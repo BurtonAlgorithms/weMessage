@@ -39,7 +39,7 @@ import android.widget.TextView;
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.WeApp;
-import scott.wemessage.app.chats.ChatListActivity;
+import scott.wemessage.app.activities.ChatListActivity;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.utils.view.DisplayUtils;

@@ -11,17 +11,16 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
-import scott.wemessage.app.chats.objects.Chat;
-import scott.wemessage.app.chats.objects.GroupChat;
-import scott.wemessage.app.chats.objects.PeerChat;
+import scott.wemessage.app.WeApp;
 import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Handle;
 import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.WeApp;
+import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.objects.chats.GroupChat;
+import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.commons.json.action.JSONAction;
-import scott.wemessage.commons.json.connection.ConnectionMessage;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
@@ -295,24 +294,24 @@ public final class MessageManager {
         }
     }
 
-    public void onActionResultReceived(ConnectionMessage connectionMessage, JSONAction jsonAction, List<ReturnType> returnTypes){
-        synchronized (callbacksList) {
+    public void alertMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType){
+        synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
 
-            while (i.hasNext()) {
+            while (i.hasNext()){
                 Callbacks callbacks = i.next();
-                callbacks.onActionResultReceived(connectionMessage, jsonAction, returnTypes);
+                callbacks.onMessageSendFailure(jsonMessage, returnType);
             }
         }
     }
 
-    public void onMessageResultReceived(ConnectionMessage connectionMessage, JSONMessage jsonMessage, List<ReturnType> returnTypes){
-        synchronized (callbacksList) {
+    public void alertActionPerformFailure(JSONAction jsonAction, ReturnType returnType){
+        synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
 
-            while (i.hasNext()) {
+            while (i.hasNext()){
                 Callbacks callbacks = i.next();
-                callbacks.onMessageResultReceived(connectionMessage, jsonMessage, returnTypes);
+                callbacks.onActionPerformFailure(jsonAction, returnType);
             }
         }
     }
@@ -479,7 +478,7 @@ public final class MessageManager {
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().addActionMessage(new ActionMessage(
-                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_add_participant, contact.getDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
+                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_add_participant, contact.getUIDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
         ));
 
         synchronized (callbacksList){
@@ -497,7 +496,7 @@ public final class MessageManager {
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().addActionMessage(new ActionMessage(
-                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_remove_participant, contact.getDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
+                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_remove_participant, contact.getUIDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
         ));
 
         synchronized (callbacksList){
@@ -681,8 +680,8 @@ public final class MessageManager {
 
         void onMessagesRefresh();
 
-        void onActionResultReceived(ConnectionMessage connectionMessage, JSONAction jsonAction, List<ReturnType> returnTypes);
+        void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType);
 
-        void onMessageResultReceived(ConnectionMessage connectionMessage, JSONMessage jsonMessage, List<ReturnType> returnTypes);
+        void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType);
     }
 }

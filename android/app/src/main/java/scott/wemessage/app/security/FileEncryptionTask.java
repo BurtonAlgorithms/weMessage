@@ -14,15 +14,13 @@ public class FileEncryptionTask extends Thread {
     private final CryptoType cryptoType;
     private final byte[] bytes;
     private final String key;
-    private final String ivMac;
     private final Object cryptoFileLock = new Object();
     private CryptoFile cryptoFile = null;
 
-    public FileEncryptionTask(byte[] bytes, String key, String ivMac, CryptoType type){
+    public FileEncryptionTask(byte[] bytes, String key, CryptoType type){
         this.cryptoType = type;
         this.bytes = bytes;
         this.key = key;
-        this.ivMac = ivMac;
 
         if (cryptoType == CryptoType.AES){
             AESCrypto.setBase64Wrapper(new AndroidBase64Wrapper());

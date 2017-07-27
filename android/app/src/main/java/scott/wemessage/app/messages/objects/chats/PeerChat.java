@@ -1,4 +1,4 @@
-package scott.wemessage.app.chats.objects;
+package scott.wemessage.app.messages.objects.chats;
 
 import java.util.UUID;
 

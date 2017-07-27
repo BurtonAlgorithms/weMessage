@@ -1,8 +1,9 @@
-package scott.wemessage.app.chats;
+package scott.wemessage.app.activities;
 
 import android.support.v4.app.Fragment;
 
 import scott.wemessage.R;
+import scott.wemessage.app.messages.ChatListFragment;
 import scott.wemessage.app.utils.view.SingleFragmentActivity;
 
 public class ChatListActivity extends SingleFragmentActivity {
