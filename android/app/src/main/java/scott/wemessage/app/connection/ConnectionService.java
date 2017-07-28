@@ -7,6 +7,7 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.AndroidRuntimeException;
 
+import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.weMessage;
 
 public class ConnectionService extends Service {
@@ -35,6 +36,7 @@ public class ConnectionService extends Service {
             LocalBroadcastManager.getInstance(this).sendBroadcast(serviceClosedIntent);
 
             getConnectionThread().endConnection();
+            MessageManager.dump(this);
         }
         super.onDestroy();
     }

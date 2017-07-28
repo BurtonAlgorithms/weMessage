@@ -43,14 +43,14 @@ public class GroupChat extends Chat {
         } else {
             ArrayList<String> dummyParticipantList = new ArrayList<>();
 
-            if (macUI) {
+            if (!macUI) {
                 for (Contact c : participants) {
                     dummyParticipantList.add(c.getUIDisplayName());
                 }
                 dummyParticipantList.remove(dummyParticipantList.size() - 1);
 
                 fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + getParticipants().get(getParticipants().size() - 1).getUIDisplayName();
-            }else {
+            } else {
                 for (Contact c : participants) {
                     dummyParticipantList.add(c.getHandle().getHandleID());
                 }

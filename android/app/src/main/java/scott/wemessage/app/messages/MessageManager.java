@@ -611,7 +611,7 @@ public final class MessageManager {
     }
 
     private void queueMessagesTask(Chat chat, int startIndex, int requestAmount){
-        List<Message> messageList = WeApp.get().getMessageDatabase().getReversedMessages(chat, startIndex, requestAmount);
+        List<Message> messageList = WeApp.get().getMessageDatabase().getReversedMessagesByTime(chat, startIndex, requestAmount);
 
         for (Message m : messageList){
             messages.put(m.getUuid().toString(), m);

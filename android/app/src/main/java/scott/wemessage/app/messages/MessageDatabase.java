@@ -286,6 +286,32 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return messages;
     }
 
+    public List<Message> getReversedMessagesByTime(Chat chat, int startIndex, int numberToFetch){
+        List<Message> messages = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        long totalRows = DatabaseUtils.queryNumEntries(db, MessageTable.TABLE_NAME);
+        long start = totalRows - startIndex;
+
+        String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
+                + MessageTable.CHAT_UUID + " = ? ORDER BY " + MessageTable.DATE_SENT + " DESC LIMIT " + numberToFetch;
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {String.valueOf(start), chat.getUuid().toString()} );
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                Message message = buildMessage(cursor);
+
+                if (message != null) {
+                    messages.add(message);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return messages;
+    }
+
     public List<Message> getReversedMessagesWithSearchParameters(Chat chat, String matchingText, boolean isFromMe, int startIndex, int numberToFetch){
         List<Message> messages = new ArrayList<>();
 

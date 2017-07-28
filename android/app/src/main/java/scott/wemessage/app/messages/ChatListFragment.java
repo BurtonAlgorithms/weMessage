@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
 import scott.wemessage.app.WeApp;
+import scott.wemessage.app.activities.ConversationActivity;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.launch.LaunchActivity;
@@ -51,6 +52,7 @@ import scott.wemessage.commons.types.ReturnType;
 public class ChatListFragment extends Fragment implements MessageManager.Callbacks {
 
     private final String TAG = "ChatListFragment";
+    private final String GO_BACK_REASON_ALERT_TAG = "GoBackReasonAlert";
 
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private LinearLayout noConversationsView;
@@ -96,6 +98,10 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
                 if (getView() != null) {
                     generateErroredSnackBar(getView(), getString(R.string.new_message_error));
                 }
+            }else if(intent.getAction().equals(weMessage.BROADCAST_SEND_MESSAGE_ERROR)){
+                if (getView() != null) {
+                    generateErroredSnackBar(getView(), getString(R.string.send_message_error));
+                }
             }else if(intent.getAction().equals(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR)) {
                 if (getView() != null) {
                     generateErroredSnackBar(getView(), getString(R.string.message_update_error));
@@ -131,6 +137,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         broadcastIntentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_FORCED);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_NEW_MESSAGE_ERROR);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_SEND_MESSAGE_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
@@ -194,11 +201,28 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
             }
         });
 
+        dialogsListAdapter.setOnDialogClickListener(new DialogsListAdapter.OnDialogClickListener<IDialog>() {
+            @Override
+            public void onDialogClick(IDialog dialog) {
+                Intent launcherIntent = new Intent(WeApp.get(), ConversationActivity.class);
+
+                launcherIntent.putExtra(weMessage.BUNDLE_RETURN_POINT, getActivity().getClass().getName());
+                launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, dialog.getId());
+
+                startActivity(launcherIntent);
+                getActivity().finish();
+            }
+        });
+
         dialogsList.setAdapter(dialogsListAdapter);
         this.dialogsListAdapter = dialogsListAdapter;
 
         for (Chat chat : MessageManager.getInstance(getContext()).getChats().values()){
             dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+        }
+
+        if (getActivity().getIntent() != null && getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON) != null){
+            DialogDisplayer.generateAlertDialog("", getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON)).show(getFragmentManager(), GO_BACK_REASON_ALERT_TAG);
         }
 
         return view;
@@ -434,9 +458,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
             launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
 
-            MessageManager.dump(getContext());
             startActivity(launcherIntent);
-
             getActivity().finish();
         }
     }
