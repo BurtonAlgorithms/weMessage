@@ -1,14 +1,11 @@
 package scott.wemessage.app.view.chat;
 
-import android.net.Uri;
-
 import com.stfalcon.chatkit.commons.models.IDialog;
 import com.stfalcon.chatkit.commons.models.IMessage;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import scott.wemessage.R;
 import scott.wemessage.app.WeApp;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Contact;
@@ -47,15 +44,7 @@ public class ChatDialogView implements IDialog {
 
     @Override
     public String getDialogPhoto() {
-        if (chat.getChatType() == Chat.ChatType.PEER) {
-            return users.get(0).getAvatar();
-        } else {
-            if (chat.getChatPictureFileLocation() == null){
-                return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_group_chat_icon_v2).toString();
-            }else {
-                return Uri.fromFile(WeApp.get().getMessageDatabase().getChatByUuid(getId()).getChatPictureFileLocation().getFile()).toString();
-            }
-        }
+        return AndroidIOUtils.getChatIconUri(chat);
     }
 
     @Override

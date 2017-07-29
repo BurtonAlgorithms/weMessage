@@ -33,6 +33,7 @@ public final class MessageManager {
     private ConcurrentHashMap<String, Contact> contacts = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Chat> chats = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Message> messages = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, ActionMessage> actionMessages = new ConcurrentHashMap<>();
 
     public static synchronized MessageManager getInstance(Context context){
         if (instance == null){
@@ -459,9 +460,11 @@ public final class MessageManager {
         chat.setDisplayName(newName);
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
-        WeApp.get().getMessageDatabase().addActionMessage(new ActionMessage(
-                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_rename_group, newName), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
-        ));
+
+        ActionMessage actionMessage = new ActionMessage(
+                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_rename_group, newName), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()));
+        WeApp.get().getMessageDatabase().addActionMessage(actionMessage);
+        actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -477,9 +480,11 @@ public final class MessageManager {
         chat.addParticipant(contact);
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
-        WeApp.get().getMessageDatabase().addActionMessage(new ActionMessage(
-                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_add_participant, contact.getUIDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
-        ));
+
+        ActionMessage actionMessage = new ActionMessage(
+                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_add_participant, contact.getUIDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()));
+        WeApp.get().getMessageDatabase().addActionMessage(actionMessage);
+        actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -495,9 +500,11 @@ public final class MessageManager {
         chat.removeParticipant(contact);
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
-        WeApp.get().getMessageDatabase().addActionMessage(new ActionMessage(
-                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_remove_participant, contact.getUIDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
-        ));
+
+        ActionMessage actionMessage = new ActionMessage(
+                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_remove_participant, contact.getUIDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()));
+        WeApp.get().getMessageDatabase().addActionMessage(actionMessage);
+        actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();
@@ -513,9 +520,12 @@ public final class MessageManager {
         chat.setIsInChat(false);
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
-        WeApp.get().getMessageDatabase().addActionMessage(new ActionMessage(
+
+        ActionMessage actionMessage = new ActionMessage(
                 UUID.randomUUID(), chat, getContext().getString(R.string.action_message_leave_group), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
-        ));
+        );
+        WeApp.get().getMessageDatabase().addActionMessage(actionMessage);
+        actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
 
         synchronized (callbacksList){
             Iterator<Callbacks> i = callbacksList.iterator();

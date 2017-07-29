@@ -6,6 +6,9 @@
     tools:context="scott.wemessage.app.activities.ChatListActivity"
     android:orientation="vertical">
 
+    <include
+        layout="@layout/toolbar_chat_list" />
+
     <FrameLayout
         android:layout_height="match_parent"
         android:layout_width="match_parent"

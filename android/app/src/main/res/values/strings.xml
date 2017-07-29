@@ -40,7 +40,7 @@
     <string name="action_perform_error_group_not_found">Action: %1$s could not be performed because the group chat was not found.</string>
     <string name="action_perform_error_contact_not_found">Action: %1$s could not be performed because the requested contact was not found.</string>
     <string name="action_perform_error_default">An action could not be performed due to an unknown error.</string>
-    <string name="send_message_error">An error occurred while trying to send this message.</string>
+    <string name="send_message_error">An error occurred while trying to send a message.</string>
     <string name="new_message_error">An error occurred while trying to receive a new message.</string>
     <string name="message_update_error">An error occurred while trying to update a message.</string>
     <string name="result_process_error">An error occurred while trying to process a result returned from a message.</string>
@@ -53,5 +53,7 @@
     <string name="action_message_rename_group">This chat has been renamed to \"%1$s\".</string>
     <string name="action_message_leave_group">You have left this chat.</string>
     <string name="conversation_load_failure">The messages for that conversation could not be loaded due to an internal error.</string>
+    <string name="word_and">and</string>
+    <string name="chat_delete_message_go_back">The chat you were viewing was deleted.</string>
 
 </resources>

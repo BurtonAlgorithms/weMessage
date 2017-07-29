@@ -1,6 +1,5 @@
 package scott.wemessage.app.messages;
 
-import android.app.ActionBar;
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,6 +12,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,13 +53,13 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     private final String TAG = "ChatListFragment";
     private final String GO_BACK_REASON_ALERT_TAG = "GoBackReasonAlert";
+    private final int ERROR_SNACKBAR_DURATION = 5000;
 
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private LinearLayout noConversationsView;
     private DialogsList dialogsList;
     private DialogsListAdapter<IDialog> dialogsListAdapter;
     private boolean isBoundToConnectionService = false;
-    private int errorSnackbarDuration = 5000;
 
     private BroadcastReceiver chatListBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -145,9 +145,6 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         messageManager.hookCallbacks(this);
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(chatListBroadcastReceiver, broadcastIntentFilter);
 
-        ((AppCompatActivity)getActivity()).getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
-        ((AppCompatActivity)getActivity()).getSupportActionBar().setCustomView(R.layout.action_bar_chat_list);
-
         super.onCreate(savedInstanceState);
     }
 
@@ -158,6 +155,11 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
         dialogsList = (DialogsList) view.findViewById(R.id.chatDialogsList);
         noConversationsView = (LinearLayout) view.findViewById(R.id.noConversationsView);
+
+        Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.chatListToolbar);
+        toolbar.setTitle("");
+
+        ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
         new RecyclerSwiper(getActivity(), dialogsList) {
             @Override
@@ -496,7 +498,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     }
 
     private Snackbar generateErroredSnackBar(View view, String message){
-        final Snackbar snackbar = Snackbar.make(view, message, errorSnackbarDuration);
+        final Snackbar snackbar = Snackbar.make(view, message, ERROR_SNACKBAR_DURATION);
 
         snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
             @Override

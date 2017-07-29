@@ -76,6 +76,7 @@ public class ConnectionThread extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
+    private final int TIME_TO_CONNECT = 2000;
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
@@ -389,7 +390,7 @@ public class ConnectionThread extends Thread {
         }
 
         try {
-            Thread.sleep(2000);
+            Thread.sleep(TIME_TO_CONNECT);
         }catch(Exception ex){
             AppLogger.error(TAG, "An error occurred while trying to make a thread sleep", ex);
         }
