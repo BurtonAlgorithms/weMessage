@@ -1,13 +1,13 @@
 package scott.wemessage.server.listeners.database;
 
-import scott.wemessage.server.events.Event;
-import scott.wemessage.server.events.Listener;
-import scott.wemessage.server.events.database.ServerDatabaseUpdateEvent;
-import scott.wemessage.server.ServerLogger;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+
+import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.events.Event;
+import scott.wemessage.server.events.Listener;
+import scott.wemessage.server.events.database.ServerDatabaseUpdateEvent;
 
 public final class ErrorWatcher extends Listener {
 

@@ -1,15 +1,7 @@
 package scott.wemessage.server.database;
 
-import scott.wemessage.commons.json.action.JSONAction;
-import scott.wemessage.commons.utils.ByteArrayAdapter;
-import scott.wemessage.commons.utils.StringUtils;
-import scott.wemessage.server.MessageServer;
-import scott.wemessage.server.configuration.ServerConfiguration;
-import scott.wemessage.server.events.EventManager;
-import scott.wemessage.server.events.database.ServerDatabaseUpdateEvent;
-import scott.wemessage.server.ServerLogger;
-import scott.wemessage.server.security.ServerBase64Wrapper;
-import scott.wemessage.server.weMessage;
+import com.google.gson.GsonBuilder;
+import com.sun.nio.file.SensitivityWatchEventModifier;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,8 +23,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.gson.GsonBuilder;
-import com.sun.nio.file.SensitivityWatchEventModifier;
+import scott.wemessage.commons.json.action.JSONAction;
+import scott.wemessage.commons.utils.ByteArrayAdapter;
+import scott.wemessage.commons.utils.StringUtils;
+import scott.wemessage.server.MessageServer;
+import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.configuration.ServerConfiguration;
+import scott.wemessage.server.events.EventManager;
+import scott.wemessage.server.events.database.ServerDatabaseUpdateEvent;
+import scott.wemessage.server.security.ServerBase64Wrapper;
+import scott.wemessage.server.weMessage;
 
 @SuppressWarnings("Duplicates")
 public final class DatabaseManager extends Thread {

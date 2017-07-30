@@ -1,16 +1,16 @@
 package scott.wemessage.server.commands.core;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import scott.wemessage.commons.utils.StringUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.Command;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.commands.connection.ConnectionCommand;
 import scott.wemessage.server.commands.database.DatabaseCommand;
 import scott.wemessage.server.commands.scripts.ScriptCommand;
-import scott.wemessage.server.ServerLogger;
-import scott.wemessage.commons.utils.StringUtils;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class CommandHelp extends CoreCommand {
 

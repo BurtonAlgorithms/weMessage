@@ -1,19 +1,19 @@
 package scott.wemessage.server.connection;
 
-import scott.wemessage.commons.types.DisconnectReason;
-import scott.wemessage.server.MessageServer;
-import scott.wemessage.server.events.EventManager;
-import scott.wemessage.server.events.connection.DeviceJoinEvent;
-import scott.wemessage.server.events.connection.DeviceQuitEvent;
-import scott.wemessage.server.ServerLogger;
-import scott.wemessage.server.weMessage;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import scott.wemessage.commons.types.DisconnectReason;
+import scott.wemessage.server.MessageServer;
+import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.events.EventManager;
+import scott.wemessage.server.events.connection.DeviceJoinEvent;
+import scott.wemessage.server.events.connection.DeviceQuitEvent;
+import scott.wemessage.server.weMessage;
 
 public final class DeviceManager extends Thread {
 

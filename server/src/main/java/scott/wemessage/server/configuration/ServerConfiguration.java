@@ -1,5 +1,13 @@
 package scott.wemessage.server.configuration;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Paths;
+
 import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.ServerLogger;
@@ -7,14 +15,6 @@ import scott.wemessage.server.configuration.json.ConfigAccountJSON;
 import scott.wemessage.server.configuration.json.ConfigJSON;
 import scott.wemessage.server.configuration.json.ConfigJSONData;
 import scott.wemessage.server.weMessage;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Paths;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 public final class ServerConfiguration {
 

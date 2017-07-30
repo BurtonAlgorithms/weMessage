@@ -1,8 +1,8 @@
 package scott.wemessage.server.messages.chat;
 
-import scott.wemessage.server.messages.Handle;
-
 import java.util.List;
+
+import scott.wemessage.server.messages.Handle;
 
 public class GroupChat extends ChatBase {
 

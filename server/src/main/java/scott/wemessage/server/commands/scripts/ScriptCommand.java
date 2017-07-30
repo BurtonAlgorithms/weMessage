@@ -1,13 +1,13 @@
 package scott.wemessage.server.commands.scripts;
 
-import scott.wemessage.server.commands.AppleScriptExecutor;
-import scott.wemessage.commons.types.ReturnType;
-import scott.wemessage.server.commands.Command;
-import scott.wemessage.server.commands.CommandManager;
-import scott.wemessage.commons.utils.StringUtils;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.commons.utils.StringUtils;
+import scott.wemessage.server.commands.AppleScriptExecutor;
+import scott.wemessage.server.commands.Command;
+import scott.wemessage.server.commands.CommandManager;
 
 public abstract class ScriptCommand extends Command {
 

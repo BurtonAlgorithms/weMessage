@@ -1,11 +1,11 @@
 package scott.wemessage.server.commands.core;
 
+import java.util.Arrays;
+
+import scott.wemessage.commons.utils.StringUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.Command;
 import scott.wemessage.server.commands.CommandManager;
-import scott.wemessage.server.ServerLogger;
-import scott.wemessage.commons.utils.StringUtils;
-
-import java.util.Arrays;
 
 public class CommandAliases extends CoreCommand {
 

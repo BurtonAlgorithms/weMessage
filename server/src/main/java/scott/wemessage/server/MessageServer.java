@@ -1,5 +1,11 @@
 package scott.wemessage.server;
 
+import java.util.List;
+import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import scott.wemessage.commons.crypto.AESCrypto;
 import scott.wemessage.commons.crypto.BCrypt;
 import scott.wemessage.commons.utils.AuthenticationUtils;
@@ -7,7 +13,6 @@ import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.commands.AppleScriptExecutor;
 import scott.wemessage.server.commands.Command;
 import scott.wemessage.server.commands.CommandManager;
-import scott.wemessage.server.security.Authenticator;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.configuration.json.ConfigJSON;
 import scott.wemessage.server.connection.DeviceManager;
@@ -19,13 +24,8 @@ import scott.wemessage.server.listeners.connection.DeviceJoinListener;
 import scott.wemessage.server.listeners.connection.DeviceQuitListener;
 import scott.wemessage.server.listeners.database.ErrorWatcher;
 import scott.wemessage.server.listeners.database.MessagesDatabaseListener;
+import scott.wemessage.server.security.Authenticator;
 import scott.wemessage.server.security.ServerBase64Wrapper;
-
-import java.util.List;
-import java.util.Scanner;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class MessageServer {
 

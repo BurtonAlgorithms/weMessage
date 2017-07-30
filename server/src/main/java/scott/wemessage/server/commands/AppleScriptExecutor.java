@@ -1,11 +1,5 @@
 package scott.wemessage.server.commands;
 
-import scott.wemessage.commons.types.ActionType;
-import scott.wemessage.commons.types.ReturnType;
-import scott.wemessage.server.MessageServer;
-import scott.wemessage.server.configuration.ServerConfiguration;
-import scott.wemessage.server.ServerLogger;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -28,6 +22,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+
+import scott.wemessage.commons.types.ActionType;
+import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.server.MessageServer;
+import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.configuration.ServerConfiguration;
 
 public final class AppleScriptExecutor extends Thread {
 

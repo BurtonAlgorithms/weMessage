@@ -1,5 +1,24 @@
 package scott.wemessage.server.connection;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
+import java.io.EOFException;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Type;
+import java.net.Socket;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import scott.wemessage.commons.crypto.AESCrypto;
 import scott.wemessage.commons.crypto.AESCrypto.CipherByteArrayIvMac;
 import scott.wemessage.commons.json.action.JSONAction;
@@ -31,25 +50,6 @@ import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.messages.chat.PeerChat;
 import scott.wemessage.server.security.ServerBase64Wrapper;
 import scott.wemessage.server.weMessage;
-
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.lang.reflect.Type;
-import java.net.Socket;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 
 public class Device extends Thread {
 

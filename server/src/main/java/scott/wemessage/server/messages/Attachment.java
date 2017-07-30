@@ -1,8 +1,8 @@
 package scott.wemessage.server.messages;
 
-import scott.wemessage.commons.utils.DateUtils;
-
 import java.util.Date;
+
+import scott.wemessage.commons.utils.DateUtils;
 
 public class Attachment  {
 

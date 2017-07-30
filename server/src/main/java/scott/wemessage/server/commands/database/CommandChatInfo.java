@@ -1,14 +1,14 @@
 package scott.wemessage.server.commands.database;
 
+import java.util.ArrayList;
+
+import scott.wemessage.commons.utils.StringUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.messages.Handle;
 import scott.wemessage.server.messages.Message;
 import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.messages.chat.PeerChat;
-import scott.wemessage.server.ServerLogger;
-import scott.wemessage.commons.utils.StringUtils;
-
-import java.util.ArrayList;
 
 public class CommandChatInfo extends DatabaseCommand {
 

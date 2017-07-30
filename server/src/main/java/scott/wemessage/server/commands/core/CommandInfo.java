@@ -1,8 +1,8 @@
 package scott.wemessage.server.commands.core;
 
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.configuration.ServerConfiguration;
-import scott.wemessage.server.ServerLogger;
 
 public class CommandInfo extends CoreCommand {
 

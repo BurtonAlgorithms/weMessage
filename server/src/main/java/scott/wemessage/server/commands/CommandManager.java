@@ -1,14 +1,29 @@
 package scott.wemessage.server.commands;
 
-import scott.wemessage.server.MessageServer;
-import scott.wemessage.server.commands.connection.*;
-import scott.wemessage.server.commands.core.*;
-import scott.wemessage.server.commands.database.*;
-import scott.wemessage.server.commands.scripts.*;
-import scott.wemessage.server.ServerLogger;
-
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import scott.wemessage.server.MessageServer;
+import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.commands.connection.CommandDevices;
+import scott.wemessage.server.commands.connection.CommandDisconnect;
+import scott.wemessage.server.commands.connection.CommandExistingDevices;
+import scott.wemessage.server.commands.core.CommandAliases;
+import scott.wemessage.server.commands.core.CommandClear;
+import scott.wemessage.server.commands.core.CommandHelp;
+import scott.wemessage.server.commands.core.CommandInfo;
+import scott.wemessage.server.commands.core.CommandResetLoginInfo;
+import scott.wemessage.server.commands.core.CommandStop;
+import scott.wemessage.server.commands.database.CommandChatInfo;
+import scott.wemessage.server.commands.database.CommandHandleInfo;
+import scott.wemessage.server.commands.database.CommandLastMessage;
+import scott.wemessage.server.commands.scripts.CommandAddParticipant;
+import scott.wemessage.server.commands.scripts.CommandCreateGroup;
+import scott.wemessage.server.commands.scripts.CommandLeaveGroup;
+import scott.wemessage.server.commands.scripts.CommandRemoveParticipant;
+import scott.wemessage.server.commands.scripts.CommandRenameGroup;
+import scott.wemessage.server.commands.scripts.CommandSendGroupMessage;
+import scott.wemessage.server.commands.scripts.CommandSendMessage;
 
 public final class CommandManager {
 

@@ -1,9 +1,9 @@
 package scott.wemessage.server.commands.scripts;
 
 import scott.wemessage.commons.types.ActionType;
-import scott.wemessage.server.commands.CommandManager;
-import scott.wemessage.server.ServerLogger;
 import scott.wemessage.commons.utils.StringUtils;
+import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.commands.CommandManager;
 
 public class CommandCreateGroup extends ScriptCommand {
 

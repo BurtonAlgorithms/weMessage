@@ -1,10 +1,10 @@
 package scott.wemessage.server.events.database;
 
+import java.sql.Connection;
+
 import scott.wemessage.server.database.DatabaseManager;
 import scott.wemessage.server.events.Event;
 import scott.wemessage.server.events.EventManager;
-
-import java.sql.Connection;
 
 public class ServerDatabaseUpdateEvent extends Event {
 

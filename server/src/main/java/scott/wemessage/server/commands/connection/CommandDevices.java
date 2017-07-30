@@ -1,8 +1,8 @@
 package scott.wemessage.server.commands.connection;
 
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.connection.Device;
-import scott.wemessage.server.ServerLogger;
 
 public class CommandDevices extends ConnectionCommand {
 

@@ -1,15 +1,15 @@
 package scott.wemessage.server.commands.core;
 
+import java.util.Scanner;
+
+import scott.wemessage.commons.crypto.BCrypt;
 import scott.wemessage.commons.utils.AuthenticationUtils;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.configuration.json.ConfigJSON;
 import scott.wemessage.server.security.Authenticator;
-import scott.wemessage.commons.crypto.BCrypt;
-import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.weMessage;
-
-import java.util.Scanner;
 
 public class CommandResetLoginInfo extends CoreCommand {
 

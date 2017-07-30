@@ -1,15 +1,8 @@
 package scott.wemessage.server.database;
 
-import scott.wemessage.server.MessageServer;
-import scott.wemessage.server.events.EventManager;
-import scott.wemessage.server.events.database.MessagesDatabaseUpdateEvent;
-import scott.wemessage.server.messages.Attachment;
-import scott.wemessage.server.messages.Handle;
-import scott.wemessage.server.messages.Message;
-import scott.wemessage.server.messages.chat.ChatBase;
-import scott.wemessage.server.messages.chat.GroupChat;
-import scott.wemessage.server.messages.chat.PeerChat;
-import scott.wemessage.server.ServerLogger;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
+import com.sun.nio.file.SensitivityWatchEventModifier;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -28,9 +21,16 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
-import com.google.i18n.phonenumbers.Phonenumber;
-import com.sun.nio.file.SensitivityWatchEventModifier;
+import scott.wemessage.server.MessageServer;
+import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.events.EventManager;
+import scott.wemessage.server.events.database.MessagesDatabaseUpdateEvent;
+import scott.wemessage.server.messages.Attachment;
+import scott.wemessage.server.messages.Handle;
+import scott.wemessage.server.messages.Message;
+import scott.wemessage.server.messages.chat.ChatBase;
+import scott.wemessage.server.messages.chat.GroupChat;
+import scott.wemessage.server.messages.chat.PeerChat;
 
 @SuppressWarnings({"Duplicates", "FieldCanBeLocal", "WeakerAccess"})
 public final class MessagesDatabase extends Thread {

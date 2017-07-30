@@ -1,8 +1,8 @@
 package scott.wemessage.server.security;
 
-import scott.wemessage.commons.crypto.Base64Wrapper;
-
 import org.apache.commons.codec.binary.Base64;
+
+import scott.wemessage.commons.crypto.Base64Wrapper;
 
 public class ServerBase64Wrapper extends Base64Wrapper {
 

@@ -1,23 +1,23 @@
 package scott.wemessage.server.messages;
 
-import scott.wemessage.commons.json.message.JSONAttachment;
-import scott.wemessage.commons.json.message.JSONChat;
-import scott.wemessage.commons.json.message.JSONMessage;
-import scott.wemessage.commons.json.message.security.JSONEncryptedFile;
-import scott.wemessage.commons.json.message.security.JSONEncryptedText;
-import scott.wemessage.server.messages.chat.ChatBase;
-import scott.wemessage.commons.utils.DateUtils;
-import scott.wemessage.server.messages.chat.GroupChat;
-import scott.wemessage.server.messages.chat.PeerChat;
-import scott.wemessage.commons.crypto.AESCrypto;
-import scott.wemessage.commons.utils.FileUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import scott.wemessage.commons.crypto.AESCrypto;
+import scott.wemessage.commons.json.message.JSONAttachment;
+import scott.wemessage.commons.json.message.JSONChat;
+import scott.wemessage.commons.json.message.JSONMessage;
+import scott.wemessage.commons.json.message.security.JSONEncryptedFile;
+import scott.wemessage.commons.json.message.security.JSONEncryptedText;
+import scott.wemessage.commons.utils.DateUtils;
+import scott.wemessage.commons.utils.FileUtils;
+import scott.wemessage.server.messages.chat.ChatBase;
+import scott.wemessage.server.messages.chat.GroupChat;
+import scott.wemessage.server.messages.chat.PeerChat;
 
 public class Message {
 

@@ -3,11 +3,11 @@ package scott.wemessage.server.listeners.connection;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.connection.Device;
 import scott.wemessage.server.events.Event;
 import scott.wemessage.server.events.Listener;
 import scott.wemessage.server.events.connection.ClientMessageReceivedEvent;
-import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.security.ServerBase64Wrapper;
 
 public class ClientMessageReceivedListener extends Listener {

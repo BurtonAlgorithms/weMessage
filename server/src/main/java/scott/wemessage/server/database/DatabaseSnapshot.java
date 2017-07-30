@@ -1,8 +1,8 @@
 package scott.wemessage.server.database;
 
-import scott.wemessage.server.messages.Message;
-
 import java.util.List;
+
+import scott.wemessage.server.messages.Message;
 
 public class DatabaseSnapshot {
 

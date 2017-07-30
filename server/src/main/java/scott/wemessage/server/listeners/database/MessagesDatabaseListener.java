@@ -1,5 +1,6 @@
 package scott.wemessage.server.listeners.database;
 
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.connection.Device;
 import scott.wemessage.server.connection.DeviceManager;
 import scott.wemessage.server.database.DatabaseManager;
@@ -9,7 +10,6 @@ import scott.wemessage.server.events.Event;
 import scott.wemessage.server.events.Listener;
 import scott.wemessage.server.events.database.MessagesDatabaseUpdateEvent;
 import scott.wemessage.server.messages.Message;
-import scott.wemessage.server.ServerLogger;
 
 public class MessagesDatabaseListener extends Listener {
 

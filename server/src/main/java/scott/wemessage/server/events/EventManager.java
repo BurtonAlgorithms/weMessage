@@ -1,13 +1,13 @@
 package scott.wemessage.server.events;
 
-import scott.wemessage.server.MessageServer;
-import scott.wemessage.server.ServerLogger;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import scott.wemessage.server.MessageServer;
+import scott.wemessage.server.ServerLogger;
 
 public final class EventManager extends Thread {
 

@@ -1,16 +1,16 @@
 package scott.wemessage.server.listeners.connection;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.HashMap;
+
 import scott.wemessage.commons.json.action.JSONAction;
+import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.database.DatabaseManager;
 import scott.wemessage.server.events.Event;
 import scott.wemessage.server.events.Listener;
 import scott.wemessage.server.events.connection.DeviceJoinEvent;
 import scott.wemessage.server.messages.Message;
-import scott.wemessage.server.ServerLogger;
-
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.HashMap;
 
 public class DeviceJoinListener extends Listener {
 
