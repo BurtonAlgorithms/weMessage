@@ -1,8 +1,8 @@
 package scott.wemessage.commons.utils;
 
-import scott.wemessage.commons.Constants;
-
 import java.util.regex.Pattern;
+
+import scott.wemessage.commons.Constants;
 
 public class AuthenticationUtils {
 

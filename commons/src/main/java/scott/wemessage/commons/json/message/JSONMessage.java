@@ -1,8 +1,8 @@
 package scott.wemessage.commons.json.message;
 
-import scott.wemessage.commons.json.message.security.JSONEncryptedText;
-
 import java.util.List;
+
+import scott.wemessage.commons.json.message.security.JSONEncryptedText;
 
 public class JSONMessage {
 
