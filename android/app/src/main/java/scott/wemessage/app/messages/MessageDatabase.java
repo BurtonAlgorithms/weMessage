@@ -12,19 +12,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.Chat.ChatType;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
-import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.WeApp;
 import scott.wemessage.app.messages.objects.Account;
 import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Handle;
 import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.objects.chats.Chat.ChatType;
+import scott.wemessage.app.messages.objects.chats.GroupChat;
+import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
-import scott.wemessage.app.WeApp;
 import scott.wemessage.commons.utils.StringUtils;
 
 @SuppressWarnings("WeakerAccess")

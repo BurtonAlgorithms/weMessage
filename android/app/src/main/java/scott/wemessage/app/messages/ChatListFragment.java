@@ -28,6 +28,7 @@ import com.stfalcon.chatkit.utils.DateFormatter;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
@@ -55,6 +56,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     private final String GO_BACK_REASON_ALERT_TAG = "GoBackReasonAlert";
     private final int ERROR_SNACKBAR_DURATION = 5000;
 
+    private String callbackUuid;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private LinearLayout noConversationsView;
     private DialogsList dialogsList;
@@ -142,7 +144,8 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
 
-        messageManager.hookCallbacks(this);
+        callbackUuid = UUID.randomUUID().toString();
+        messageManager.hookCallbacks(callbackUuid, this);
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(chatListBroadcastReceiver, broadcastIntentFilter);
 
         super.onCreate(savedInstanceState);
@@ -252,7 +255,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         MessageManager messageManager = MessageManager.getInstance(getActivity());
 
         dialogsListAdapter.clear();
-        messageManager.unhookCallbacks(this);
+        messageManager.unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(chatListBroadcastReceiver);
 
         if (isBoundToConnectionService){

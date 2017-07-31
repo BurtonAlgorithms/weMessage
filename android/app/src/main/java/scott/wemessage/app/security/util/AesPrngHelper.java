@@ -1,8 +1,8 @@
 package scott.wemessage.app.security.util;
 
 import android.os.Build;
-import android.util.Log;
 import android.os.Process;
+import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;

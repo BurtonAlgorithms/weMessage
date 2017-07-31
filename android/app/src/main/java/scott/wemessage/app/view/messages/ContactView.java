@@ -37,12 +37,16 @@ public class ContactView implements IUser {
 
     @Override
     public String getAvatar() {
-        if (contact.getContactPictureFileLocation() == null){
+        try {
+            if (contact.getContactPictureFileLocation() == null) {
+                return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_default_contact).toString();
+            } else if (StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())) {
+                return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_default_contact).toString();
+            } else {
+                return Uri.fromFile(contact.getContactPictureFileLocation().getFile()).toString();
+            }
+        }catch (Exception ex){
             return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_default_contact).toString();
-        }else if (StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())){
-            return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_default_contact).toString();
-        }else {
-            return Uri.fromFile(contact.getContactPictureFileLocation().getFile()).toString();
         }
     }
 }

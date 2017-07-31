@@ -4,8 +4,6 @@ import android.content.Context;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,7 +27,7 @@ public final class MessageManager {
 
     private static MessageManager instance;
     private Context context;
-    private final List<Callbacks> callbacksList = Collections.synchronizedList(new ArrayList<Callbacks>());
+    private ConcurrentHashMap<String, Callbacks> callbacksMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Contact> contacts = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Chat> chats = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Message> messages = new ConcurrentHashMap<>();
@@ -49,7 +47,7 @@ public final class MessageManager {
             getInstance(context).contacts.clear();
             getInstance(context).chats.clear();
             getInstance(context).messages.clear();
-            getInstance(context).callbacksList.clear();
+            getInstance(context).callbacksMap.clear();
             instance = null;
         }
     }
@@ -66,12 +64,12 @@ public final class MessageManager {
         return chats;
     }
 
-    public void hookCallbacks(Callbacks callbacks){
-        callbacksList.add(callbacks);
+    public void hookCallbacks(String uuid, Callbacks callbacks){
+        callbacksMap.put(uuid, callbacks);
     }
 
-    public void unhookCallbacks(Callbacks callbacks){
-        callbacksList.remove(callbacks);
+    public void unhookCallbacks(String uuid){
+        callbacksMap.remove(uuid);
     }
 
     public void addContact(final Contact contact, boolean threaded){
@@ -296,24 +294,14 @@ public final class MessageManager {
     }
 
     public void alertMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType){
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onMessageSendFailure(jsonMessage, returnType);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onMessageSendFailure(jsonMessage, returnType);
         }
     }
 
     public void alertActionPerformFailure(JSONAction jsonAction, ReturnType returnType){
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onActionPerformFailure(jsonAction, returnType);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onActionPerformFailure(jsonAction, returnType);
         }
     }
 
@@ -325,13 +313,8 @@ public final class MessageManager {
                     contacts.put(c.getUuid().toString(), c);
                 }
 
-                synchronized (callbacksList){
-                    Iterator<Callbacks> i = callbacksList.iterator();
-
-                    while (i.hasNext()){
-                        Callbacks callbacks = i.next();
-                        callbacks.onContactListRefresh(contacts);
-                    }
+                for (Callbacks callbacks : callbacksMap.values()){
+                    callbacks.onContactListRefresh(contacts);
                 }
             }
         }).start();
@@ -343,13 +326,8 @@ public final class MessageManager {
         contacts.put(contact.getUuid().toString(), contact);
         WeApp.get().getMessageDatabase().addContact(contact);
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onContactCreate(contact);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onContactCreate(contact);
         }
     }
 
@@ -401,13 +379,8 @@ public final class MessageManager {
             }
         }
 
-        synchronized (callbacksList) {
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()) {
-                Callbacks callbacks = i.next();
-                callbacks.onContactUpdate(oldContact, newData);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onContactUpdate(oldContact, newData);
         }
     }
 
@@ -415,13 +388,8 @@ public final class MessageManager {
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().addChat(chat);
 
-        synchronized (callbacksList) {
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()) {
-                Callbacks callbacks = i.next();
-                callbacks.onChatAdd(chat);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onChatAdd(chat);
         }
     }
 
@@ -431,13 +399,8 @@ public final class MessageManager {
         chats.put(uuid, newData);
         WeApp.get().getMessageDatabase().updateChat(uuid, newData);
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onChatUpdate(oldChat, newData);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onChatUpdate(oldChat, newData);
         }
     }
 
@@ -446,13 +409,8 @@ public final class MessageManager {
         chats.put(chat.getUuid().toString(), chat);
         WeApp.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onUnreadMessagesUpdate(chat, hasUnreadMessages);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onUnreadMessagesUpdate(chat, hasUnreadMessages);
         }
     }
 
@@ -466,13 +424,8 @@ public final class MessageManager {
         WeApp.get().getMessageDatabase().addActionMessage(actionMessage);
         actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onChatRename(chat, newName);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onChatRename(chat, newName);
         }
     }
 
@@ -486,13 +439,8 @@ public final class MessageManager {
         WeApp.get().getMessageDatabase().addActionMessage(actionMessage);
         actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onParticipantAdd(chat, contact);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onParticipantAdd(chat, contact);
         }
     }
 
@@ -506,13 +454,8 @@ public final class MessageManager {
         WeApp.get().getMessageDatabase().addActionMessage(actionMessage);
         actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onParticipantRemove(chat, contact);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onParticipantRemove(chat, contact);
         }
     }
 
@@ -527,13 +470,8 @@ public final class MessageManager {
         WeApp.get().getMessageDatabase().addActionMessage(actionMessage);
         actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onLeaveGroup(chat);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onLeaveGroup(chat);
         }
     }
 
@@ -541,13 +479,8 @@ public final class MessageManager {
         chats.remove(chat.getUuid().toString());
         WeApp.get().getMessageDatabase().deleteChatByUuid(chat.getUuid().toString());
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onChatDelete(chat);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onChatDelete(chat);
         }
     }
 
@@ -558,13 +491,8 @@ public final class MessageManager {
             chats.put(c.getUuid().toString(), c);
         }
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onChatListRefresh(chats);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onChatListRefresh(chats);
         }
     }
 
@@ -577,13 +505,8 @@ public final class MessageManager {
         }
         WeApp.get().getMessageDatabase().addMessage(message);
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onMessageAdd(message);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onMessageAdd(message);
         }
     }
 
@@ -593,13 +516,8 @@ public final class MessageManager {
         messages.put(uuid, newData);
         WeApp.get().getMessageDatabase().updateMessage(uuid, newData);
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onMessageUpdate(oldMessage, newData);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onMessageUpdate(oldMessage, newData);
         }
     }
 
@@ -610,13 +528,8 @@ public final class MessageManager {
         messages.remove(message.getUuid().toString());
         WeApp.get().getMessageDatabase().deleteMessageByUuid(message.getUuid().toString());
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onMessageDelete(message);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onMessageDelete(message);
         }
     }
 
@@ -627,26 +540,16 @@ public final class MessageManager {
             messages.put(m.getUuid().toString(), m);
         }
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onMessagesQueueFinish(messages);
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onMessagesQueueFinish(messages);
         }
     }
 
     private void refreshMessagesTask(){
         messages.clear();
 
-        synchronized (callbacksList){
-            Iterator<Callbacks> i = callbacksList.iterator();
-
-            while (i.hasNext()){
-                Callbacks callbacks = i.next();
-                callbacks.onMessagesRefresh();
-            }
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onMessagesRefresh();
         }
     }
 

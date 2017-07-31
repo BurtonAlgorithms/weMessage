@@ -15,6 +15,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
@@ -23,6 +24,7 @@ import com.stfalcon.chatkit.commons.models.IMessage;
 import com.stfalcon.chatkit.messages.MessagesList;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
@@ -50,6 +52,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     private final int MESSAGE_QUEUE_AMOUNT = 50;
     private final int ERROR_SNACKBAR_DURATION = 5000;
 
+    private String callbackUuid;
     private Chat chat;
     private ChatTitleView chatTitleView;
     private MessagesList messageList;
@@ -145,12 +148,8 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                     setChat(chat);
                 }
             } catch (Exception ex) {
-                Intent returnIntent = new Intent(WeApp.get(), ChatListActivity.class);
-                returnIntent.putExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON, getString(R.string.conversation_load_failure));
-
                 AppLogger.error(TAG, "Could not load ConversationFragment because an error occurred", ex);
-                startActivity(returnIntent);
-                getActivity().finish();
+                goToChatList(getString(R.string.conversation_load_failure));
             }
         }else {
             chat = messageDatabase.getChatByUuid(savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT));
@@ -169,7 +168,8 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
 
-        messageManager.hookCallbacks(this);
+        callbackUuid = UUID.randomUUID().toString();
+        messageManager.hookCallbacks(callbackUuid, this);
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(messageListBroadcastReceiver, broadcastIntentFilter);
 
         super.onCreate(savedInstanceState);
@@ -183,7 +183,16 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         MessageManager messageManager = MessageManager.getInstance(getActivity());
 
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.conversationToolbar);
+        ImageButton imageButton = (ImageButton) toolbar.findViewById(R.id.conversationBackButton);
+
         toolbar.setTitle(null);
+        imageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                goToChatList(null);
+            }
+        });
+
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
         chatTitleView = (ChatTitleView) toolbar.findViewById(R.id.chatTitleView);
@@ -227,7 +236,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         MessageManager messageManager = MessageManager.getInstance(getActivity());
 
         messageListAdapter.clear();
-        messageManager.unhookCallbacks(this);
+        messageManager.unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(messageListBroadcastReceiver);
 
         if (isBoundToConnectionService){
@@ -289,6 +298,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             public void run() {
                 if (isChatThis(chat)){
                     setChat(chat);
+                    chatTitleView.setChat(chat);
                 }
             }
         });
@@ -301,6 +311,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             public void run() {
                 if(isChatThis(chat)){
                     setChat(chat);
+                    chatTitleView.setChat(chat);
                 }
             }
         });
@@ -313,6 +324,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             public void run() {
                 if (isChatThis(chat)){
                     setChat(chat);
+                    chatTitleView.setChat(chat);
                 }
             }
         });
@@ -333,11 +345,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     @Override
     public void onChatDelete(Chat chat) {
         if (isChatThis(chat)){
-            Intent returnIntent = new Intent(WeApp.get(), ChatListActivity.class);
-            returnIntent.putExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON, getString(R.string.chat_delete_message_go_back));
-
-            startActivity(returnIntent);
-            getActivity().finish();
+            goToChatList(getString(R.string.chat_delete_message_go_back));
         }
     }
 
@@ -425,10 +433,6 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     private void setChat(Chat chat){
         synchronized (chatLock){
             this.chat = chat;
-
-            if (chatTitleView != null) {
-                this.chatTitleView.setChat(chat);
-            }
         }
     }
 
@@ -486,5 +490,18 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     private boolean isChatThis(Chat c){
         return c.getUuid().toString().equals(getChat().getUuid().toString());
+    }
+
+    private void goToChatList(String reason){
+        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
+            Intent returnIntent = new Intent(WeApp.get(), ChatListActivity.class);
+
+            if (reason != null) {
+                returnIntent.putExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON, reason);
+            }
+
+            startActivity(returnIntent);
+            getActivity().finish();
+        }
     }
 }

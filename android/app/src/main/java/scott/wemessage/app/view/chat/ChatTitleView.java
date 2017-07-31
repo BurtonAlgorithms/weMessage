@@ -2,7 +2,7 @@ package scott.wemessage.app.view.chat;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.support.v7.widget.Toolbar;
+import android.graphics.Typeface;
 import android.text.InputFilter;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+
 import scott.wemessage.R;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.chats.Chat;
@@ -33,8 +34,6 @@ public class ChatTitleView extends LinearLayout {
     private final int BIG_TEXT_SIZE = 18;
     private final int TEXT_SIZE = 14;
     private final int PARTICIPANT_TEXT_SIZE = 12;
-
-    private Chat chat;
 
     private CircleImageView imageView;
     private FontTextView titleTextView;
@@ -63,17 +62,19 @@ public class ChatTitleView extends LinearLayout {
             init(getContext());
         }
 
-        this.chat = chat;
-
         if (chat instanceof PeerChat){
             Contact contact = ((PeerChat) chat).getContact();
             String url = AndroidIOUtils.getChatIconUri(chat);
 
+            LayoutParams layoutParams = (LayoutParams) getLayoutParams();
+            LayoutParams imageLayoutParams = (LayoutParams) ((LinearLayout) getParent()).findViewById(R.id.conversationBackButton).getLayoutParams();
+            layoutParams.setMarginStart((imageLayoutParams.width + imageLayoutParams.getMarginEnd()) * -1);
+
             setOrientation(VERTICAL);
-            setLayoutParams(new Toolbar.LayoutParams(Toolbar.LayoutParams.MATCH_PARENT, Toolbar.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+            setLayoutParams(layoutParams);
 
             imageView.setLayoutParams(new LayoutParams(Math.round(DisplayUtils.convertDpToPixel(SINGLE_IMAGE_SIZE, getContext())),
-                    Math.round(DisplayUtils.convertDpToPixel(SINGLE_IMAGE_SIZE, getContext())), Gravity.CENTER));
+                    Math.round(DisplayUtils.convertDpToPixel(SINGLE_IMAGE_SIZE, getContext()))));
 
             Glide.with(getContext()).load(url).into(imageView);
 
@@ -81,24 +82,23 @@ public class ChatTitleView extends LinearLayout {
             textLayoutParams.topMargin = Math.round(DisplayUtils.convertDpToPixel(8, getContext()));
 
             titleTextView.setTextSize(TEXT_SIZE);
-            titleTextView.setFilters(new InputFilter[] { new InputFilter.LengthFilter(22) });
+            titleTextView.setTypeface(titleTextView.getTypeface(), Typeface.NORMAL);
             titleTextView.setTextColor(Color.WHITE);
-            titleTextView.setGravity(Gravity.CENTER);
             titleTextView.setSingleLine();
+            titleTextView.setFilters(new InputFilter[] { new InputFilter.LengthFilter(22) });
             titleTextView.setEllipsize(TextUtils.TruncateAt.END);
             titleTextView.setText(contact.getUIDisplayName());
             titleTextView.setLayoutParams(textLayoutParams);
 
             participantsTextView.setVisibility(GONE);
-        }else {
+        } else {
             GroupChat groupChat = (GroupChat) chat;
             String url = AndroidIOUtils.getChatIconUri(groupChat);
 
             setOrientation(HORIZONTAL);
-            setLayoutParams(new Toolbar.LayoutParams(Toolbar.LayoutParams.MATCH_PARENT, Toolbar.LayoutParams.WRAP_CONTENT, Gravity.START));
 
             imageView.setLayoutParams(new LayoutParams(Math.round(DisplayUtils.convertDpToPixel(GROUP_IMAGE_SIZE, getContext())),
-                    Math.round(DisplayUtils.convertDpToPixel(GROUP_IMAGE_SIZE, getContext())), Gravity.CENTER));
+                    Math.round(DisplayUtils.convertDpToPixel(GROUP_IMAGE_SIZE, getContext()))));
 
             Glide.with(getContext()).load(url).into(imageView);
 
@@ -108,8 +108,7 @@ public class ChatTitleView extends LinearLayout {
             LinearLayout textLayout = new LinearLayout(getContext());
             LayoutParams textLayoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
 
-            textLayoutParams.setMarginStart(Math.round(DisplayUtils.convertDpToPixel(8, getContext())));
-            textLayoutParams.setMarginEnd(Math.round(DisplayUtils.convertDpToPixel(8, getContext())));
+            textLayoutParams.setMarginStart(Math.round(DisplayUtils.convertDpToPixel(24, getContext())));
             textLayout.setOrientation(VERTICAL);
             textLayout.setLayoutParams(textLayoutParams);
 
@@ -117,7 +116,7 @@ public class ChatTitleView extends LinearLayout {
             titleLayoutParams.bottomMargin = Math.round(DisplayUtils.convertDpToPixel(2, getContext()));
 
             titleTextView.setTextSize(BIG_TEXT_SIZE);
-            titleTextView.setFilters(new InputFilter[] { new InputFilter.LengthFilter(48) });
+            titleTextView.setTypeface(titleTextView.getTypeface(), Typeface.BOLD);
             titleTextView.setTextColor(Color.WHITE);
             titleTextView.setSingleLine();
             titleTextView.setEllipsize(TextUtils.TruncateAt.END);
@@ -150,12 +149,12 @@ public class ChatTitleView extends LinearLayout {
         }
     }
 
-    //TODO: What font shall I use
-
     private void init(Context context){
         imageView = new CircleImageView(context);
         titleTextView = new FontTextView(context);
         participantsTextView = new FontTextView(context);
+
+        participantsTextView.setFont("orkney_light.ttf");
 
         addView(imageView);
         addView(titleTextView);

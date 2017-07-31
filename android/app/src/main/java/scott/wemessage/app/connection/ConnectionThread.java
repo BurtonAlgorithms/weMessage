@@ -76,7 +76,7 @@ public class ConnectionThread extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
-    private final int TIME_TO_CONNECT = 2000;
+    private final int TIME_TO_CONNECT = 2;
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
@@ -390,7 +390,7 @@ public class ConnectionThread extends Thread {
         }
 
         try {
-            Thread.sleep(TIME_TO_CONNECT);
+            Thread.sleep(TIME_TO_CONNECT * 1000);
         }catch(Exception ex){
             AppLogger.error(TAG, "An error occurred while trying to make a thread sleep", ex);
         }
@@ -791,23 +791,21 @@ public class ConnectionThread extends Thread {
         MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
 
         ArrayList<String> existingChatParticipantList = new ArrayList<>();
-        ArrayList<String> newChatParticipantList = new ArrayList<>(jsonChat.getParticipants());
 
         for (Contact c : existingChat.getParticipants()) {
             existingChatParticipantList.add(c.getHandle().getHandleID());
         }
 
-        List<String> removedParticipantsList = new ArrayList<>(existingChatParticipantList);
-        List<String> addedParticipantsList = new ArrayList<>(newChatParticipantList);
-
-        removedParticipantsList.removeAll(addedParticipantsList);
-        addedParticipantsList.removeAll(removedParticipantsList);
-
-        for (String s : addedParticipantsList) {
-            messageManager.addParticipantToGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), false);
+        for (String s : existingChatParticipantList){
+            if (!jsonChat.getParticipants().contains(s)){
+                messageManager.removeParticipantFromGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), false);
+            }
         }
-        for (String s : removedParticipantsList) {
-            messageManager.removeParticipantFromGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), false);
+
+        for (String s : jsonChat.getParticipants()){
+            if (!existingChatParticipantList.contains(s)){
+                messageManager.addParticipantToGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), false);
+            }
         }
 
         if (!existingChat.getDisplayName().equals(jsonChat.getDisplayName())) {

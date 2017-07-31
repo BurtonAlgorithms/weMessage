@@ -82,7 +82,11 @@ public class GroupChat extends Chat {
     }
 
     public GroupChat removeParticipant(Contact contact){
-        participants.remove(contact);
+        for (Contact c : participants){
+            if (c.getUuid().toString().equals(contact.getUuid().toString())){
+                participants.remove(c);
+            }
+        }
         return this;
     }
 }
