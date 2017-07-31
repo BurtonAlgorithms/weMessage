@@ -7,6 +7,7 @@ public final class weMessage extends Constants {
     private weMessage(){ }
 
     public static final int WEMESSAGE_CONFIG_VERSION = 1;
+    public static final int MIN_OS_VERSION = 12;
     public static final boolean CREATE_LOG_FILES = true;
 
     public static final String CONFIG_FILE_NAME = "config.json";

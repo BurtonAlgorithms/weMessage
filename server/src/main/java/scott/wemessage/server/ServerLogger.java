@@ -101,7 +101,12 @@ public final class ServerLogger {
         if (messageServer != null) {
             if (messageServer.getConfiguration().saveLogFiles()) {
                 try {
-                    Files.write(messageServer.getConfiguration().getLogFile().toPath(), ("\n" + text).getBytes(), StandardOpenOption.APPEND);
+                    if (text.equals(" ") || text.equals("")){
+                        Files.write(messageServer.getConfiguration().getLogFile().toPath(), ("\n" + text).getBytes(), StandardOpenOption.APPEND);
+                    }else {
+                        Files.write(messageServer.getConfiguration().getLogFile().toPath(), ("\n[" + getCurrentTimeStamp() + "] " + text).getBytes(), StandardOpenOption.APPEND);
+                    }
+
                 }catch(Exception ex){
                     ex.printStackTrace();
                 }

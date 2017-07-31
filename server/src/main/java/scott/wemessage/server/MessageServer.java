@@ -279,9 +279,16 @@ public final class MessageServer {
             return false;
         }
 
-        if(!System.getProperty("os.version").startsWith("10.12")){
-            ServerLogger.log(ServerLogger.Level.INFO, TAG, "As of now, weServer only supports macOS Sierra and higher. Shutting down!");
-            shutdown(-1, false);
+        try {
+            Integer osNumber = Integer.parseInt(System.getProperty("os.version").split("\\.")[1]);
+
+            if (osNumber < weMessage.MIN_OS_VERSION) {
+                ServerLogger.log(ServerLogger.Level.INFO, TAG, "As of now, weServer only supports macOS Sierra and higher. Shutting down!");
+                shutdown(-1, false);
+                return false;
+            }
+        }catch (Exception ex){
+            ServerLogger.error("A severe error occurred while detecting the OS version. Please report this problem if you are seeing this.", ex);
             return false;
         }
 
