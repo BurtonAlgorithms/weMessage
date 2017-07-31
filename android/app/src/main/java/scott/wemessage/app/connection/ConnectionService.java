@@ -7,20 +7,19 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.AndroidRuntimeException;
 
-import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.weMessage;
 
 public class ConnectionService extends Service {
 
     protected static final String TAG = "Connection Service";
-    private final Object connectionThreadLock = new Object();
+    private final Object connectionHandlerLock = new Object();
     private final IBinder binder = new ConnectionServiceBinder();
 
-    private ConnectionThread connectionThread;
+    private ConnectionHandler connectionHandler;
 
-    public ConnectionThread getConnectionThread(){
-        synchronized (connectionThreadLock){
-            return connectionThread;
+    public ConnectionHandler getConnectionHandler(){
+        synchronized (connectionHandlerLock){
+            return connectionHandler;
         }
     }
 
@@ -31,28 +30,28 @@ public class ConnectionService extends Service {
 
     @Override
     public void onDestroy() {
-        if (getConnectionThread().isRunning().get()){
+        if (getConnectionHandler().isRunning().get()){
             Intent serviceClosedIntent = new Intent(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED);
             LocalBroadcastManager.getInstance(this).sendBroadcast(serviceClosedIntent);
 
-            getConnectionThread().endConnection();
-            MessageManager.dump(this);
+            getConnectionHandler().endConnection();
+            weMessage.get().dumpMessageManager();
         }
         super.onDestroy();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (getConnectionThread() != null && getConnectionThread().isRunning().get()){
+        if (getConnectionHandler() != null && getConnectionHandler().isRunning().get()){
             throw new ConnectionException("There is already a connection to the weServer established.");
         }
 
-        synchronized (connectionThreadLock){
-            ConnectionThread connectionThread = new ConnectionThread(this, intent.getStringExtra(weMessage.ARG_HOST), intent.getIntExtra(weMessage.ARG_PORT, -1),
+        synchronized (connectionHandlerLock){
+            ConnectionHandler connectionHandler = new ConnectionHandler(this, intent.getStringExtra(weMessage.ARG_HOST), intent.getIntExtra(weMessage.ARG_PORT, -1),
                     intent.getStringExtra(weMessage.ARG_EMAIL), intent.getStringExtra(weMessage.ARG_PASSWORD), intent.getBooleanExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, false));
 
-            connectionThread.start();
-            this.connectionThread = connectionThread;
+            connectionHandler.start();
+            this.connectionHandler = connectionHandler;
         }
 
         return START_REDELIVER_INTENT;
@@ -67,7 +66,7 @@ public class ConnectionService extends Service {
         Intent serviceClosedIntent = new Intent();
         serviceClosedIntent.setAction(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED);
         LocalBroadcastManager.getInstance(this).sendBroadcast(serviceClosedIntent);
-        getConnectionThread().endConnection();
+        getConnectionHandler().endConnection();
         stopSelf();
     }
 

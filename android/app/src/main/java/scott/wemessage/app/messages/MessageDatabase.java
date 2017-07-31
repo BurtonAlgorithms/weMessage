@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-import scott.wemessage.app.WeApp;
 import scott.wemessage.app.messages.objects.Account;
 import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
@@ -450,7 +449,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public ActionMessage buildActionMessage(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(ActionMessageTable.ACCOUNT_UUID)).equals(WeApp.get().getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(ActionMessageTable.ACCOUNT_UUID)).equals(weMessage.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
@@ -465,7 +464,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(ActionMessageTable.UUID, actionMessage.getUuid().toString());
-        values.put(ActionMessageTable.ACCOUNT_UUID, WeApp.get().getCurrentAccount().getUuid().toString());
+        values.put(ActionMessageTable.ACCOUNT_UUID, weMessage.get().getCurrentAccount().getUuid().toString());
         values.put(ActionMessageTable.CHAT_UUID, actionMessage.getChat().getUuid().toString());
         values.put(ActionMessageTable.ACTION_TEXT, actionMessage.getActionText());
         values.put(ActionMessageTable.DATE, actionMessage.getDate());
@@ -507,7 +506,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Attachment buildAttachment(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(AttachmentTable.ACCOUNT_UUID)).equals(WeApp.get().getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(AttachmentTable.ACCOUNT_UUID)).equals(weMessage.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
@@ -522,7 +521,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(AttachmentTable.UUID, attachment.getUuid().toString());
-        values.put(AttachmentTable.ACCOUNT_UUID, WeApp.get().getCurrentAccount().getUuid().toString());
+        values.put(AttachmentTable.ACCOUNT_UUID, weMessage.get().getCurrentAccount().getUuid().toString());
         values.put(AttachmentTable.MAC_GUID, attachment.getMacGuid());
         values.put(AttachmentTable.TRANSFER_NAME, attachment.getTransferName());
         values.put(AttachmentTable.FILE_LOCATION, attachment.getFileLocation().getFileLocation());
@@ -594,7 +593,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Contact buildContact(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(ContactTable.ACCOUNT_UUID)).equals(WeApp.get().getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(ContactTable.ACCOUNT_UUID)).equals(weMessage.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
@@ -609,7 +608,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(ContactTable.UUID, contact.getUuid().toString());
-        values.put(ContactTable.ACCOUNT_UUID, WeApp.get().getCurrentAccount().getUuid().toString());
+        values.put(ContactTable.ACCOUNT_UUID, weMessage.get().getCurrentAccount().getUuid().toString());
         values.put(ContactTable.FIRST_NAME, contact.getFirstName());
         values.put(ContactTable.LAST_NAME, contact.getLastName());
         values.put(ContactTable.HANDLE_UUID, contact.getHandle().getUuid().toString());
@@ -674,7 +673,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Handle buildHandle(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(HandleTable.ACCOUNT_UUID)).equals(WeApp.get().getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(HandleTable.ACCOUNT_UUID)).equals(weMessage.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
@@ -687,7 +686,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(HandleTable.UUID, handle.getUuid().toString());
-        values.put(HandleTable.ACCOUNT_UUID, WeApp.get().getCurrentAccount().getUuid().toString());
+        values.put(HandleTable.ACCOUNT_UUID, weMessage.get().getCurrentAccount().getUuid().toString());
         values.put(HandleTable.HANDLE_ID, handle.getHandleID());
         values.put(HandleTable.HANDLE_TYPE, handle.getHandleType().getTypeName());
 
@@ -761,7 +760,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Chat buildChat(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(ChatTable.ACCOUNT_UUID)).equals(WeApp.get().getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(ChatTable.ACCOUNT_UUID)).equals(weMessage.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
@@ -806,7 +805,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         }
 
         values.put(ChatTable.UUID, chat.getUuid().toString());
-        values.put(ChatTable.ACCOUNT_UUID, WeApp.get().getCurrentAccount().getUuid().toString());
+        values.put(ChatTable.ACCOUNT_UUID, weMessage.get().getCurrentAccount().getUuid().toString());
         values.put(ChatTable.CHAT_TYPE, chat.getChatType().getTypeName());
         values.put(ChatTable.MAC_GUID, chat.getMacGuid());
         values.put(ChatTable.MAC_GROUP_ID, chat.getMacGroupID());
@@ -995,7 +994,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Message buildMessage(Cursor cursor){
-        if (!(cursor.getString(cursor.getColumnIndex(MessageTable.ACCOUNT_UUID)).equals(WeApp.get().getCurrentAccount().getUuid().toString()))){
+        if (!(cursor.getString(cursor.getColumnIndex(MessageTable.ACCOUNT_UUID)).equals(weMessage.get().getCurrentAccount().getUuid().toString()))){
             return null;
         }
 
@@ -1015,7 +1014,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(MessageTable.UUID, message.getUuid().toString());
-        values.put(MessageTable.ACCOUNT_UUID, WeApp.get().getCurrentAccount().getUuid().toString());
+        values.put(MessageTable.ACCOUNT_UUID, weMessage.get().getCurrentAccount().getUuid().toString());
         values.put(MessageTable.MAC_GUID, message.getMacGuid());
         values.put(MessageTable.CHAT_UUID, message.getChat().getUuid().toString());
         values.put(MessageTable.SENDER_UUID, message.getSender().getUuid().toString());

@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.WeApp;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Account;
@@ -72,7 +71,7 @@ import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ConnectionThread extends Thread {
+public class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
@@ -99,7 +98,7 @@ public class ConnectionThread extends Thread {
     private String emailPlainText;
     private String passwordPlainText, passwordHashedText;
 
-    protected ConnectionThread(ConnectionService service, String ipAddress, int port, String emailPlainText, String password, boolean alreadyHashed){
+    protected ConnectionHandler(ConnectionService service, String ipAddress, int port, String emailPlainText, String password, boolean alreadyHashed){
         this.service = service;
         this.ipAddress = ipAddress;
         this.port = port;
@@ -179,7 +178,7 @@ public class ConnectionThread extends Thread {
 
                     connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
                     messageAndConnectionMessageMap.put(clientMessageUuid, message.getUuid().toString());
-                    MessageManager.getInstance(getParentService()).addMessage(message, false);
+                    weMessage.get().getMessageManager().addMessage(message, false);
 
                     getOutputStream().writeObject(weMessage.JSON_NEW_MESSAGE + outgoingJson);
                     getOutputStream().flush();
@@ -235,7 +234,7 @@ public class ConnectionThread extends Thread {
             @Override
             public void run() {
                 try {
-                    Message lastMessage = WeApp.get().getMessageDatabase().getLastMessageFromChat(chat);
+                    Message lastMessage = weMessage.get().getMessageDatabase().getLastMessageFromChat(chat);
                     Date lastMessageDate = lastMessage.getModernDateSent();
                     String timeArgument;
                     String lastMessageText;
@@ -269,7 +268,7 @@ public class ConnectionThread extends Thread {
             @Override
             public void run() {
                 try {
-                    Message lastMessage = WeApp.get().getMessageDatabase().getLastMessageFromChat(chat);
+                    Message lastMessage = weMessage.get().getMessageDatabase().getLastMessageFromChat(chat);
                     Date lastMessageDate = lastMessage.getModernDateSent();
                     String timeArgument;
                     String lastMessageText;
@@ -303,7 +302,7 @@ public class ConnectionThread extends Thread {
             @Override
             public void run() {
                 try {
-                    Message lastMessage = WeApp.get().getMessageDatabase().getLastMessageFromChat(chat);
+                    Message lastMessage = weMessage.get().getMessageDatabase().getLastMessageFromChat(chat);
                     Date lastMessageDate = lastMessage.getModernDateSent();
                     String timeArgument;
                     String lastMessageText;
@@ -351,7 +350,7 @@ public class ConnectionThread extends Thread {
             @Override
             public void run() {
                 try {
-                    Message lastMessage = WeApp.get().getMessageDatabase().getLastMessageFromChat(chat);
+                    Message lastMessage = weMessage.get().getMessageDatabase().getLastMessageFromChat(chat);
                     Date lastMessageDate = lastMessage.getModernDateSent();
                     String timeArgument;
                     String lastMessageText;
@@ -477,7 +476,7 @@ public class ConnectionThread extends Thread {
 
         while (isRunning.get()){
             try {
-                MessageDatabase database = WeApp.get().getMessageDatabase();
+                MessageDatabase database = weMessage.get().getMessageDatabase();
                 final String incoming = (String) getInputStream().readObject();
 
                 if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)){
@@ -487,13 +486,13 @@ public class ConnectionThread extends Thread {
                     if (database.getAccountByEmail(emailPlainText) == null){
                         currentAccount.setUuid(UUID.randomUUID());
 
-                        WeApp.get().setCurrentAccount(currentAccount);
+                        weMessage.get().setCurrentAccount(currentAccount);
                         database.addAccount(currentAccount);
                     }else {
                         UUID oldUUID = database.getAccountByEmail(emailPlainText).getUuid();
                         currentAccount.setUuid(oldUUID);
 
-                        WeApp.get().setCurrentAccount(currentAccount);
+                        weMessage.get().setCurrentAccount(currentAccount);
                         database.updateAccount(oldUUID.toString(), currentAccount);
                     }
 
@@ -568,8 +567,8 @@ public class ConnectionThread extends Thread {
                                 DecryptionTask textDecryptionTask = new DecryptionTask(new KeyTextPair(encryptedText.getEncryptedText(), encryptedText.getKey()), CryptoType.AES);
                                 textDecryptionTask.runDecryptTask();
 
-                                MessageManager messageManager = MessageManager.getInstance(getParentService());
-                                MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
+                                MessageManager messageManager = weMessage.get().getMessageManager();
+                                MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
 
                                 for (String s : jsonMessage.getChat().getParticipants()) {
                                     if (messageDatabase.getHandleByHandleID(s) == null) {
@@ -591,7 +590,7 @@ public class ConnectionThread extends Thread {
                                 Contact sender;
 
                                 if (StringUtils.isEmpty(jsonMessage.getHandle())) {
-                                    Handle meHandle = messageDatabase.getHandleByAccount(WeApp.get().getCurrentAccount());
+                                    Handle meHandle = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
 
                                     if (messageDatabase.getContactByHandle(meHandle) == null) {
                                         messageManager.addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null), false);
@@ -608,7 +607,7 @@ public class ConnectionThread extends Thread {
                                 for (JSONAttachment jsonAttachment : jsonMessage.getAttachments()) {
                                     Attachment attachment = new Attachment(UUID.randomUUID(), jsonAttachment.getMacGuid(), jsonAttachment.getTransferName(),
                                             new FileLocationContainer(
-                                                    new File(WeApp.get().getAttachmentFolder(), attachmentNamePrefix + "-" + jsonAttachment.getTransferName())),
+                                                    new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + jsonAttachment.getTransferName())),
                                             jsonAttachment.getFileType(), jsonAttachment.getTotalBytes());
 
                                     JSONEncryptedFile jsonEncryptedFile = jsonAttachment.getFileData();
@@ -637,8 +636,8 @@ public class ConnectionThread extends Thread {
                         public void run() {
                             try {
                                 JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_MESSAGE_UPDATED, incoming).getOutgoing(JSONMessage.class, byteArrayAdapter);
-                                MessageManager messageManager = MessageManager.getInstance(getParentService());
-                                MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
+                                MessageManager messageManager = weMessage.get().getMessageManager();
+                                MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
 
                                 for (String s : jsonMessage.getChat().getParticipants()) {
                                     if (messageDatabase.getHandleByHandleID(s) == null) {
@@ -653,7 +652,7 @@ public class ConnectionThread extends Thread {
                                 }
 
                                 if (StringUtils.isEmpty(jsonMessage.getHandle())) {
-                                    Handle meHandle = messageDatabase.getHandleByAccount(WeApp.get().getCurrentAccount());
+                                    Handle meHandle = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
 
                                     if (messageDatabase.getContactByHandle(meHandle) == null) {
                                         messageManager.addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null), false);
@@ -702,7 +701,7 @@ public class ConnectionThread extends Thread {
                         @Override
                         public void run() {
                             try {
-                                MessageManager messageManager = MessageManager.getInstance(getParentService());
+                                MessageManager messageManager = weMessage.get().getMessageManager();
                                 JSONAction jsonAction = (JSONAction) getIncomingMessage(weMessage.JSON_ACTION, incoming).getOutgoing(JSONAction.class, byteArrayAdapter);
 
                                 performAction(messageManager, jsonAction);
@@ -717,7 +716,7 @@ public class ConnectionThread extends Thread {
                         @Override
                         public void run() {
                             try {
-                                MessageManager messageManager = MessageManager.getInstance(getParentService());
+                                MessageManager messageManager = weMessage.get().getMessageManager();
                                 JSONResult jsonResult = (JSONResult) getIncomingMessage(weMessage.JSON_RETURN_RESULT, incoming).getOutgoing(JSONResult.class, byteArrayAdapter);
 
                                 processResults(messageManager, jsonResult);
@@ -756,10 +755,10 @@ public class ConnectionThread extends Thread {
                             getOutputStream().close();
                         }
                         getConnectionSocket().close();
-                        ConnectionThread.this.interrupt();
+                        ConnectionHandler.this.interrupt();
                     } catch (Exception ex) {
                         AppLogger.error(TAG, "An error occurred while terminating the connection to the weServer.", ex);
-                        ConnectionThread.this.interrupt();
+                        ConnectionHandler.this.interrupt();
                     }
                 }
             }).start();
@@ -779,7 +778,7 @@ public class ConnectionThread extends Thread {
         ArrayList<Contact> contactList = new ArrayList<>();
 
         for (String s : jsonChat.getParticipants()) {
-            contactList.add(WeApp.get().getMessageDatabase().getContactByHandle(WeApp.get().getMessageDatabase().getHandleByHandleID(s)));
+            contactList.add(weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByHandleID(s)));
         }
         GroupChat newChat = new GroupChat(UUID.randomUUID(), null, jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
                 true, true, jsonChat.getDisplayName(), contactList);
@@ -788,7 +787,7 @@ public class ConnectionThread extends Thread {
     }
 
     private void updateGroupChat(MessageManager messageManager, GroupChat existingChat, JSONChat jsonChat, boolean overrideAll){
-        MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
+        MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
 
         ArrayList<String> existingChatParticipantList = new ArrayList<>();
 
@@ -821,7 +820,7 @@ public class ConnectionThread extends Thread {
     }
 
     private void runChatCheck(MessageManager messageManager, JSONChat jsonChat){
-        MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
+        MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
 
         if (messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()) == null) {
             if (jsonChat.getParticipants().size() < 2) {
@@ -911,7 +910,7 @@ public class ConnectionThread extends Thread {
 
                 if (!isValid){
                     String correspondingMessageUUID = messageAndConnectionMessageMap.get(jsonResult.getCorrespondingUUID());
-                    Message message = WeApp.get().getMessageDatabase().getMessageByUuid(correspondingMessageUUID);
+                    Message message = weMessage.get().getMessageDatabase().getMessageByUuid(correspondingMessageUUID);
 
                     message.setHasErrored(true);
                     messageManager.updateMessage(correspondingMessageUUID, message, false);
@@ -950,7 +949,7 @@ public class ConnectionThread extends Thread {
 
                 if (!isValid){
                     String correspondingMessageUUID = messageAndConnectionMessageMap.get(jsonResult.getCorrespondingUUID());
-                    Message message = WeApp.get().getMessageDatabase().getMessageByUuid(correspondingMessageUUID);
+                    Message message = weMessage.get().getMessageDatabase().getMessageByUuid(correspondingMessageUUID);
 
                     message.setHasErrored(true);
                     messageManager.updateMessage(correspondingMessageUUID, message, false);
@@ -968,7 +967,7 @@ public class ConnectionThread extends Thread {
     }
 
     private void performAction(MessageManager messageManager, JSONAction jsonAction){
-        MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
+        MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
         ActionType actionType = ActionType.fromCode(jsonAction.getActionType());
         String[] args = jsonAction.getArgs();
 
@@ -1199,7 +1198,7 @@ public class ConnectionThread extends Thread {
     }
 
     private void updateMessage(MessageManager messageManager, Message existingMessage, JSONMessage jsonMessage, boolean overrideAll){
-        MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
+        MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
         Message newData = new Message().setUuid(existingMessage.getUuid()).setAttachments(existingMessage.getAttachments()).setText(existingMessage.getText())
                 .setDateSent(jsonMessage.getDateSent()).setDateDelivered(jsonMessage.getDateDelivered()).setDateRead(jsonMessage.getDateRead()).setHasErrored(jsonMessage.getErrored())
                 .setIsSent(jsonMessage.isSent()).setDelivered(jsonMessage.isDelivered()).setRead(jsonMessage.isRead()).setFinished(jsonMessage.isFinished()).setFromMe(existingMessage.isFromMe());

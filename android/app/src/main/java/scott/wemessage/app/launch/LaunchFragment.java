@@ -38,7 +38,6 @@ import android.widget.TextView;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.WeApp;
 import scott.wemessage.app.activities.ChatListActivity;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
@@ -133,7 +132,7 @@ public class LaunchFragment extends Fragment {
         serviceConnection.scheduleTask(new Runnable() {
             @Override
             public void run() {
-                if (serviceConnection.getConnectionService().getConnectionThread().isConnected().get()) {
+                if (serviceConnection.getConnectionService().getConnectionHandler().isConnected().get()) {
                     startChatListActivity();
                 }
             }
@@ -462,7 +461,7 @@ public class LaunchFragment extends Fragment {
     }
 
     private void startChatListActivity(){
-        Intent chatListIntent = new Intent(WeApp.get(), ChatListActivity.class);
+        Intent chatListIntent = new Intent(weMessage.get(), ChatListActivity.class);
 
         startActivity(chatListIntent);
         getActivity().finish();

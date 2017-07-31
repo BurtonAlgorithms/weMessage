@@ -5,18 +5,15 @@ import com.stfalcon.chatkit.commons.models.IMessage;
 import java.util.Calendar;
 import java.util.Date;
 
-import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Message;
 
 public class MessageView implements IMessage {
 
-    private MessageManager messageManager;
     private Message message;
 
     //TODO: Attachments
 
-    public MessageView(MessageManager messageManager, Message message){
-        this.messageManager = messageManager;
+    public MessageView(Message message){
         this.message = message;
     }
 
@@ -37,9 +34,9 @@ public class MessageView implements IMessage {
     @Override
     public ContactView getUser() {
         try {
-            return new ContactView(messageManager, message.getSender());
+            return new ContactView(message.getSender());
         }catch (Exception ex){
-            return new ContactView(messageManager, null);
+            return new ContactView(null);
         }
     }
 

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
-import scott.wemessage.app.WeApp;
+import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.StringUtils;
 
 /**
@@ -33,10 +33,9 @@ import scott.wemessage.commons.utils.StringUtils;
  *
  */
 
-public abstract class RecyclerSwiper extends ItemTouchHelper.SimpleCallback {
+public abstract class RecyclerSwiperButton extends ItemTouchHelper.SimpleCallback {
 
-    private static final int BUTTON_WIDTH_DP = 82;
-    private static final int IMAGE_SIZE_DP = 32;
+    private final int buttonWidthDp;
     private RecyclerView recyclerView;
     private List<UnderlayButton> buttons;
     private GestureDetector gestureDetector;
@@ -80,12 +79,13 @@ public abstract class RecyclerSwiper extends ItemTouchHelper.SimpleCallback {
         }
     };
 
-    public RecyclerSwiper(Context context, RecyclerView recyclerView) {
+    public RecyclerSwiperButton(Context context, RecyclerView recyclerView, int buttonWidth) {
         super(0, ItemTouchHelper.LEFT);
         this.recyclerView = recyclerView;
         this.buttons = new ArrayList<>();
         this.gestureDetector = new GestureDetector(context, gestureListener);
         this.recyclerView.setOnTouchListener(onTouchListener);
+        this.buttonWidthDp = buttonWidth;
         buttonsBuffer = new HashMap<>();
         recoverQueue = new LinkedList<Integer>(){
             @Override
@@ -120,7 +120,7 @@ public abstract class RecyclerSwiper extends ItemTouchHelper.SimpleCallback {
             buttons.clear();
 
         buttonsBuffer.clear();
-        swipeThreshold = 0.5f * buttons.size() * DisplayUtils.convertDpToPixel(BUTTON_WIDTH_DP, WeApp.get());
+        swipeThreshold = 0.5f * buttons.size() * DisplayUtils.convertDpToPixel(buttonWidthDp, weMessage.get());
         recoverSwipedItem();
     }
 
@@ -162,7 +162,7 @@ public abstract class RecyclerSwiper extends ItemTouchHelper.SimpleCallback {
                     buffer = buttonsBuffer.get(pos);
                 }
 
-                translationX = dX * buffer.size() * DisplayUtils.convertDpToPixel(BUTTON_WIDTH_DP, WeApp.get()) / itemView.getWidth();
+                translationX = dX * buffer.size() * DisplayUtils.convertDpToPixel(buttonWidthDp, weMessage.get()) / itemView.getWidth();
                 drawButtons(c, itemView, buffer, pos, translationX);
             }
         }
@@ -211,14 +211,18 @@ public abstract class RecyclerSwiper extends ItemTouchHelper.SimpleCallback {
         private int imageResId;
         private int color;
         private int pos;
+        private int imageSize;
+        private int textSize;
         private RectF clickRegion;
         private UnderlayButtonClickListener clickListener;
 
-        public UnderlayButton(String text, int imageResId, int color, UnderlayButtonClickListener clickListener) {
+        public UnderlayButton(String text, int imageResId, int color, int imageSize, int textSize, UnderlayButtonClickListener clickListener) {
             this.text = text;
             this.imageResId = imageResId;
             this.color = color;
             this.clickListener = clickListener;
+            this.imageSize = imageSize;
+            this.textSize = textSize;
         }
 
         public boolean onClick(float x, float y){
@@ -246,7 +250,7 @@ public abstract class RecyclerSwiper extends ItemTouchHelper.SimpleCallback {
             p.setColor(Color.WHITE);
 
             if (!StringUtils.isEmpty(text)) {
-                p.setTextSize(DisplayUtils.convertSpToPixel(16, WeApp.get()));
+                p.setTextSize(DisplayUtils.convertSpToPixel(textSize, weMessage.get()));
                 p.setTextAlign(Paint.Align.LEFT);
                 p.getTextBounds(text, 0, text.length(), r);
 
@@ -254,8 +258,8 @@ public abstract class RecyclerSwiper extends ItemTouchHelper.SimpleCallback {
             } else {
                 if (imageResId != 0){
                     
-                    int size = Math.round(DisplayUtils.convertDpToPixel(IMAGE_SIZE_DP, WeApp.get()));
-                    Bitmap b = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(WeApp.get().getResources(), imageResId), size, size, true);
+                    int size = Math.round(DisplayUtils.convertDpToPixel(imageSize, weMessage.get()));
+                    Bitmap b = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(weMessage.get().getResources(), imageResId), size, size, true);
 
                     int imageStartX = Math.round((rect.left + (rect.width() / 2)) - (b.getWidth() / 2));
                     int imageStartY = Math.round((rect.top + (rect.height() / 2)) - (b.getHeight() / 2));

@@ -8,10 +8,10 @@ import android.support.annotation.AnyRes;
 import android.support.annotation.NonNull;
 
 import scott.wemessage.R;
-import scott.wemessage.app.WeApp;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class AndroidIOUtils {
@@ -40,9 +40,9 @@ public class AndroidIOUtils {
             PeerChat peerChat = (PeerChat) chat;
 
             if (peerChat.getContact().getContactPictureFileLocation() == null){
-                return getUriFromResource(WeApp.get(), R.drawable.ic_default_contact).toString();
+                return getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
             }else if (StringUtils.isEmpty(peerChat.getContact().getContactPictureFileLocation().getFileLocation())){
-                return getUriFromResource(WeApp.get(), R.drawable.ic_default_contact).toString();
+                return getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
             }else {
                 return Uri.fromFile(peerChat.getContact().getContactPictureFileLocation().getFile()).toString();
             }
@@ -50,9 +50,9 @@ public class AndroidIOUtils {
             GroupChat groupChat = (GroupChat) chat;
 
             if (groupChat.getChatPictureFileLocation() == null){
-                return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_default_group_chat).toString();
+                return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_group_chat).toString();
             } else if (StringUtils.isEmpty(groupChat.getChatPictureFileLocation().getFileLocation())){
-                return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_default_group_chat).toString();
+                return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_group_chat).toString();
             } else {
                 return Uri.fromFile(groupChat.getChatPictureFileLocation().getFile()).toString();
             }

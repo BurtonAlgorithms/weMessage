@@ -27,11 +27,9 @@ import com.stfalcon.chatkit.messages.MessagesListAdapter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.WeApp;
 import scott.wemessage.app.activities.ChatListActivity;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
@@ -61,8 +59,6 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     private MessagesListAdapter<IMessage> messageListAdapter;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private boolean isBoundToConnectionService = false;
-
-    //TODO: Participant duplication caused by update title view everytime its caused? toolbar code?
 
     private BroadcastReceiver messageListBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -130,8 +126,8 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         if (isServiceRunning(ConnectionService.class)){
             bindService();
         }
-        MessageManager messageManager = MessageManager.getInstance(getActivity());
-        MessageDatabase messageDatabase = WeApp.get().getMessageDatabase();
+        MessageManager messageManager = weMessage.get().getMessageManager();
+        MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
 
         if (savedInstanceState == null) {
             try {
@@ -141,7 +137,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                 Chat chat = messageDatabase.getChatByUuid(startingIntent.getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT));
 
                 if (chat == null) {
-                    Intent returnIntent = new Intent(WeApp.get(), startingClass);
+                    Intent returnIntent = new Intent(weMessage.get(), startingClass);
                     returnIntent.putExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON, getString(R.string.conversation_load_failure));
 
                     startActivity(returnIntent);
@@ -182,7 +178,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_conversation, container, false);
 
-        MessageManager messageManager = MessageManager.getInstance(getActivity());
+        MessageManager messageManager = weMessage.get().getMessageManager();
 
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.conversationToolbar);
         ImageButton backButton = (ImageButton) toolbar.findViewById(R.id.conversationBackButton);
@@ -202,12 +198,19 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
         messageList = (MessagesList) view.findViewById(R.id.messagesList);
 
-        MessagesListAdapter<IMessage> messageListAdapter = new MessagesListAdapter<>(WeApp.get().getCurrentAccount().getUuid().toString(), new ImageLoader() {
+        MessagesListAdapter<IMessage> messageListAdapter = new MessagesListAdapter<>(weMessage.get().getCurrentAccount().getUuid().toString(), new ImageLoader() {
             @Override
             public void loadImage(ImageView imageView, String url) {
                 Glide.with(ConversationFragment.this).load(url).into(imageView);
             }
         });
+
+        /* messageListAdapter.setLoadMoreListener(new MessagesListAdapter.OnLoadMoreListener() {
+            @Override
+            public void onLoadMore(int page, int totalItemsCount) {
+                MessageManager.getInstance(getActivity()).queueMessages(chat, totalItemsCount, MESSAGE_QUEUE_AMOUNT, true);
+            }
+        }); */
 
         messageList.setAdapter(messageListAdapter);
         this.messageListAdapter = messageListAdapter;
@@ -235,7 +238,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     @Override
     public void onDestroy() {
-        MessageManager messageManager = MessageManager.getInstance(getActivity());
+        MessageManager messageManager = weMessage.get().getMessageManager();
 
         messageListAdapter.clear();
         messageManager.unhookCallbacks(callbackUuid);
@@ -259,7 +262,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     }
 
     @Override
-    public void onContactListRefresh(ConcurrentHashMap<String, Contact> contacts) {
+    public void onContactListRefresh(List<Contact> contacts) {
 
     }
 
@@ -352,7 +355,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     }
 
     @Override
-    public void onChatListRefresh(ConcurrentHashMap<String, Chat> chats) {
+    public void onChatListRefresh(List<Chat> chats) {
 
     }
 
@@ -362,7 +365,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             @Override
             public void run() {
                 if (isChatThis(message.getChat())){
-                    MessageView messageView = new MessageView(MessageManager.getInstance(getActivity()), message);
+                    MessageView messageView = new MessageView(message);
                     messageListAdapter.addToStart(messageView, true);
                 }
             }
@@ -375,7 +378,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             @Override
             public void run() {
                 if (isChatThis(newData.getChat())){
-                    messageListAdapter.update(new MessageView(MessageManager.getInstance(getActivity()), newData));
+                    messageListAdapter.update(new MessageView(newData));
                 }
             }
         });
@@ -401,7 +404,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                 List<IMessage> messageViews = new ArrayList<>();
                 for (Message message : messages){
                     if (isChatThis(message.getChat())) {
-                        MessageView messageView = new MessageView(MessageManager.getInstance(getActivity()), message);
+                        MessageView messageView = new MessageView( message);
 
                         messageViews.add(messageView);
                     }
@@ -413,7 +416,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     @Override
     public void onMessagesRefresh() {
-        MessageManager.getInstance(getActivity()).queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
+        weMessage.get().getMessageManager().queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
 
         //TODO: Be sure to get action messages too
     }
@@ -455,7 +458,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     private void goToLauncher(){
         if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(WeApp.get(), LaunchActivity.class);
+            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
 
             launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
 
@@ -498,7 +501,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     private void goToChatList(String reason){
         if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent returnIntent = new Intent(WeApp.get(), ChatListActivity.class);
+            Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
 
             if (reason != null) {
                 returnIntent.putExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON, reason);

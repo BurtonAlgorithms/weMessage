@@ -29,10 +29,8 @@ import com.stfalcon.chatkit.utils.DateFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
-import scott.wemessage.app.WeApp;
 import scott.wemessage.app.activities.ConversationActivity;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
@@ -41,7 +39,7 @@ import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.utils.reflection.ChatKitHelper;
-import scott.wemessage.app.utils.view.RecyclerSwiper;
+import scott.wemessage.app.utils.view.RecyclerSwiperButton;
 import scott.wemessage.app.view.chat.ChatDialogView;
 import scott.wemessage.app.view.dialog.DialogDisplayer;
 import scott.wemessage.app.view.messages.MessageView;
@@ -130,7 +128,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
             bindService();
         }
 
-        MessageManager messageManager = MessageManager.getInstance(getActivity());
+        MessageManager messageManager = weMessage.get().getMessageManager();
         IntentFilter broadcastIntentFilter = new IntentFilter();
 
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED);
@@ -164,17 +162,19 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
-        new RecyclerSwiper(getActivity(), dialogsList) {
+        new RecyclerSwiperButton(getActivity(), dialogsList, 82) {
             @Override
             public void instantiateUnderlayButtons(final RecyclerView.ViewHolder viewHolder, List<UnderlayButton> underlayButtons) {
-                underlayButtons.add(new RecyclerSwiper.UnderlayButton(
+                underlayButtons.add(new RecyclerSwiperButton.UnderlayButton(
                         null,
                         R.drawable.trash_icon,
+                        32,
+                        16,
                         getResources().getColor(R.color.deleteButtonRed),
-                        new RecyclerSwiper.UnderlayButtonClickListener() {
+                        new RecyclerSwiperButton.UnderlayButtonClickListener() {
                             @Override
                             public void onClick(int pos) {
-                                MessageManager.getInstance(getActivity()).deleteChat(WeApp.get().getMessageDatabase().
+                                weMessage.get().getMessageManager().deleteChat(weMessage.get().getMessageDatabase().
                                         getChatByUuid(ChatKitHelper.getChatIdFromPosition(dialogsListAdapter, viewHolder.getAdapterPosition())), true);
                             }
                         }
@@ -209,7 +209,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         dialogsListAdapter.setOnDialogClickListener(new DialogsListAdapter.OnDialogClickListener<IDialog>() {
             @Override
             public void onDialogClick(IDialog dialog) {
-                Intent launcherIntent = new Intent(WeApp.get(), ConversationActivity.class);
+                Intent launcherIntent = new Intent(weMessage.get(), ConversationActivity.class);
 
                 launcherIntent.putExtra(weMessage.BUNDLE_RETURN_POINT, getActivity().getClass().getName());
                 launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, dialog.getId());
@@ -222,8 +222,8 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         dialogsList.setAdapter(dialogsListAdapter);
         this.dialogsListAdapter = dialogsListAdapter;
 
-        for (Chat chat : MessageManager.getInstance(getContext()).getChats().values()){
-            dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+        for (Chat chat : weMessage.get().getMessageManager().getChats().values()){
+            dialogsListAdapter.addItem(new ChatDialogView(chat));
         }
 
         if (getActivity().getIntent() != null && getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON) != null){
@@ -252,7 +252,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onDestroy() {
-        MessageManager messageManager = MessageManager.getInstance(getActivity());
+        MessageManager messageManager = weMessage.get().getMessageManager();
 
         dialogsListAdapter.clear();
         messageManager.unhookCallbacks(callbackUuid);
@@ -275,7 +275,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     }
 
     @Override
-    public void onContactListRefresh(ConcurrentHashMap<String, Contact> contacts) {
+    public void onContactListRefresh(List<Contact> contacts) {
 
     }
 
@@ -285,14 +285,14 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
             @Override
             public void run() {
                 toggleNoConversations(false);
-                dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+                dialogsListAdapter.addItem(new ChatDialogView(chat));
             }
         });
     }
 
     @Override
     public void onChatUpdate(Chat oldData, Chat newData) {
-        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), newData);
+        final ChatDialogView chatDialogView = new ChatDialogView(newData);
 
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -304,7 +304,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onUnreadMessagesUpdate(Chat chat, boolean hasUnreadMessages) {
-        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+        final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -316,7 +316,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onChatRename(Chat chat, String displayName) {
-        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+        final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -328,7 +328,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onParticipantAdd(Chat chat, Contact contact) {
-        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+        final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -340,7 +340,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onParticipantRemove(Chat chat, Contact contact) {
-        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+        final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -352,7 +352,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onLeaveGroup(Chat chat) {
-        final ChatDialogView chatDialogView = new ChatDialogView(MessageManager.getInstance(getContext()), chat);
+        final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         getActivity().runOnUiThread(new Runnable() {
             @Override
@@ -374,15 +374,15 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     }
 
     @Override
-    public void onChatListRefresh(final ConcurrentHashMap<String, Chat> chats) {
+    public void onChatListRefresh(final List<Chat> chats) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (dialogsListAdapter != null) {
                     dialogsListAdapter.clear();
 
-                    for (Chat chat : chats.values()) {
-                        dialogsListAdapter.addItem(new ChatDialogView(MessageManager.getInstance(getContext()), chat));
+                    for (Chat chat : chats) {
+                        dialogsListAdapter.addItem(new ChatDialogView(chat));
                     }
                 }
             }
@@ -394,7 +394,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                MessageView messageView = new MessageView(MessageManager.getInstance(getContext()), message);
+                MessageView messageView = new MessageView(message);
                 dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
             }
         });
@@ -410,7 +410,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                MessageView messageView = new MessageView(MessageManager.getInstance(getContext()), WeApp.get().getMessageDatabase().getLastMessageFromChat(message.getChat()));
+                MessageView messageView = new MessageView(weMessage.get().getMessageDatabase().getLastMessageFromChat(message.getChat()));
                 dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
             }
         });
@@ -459,7 +459,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     private void goToLauncher(){
         if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(WeApp.get(), LaunchActivity.class);
+            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
 
             launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
 

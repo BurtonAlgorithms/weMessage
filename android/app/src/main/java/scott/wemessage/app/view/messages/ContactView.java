@@ -5,19 +5,16 @@ import android.net.Uri;
 import com.stfalcon.chatkit.commons.models.IUser;
 
 import scott.wemessage.R;
-import scott.wemessage.app.WeApp;
-import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ContactView implements IUser {
 
-    private MessageManager messageManager;
     private Contact contact;
 
-    public ContactView(MessageManager messageManager, Contact contact){
-        this.messageManager = messageManager;
+    public ContactView(Contact contact){
         this.contact = contact;
     }
 
@@ -39,14 +36,14 @@ public class ContactView implements IUser {
     public String getAvatar() {
         try {
             if (contact.getContactPictureFileLocation() == null) {
-                return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_default_contact).toString();
+                return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
             } else if (StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())) {
-                return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_default_contact).toString();
+                return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
             } else {
                 return Uri.fromFile(contact.getContactPictureFileLocation().getFile()).toString();
             }
         }catch (Exception ex){
-            return AndroidIOUtils.getUriFromResource(WeApp.get(), R.drawable.ic_default_contact).toString();
+            return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
         }
     }
 }

@@ -6,8 +6,6 @@ import com.stfalcon.chatkit.commons.models.IMessage;
 import java.util.ArrayList;
 import java.util.List;
 
-import scott.wemessage.app.WeApp;
-import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
@@ -15,6 +13,7 @@ import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.utils.AndroidIOUtils;
 import scott.wemessage.app.view.messages.ContactView;
 import scott.wemessage.app.view.messages.MessageView;
+import scott.wemessage.app.weMessage;
 
 public class ChatDialogView implements IDialog {
 
@@ -22,17 +21,17 @@ public class ChatDialogView implements IDialog {
     private List<ContactView> users = new ArrayList<>();
     private MessageView lastMessage;
 
-    public ChatDialogView(MessageManager messageManager, Chat chat){
+    public ChatDialogView(Chat chat){
         this.chat = chat;
-        this.lastMessage = new MessageView(messageManager, WeApp.get().getMessageDatabase().getLastMessageFromChat(chat));
+        this.lastMessage = new MessageView(weMessage.get().getMessageDatabase().getLastMessageFromChat(chat));
 
         if (chat.getChatType() == Chat.ChatType.PEER){
-            users.add(new ContactView(messageManager, ((PeerChat) chat).getContact()));
+            users.add(new ContactView(((PeerChat) chat).getContact()));
         }else {
             GroupChat groupChat = (GroupChat) chat;
 
             for (Contact c : groupChat.getParticipants()){
-                users.add(new ContactView(messageManager, c));
+                users.add(new ContactView(c));
             }
         }
     }
@@ -74,7 +73,7 @@ public class ChatDialogView implements IDialog {
 
     @Override
     public int getUnreadCount() {
-        return booleanToInteger(WeApp.get().getMessageDatabase().getChatByUuid(getId()).hasUnreadMessages());
+        return booleanToInteger(weMessage.get().getMessageDatabase().getChatByUuid(getId()).hasUnreadMessages());
     }
 
     private int booleanToInteger(boolean bool){
