@@ -143,9 +143,9 @@ public class ChatTitleView extends LinearLayout {
             if (titleTextView.getParent() == null) {
                 textLayout.addView(titleTextView);
                 textLayout.addView(participantsTextView);
-            }
 
-            addView(textLayout);
+                addView(textLayout);
+            }
         }
     }
 

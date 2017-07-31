@@ -24,6 +24,8 @@ import com.stfalcon.chatkit.commons.models.IMessage;
 import com.stfalcon.chatkit.messages.MessagesList;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -183,10 +185,10 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         MessageManager messageManager = MessageManager.getInstance(getActivity());
 
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.conversationToolbar);
-        ImageButton imageButton = (ImageButton) toolbar.findViewById(R.id.conversationBackButton);
+        ImageButton backButton = (ImageButton) toolbar.findViewById(R.id.conversationBackButton);
 
         toolbar.setTitle(null);
-        imageButton.setOnClickListener(new View.OnClickListener() {
+        backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 goToChatList(null);
@@ -392,17 +394,19 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     }
 
     @Override
-    public void onMessagesQueueFinish(final ConcurrentHashMap<String, Message> messages) {
+    public void onMessagesQueueFinish(final List<Message> messages) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                for (Message message : messages.values()){
+                List<IMessage> messageViews = new ArrayList<>();
+                for (Message message : messages){
                     if (isChatThis(message.getChat())) {
                         MessageView messageView = new MessageView(MessageManager.getInstance(getActivity()), message);
 
-                        messageListAdapter.addToStart(messageView, true);
+                        messageViews.add(messageView);
                     }
                 }
+                messageListAdapter.addToEnd(messageViews, false);
             }
         });
     }

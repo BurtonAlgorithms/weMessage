@@ -3,7 +3,6 @@ package scott.wemessage.app.messages;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -238,8 +237,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         List<ActionMessage> actionMessages = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        long totalRows = DatabaseUtils.queryNumEntries(db, ActionMessageTable.TABLE_NAME);
-        long start = totalRows - startIndex;
+        int finalRow = getMaxIdFromTable(ActionMessageTable.TABLE_NAME, MessageTable._ID);
+        long start = finalRow - startIndex;
 
         String selectQuery = "SELECT * FROM " + ActionMessageTable.TABLE_NAME + " WHERE " + ActionMessageTable._ID + " <= ? AND "
                 + ActionMessageTable.CHAT_UUID + " = ? ORDER BY " + ActionMessageTable._ID + " DESC LIMIT " + numberToFetch;
@@ -264,8 +263,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         List<Message> messages = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        long totalRows = DatabaseUtils.queryNumEntries(db, MessageTable.TABLE_NAME);
-        long start = totalRows - startIndex;
+        int finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
+        long start = finalRow - startIndex;
 
         String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
                 + MessageTable.CHAT_UUID + " = ? ORDER BY " + MessageTable._ID + " DESC LIMIT " + numberToFetch;
@@ -290,8 +289,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         List<Message> messages = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        long totalRows = DatabaseUtils.queryNumEntries(db, MessageTable.TABLE_NAME);
-        long start = totalRows - startIndex;
+        int finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
+        long start = finalRow - startIndex;
 
         String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
                 + MessageTable.CHAT_UUID + " = ? ORDER BY " + MessageTable.DATE_SENT + " DESC LIMIT " + numberToFetch;
@@ -316,8 +315,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         List<Message> messages = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        long totalRows = DatabaseUtils.queryNumEntries(db, MessageTable.TABLE_NAME);
-        long start = totalRows - startIndex;
+        int finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
+        long start = finalRow - startIndex;
 
         String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
                 + MessageTable.CHAT_UUID + " = ? AND " + MessageTable.TEXT + " = ? AND " + MessageTable.IS_FROM_ME + " = ? ORDER BY "
@@ -1148,6 +1147,21 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             }
         }
         return attachments;
+    }
+
+    private Integer getMaxIdFromTable(String tableName, String idRow){
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT MAX(" + idRow + ") FROM " + tableName;
+
+        Cursor cursor = db.rawQuery(selectQuery, null);
+
+        Integer result = null;
+        if (cursor.getCount() > 0){
+            cursor.moveToFirst();
+            result = cursor.getInt(0);
+        }
+        cursor.close();
+        return result;
     }
 
     private boolean integerToBoolean(Integer integer){

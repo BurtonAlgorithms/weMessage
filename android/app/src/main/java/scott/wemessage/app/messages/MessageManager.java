@@ -541,7 +541,7 @@ public final class MessageManager {
         }
 
         for (Callbacks callbacks : callbacksMap.values()){
-            callbacks.onMessagesQueueFinish(messages);
+            callbacks.onMessagesQueueFinish(messageList);
         }
     }
 
@@ -589,7 +589,7 @@ public final class MessageManager {
 
         void onMessageDelete(Message message);
 
-        void onMessagesQueueFinish(ConcurrentHashMap<String, Message> messages);
+        void onMessagesQueueFinish(List<Message> messages);
 
         void onMessagesRefresh();
 

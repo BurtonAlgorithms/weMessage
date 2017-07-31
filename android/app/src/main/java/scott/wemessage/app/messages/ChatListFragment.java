@@ -417,7 +417,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     }
 
     @Override
-    public void onMessagesQueueFinish(ConcurrentHashMap<String, Message> messages) {
+    public void onMessagesQueueFinish(List<Message> messages) {
 
     }
 
