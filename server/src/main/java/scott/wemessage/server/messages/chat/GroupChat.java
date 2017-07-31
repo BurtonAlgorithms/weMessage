@@ -43,7 +43,11 @@ public class GroupChat extends ChatBase {
     }
 
     public GroupChat removeParticipant(Handle participant){
-        participants.remove(participant);
+        for (Handle h : participants) {
+            if (h.getHandleID().equals(participant.getHandleID())) {
+                participants.remove(h);
+            }
+        }
         return this;
     }
 }
