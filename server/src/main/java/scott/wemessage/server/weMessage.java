@@ -2,7 +2,7 @@ package scott.wemessage.server;
 
 import scott.wemessage.commons.Constants;
 
-public final class weMessage extends Constants {
+public final class weMessage implements Constants {
 
     private weMessage(){ }
 
