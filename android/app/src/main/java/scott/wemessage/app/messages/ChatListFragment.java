@@ -41,6 +41,7 @@ import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.utils.reflection.ChatKitHelper;
 import scott.wemessage.app.utils.view.RecyclerSwiperButton;
 import scott.wemessage.app.view.chat.ChatDialogView;
+import scott.wemessage.app.view.chat.ChatDialogViewHolder;
 import scott.wemessage.app.view.dialog.DialogDisplayer;
 import scott.wemessage.app.view.messages.MessageView;
 import scott.wemessage.app.weMessage;
@@ -182,7 +183,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
             }
         };
 
-        DialogsListAdapter<IDialog> dialogsListAdapter = new DialogsListAdapter<>(R.layout.list_item_chat, new ImageLoader() {
+        DialogsListAdapter<IDialog> dialogsListAdapter = new DialogsListAdapter<>(R.layout.list_item_chat, ChatDialogViewHolder.class, new ImageLoader() {
             @Override
             public void loadImage(ImageView imageView, String url) {
                 Glide.with(ChatListFragment.this).load(url).into(imageView);

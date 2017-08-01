@@ -217,6 +217,8 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
         messageManager.queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
 
+        messageManager.setHasUnreadMessages(chat, false, true);
+
         return view;
     }
 
