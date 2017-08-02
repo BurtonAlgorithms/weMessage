@@ -169,9 +169,9 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
                 underlayButtons.add(new RecyclerSwiperButton.UnderlayButton(
                         null,
                         R.drawable.trash_icon,
+                        getResources().getColor(R.color.deleteButtonRed),
                         32,
                         16,
-                        getResources().getColor(R.color.deleteButtonRed),
                         new RecyclerSwiperButton.UnderlayButtonClickListener() {
                             @Override
                             public void onClick(int pos) {

@@ -11,11 +11,10 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import com.bumptech.glide.Glide;
+import com.github.siyamed.shapeimageview.CircularImageView;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import de.hdodenhof.circleimageview.CircleImageView;
 
 import scott.wemessage.R;
 import scott.wemessage.app.messages.objects.Contact;
@@ -35,7 +34,7 @@ public class ChatTitleView extends LinearLayout {
     private final int TEXT_SIZE = 14;
     private final int PARTICIPANT_TEXT_SIZE = 12;
 
-    private CircleImageView imageView;
+    private CircularImageView imageView;
     private FontTextView titleTextView;
     private FontTextView participantsTextView;
 
@@ -150,7 +149,7 @@ public class ChatTitleView extends LinearLayout {
     }
 
     private void init(Context context){
-        imageView = new CircleImageView(context);
+        imageView = new CircularImageView(context);
         titleTextView = new FontTextView(context);
         participantsTextView = new FontTextView(context);
 

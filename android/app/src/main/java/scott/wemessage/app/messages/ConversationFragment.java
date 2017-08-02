@@ -23,10 +23,13 @@ import com.stfalcon.chatkit.commons.ImageLoader;
 import com.stfalcon.chatkit.commons.models.IMessage;
 import com.stfalcon.chatkit.messages.MessagesList;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
+import com.stfalcon.chatkit.utils.DateFormatter;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
@@ -57,6 +60,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     private ChatTitleView chatTitleView;
     private MessagesList messageList;
     private MessagesListAdapter<IMessage> messageListAdapter;
+    private ConcurrentHashMap<String, Message> messageMapIntegrity = new ConcurrentHashMap<>();
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private boolean isBoundToConnectionService = false;
 
@@ -205,12 +209,29 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             }
         });
 
-        /* messageListAdapter.setLoadMoreListener(new MessagesListAdapter.OnLoadMoreListener() {
+        messageListAdapter.setDateHeadersFormatter(new DateFormatter.Formatter() {
+            @Override
+            public String format(Date date) {
+                if (DateFormatter.isToday(date)){
+                    return getString(R.string.today);
+                }else if (DateFormatter.isYesterday(date)){
+                    return getString(R.string.yesterday);
+                }else {
+                    if (DateFormatter.isCurrentYear(date)){
+                        return DateFormatter.format(date, "MMMM d");
+                    }else {
+                        return DateFormatter.format(date, "MMMM d yyyy");
+                    }
+                }
+            }
+        });
+
+        messageListAdapter.setLoadMoreListener(new MessagesListAdapter.OnLoadMoreListener() {
             @Override
             public void onLoadMore(int page, int totalItemsCount) {
-                MessageManager.getInstance(getActivity()).queueMessages(chat, totalItemsCount, MESSAGE_QUEUE_AMOUNT, true);
+                weMessage.get().getMessageManager().queueMessages(chat, totalItemsCount, MESSAGE_QUEUE_AMOUNT, true);
             }
-        }); */
+        });
 
         messageList.setAdapter(messageListAdapter);
         this.messageListAdapter = messageListAdapter;
@@ -242,6 +263,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     public void onDestroy() {
         MessageManager messageManager = weMessage.get().getMessageManager();
 
+        messageMapIntegrity.clear();
         messageListAdapter.clear();
         messageManager.unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(messageListBroadcastReceiver);
@@ -260,12 +282,12 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     @Override
     public void onContactUpdate(Contact oldData, Contact newData) {
-
+        //TODO: Work here
     }
 
     @Override
     public void onContactListRefresh(List<Contact> contacts) {
-
+        //TODO: Work here
     }
 
     @Override
@@ -287,7 +309,6 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     @Override
     public void onUnreadMessagesUpdate(final Chat chat, boolean hasUnreadMessages) {
-        //TODO: Date header stuff
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -298,6 +319,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         });
     }
 
+    //TODO: Date header stuff
     @Override
     public void onChatRename(final Chat chat, String displayName) {
         getActivity().runOnUiThread(new Runnable() {
@@ -369,6 +391,8 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                 if (isChatThis(message.getChat())){
                     MessageView messageView = new MessageView(message);
                     messageListAdapter.addToStart(messageView, true);
+                    messageMapIntegrity.put(message.getUuid().toString(), message);
+                    weMessage.get().getMessageManager().setHasUnreadMessages(chat, false, true);
                 }
             }
         });
@@ -381,6 +405,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             public void run() {
                 if (isChatThis(newData.getChat())){
                     messageListAdapter.update(new MessageView(newData));
+                    messageMapIntegrity.put(newData.getUuid().toString(), newData);
                 }
             }
         });
@@ -393,6 +418,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             public void run() {
                 if(isChatThis(message.getChat())){
                     messageListAdapter.deleteById(message.getUuid().toString());
+                    messageMapIntegrity.remove(message.getUuid().toString());
                 }
             }
         });
@@ -403,21 +429,31 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                List<IMessage> messageViews = new ArrayList<>();
-                for (Message message : messages){
-                    if (isChatThis(message.getChat())) {
-                        MessageView messageView = new MessageView( message);
+                if (messages.size() > 0) {
+                    List<IMessage> messageViews = new ArrayList<>();
 
-                        messageViews.add(messageView);
+                    for (Message message : messages) {
+                        if (isChatThis(message.getChat())) {
+                            if (!messageMapIntegrity.containsKey(message.getUuid().toString())) {
+                                MessageView messageView = new MessageView(message);
+
+                                messageViews.add(messageView);
+                                messageMapIntegrity.put(message.getUuid().toString(), message);
+                            }
+                        }
+                    }
+                    if (messageViews.size() > 0) {
+                        messageListAdapter.addToEnd(messageViews, false);
                     }
                 }
-                messageListAdapter.addToEnd(messageViews, false);
             }
         });
     }
 
     @Override
     public void onMessagesRefresh() {
+        messageListAdapter.clear();
+        messageMapIntegrity.clear();
         weMessage.get().getMessageManager().queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
 
         //TODO: Be sure to get action messages too

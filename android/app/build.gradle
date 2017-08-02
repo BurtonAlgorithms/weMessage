@@ -29,9 +29,9 @@ dependencies {
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.android.support:design:25.3.1'
     compile 'com.github.stfalcon:chatkit:0.2.2'
-    compile 'de.hdodenhof:circleimageview:2.1.0'
-    compile 'com.github.bumptech.glide:glide:4.0.0-RC0'
+    compile 'com.github.siyamed:android-shape-imageview:0.9.+@aar'
+    compile 'com.github.bumptech.glide:glide:4.0.0'
     compile 'com.android.support:support-v4:25.3.1'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.0.0-RC0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.0.0'
     testCompile 'junit:junit:4.12'
 }
