@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.support.annotation.AnyRes;
 import android.support.annotation.NonNull;
 
+import java.io.File;
+
 import scott.wemessage.R;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
@@ -16,15 +18,7 @@ import scott.wemessage.commons.utils.StringUtils;
 
 public class AndroidIOUtils {
 
-    /**
-     * Creates a Uri which parses the given encoded URI string.
-     * @param context The context
-     * @param resId The res ID for the required URI
-     * @throws NullPointerException if uriString is null
-     * @return Uri for the resource ID
-     */
-
-    public static final Uri getUriFromResource(@NonNull Context context, @AnyRes int resId) throws Resources.NotFoundException {
+    public static Uri getUriFromResource(@NonNull Context context, @AnyRes int resId) throws Resources.NotFoundException {
         Resources res = context.getResources();
 
         Uri resUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE +
@@ -33,6 +27,10 @@ public class AndroidIOUtils {
                 + '/' + res.getResourceEntryName(resId));
 
         return resUri;
+    }
+
+    public static Uri getUriFromFile(File file){
+        return Uri.fromFile(file);
     }
 
     public static String getChatIconUri(Chat chat){

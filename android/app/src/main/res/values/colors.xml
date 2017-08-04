@@ -3,6 +3,7 @@
     <color name="colorHeader">#056dff</color>
     <color name="colorStatusBar">#054cff</color>
     <color name="colorAccent">#058fff</color>
+    <color name="outgoingBubbleColor">#2096fe</color>
     <color name="borderColor">#c0058fff</color>
     <color name="unreadBubble">#037aff</color>
     <color name="heavyBlue">#055cff</color>
@@ -17,4 +18,6 @@
     <color name="lightBlack">#252525</color>
     <color name="lightGray">#787878</color>
     <color name="dialogDivider">#a6a6a6</color>
+    <color name="incomingBubbleColor">#e5e5ea</color>
+    <color name="outgoingDateColor">#ebebef</color>
 </resources>

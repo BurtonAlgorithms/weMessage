@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scott.wemessage.app.view.messages.content.AttachmentImageView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" >
+
+    <com.stfalcon.chatkit.utils.RoundedImageView
+        android:id="@+id/attachmentImage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true" />
+
+    <View
+        android:id="@id/imageOverlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/attachmentImage"
+        android:layout_alignEnd="@id/attachmentImage"
+        android:layout_alignStart="@id/attachmentImage"
+        android:layout_alignTop="@id/attachmentImage"/>
+
+    <TextView
+        android:id="@id/messageTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignEnd="@id/attachmentImage"
+        android:layout_below="@id/attachmentImage"/>
+
+</scott.wemessage.app.view.messages.content.AttachmentImageView>

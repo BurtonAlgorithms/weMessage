@@ -21,11 +21,13 @@ import android.widget.ImageView;
 import com.bumptech.glide.Glide;
 import com.stfalcon.chatkit.commons.ImageLoader;
 import com.stfalcon.chatkit.commons.models.IMessage;
+import com.stfalcon.chatkit.messages.MessageHolders;
 import com.stfalcon.chatkit.messages.MessagesList;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
 import com.stfalcon.chatkit.utils.DateFormatter;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -40,13 +42,16 @@ import scott.wemessage.app.launch.LaunchActivity;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.view.chat.ChatTitleView;
 import scott.wemessage.app.view.dialog.DialogDisplayer;
+import scott.wemessage.app.view.messages.IncomingMessageViewHolder;
 import scott.wemessage.app.view.messages.MessageView;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.commons.utils.DateUtils;
 
 public class ConversationFragment extends Fragment implements MessageManager.Callbacks {
 
@@ -182,32 +187,38 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_conversation, container, false);
 
-        MessageManager messageManager = weMessage.get().getMessageManager();
-
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.conversationToolbar);
         ImageButton backButton = (ImageButton) toolbar.findViewById(R.id.conversationBackButton);
 
-        toolbar.setTitle(null);
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 goToChatList(null);
             }
         });
-
+        toolbar.setTitle(null);
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
         chatTitleView = (ChatTitleView) toolbar.findViewById(R.id.chatTitleView);
-        chatTitleView.setChat(chat);
-
         messageList = (MessagesList) view.findViewById(R.id.messagesList);
 
-        MessagesListAdapter<IMessage> messageListAdapter = new MessagesListAdapter<>(weMessage.get().getCurrentAccount().getUuid().toString(), new ImageLoader() {
-            @Override
-            public void loadImage(ImageView imageView, String url) {
-                Glide.with(ConversationFragment.this).load(url).into(imageView);
-            }
-        });
+        ImageLoader imageLoader;
+        MessageManager messageManager = weMessage.get().getMessageManager();
+        MessageHolders messageHolders = new MessageHolders().setIncomingTextConfig(IncomingMessageViewHolder.class, R.layout.incoming_message);
+        String meUuid = weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())).getUuid().toString();
+
+        if (chat instanceof PeerChat){
+            imageLoader = null;
+        } else {
+            imageLoader = new ImageLoader() {
+                @Override
+                public void loadImage(ImageView imageView, String url) {
+                    Glide.with(ConversationFragment.this).load(url).into(imageView);
+                }
+            };
+        }
+
+        MessagesListAdapter<IMessage> messageListAdapter = new MessagesListAdapter<>(meUuid, messageHolders, imageLoader);
 
         messageListAdapter.setDateHeadersFormatter(new DateFormatter.Formatter() {
             @Override
@@ -236,8 +247,8 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         messageList.setAdapter(messageListAdapter);
         this.messageListAdapter = messageListAdapter;
 
+        chatTitleView.setChat(chat);
         messageManager.queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
-
         messageManager.setHasUnreadMessages(chat, false, true);
 
         return view;
@@ -445,6 +456,16 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                     if (messageViews.size() > 0) {
                         messageListAdapter.addToEnd(messageViews, false);
                     }
+
+                    //TODO: TEMP CODE
+
+
+                    MessageView me = new MessageView(new Message(UUID.randomUUID(), "Mac-" + UUID.randomUUID().toString(), chat,
+                            weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())),
+                            null, "This is a message from myself, as a test. hello. Lorem ispilum pi 214-868-7499", DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()), null, null,
+                            false, true, false, false, false, true));
+
+                    messageListAdapter.addToStart(me, true);
                 }
             }
         });

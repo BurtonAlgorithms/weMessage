@@ -11,10 +11,12 @@ public class MessageView implements IMessage {
 
     private Message message;
 
-    //TODO: Attachments
-
     public MessageView(Message message){
         this.message = message;
+    }
+
+    public Message getMessage(){
+        return message;
     }
 
     @Override
@@ -25,7 +27,7 @@ public class MessageView implements IMessage {
     @Override
     public String getText() {
         try {
-            return message.getText();
+            return trimORC(message);
         }catch(Exception ex){
             return null;
         }
@@ -47,5 +49,15 @@ public class MessageView implements IMessage {
         }catch(Exception ex){
             return Calendar.getInstance().getTime();
         }
+    }
+
+    private String trimORC(Message message){
+        int attachmentCount = message.getAttachments().size();
+
+        if (attachmentCount < 1){
+            return message.getText();
+        }
+
+        return message.getText().substring(attachmentCount, message.getText().length() - 1);
     }
 }
