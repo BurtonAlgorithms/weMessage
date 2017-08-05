@@ -20,11 +20,7 @@ public class AndroidIOUtils {
 
     public static Uri getUriFromResource(@NonNull Context context, @AnyRes int resId) throws Resources.NotFoundException {
         Resources res = context.getResources();
-
-        Uri resUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE +
-                "://" + res.getResourcePackageName(resId)
-                + '/' + res.getResourceTypeName(resId)
-                + '/' + res.getResourceEntryName(resId));
+        Uri resUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + res.getResourcePackageName(resId) + '/' + res.getResourceTypeName(resId) + '/' + res.getResourceEntryName(resId));
 
         return resUri;
     }
@@ -56,4 +52,6 @@ public class AndroidIOUtils {
             }
         }
     }
+
+
 }

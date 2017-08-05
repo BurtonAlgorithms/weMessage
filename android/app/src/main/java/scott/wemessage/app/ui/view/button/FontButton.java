@@ -1,35 +1,35 @@
-package scott.wemessage.app.view.text;
+package scott.wemessage.app.ui.view.button;
 
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Typeface;
-import android.support.v7.widget.AppCompatTextView;
+import android.support.v7.widget.AppCompatButton;
 import android.util.AttributeSet;
 
 import scott.wemessage.R;
 
-public class FontTextView extends AppCompatTextView {
+public class FontButton extends AppCompatButton {
 
-    public FontTextView(Context context){
+    public FontButton(Context context){
         super(context);
     }
 
-    public FontTextView(Context context, AttributeSet attributeSet){
+    public FontButton(Context context, AttributeSet attributeSet){
         super(context, attributeSet);
 
-        TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.FontTextView);
-        String fontName = array.getString(R.styleable.FontTextView_font);
+        TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.FontButton);
+        String fontName = array.getString(R.styleable.FontButton_buttonFont);
         array.recycle();
 
         Typeface font = Typeface.createFromAsset(context.getAssets(), "fonts/" + fontName);
         setTypeface(font);
     }
 
-    public FontTextView(Context context, AttributeSet attributeSet, int defStyle){
+    public FontButton(Context context, AttributeSet attributeSet, int defStyle){
         super(context, attributeSet, defStyle);
 
-        TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.FontTextView);
-        String fontName = array.getString(R.styleable.FontTextView_font);
+        TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.FontButton);
+        String fontName = array.getString(R.styleable.FontButton_buttonFont);
         array.recycle();
 
         Typeface font = Typeface.createFromAsset(context.getAssets(), "fonts/" + fontName);

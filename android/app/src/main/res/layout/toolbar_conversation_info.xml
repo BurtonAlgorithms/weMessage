@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<android.support.v7.widget.Toolbar xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v7.widget.Toolbar
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:elevation="4dp"
@@ -25,7 +26,7 @@
             android:layout_width="20dp"
             android:layout_height="20dp" />
 
-        <scott.wemessage.app.view.chat.ChatTitleView
+        <scott.wemessage.app.ui.view.chat.ChatTitleView
             android:id="@+id/chatTitleView"
             android:gravity="center"
             android:layout_width="match_parent"

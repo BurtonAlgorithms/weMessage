@@ -13,7 +13,7 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name=".app.launch.LaunchActivity"
+            android:name=".app.ui.activities.LaunchActivity"
             android:theme="@style/AppTheme.Launch">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,8 +21,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.activities.ChatListActivity"> </activity>
-        <activity android:name=".app.activities.ConversationActivity"> </activity>
+        <activity android:name=".app.ui.activities.ChatListActivity"> </activity>
+        <activity android:name=".app.ui.activities.ConversationActivity"> </activity>
+        <activity android:name=".app.ui.activities.MessageImageActivity"> </activity>
 
         <service android:name=".app.connection.ConnectionService" />
     </application>

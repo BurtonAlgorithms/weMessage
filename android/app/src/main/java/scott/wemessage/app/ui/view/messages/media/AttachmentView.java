@@ -1,4 +1,4 @@
-package scott.wemessage.app.view.messages.content;
+package scott.wemessage.app.ui.view.messages.media;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -12,6 +12,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import scott.wemessage.app.messages.objects.Attachment;
+import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.utils.view.DisplayUtils;
 
 public abstract class AttachmentView extends RelativeLayout {
@@ -28,23 +29,13 @@ public abstract class AttachmentView extends RelativeLayout {
         super(context, attrs, defStyleAttr);
     }
 
-    public abstract void bind(Attachment attachment, MessageType messageType);
+    public abstract void bind(MessageView messageView, Attachment attachment, MessageType messageType);
 
-    public void setMargins(Integer topMargin, Integer bottomMargin, Integer startMargin, Integer endMargin){
+    public void setBottomPadding(int paddingDp){
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) getLayoutParams();
+        layoutParams.bottomMargin = Math.round(DisplayUtils.convertDpToPixel(paddingDp, getContext()));
 
-        if (startMargin != null) {
-            layoutParams.setMarginStart(Math.round(DisplayUtils.convertDpToPixel(startMargin, getContext())));
-        }
-        if (endMargin != null) {
-            layoutParams.setMarginEnd(Math.round(DisplayUtils.convertDpToPixel(endMargin, getContext())));
-        }
-        if (topMargin != null) {
-            layoutParams.topMargin = Math.round(DisplayUtils.convertDpToPixel(topMargin, getContext()));
-        }
-        if (bottomMargin != null) {
-            layoutParams.bottomMargin = Math.round(DisplayUtils.convertDpToPixel(bottomMargin, getContext()));
-        }
+        setLayoutParams(layoutParams);
     }
 
     /**

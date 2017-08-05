@@ -1,4 +1,4 @@
-package scott.wemessage.app.view.messages;
+package scott.wemessage.app.ui.view.messages;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -10,8 +10,8 @@ import com.stfalcon.chatkit.utils.DateFormatter;
 
 import scott.wemessage.R;
 import scott.wemessage.app.messages.objects.Attachment;
-import scott.wemessage.app.view.messages.content.AttachmentImageView;
-import scott.wemessage.app.view.messages.content.AttachmentView;
+import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
+import scott.wemessage.app.ui.view.messages.media.AttachmentView;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.utils.StringUtils;
@@ -33,16 +33,25 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         time.setText(DateFormatter.format(message.getCreatedAt(), "h:mm a"));
         attachmentsContainer.removeAllViews();
 
-        for (Attachment attachment : message.getMessage().getAttachments()){
+        int i = 1;
+        for (Attachment attachment : message.getMessage().getAttachments()) {
             MimeType mimeType = MimeType.getTypeFromString(attachment.getFileType());
 
-            switch (mimeType){
+            switch (mimeType) {
                 case IMAGE:
                     LayoutInflater inflater = (LayoutInflater) weMessage.get().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     AttachmentImageView attachmentImageView = (AttachmentImageView) inflater.inflate(R.layout.message_image, null);
 
-                    attachmentImageView.bind(attachment, AttachmentView.MessageType.INCOMING);
+                    attachmentImageView.bind(message, attachment, AttachmentView.MessageType.INCOMING);
                     attachmentsContainer.addView(attachmentImageView);
+
+                    if (i++ != message.getMessage().getAttachments().size()){
+                        attachmentImageView.setBottomPadding(16);
+                    }else {
+                        if (!StringUtils.isEmpty(message.getText())){
+                            attachmentImageView.setBottomPadding(16);
+                        }
+                    }
                     break;
                 case UNDEFINED:
                     //TODO: Do some kind of file type unknown, include extension at end

@@ -1,9 +1,9 @@
-package scott.wemessage.app.activities;
+package scott.wemessage.app.ui.activities;
 
 import android.support.v4.app.Fragment;
 
 import scott.wemessage.R;
-import scott.wemessage.app.messages.ConversationFragment;
+import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.utils.view.SingleFragmentActivity;
 
 public class ConversationActivity extends SingleFragmentActivity {

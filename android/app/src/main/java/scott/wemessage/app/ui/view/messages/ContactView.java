@@ -1,4 +1,4 @@
-package scott.wemessage.app.view.messages;
+package scott.wemessage.app.ui.view.messages;
 
 import android.net.Uri;
 

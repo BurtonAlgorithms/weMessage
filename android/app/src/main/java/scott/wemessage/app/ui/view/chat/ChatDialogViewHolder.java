@@ -1,4 +1,4 @@
-package scott.wemessage.app.view.chat;
+package scott.wemessage.app.ui.view.chat;
 
 import android.view.View;
 

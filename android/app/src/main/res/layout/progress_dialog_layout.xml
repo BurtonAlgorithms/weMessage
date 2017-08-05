@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<scott.wemessage.app.view.dialog.ProgressDialogLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<scott.wemessage.app.ui.view.dialog.ProgressDialogLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="wrap_content"
@@ -76,4 +77,4 @@
             android:text="Button Text"
             android:textColor="@color/colorAccent" />
     </LinearLayout>
-</scott.wemessage.app.view.dialog.ProgressDialogLayout>
+</scott.wemessage.app.ui.view.dialog.ProgressDialogLayout>

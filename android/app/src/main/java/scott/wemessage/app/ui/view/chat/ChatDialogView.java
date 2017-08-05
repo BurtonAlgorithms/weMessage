@@ -1,4 +1,4 @@
-package scott.wemessage.app.view.chat;
+package scott.wemessage.app.ui.view.chat;
 
 import com.stfalcon.chatkit.commons.models.IDialog;
 import com.stfalcon.chatkit.commons.models.IMessage;
@@ -11,8 +11,8 @@ import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.utils.AndroidIOUtils;
-import scott.wemessage.app.view.messages.ContactView;
-import scott.wemessage.app.view.messages.MessageView;
+import scott.wemessage.app.ui.view.messages.ContactView;
+import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.weMessage;
 
 public class ChatDialogView implements IDialog {

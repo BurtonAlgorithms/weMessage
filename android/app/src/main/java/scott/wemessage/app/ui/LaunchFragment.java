@@ -1,4 +1,4 @@
-package scott.wemessage.app.launch;
+package scott.wemessage.app.ui;
 
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
@@ -38,14 +38,14 @@ import android.widget.TextView;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.activities.ChatListActivity;
+import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.utils.view.DisplayUtils;
-import scott.wemessage.app.view.button.FontButton;
-import scott.wemessage.app.view.dialog.AnimationDialogLayout;
-import scott.wemessage.app.view.dialog.DialogDisplayer;
-import scott.wemessage.app.view.dialog.ProgressDialogLayout;
+import scott.wemessage.app.ui.view.button.FontButton;
+import scott.wemessage.app.ui.view.dialog.AnimationDialogLayout;
+import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
+import scott.wemessage.app.ui.view.dialog.ProgressDialogLayout;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.StringUtils;

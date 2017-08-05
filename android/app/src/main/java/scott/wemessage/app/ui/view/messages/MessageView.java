@@ -1,4 +1,4 @@
-package scott.wemessage.app.view.messages;
+package scott.wemessage.app.ui.view.messages;
 
 import com.stfalcon.chatkit.commons.models.IMessage;
 
@@ -27,7 +27,7 @@ public class MessageView implements IMessage {
     @Override
     public String getText() {
         try {
-            return trimORC(message);
+            return trimORC(message.getText());
         }catch(Exception ex){
             return null;
         }
@@ -51,13 +51,17 @@ public class MessageView implements IMessage {
         }
     }
 
-    private String trimORC(Message message){
-        int attachmentCount = message.getAttachments().size();
+    private String trimORC(String string){
+        char[] chars = string.toCharArray();
+        String finalString = "";
 
-        if (attachmentCount < 1){
-            return message.getText();
+        for (char c : chars){
+            String hex = String.format("%04x", (int) c);
+
+            if (!hex.equals("fffc")){
+                finalString += c;
+            }
         }
-
-        return message.getText().substring(attachmentCount, message.getText().length() - 1);
+        return finalString;
     }
 }

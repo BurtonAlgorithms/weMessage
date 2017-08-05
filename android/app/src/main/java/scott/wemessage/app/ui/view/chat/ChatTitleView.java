@@ -1,4 +1,4 @@
-package scott.wemessage.app.view.chat;
+package scott.wemessage.app.ui.view.chat;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -23,7 +23,7 @@ import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.utils.AndroidIOUtils;
 import scott.wemessage.app.utils.view.DisplayUtils;
-import scott.wemessage.app.view.text.FontTextView;
+import scott.wemessage.app.ui.view.text.FontTextView;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ChatTitleView extends LinearLayout {

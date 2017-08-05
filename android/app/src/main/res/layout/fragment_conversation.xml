@@ -19,6 +19,8 @@
         app:outcomingTextLinkColor="@color/white"
         app:incomingDefaultBubbleColor="@color/incomingBubbleColor"
         app:outcomingDefaultBubbleColor="@color/outgoingBubbleColor"
+        app:incomingDefaultBubblePressedColor="@color/incomingBubbleColorPressed"
+        app:outcomingDefaultBubblePressedColor="@color/outgoingBubbleColorPressed"
         app:outcomingTimeTextColor="@color/outgoingDateColor"
         app:incomingAvatarHeight="42dp"
         app:incomingAvatarWidth="42dp" />

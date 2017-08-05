@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<scott.wemessage.app.view.dialog.AlertDialogLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<scott.wemessage.app.ui.view.dialog.AlertDialogLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="wrap_content"
@@ -39,4 +40,4 @@
         android:padding="24dp"
         android:textSize="15sp"
         android:text="Message Text"  />
-</scott.wemessage.app.view.dialog.AlertDialogLayout>
+</scott.wemessage.app.ui.view.dialog.AlertDialogLayout>

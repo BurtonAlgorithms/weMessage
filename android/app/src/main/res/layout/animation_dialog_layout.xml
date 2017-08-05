@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<scott.wemessage.app.view.dialog.AnimationDialogLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<scott.wemessage.app.ui.view.dialog.AnimationDialogLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="wrap_content"
@@ -10,4 +11,4 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"/>
-</scott.wemessage.app.view.dialog.AnimationDialogLayout>
+</scott.wemessage.app.ui.view.dialog.AnimationDialogLayout>
