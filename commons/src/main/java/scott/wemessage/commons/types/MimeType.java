@@ -28,7 +28,7 @@ public enum MimeType {
         return UNDEFINED;
     }
 
-    private enum MimeExtension {
+    public enum MimeExtension {
         GIF("image/gif"),
         JPG("image/jpeg"),
         PNG("image/png"),
