@@ -5,6 +5,7 @@ import java.util.Arrays;
 public enum MimeType {
 
     IMAGE(new MimeExtension[]{ MimeExtension.GIF, MimeExtension.JPG, MimeExtension.PNG }),
+    AUDIO(new MimeExtension[]{ MimeExtension.AMR, MimeExtension.MIDI, MimeExtension.MP3, MimeExtension.OGG, MimeExtension.WAV }),
     UNDEFINED(new MimeExtension[]{ MimeExtension.UNDEFINED });
 
     private MimeExtension[] extensions;
@@ -32,6 +33,11 @@ public enum MimeType {
         GIF("image/gif"),
         JPG("image/jpeg"),
         PNG("image/png"),
+        AMR("audio/amr"),
+        MIDI("audio/midi"),
+        MP3("audio/mpeg"),
+        OGG("audio/ogg"),
+        WAV("audio/x-wav"),
         UNDEFINED("undefined");
 
         private String mimeTypeString;
