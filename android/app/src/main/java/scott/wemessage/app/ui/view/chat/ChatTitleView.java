@@ -23,7 +23,7 @@ import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.utils.AndroidIOUtils;
 import scott.wemessage.app.utils.view.DisplayUtils;
-import scott.wemessage.app.ui.view.text.FontTextView;
+import scott.wemessage.app.ui.view.font.FontTextView;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ChatTitleView extends LinearLayout {

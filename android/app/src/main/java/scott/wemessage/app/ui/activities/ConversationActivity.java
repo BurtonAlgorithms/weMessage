@@ -1,6 +1,8 @@
 package scott.wemessage.app.ui.activities;
 
+import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.view.WindowManager;
 
 import scott.wemessage.R;
 import scott.wemessage.app.ui.ConversationFragment;
@@ -10,6 +12,13 @@ public class ConversationActivity extends SingleFragmentActivity {
 
     public ConversationActivity() {
         super(R.layout.activity_conversation, R.id.conversationFragmentContainer);
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstance) {
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        super.onCreate(savedInstance);
     }
 
     @Override

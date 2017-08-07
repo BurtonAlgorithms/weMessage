@@ -34,6 +34,16 @@ public class MessageImageActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.message_image_full_screen);
 
+        if (savedInstanceState == null) {
+            isCollapsed = false;
+            imageUri = getIntent().getStringExtra(weMessage.BUNDLE_FULL_SCREEN_IMAGE_URI);
+            previousChatId = getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT);
+        } else {
+            isCollapsed = savedInstanceState.getBoolean("isCollapsed");
+            imageUri = savedInstanceState.getString("fullScreenImageUri");
+            previousChatId = savedInstanceState.getString("previousChatId");
+        }
+
         doneButton = (TextView) findViewById(R.id.doneButton);
         imageView = (ImageView) findViewById(R.id.messageFullScreenImageView);
 
@@ -98,19 +108,7 @@ public class MessageImageActivity extends AppCompatActivity {
             }
         });
 
-        if (savedInstanceState == null) {
-            isCollapsed = false;
-            imageUri = getIntent().getStringExtra(weMessage.BUNDLE_FULL_SCREEN_IMAGE_URI);
-            previousChatId = getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT);
-
-            Glide.with(this).load(getIntent().getStringExtra(weMessage.BUNDLE_FULL_SCREEN_IMAGE_URI)).into(imageView);
-        } else {
-            isCollapsed = savedInstanceState.getBoolean("isCollapsed");
-            imageUri = savedInstanceState.getString("fullScreenImageUri");
-            previousChatId = savedInstanceState.getString("previousChatId");
-
-            Glide.with(this).load(imageUri).into(imageView);
-        }
+        Glide.with(this).load(imageUri).into(imageView);
     }
 
     @Override

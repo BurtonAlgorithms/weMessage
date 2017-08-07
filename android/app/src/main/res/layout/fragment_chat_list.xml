@@ -53,7 +53,7 @@
             android:layout_height="wrap_content"
             android:src="@drawable/ic_no_conversations_image"/>
 
-        <scott.wemessage.app.ui.view.text.FontTextView
+        <scott.wemessage.app.ui.view.font.FontTextView
             android:layout_marginTop="16dp"
             app:font="orkney_medium.ttf"
             android:gravity="center"

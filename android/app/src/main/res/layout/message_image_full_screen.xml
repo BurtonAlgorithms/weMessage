@@ -21,12 +21,13 @@
         android:orientation="horizontal"
         android:background="@color/colorHeader">
 
-        <scott.wemessage.app.ui.view.text.FontTextView
+        <scott.wemessage.app.ui.view.font.FontTextView
             app:font="orkney_medium.ttf"
             android:id="@+id/doneButton"
             android:text="@string/word_done"
             android:textColor="@android:color/white"
             android:textSize="16sp"
+            android:background="?android:attr/selectableItemBackground"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"

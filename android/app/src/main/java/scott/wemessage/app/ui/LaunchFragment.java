@@ -42,7 +42,7 @@ import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.utils.view.DisplayUtils;
-import scott.wemessage.app.ui.view.button.FontButton;
+import scott.wemessage.app.ui.view.font.FontButton;
 import scott.wemessage.app.ui.view.dialog.AnimationDialogLayout;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.dialog.ProgressDialogLayout;

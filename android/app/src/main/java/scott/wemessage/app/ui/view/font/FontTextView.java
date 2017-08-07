@@ -1,4 +1,4 @@
-package scott.wemessage.app.ui.view.text;
+package scott.wemessage.app.ui.view.font;
 
 import android.content.Context;
 import android.content.res.TypedArray;

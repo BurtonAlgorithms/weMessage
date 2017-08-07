@@ -11,6 +11,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,6 +40,7 @@ import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
+import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.chats.Chat;
@@ -50,13 +52,15 @@ import scott.wemessage.app.ui.view.chat.ChatTitleView;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.messages.IncomingMessageViewHolder;
 import scott.wemessage.app.ui.view.messages.MessageView;
+import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.media.AudioAttachmentMediaPlayer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
 
-public class ConversationFragment extends Fragment implements MessageManager.Callbacks {
+public class ConversationFragment extends Fragment implements MessageManager.Callbacks, AudioAttachmentMediaPlayer.AttachmentAudioCallbacks {
 
     private final String TAG = "ConversationFragment";
     private final Object chatLock = new Object();
@@ -68,6 +72,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     private ChatTitleView chatTitleView;
     private MessagesList messageList;
     private MessagesListAdapter<IMessage> messageListAdapter;
+    private AudioAttachmentMediaPlayer audioAttachmentMediaPlayer;
     private ConcurrentHashMap<String, Message> messageMapIntegrity = new ConcurrentHashMap<>();
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private boolean isBoundToConnectionService = false;
@@ -107,27 +112,35 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_NEW_MESSAGE_ERROR)){
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.new_message_error));
+                    generateErroredSnackBar(getView(), getString(R.string.new_message_error)).show();
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_SEND_MESSAGE_ERROR)){
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.send_message_error));
+                    generateErroredSnackBar(getView(), getString(R.string.send_message_error)).show();
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR)) {
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.message_update_error));
+                    generateErroredSnackBar(getView(), getString(R.string.message_update_error)).show();
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_ACTION_PERFORM_ERROR)){
                 if (getView() != null) {
                     if (intent.getExtras() != null){
-                        generateErroredSnackBar(getView(), intent.getStringExtra(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE));
+                        generateErroredSnackBar(getView(), intent.getStringExtra(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE)).show();
                     }else {
-                        generateErroredSnackBar(getView(), getString(R.string.action_perform_error_default));
+                        generateErroredSnackBar(getView(), getString(R.string.action_perform_error_default)).show();
                     }
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.result_process_error));
+                    generateErroredSnackBar(getView(), getString(R.string.result_process_error)).show();
+                }
+            }else if(intent.getAction().equals(weMessage.BROADCAST_LOAD_ATTACHMENT_ERROR)){
+                if (getView() != null){
+                    generateErroredSnackBar(getView(), getString(R.string.load_attachment_error)).show();
+                }
+            }else if(intent.getAction().equals(weMessage.BROADCAST_PLAY_AUDIO_ATTACHMENT_ERROR)){
+                if (getView() != null){
+                    generateErroredSnackBar(getView(), getString(R.string.play_audio_attachment_error)).show();
                 }
             }else if (intent.getAction().equals(weMessage.BROADCAST_IMAGE_FULLSCREEN_ACTIVITY_START)){
                 launchFullScreenImageActivity(intent.getStringExtra(weMessage.BUNDLE_FULL_SCREEN_IMAGE_URI));
@@ -179,14 +192,18 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         broadcastIntentFilter.addAction(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_LOAD_ATTACHMENT_ERROR);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_PLAY_AUDIO_ATTACHMENT_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_IMAGE_FULLSCREEN_ACTIVITY_START);
 
         callbackUuid = UUID.randomUUID().toString();
+
         messageManager.hookCallbacks(callbackUuid, this);
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(messageListBroadcastReceiver, broadcastIntentFilter);
 
         super.onCreate(savedInstanceState);
     }
+
 
     @Nullable
     @Override
@@ -291,6 +308,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             unbindService();
         }
 
+        getAudioAttachmentMediaPlayer().stopAudioPlayback();
         super.onDestroy();
     }
 
@@ -496,6 +514,82 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     @Override
     public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
         //TODO: Stuff here
+    }
+
+    //TODO: Outgoing
+    @Override
+    public void onPlaybackStart(Attachment a) {
+        for (int childCount = messageList.getChildCount(), i = 0; i < childCount; ++i) {
+            RecyclerView.ViewHolder holder = messageList.getChildViewHolder(messageList.getChildAt(i));
+
+            if (holder instanceof IncomingMessageViewHolder){
+                IncomingMessageViewHolder incomingHolder = (IncomingMessageViewHolder) holder;
+
+                incomingHolder.notifyAudioPlaybackStart(a);
+            }
+        }
+    }
+
+    //TODO: Outgoing
+    @Override
+    public void onPlaybackStop(String attachmentUuid) {
+        for (int childCount = messageList.getChildCount(), i = 0; i < childCount; ++i) {
+            RecyclerView.ViewHolder holder = messageList.getChildViewHolder(messageList.getChildAt(i));
+
+            if (holder instanceof IncomingMessageViewHolder){
+                IncomingMessageViewHolder incomingHolder = (IncomingMessageViewHolder) holder;
+                incomingHolder.notifyAudioPlaybackStop(attachmentUuid);
+            }
+            audioAttachmentMediaPlayer = null;
+        }
+    }
+
+    public synchronized AudioAttachmentMediaPlayer getAudioAttachmentMediaPlayer(){
+        if (audioAttachmentMediaPlayer == null){
+            audioAttachmentMediaPlayer = new AudioAttachmentMediaPlayer();
+            audioAttachmentMediaPlayer.setCallback(this);
+        }
+        return audioAttachmentMediaPlayer;
+    }
+
+    public synchronized boolean playAudio(Attachment a){
+        try {
+            if (getAudioAttachmentMediaPlayer().hasAudio()) {
+                getAudioAttachmentMediaPlayer().stopAudioPlayback();
+            }
+            getAudioAttachmentMediaPlayer().setAttachment(a);
+            getAudioAttachmentMediaPlayer().startAudioPlayback(AndroidIOUtils.getUriFromFile(a.getFileLocation().getFile()));
+            return true;
+        }catch(Exception ex){
+            AppLogger.error("An error occurred while trying to play Audio Attachment: " + a.getUuid().toString(), ex);
+            generateErroredSnackBar(getView(), getString(R.string.play_audio_attachment_error)).show();
+            getAudioAttachmentMediaPlayer().forceRelease();
+            return false;
+        }
+    }
+
+    public synchronized boolean resumeAudio(Attachment a){
+        if (getAudioAttachmentMediaPlayer().hasAudio() && getAudioAttachmentMediaPlayer().getAttachment().getUuid().toString().equals(a.getUuid().toString())){
+            getAudioAttachmentMediaPlayer().resumeAudioPlayback();
+            return true;
+        }
+        return false;
+    }
+
+    public synchronized boolean pauseAudio(Attachment a){
+        if (getAudioAttachmentMediaPlayer().hasAudio() && getAudioAttachmentMediaPlayer().getAttachment().getUuid().toString().equals(a.getUuid().toString())){
+            getAudioAttachmentMediaPlayer().pauseAudioPlayback();
+            return true;
+        }
+        return false;
+    }
+
+    public synchronized boolean stopAudio(){
+        if (getAudioAttachmentMediaPlayer().hasAudio()){
+            getAudioAttachmentMediaPlayer().stopAudioPlayback();
+            return true;
+        }
+        return false;
     }
 
     private Chat getChat(){

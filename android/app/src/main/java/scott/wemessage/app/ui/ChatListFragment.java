@@ -98,27 +98,27 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_NEW_MESSAGE_ERROR)){
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.new_message_error));
+                    generateErroredSnackBar(getView(), getString(R.string.new_message_error)).show();
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_SEND_MESSAGE_ERROR)){
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.send_message_error));
+                    generateErroredSnackBar(getView(), getString(R.string.send_message_error)).show();
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR)) {
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.message_update_error));
+                    generateErroredSnackBar(getView(), getString(R.string.message_update_error)).show();
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_ACTION_PERFORM_ERROR)){
                 if (getView() != null) {
                     if (intent.getExtras() != null){
-                        generateErroredSnackBar(getView(), intent.getStringExtra(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE));
+                        generateErroredSnackBar(getView(), intent.getStringExtra(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE)).show();
                     }else {
-                        generateErroredSnackBar(getView(), getString(R.string.action_perform_error_default));
+                        generateErroredSnackBar(getView(), getString(R.string.action_perform_error_default)).show();
                     }
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.result_process_error));
+                    generateErroredSnackBar(getView(), getString(R.string.result_process_error)).show();
                 }
             }
         }
