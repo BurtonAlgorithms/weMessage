@@ -6,6 +6,7 @@ public enum MimeType {
 
     IMAGE(new MimeExtension[]{ MimeExtension.GIF, MimeExtension.JPG, MimeExtension.PNG }),
     AUDIO(new MimeExtension[]{ MimeExtension.AMR, MimeExtension.MIDI, MimeExtension.MP3, MimeExtension.OGG, MimeExtension.WAV }),
+    VIDEO(new MimeExtension[]{ MimeExtension.MP4, MimeExtension.WEBM, MimeExtension.GPP_3 }),
     UNDEFINED(new MimeExtension[]{ MimeExtension.UNDEFINED });
 
     private MimeExtension[] extensions;
@@ -38,6 +39,10 @@ public enum MimeType {
         MP3("audio/mpeg"),
         OGG("audio/ogg"),
         WAV("audio/x-wav"),
+        MP4("video/mp4"),
+        WEBM("video/webm"),
+        GPP_3("video/3gpp"),
+        MOV("video/quicktime"),
         UNDEFINED("undefined");
 
         private String mimeTypeString;
