@@ -28,6 +28,7 @@ import scott.wemessage.app.weMessage;
 public class AttachmentAudioView extends AttachmentView {
 
     private boolean isInit = false;
+    private boolean isStopped = false;
 
     private String attachmentUuid = "";
     private int currentPositionMillisecond = 0;
@@ -158,6 +159,7 @@ public class AttachmentAudioView extends AttachmentView {
                                 conversationFragment.playAudio(attachment);
                             }
                         }else {
+                            currentPositionMillisecond = 0;
                             conversationFragment.playAudio(attachment);
                         }
 
@@ -182,6 +184,10 @@ public class AttachmentAudioView extends AttachmentView {
         });
     }
 
+    public void unbind(){
+        isStopped = true;
+    }
+
     public String getAttachmentUuid(){
         return attachmentUuid;
     }
@@ -192,7 +198,6 @@ public class AttachmentAudioView extends AttachmentView {
         }else {
             playImage.setImageDrawable(getResources().getDrawable(R.drawable.ic_pause_button_white));
         }
-        currentPositionMillisecond = 0;
         startCountHandler();
     }
 
@@ -235,22 +240,22 @@ public class AttachmentAudioView extends AttachmentView {
                 getContext().getResources().getColor(R.color.outgoingBubbleColorPressed), R.drawable.shape_outcoming_message);
     }
 
-    //TODO: View != null?
-
     private void startCountHandler() {
         final Handler handler = new Handler();
 
         handler.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    if (currentPositionMillisecond < durationMillisecond && getParentFragment().getAudioAttachmentMediaPlayer().isPlaying()) {
-                        currentPositionMillisecond += 1000;
-                        String countFormat = String.format(getResources().getConfiguration().locale, "%d:%02d",
-                                TimeUnit.MILLISECONDS.toMinutes(currentPositionMillisecond),
-                                TimeUnit.MILLISECONDS.toSeconds(currentPositionMillisecond)
-                                        - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(currentPositionMillisecond)));
-                        audioCounterView.setText(countFormat);
-                        handler.postDelayed(this, 1000);
+                    if (!isStopped) {
+                        if (currentPositionMillisecond < durationMillisecond && getParentFragment().getAudioAttachmentMediaPlayer().isPlaying()) {
+                            currentPositionMillisecond += 1000;
+                            String countFormat = String.format(getResources().getConfiguration().locale, "%d:%02d",
+                                    TimeUnit.MILLISECONDS.toMinutes(currentPositionMillisecond),
+                                    TimeUnit.MILLISECONDS.toSeconds(currentPositionMillisecond)
+                                            - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(currentPositionMillisecond)));
+                            audioCounterView.setText(countFormat);
+                            handler.postDelayed(this, 1000);
+                        }
                     }
                 }catch(Exception ex){
 

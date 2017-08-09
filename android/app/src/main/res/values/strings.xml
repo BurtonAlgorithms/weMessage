@@ -59,5 +59,7 @@
     <string name="chat_delete_message_go_back">The chat you were viewing was deleted.</string>
     <string name="load_attachment_error">An unknown error occurred while trying to load an attachment.</string>
     <string name="play_audio_attachment_error">An error occurred while trying to playback audio.</string>
+    <string name="playback_error_title">Playback Error</string>
+    <string name="play_video_attachment_error">An error occurred while trying to playback this video.</string>
 
 </resources>

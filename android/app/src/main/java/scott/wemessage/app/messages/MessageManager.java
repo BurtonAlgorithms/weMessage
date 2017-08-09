@@ -29,7 +29,7 @@ public final class MessageManager {
 
     private Context context;
     private ConcurrentHashMap<String, Callbacks> callbacksMap = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, Contact> contacts = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<String, Contact> contacts = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Chat> chats = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Message> messages = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, ActionMessage> actionMessages = new ConcurrentHashMap<>();

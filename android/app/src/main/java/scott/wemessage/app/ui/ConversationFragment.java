@@ -48,6 +48,7 @@ import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.activities.MessageImageActivity;
+import scott.wemessage.app.ui.activities.MessageVideoActivity;
 import scott.wemessage.app.ui.view.chat.ChatTitleView;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.messages.IncomingMessageViewHolder;
@@ -144,6 +145,8 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                 }
             }else if (intent.getAction().equals(weMessage.BROADCAST_IMAGE_FULLSCREEN_ACTIVITY_START)){
                 launchFullScreenImageActivity(intent.getStringExtra(weMessage.BUNDLE_FULL_SCREEN_IMAGE_URI));
+            }else if (intent.getAction().equals(weMessage.BROADCAST_VIDEO_FULLSCREEN_ACTIVITY_START)){
+                launchFullScreenVideoActivity(intent.getStringExtra(weMessage.BUNDLE_FULL_SCREEN_VIDEO_URI));
             }
         }
     };
@@ -195,6 +198,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         broadcastIntentFilter.addAction(weMessage.BROADCAST_LOAD_ATTACHMENT_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_PLAY_AUDIO_ATTACHMENT_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_IMAGE_FULLSCREEN_ACTIVITY_START);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_VIDEO_FULLSCREEN_ACTIVITY_START);
 
         callbackUuid = UUID.randomUUID().toString();
 
@@ -228,6 +232,12 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         ImageLoader imageLoader;
         MessageManager messageManager = weMessage.get().getMessageManager();
         MessageHolders messageHolders = new MessageHolders().setIncomingTextConfig(IncomingMessageViewHolder.class, R.layout.incoming_message);
+        System.out.println(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString());
+
+        for (Contact c : weMessage.get().getMessageManager().contacts.values()){
+            System.out.println("Contact: " + c.getUIDisplayName() + " Handle UUID: " + c.getHandle().getUuid().toString());
+        }
+
         String meUuid = weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())).getUuid().toString();
 
         if (chat instanceof PeerChat){
@@ -284,6 +294,13 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, chat.getUuid().toString());
 
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onPause() {
+        pauseAudio(getAudioAttachmentMediaPlayer().getAttachment());
+
+        super.onPause();
     }
 
     @Override
@@ -632,6 +649,16 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         Intent launcherIntent = new Intent(weMessage.get(), MessageImageActivity.class);
 
         launcherIntent.putExtra(weMessage.BUNDLE_FULL_SCREEN_IMAGE_URI, imageUri);
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chat.getUuid().toString());
+
+        startActivity(launcherIntent);
+        getActivity().finish();
+    }
+
+    private void launchFullScreenVideoActivity(String imageUri){
+        Intent launcherIntent = new Intent(weMessage.get(), MessageVideoActivity.class);
+
+        launcherIntent.putExtra(weMessage.BUNDLE_FULL_SCREEN_VIDEO_URI, imageUri);
         launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chat.getUuid().toString());
 
         startActivity(launcherIntent);

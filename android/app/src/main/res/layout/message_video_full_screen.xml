@@ -2,14 +2,13 @@
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/messageImageParentView"
+    android:id="@+id/messageVideoParentView"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/white">
+    android:layout_height="match_parent">
 
-    <ImageView
-        android:id="@+id/messageFullScreenImageView"
+    <scott.wemessage.app.utils.media.VideoAttachmentPlayer
+        android:id="@+id/messageVideoPlayer"
         android:layout_gravity="center"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
@@ -19,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="@color/colorHeader"
+        android:background="@color/videoPlayerPrimary"
         android:elevation="4dp">
 
         <scott.wemessage.app.ui.view.font.FontTextView

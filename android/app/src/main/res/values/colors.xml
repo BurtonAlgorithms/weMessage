@@ -10,6 +10,8 @@
     <color name="heavyBlue">#055cff</color>
     <color name="heavierBlue">#053bff</color>
     <color name="superHeavyBlue">#0013e2</color>
+    <color name="videoPlayerPrimary">#2196F3</color>
+    <color name="videoPlayerDark">#1976D2</color>
 
     <color name="deleteButtonRed">#ff3b2f</color>
     <color name="lightRed">#f70a32</color>

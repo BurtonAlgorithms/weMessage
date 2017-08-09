@@ -12,5 +12,13 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:statusBarColor">@color/colorHeader</item>
     </style>
+
+    <style name="AppTheme.VideoPlayer" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/videoPlayerPrimary</item>
+        <item name="colorPrimaryDark">@color/videoPlayerDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <item name="android:navigationBarColor">@color/videoPlayerPrimary</item>
+    </style>
     
 </resources>

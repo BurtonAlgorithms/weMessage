@@ -488,6 +488,12 @@ public class ConnectionHandler extends Thread {
 
                         weMessage.get().setCurrentAccount(currentAccount);
                         database.addAccount(currentAccount);
+
+                        Handle meHandle = database.getHandleByAccount(weMessage.get().getCurrentAccount());
+
+                        if (database.getContactByHandle(meHandle) == null) {
+                            weMessage.get().getMessageManager().addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null), false);
+                        }
                     }else {
                         UUID oldUUID = database.getAccountByEmail(emailPlainText).getUuid();
                         currentAccount.setUuid(oldUUID);
@@ -592,9 +598,6 @@ public class ConnectionHandler extends Thread {
                                 if (StringUtils.isEmpty(jsonMessage.getHandle())) {
                                     Handle meHandle = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
 
-                                    if (messageDatabase.getContactByHandle(meHandle) == null) {
-                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null), false);
-                                    }
                                     sender = messageDatabase.getContactByHandle(meHandle);
                                 } else {
                                     sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
@@ -648,14 +651,6 @@ public class ConnectionHandler extends Thread {
                                 for (String s : jsonMessage.getChat().getParticipants()) {
                                     if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
                                         messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null), false);
-                                    }
-                                }
-
-                                if (StringUtils.isEmpty(jsonMessage.getHandle())) {
-                                    Handle meHandle = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
-
-                                    if (messageDatabase.getContactByHandle(meHandle) == null) {
-                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null), false);
                                     }
                                 }
 

@@ -14,6 +14,7 @@ import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
+import scott.wemessage.app.ui.view.messages.media.AttachmentVideoView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentView;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
@@ -34,6 +35,15 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         super.onBind(message);
 
         time.setText(DateFormatter.format(message.getCreatedAt(), "h:mm a"));
+
+        for (int i = 0; i < attachmentsContainer.getChildCount(); i++) {
+            View v = attachmentsContainer.getChildAt(i);
+
+            if (v instanceof AttachmentAudioView) {
+                ((AttachmentAudioView) v).unbind();
+            }
+        }
+
         attachmentsContainer.removeAllViews();
 
         int i = 1;
@@ -68,6 +78,20 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
                         } else {
                             if (!StringUtils.isEmpty(message.getText())) {
                                 attachmentAudioView.setBottomPadding(16);
+                            }
+                        }
+                        break;
+                    case VIDEO:
+                        AttachmentVideoView attachmentVideoView = (AttachmentVideoView) inflater.inflate(R.layout.message_video, null);
+
+                        attachmentVideoView.bind(message, attachment, AttachmentView.MessageType.INCOMING);
+                        attachmentsContainer.addView(attachmentVideoView);
+
+                        if (i++ != message.getMessage().getAttachments().size()) {
+                            attachmentVideoView.setBottomPadding(16);
+                        } else {
+                            if (!StringUtils.isEmpty(message.getText())) {
+                                attachmentVideoView.setBottomPadding(16);
                             }
                         }
                         break;
