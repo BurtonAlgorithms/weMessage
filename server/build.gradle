@@ -15,6 +15,8 @@ dependencies {
     compile 'commons-codec:commons-codec:1.10'
     compile 'org.xerial:sqlite-jdbc:3.18.0'
     compile 'com.googlecode.libphonenumber:libphonenumber:8.4.3'
+    compile 'net.bramp.ffmpeg:ffmpeg:0.6.1'
+    compile 'org.slf4j:slf4j-nop:1.7.21'
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }
 

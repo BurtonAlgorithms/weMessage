@@ -25,6 +25,30 @@ public final class ServerLogger {
     public static void log(String prefix, String message){
         log(null, prefix, message);
     }
+
+    public static void log(Level level, String message){
+        switch(level){
+            case INFO:
+                System.out.println("[INFO] " + message);
+                logToFile("[INFO] " + message);
+                break;
+            case WARNING:
+                System.out.println("[WARNING!] " + message);
+                logToFile("[WARNING!] " + message);
+                break;
+            case SEVERE:
+                System.out.println("[!! SEVERE !!] " + message);
+                logToFile("[!! SEVERE !!] " + message);
+                break;
+            case ERROR:
+                System.out.println("[!!! ERROR !!!] " + message);
+                logToFile("[!!! ERROR !!!] " + message);
+                break;
+            default:
+                System.out.println(message);
+                logToFile(message);
+        }
+    }
     
     public static void log(Level level, String prefix, String message){
         if (level == null){

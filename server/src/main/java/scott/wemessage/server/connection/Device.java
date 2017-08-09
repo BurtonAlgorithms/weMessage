@@ -138,20 +138,38 @@ public class Device extends Thread {
         }
     }
 
-    public void sendOutgoingMessage(Message message) throws Exception {
-        JSONMessage jsonMessage = message.toJson();
+    public void sendOutgoingMessage(final Message message){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
 
-        sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, jsonMessage, JSONMessage.class);
+                    sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, jsonMessage, JSONMessage.class);
+                }catch (Exception ex){
+                    ServerLogger.error(TAG, "An error occurred while trying to parse a message to JSON", ex);
+                }
+            }
+        }).start();
     }
 
     public void sendOutgoingMessage(JSONMessage message) {
         sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, message, JSONMessage.class);
     }
 
-    public void updateOutgoingMessage(Message message) throws Exception {
-        JSONMessage jsonMessage = message.toJson();
+    public void updateOutgoingMessage(final Message message){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
 
-        sendOutgoingMessage(weMessage.JSON_MESSAGE_UPDATED, jsonMessage, JSONMessage.class);
+                    sendOutgoingMessage(weMessage.JSON_MESSAGE_UPDATED, jsonMessage, JSONMessage.class);
+                }catch (Exception ex){
+                    ServerLogger.error(TAG, "An error occurred while trying to parse a message to JSON", ex);
+                }
+            }
+        }).start();
     }
 
     public List<Integer> relayIncomingMessage(JSONMessage message){

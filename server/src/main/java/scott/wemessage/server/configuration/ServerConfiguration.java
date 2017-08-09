@@ -135,7 +135,7 @@ public final class ServerConfiguration {
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         ConfigJSON configJSON = new ConfigJSON(
-                new ConfigJSONData(weMessage.WEMESSAGE_CONFIG_VERSION, weMessage.DEFAULT_PORT, weMessage.CREATE_LOG_FILES,
+                new ConfigJSONData(weMessage.WEMESSAGE_CONFIG_VERSION, weMessage.DEFAULT_PORT, weMessage.CREATE_LOG_FILES, weMessage.DEFAULT_FFMPEG_LOCATION,
                         new ConfigAccountJSON(
                                 weMessage.DEFAULT_EMAIL,
                                 weMessage.DEFAULT_PASSWORD,
