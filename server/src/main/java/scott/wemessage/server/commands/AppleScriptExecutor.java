@@ -256,6 +256,42 @@ public final class AppleScriptExecutor extends Thread {
         }
     }
 
+    public void readMessages(String groupName, boolean checkNames){
+        File readMessagesScriptFile;
+
+        try {
+            File[] scriptFiles = getScriptsFolder().listFiles(new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return name.startsWith("ReadMessages");
+                }
+            });
+            readMessagesScriptFile = scriptFiles[0];
+        }catch(Exception ex){
+            ServerLogger.error(TAG, "The script ReadMessages.scpt does not exist!", new NullPointerException());
+            return;
+        }
+
+        try {
+            Process process = new ProcessBuilder("osascript", readMessagesScriptFile.getAbsolutePath(), groupName, String.valueOf(checkNames)).start();
+
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            int returnCode = -1;
+
+            while ((line = bufferedReader.readLine()) != null){
+                returnCode = Integer.parseInt(line);
+            }
+            bufferedReader.close();
+
+            if(returnCode != ReturnType.ACTION_PERFORMED.getCode()){
+                ServerLogger.log(ServerLogger.Level.ERROR,
+                        "A UI error occurred while performing important steps. Messages may stop sending at this point. \nPlease restart the server to fix this issue.");
+            }
+        }catch(Exception ex){
+            ServerLogger.error("A UI error occurred while performing important steps. Messages may stop sending at this point. \nPlease restart the server to fix this issue.", ex);
+        }
+    }
+
     public void startMessagesApp() throws ScriptException {
         String startScript = "on run\n" +
                 "\tif isAppRunning(\"Messages\") is not equal to true then\n" +

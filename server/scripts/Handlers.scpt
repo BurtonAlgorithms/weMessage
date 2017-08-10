@@ -3,13 +3,9 @@ property WEMESSAGE_VERSION : "Alpha 0.1"
 property WEMESSAGE_NUMERIC_VERSION : 1
 property UNKNOWN_ERROR : 999
 property SENT : 1000
-property DELIVERED : 1001
-property NO_INTERNET : 1002
-property MESSAGE_SERVER_NOT_AVAILABLE : 1003
 property INVALID_NUMBER : 1004
 property NUMBER_NOT_IMESSAGE : 1005
 property GROUP_CHAT_NOT_FOUND : 1006
-property NOT_DELIVERED : 1007
 property NOT_SENT : 1008
 property SERVICE_NOT_AVAILABLE : 1009
 property FILE_NOT_FOUND : 1010
@@ -421,6 +417,45 @@ end sendGroupMessageFile
 
 
 
+on readMessages(groupNameStarter, checkNames)
+	try
+		tell application "System Events"
+			tell process "Messages"
+				set rowList to {}
+				repeat with theRow in ((table 1 of scroll area 1 of splitter group 1 of window "Messages")'s entire contents as list)
+					if theRow's class is row then
+						set fullName to (theRow's UI element 1)'s description
+
+						if checkNames is equal to true then
+							if (groupNameStarter is in fullName) then
+								if (fullName contains "Has unread messages.") then
+									select theRow
+								end if
+							end if
+						else if checkNames is equal to "true" then
+							if (groupNameStarter is in fullName) then
+								if (fullName contains "Has unread messages.") then
+									select theRow
+								end if
+							end if
+						else
+							if (fullName contains "Has unread messages.") then
+								select theRow
+							end if
+						end if
+					end if
+				end repeat
+				return ACTION_PERFORMED
+			end tell
+		end tell
+	on error errorMessage
+		my logError("Handlers.scpt", errorMessage)
+		return UI_ERROR
+	end try
+end readMessages
+
+
+
 on findGroupRow(groupName, lastUpdated, lastMessage)
 	try
 		tell application "System Events"
@@ -459,7 +494,27 @@ on findGroupRow(groupName, lastUpdated, lastMessage)
 					end repeat
 
 					if (count of rowDateList) is equal to 0 then
-						return missing value
+						set rowLastMessageList to {}
+
+						repeat with convoMatchMessageRow in rowList
+							set lastMessageList to my split(convoMatchMessageRow's UI element 1's description, ". Last message: ")
+							set lastMessageSplit to my split((item 2 of lastMessageList), " ")
+							set countOfList to count of lastMessageSplit
+							set lastMessageFinal to words 1 thru (countOfList - 2) of (item 2 of lastMessageList)
+							set lastMessageFinalString to my combine(lastMessageFinal, " ")
+
+							if lastMessageFinalString is equal to lastMessage then
+								set end of rowLastMessageList to convoMatchMessageRow
+							end if
+						end repeat
+
+						if (count of rowLastMessageList) is equal to 0 then
+							return (item 1 of rowList)
+						end if
+
+						if (count of rowLastMessageList) is greater than 0 then
+							return (item 1 of rowLastMessageList)
+						end if
 					end if
 
 					if (count of rowDateList) is equal to 1 then
@@ -482,7 +537,7 @@ on findGroupRow(groupName, lastUpdated, lastMessage)
 						end repeat
 
 						if (count of rowDateLastMessageList) is equal to 0 then
-							return missing value
+							return (item 1 of rowDateList)
 						end if
 
 						if (count of rowDateLastMessageList) is greater than 0 then

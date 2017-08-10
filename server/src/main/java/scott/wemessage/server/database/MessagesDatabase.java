@@ -18,6 +18,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -283,7 +284,7 @@ public final class MessagesDatabase extends Thread {
     public Handle getHandleByAccount(String account) throws SQLException {
         try {
             PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
-            Phonenumber.PhoneNumber numberOne = phoneNumberUtil.parse(account, "US");
+            Phonenumber.PhoneNumber numberOne = phoneNumberUtil.parse(account, Locale.getDefault().getCountry());
             String numberStringOne = phoneNumberUtil.format(numberOne, PhoneNumberUtil.PhoneNumberFormat.E164);
 
             Handle handle = getHandleById(numberStringOne);
@@ -384,7 +385,7 @@ public final class MessagesDatabase extends Thread {
 
         try {
             PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
-            Phonenumber.PhoneNumber phoneNumberOne = phoneNumberUtil.parse(handle, "US");
+            Phonenumber.PhoneNumber phoneNumberOne = phoneNumberUtil.parse(handle, Locale.getDefault().getCountry());
 
             String phoneNumberString = phoneNumberUtil.format(phoneNumberOne, PhoneNumberUtil.PhoneNumberFormat.E164);
             ChatBase attemptOne = getChatByIdentifier(phoneNumberString);
