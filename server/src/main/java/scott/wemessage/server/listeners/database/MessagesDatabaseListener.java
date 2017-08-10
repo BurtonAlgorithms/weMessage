@@ -10,8 +10,6 @@ import scott.wemessage.server.events.Event;
 import scott.wemessage.server.events.Listener;
 import scott.wemessage.server.events.database.MessagesDatabaseUpdateEvent;
 import scott.wemessage.server.messages.Message;
-import scott.wemessage.server.messages.chat.GroupChat;
-import scott.wemessage.server.messages.chat.PeerChat;
 
 public class MessagesDatabaseListener extends Listener {
 
@@ -48,12 +46,6 @@ public class MessagesDatabaseListener extends Listener {
                         }
                     }else {
                         databaseManager.queueMessage(message.getGuid(), false);
-
-                        if (message.getChat() instanceof PeerChat){
-                            deviceManager.getMessageServer().getScriptExecutor().readMessages(((PeerChat) message.getChat()).getPeer().getHandleID(), false);
-                        }else {
-                            deviceManager.getMessageServer().getScriptExecutor().readMessages(((GroupChat) message.getChat()).getDisplayName(), true);
-                        }
 
                         for (Device device : deviceManager.getDevices().values()){
                             device.sendOutgoingMessage(message);

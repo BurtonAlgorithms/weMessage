@@ -41,6 +41,9 @@ on sendGroupMessage(groupName, lastUpdated, lastMessage, fileLocation, targetMes
 	set value to prerequisites()
 	if (value is not equal to ACTION_PERFORMED) then return value
 
+	set readMessagesVal to readMessages(groupName)
+	if (readMessagesVal is not equal to ACTION_PERFORMED) then return readMessagesVal
+
 	if isNull(fileLocation) is equal to false then
 		set end of returnSet to sendGroupMessageFile(groupName, lastUpdated, lastMessage, fileLocation)
 	else
@@ -62,6 +65,9 @@ end sendGroupMessage
 on renameGroup(groupName, lastUpdated, lastMessage, newGroupTitle)
 	set value to prerequisites()
 	if (value is not equal to ACTION_PERFORMED) then return value
+
+	set readMessagesVal to readMessages(groupName)
+	if (readMessagesVal is not equal to ACTION_PERFORMED) then return readMessagesVal
 
 	set groupChat to findGroupRow(groupName, lastUpdated, lastMessage)
 
@@ -101,6 +107,9 @@ on addParticipantToGroup(groupName, lastUpdated, lastMessage, phoneNumber)
 	if isNull(phoneNumber) is equal to true then
 		return INVALID_NUMBER
 	end if
+
+	set readMessagesVal to readMessages(groupName)
+	if (readMessagesVal is not equal to ACTION_PERFORMED) then return readMessagesVal
 
 	set isNumberIMessageReturn to isNumberIMessage(phoneNumber)
 
@@ -156,6 +165,9 @@ on removeParticipantFromGroup(groupName, lastUpdated, lastMessage, phoneNumber)
 		return INVALID_NUMBER
 	end if
 
+	set readMessagesVal to readMessages(groupName)
+	if (readMessagesVal is not equal to ACTION_PERFORMED) then return readMessagesVal
+
 	set groupChat to findGroupRow(groupName, lastUpdated, lastMessage)
 
 	if groupChat is equal to UI_ERROR then
@@ -209,6 +221,9 @@ on createGroup(groupName, participants, targetMessage)
 	set value to prerequisites()
 	if (value is not equal to ACTION_PERFORMED) then return value
 
+	set readMessagesVal to readMessages(groupName)
+	if (readMessagesVal is not equal to ACTION_PERFORMED) then return readMessagesVal
+
 	try
 		tell application "System Events" to tell process "Messages"
 			tell window "Messages"
@@ -252,6 +267,9 @@ end createGroup
 on leaveGroup(groupName, lastUpdated, lastMessage)
 	set value to prerequisites()
 	if (value is not equal to ACTION_PERFORMED) then return value
+
+	set readMessagesVal to readMessages(groupName)
+	if (readMessagesVal is not equal to ACTION_PERFORMED) then return readMessagesVal
 
 	set groupChat to findGroupRow(groupName, lastUpdated, lastMessage)
 
@@ -417,34 +435,37 @@ end sendGroupMessageFile
 
 
 
-on readMessages(groupNameStarter, checkNames)
+on readMessages(groupNameStarter)
 	try
 		tell application "System Events"
 			tell process "Messages"
-				set rowList to {}
+				set counter to 0
 				repeat with theRow in ((table 1 of scroll area 1 of splitter group 1 of window "Messages")'s entire contents as list)
 					if theRow's class is row then
 						set fullName to (theRow's UI element 1)'s description
 
-						if checkNames is equal to true then
-							if (groupNameStarter is in fullName) then
-								if (fullName contains "Has unread messages.") then
-									select theRow
-								end if
-							end if
-						else if checkNames is equal to "true" then
-							if (groupNameStarter is in fullName) then
-								if (fullName contains "Has unread messages.") then
-									select theRow
-								end if
-							end if
-						else
+						if (groupNameStarter is in fullName) then
 							if (fullName contains "Has unread messages.") then
+								set counter to counter + 1
 								select theRow
 							end if
 						end if
 					end if
 				end repeat
+
+				if counter is equal to 0 then
+					repeat with theRow in ((table 1 of scroll area 1 of splitter group 1 of window "Messages")'s entire contents as list)
+						if theRow's class is row then
+							set fullName to (theRow's UI element 1)'s description
+
+							if (fullName contains "Has unread messages.") then
+								set counter to counter + 1
+								select theRow
+							end if
+						end if
+					end repeat
+				end if
+
 				return ACTION_PERFORMED
 			end tell
 		end tell
