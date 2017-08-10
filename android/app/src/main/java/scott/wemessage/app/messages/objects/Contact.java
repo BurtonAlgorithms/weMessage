@@ -1,5 +1,10 @@
 package scott.wemessage.app.messages.objects;
 
+import android.content.res.Resources;
+
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
+
 import java.util.UUID;
 
 import scott.wemessage.app.utils.FileLocationContainer;
@@ -42,7 +47,15 @@ public class Contact {
             }
 
             if (StringUtils.isEmpty(fullString)) {
-                fullString = getHandle().getHandleID();
+                PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
+
+                try {
+                    Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(getHandle().getHandleID(), Resources.getSystem().getConfiguration().locale.getCountry());
+
+                    fullString = phoneNumberUtil.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL);
+                }catch (Exception ex){
+                    fullString = getHandle().getHandleID();
+                }
             }
 
             return fullString;

@@ -33,6 +33,7 @@ import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageManager;
+import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.chats.Chat;
@@ -406,6 +407,21 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onMessagesRefresh() {
+
+    }
+
+    @Override
+    public void onActionMessageAdd(ActionMessage message) {
+
+    }
+
+    @Override
+    public void onActionMessagesQueueFinish(List<ActionMessage> messages) {
+
+    }
+
+    @Override
+    public void onActionMessagesRefresh() {
 
     }
 

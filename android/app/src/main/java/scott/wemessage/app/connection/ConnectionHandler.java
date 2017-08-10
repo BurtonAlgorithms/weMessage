@@ -75,7 +75,7 @@ public class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
-    private final int TIME_TO_CONNECT = 2;
+    private final int TIME_TO_CONNECT = 0;
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
@@ -1092,14 +1092,6 @@ public class ConnectionHandler extends Thread {
                 return false;
             case SENT:
                 break;
-            case DELIVERED:
-                break;
-            case NO_INTERNET:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.NO_INTERNET);
-                return false;
-            case MESSAGE_SERVER_NOT_AVAILABLE:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.MESSAGE_SERVER_NOT_AVAILABLE);
-                return false;
             case INVALID_NUMBER:
                 messageManager.alertMessageSendFailure(jsonMessage, ReturnType.INVALID_NUMBER);
                 return false;
@@ -1110,9 +1102,6 @@ public class ConnectionHandler extends Thread {
                 return false;
             case GROUP_CHAT_NOT_FOUND:
                 messageManager.alertMessageSendFailure(jsonMessage, ReturnType.GROUP_CHAT_NOT_FOUND);
-                return false;
-            case NOT_DELIVERED:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.NOT_DELIVERED);
                 return false;
             case NOT_SENT:
                 messageManager.alertMessageSendFailure(jsonMessage, ReturnType.NOT_SENT);
@@ -1152,12 +1141,6 @@ public class ConnectionHandler extends Thread {
             case UNKNOWN_ERROR:
                 messageManager.alertActionPerformFailure(jsonAction, ReturnType.UNKNOWN_ERROR);
                 return false;
-            case NO_INTERNET:
-                messageManager.alertActionPerformFailure(jsonAction, ReturnType.NO_INTERNET);
-                return false;
-            case MESSAGE_SERVER_NOT_AVAILABLE:
-                messageManager.alertActionPerformFailure(jsonAction, ReturnType.MESSAGE_SERVER_NOT_AVAILABLE);
-                return false;
             case INVALID_NUMBER:
                 messageManager.alertActionPerformFailure(jsonAction, ReturnType.INVALID_NUMBER);
                 return false;
@@ -1166,9 +1149,6 @@ public class ConnectionHandler extends Thread {
                 return false;
             case GROUP_CHAT_NOT_FOUND:
                 messageManager.alertActionPerformFailure(jsonAction, ReturnType.GROUP_CHAT_NOT_FOUND);
-                return false;
-            case NOT_DELIVERED:
-                messageManager.alertActionPerformFailure(jsonAction, ReturnType.NOT_DELIVERED);
                 return false;
             case NOT_SENT:
                 messageManager.alertActionPerformFailure(jsonAction, ReturnType.NOT_SENT);

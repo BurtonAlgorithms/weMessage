@@ -40,6 +40,7 @@ import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
+import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
@@ -51,6 +52,8 @@ import scott.wemessage.app.ui.activities.MessageImageActivity;
 import scott.wemessage.app.ui.activities.MessageVideoActivity;
 import scott.wemessage.app.ui.view.chat.ChatTitleView;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
+import scott.wemessage.app.ui.view.messages.ActionMessageView;
+import scott.wemessage.app.ui.view.messages.ActionMessageViewHolder;
 import scott.wemessage.app.ui.view.messages.IncomingMessageViewHolder;
 import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.utils.AndroidIOUtils;
@@ -66,7 +69,8 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     private final String TAG = "ConversationFragment";
     private final Object chatLock = new Object();
     private final int MESSAGE_QUEUE_AMOUNT = 50;
-    private final int ERROR_SNACKBAR_DURATION = 5000;
+    private final int ERROR_SNACKBAR_DURATION = 5;
+    private final byte CONTENT_TYPE_ACTION = 22;
 
     private String callbackUuid;
     private Chat chat;
@@ -75,6 +79,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     private MessagesListAdapter<IMessage> messageListAdapter;
     private AudioAttachmentMediaPlayer audioAttachmentMediaPlayer;
     private ConcurrentHashMap<String, Message> messageMapIntegrity = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, ActionMessage> actionMessageMapIntegrity = new ConcurrentHashMap<>();
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private boolean isBoundToConnectionService = false;
 
@@ -231,14 +236,19 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
         ImageLoader imageLoader;
         MessageManager messageManager = weMessage.get().getMessageManager();
-        MessageHolders messageHolders = new MessageHolders().setIncomingTextConfig(IncomingMessageViewHolder.class, R.layout.incoming_message);
-        System.out.println(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString());
-
-        for (Contact c : weMessage.get().getMessageManager().contacts.values()){
-            System.out.println("Contact: " + c.getUIDisplayName() + " Handle UUID: " + c.getHandle().getUuid().toString());
-        }
-
         String meUuid = weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())).getUuid().toString();
+        MessageHolders messageHolders = new MessageHolders()
+                .setIncomingTextConfig(IncomingMessageViewHolder.class, R.layout.incoming_message)
+                .registerContentType(CONTENT_TYPE_ACTION, ActionMessageViewHolder.class, R.layout.message_action, R.layout.message_action, new MessageHolders.ContentChecker() {
+                    @Override
+                    public boolean hasContentFor(IMessage message, byte type) {
+                        switch (type){
+                            case CONTENT_TYPE_ACTION:
+                                return (message instanceof ActionMessageView);
+                        }
+                        return false;
+                    }
+                });
 
         if (chat instanceof PeerChat){
             imageLoader = null;
@@ -283,6 +293,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         this.messageListAdapter = messageListAdapter;
 
         chatTitleView.setChat(chat);
+        messageManager.queueActionMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
         messageManager.queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
         messageManager.setHasUnreadMessages(chat, false, true);
 
@@ -325,7 +336,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             unbindService();
         }
 
-        getAudioAttachmentMediaPlayer().stopAudioPlayback();
+        stopAudio();
         super.onDestroy();
     }
 
@@ -373,7 +384,6 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         });
     }
 
-    //TODO: Date header stuff
     @Override
     public void onChatRename(final Chat chat, String displayName) {
         getActivity().runOnUiThread(new Runnable() {
@@ -496,6 +506,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                             }
                         }
                     }
+
                     if (messageViews.size() > 0) {
                         messageListAdapter.addToEnd(messageViews, false);
                     }
@@ -519,8 +530,53 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         messageListAdapter.clear();
         messageMapIntegrity.clear();
         weMessage.get().getMessageManager().queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
+    }
 
-        //TODO: Be sure to get action messages too
+    @Override
+    public void onActionMessageAdd(final ActionMessage message) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (isChatThis(message.getChat())){
+                    ActionMessageView messageView = new ActionMessageView(message);
+                    messageListAdapter.addToStart(messageView, true);
+                    actionMessageMapIntegrity.put(message.getUuid().toString(), message);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onActionMessagesQueueFinish(final List<ActionMessage> messages) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (messages.size() > 0) {
+                    List<IMessage> messageViews = new ArrayList<>();
+
+                    for (ActionMessage message : messages) {
+                        if (isChatThis(message.getChat())) {
+                            if (!actionMessageMapIntegrity.containsKey(message.getUuid().toString())) {
+                                ActionMessageView messageView = new ActionMessageView(message);
+
+                                messageViews.add(messageView);
+                                actionMessageMapIntegrity.put(message.getUuid().toString(), message);
+                            }
+                        }
+                    }
+
+                    if (messageViews.size() > 0) {
+                        messageListAdapter.addToEnd(messageViews, false);
+                    }
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onActionMessagesRefresh() {
+        actionMessageMapIntegrity.clear();
+        weMessage.get().getMessageManager().queueActionMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
     }
 
     @Override
@@ -680,7 +736,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     }
 
     private Snackbar generateErroredSnackBar(View view, String message){
-        final Snackbar snackbar = Snackbar.make(view, message, ERROR_SNACKBAR_DURATION);
+        final Snackbar snackbar = Snackbar.make(view, message, ERROR_SNACKBAR_DURATION * 1000);
 
         snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
             @Override

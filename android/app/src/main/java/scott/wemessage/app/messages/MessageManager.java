@@ -25,8 +25,6 @@ import scott.wemessage.commons.utils.DateUtils;
 
 public final class MessageManager {
 
-    //TODO: Queue action messages
-
     private Context context;
     private ConcurrentHashMap<String, Callbacks> callbacksMap = new ConcurrentHashMap<>();
     public ConcurrentHashMap<String, Contact> contacts = new ConcurrentHashMap<>();
@@ -268,11 +266,26 @@ public final class MessageManager {
             createThreadedTask(new Runnable() {
                 @Override
                 public void run() {
+                    refreshActionMessagesTask();
                     refreshMessagesTask();
                 }
             }).start();
         }else {
+            refreshActionMessagesTask();
             refreshMessagesTask();
+        }
+    }
+
+    public void queueActionMessages(final Chat chat, final int startIndex, final int requestAmount, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    queueActionMessagesTask(chat, startIndex, requestAmount);
+                }
+            }).start();
+        }else {
+            queueActionMessagesTask(chat, startIndex, requestAmount);
         }
     }
 
@@ -404,8 +417,7 @@ public final class MessageManager {
 
         ActionMessage actionMessage = new ActionMessage(
                 UUID.randomUUID(), chat, getContext().getString(R.string.action_message_rename_group, newName), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()));
-        weMessage.get().getMessageDatabase().addActionMessage(actionMessage);
-        actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
+        addActionMessageTask(actionMessage);
 
         for (Callbacks callbacks : callbacksMap.values()){
             callbacks.onChatRename(chat, newName);
@@ -419,8 +431,7 @@ public final class MessageManager {
 
         ActionMessage actionMessage = new ActionMessage(
                 UUID.randomUUID(), chat, getContext().getString(R.string.action_message_add_participant, contact.getUIDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()));
-        weMessage.get().getMessageDatabase().addActionMessage(actionMessage);
-        actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
+        addActionMessageTask(actionMessage);
 
         for (Callbacks callbacks : callbacksMap.values()){
             callbacks.onParticipantAdd(chat, contact);
@@ -434,8 +445,7 @@ public final class MessageManager {
 
         ActionMessage actionMessage = new ActionMessage(
                 UUID.randomUUID(), chat, getContext().getString(R.string.action_message_remove_participant, contact.getUIDisplayName()), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()));
-        weMessage.get().getMessageDatabase().addActionMessage(actionMessage);
-        actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
+        addActionMessageTask(actionMessage);
 
         for (Callbacks callbacks : callbacksMap.values()){
             callbacks.onParticipantRemove(chat, contact);
@@ -448,10 +458,8 @@ public final class MessageManager {
         weMessage.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
 
         ActionMessage actionMessage = new ActionMessage(
-                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_leave_group), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime())
-        );
-        weMessage.get().getMessageDatabase().addActionMessage(actionMessage);
-        actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
+                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_leave_group), DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()));
+        addActionMessageTask(actionMessage);
 
         for (Callbacks callbacks : callbacksMap.values()){
             callbacks.onLeaveGroup(chat);
@@ -536,10 +544,41 @@ public final class MessageManager {
         }
     }
 
+    private void addActionMessageTask(ActionMessage actionMessage){
+        weMessage.get().getMessageDatabase().addActionMessage(actionMessage);
+        actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
+
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onActionMessageAdd(actionMessage);
+        }
+    }
+
+    private void queueActionMessagesTask(Chat chat, int startIndex, int requestAmount){
+        List<ActionMessage> actionMessageList = weMessage.get().getMessageDatabase().getReversedActionMessagesByTime(chat, startIndex, requestAmount);
+
+        for (ActionMessage m : actionMessageList){
+            actionMessages.put(m.getUuid().toString(), m);
+        }
+
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onActionMessagesQueueFinish(actionMessageList);
+        }
+    }
+
+    private void refreshActionMessagesTask(){
+        actionMessages.clear();
+
+        for (Callbacks callbacks : callbacksMap.values()){
+            callbacks.onActionMessagesRefresh();
+        }
+    }
+
+
     public void dumpAll(weMessage app){
         contacts.clear();
         chats.clear();
         messages.clear();
+        actionMessages.clear();
         callbacksMap.clear();
     }
 
@@ -582,6 +621,12 @@ public final class MessageManager {
         void onMessagesQueueFinish(List<Message> messages);
 
         void onMessagesRefresh();
+
+        void onActionMessageAdd(ActionMessage message);
+
+        void onActionMessagesQueueFinish(List<ActionMessage> messages);
+
+        void onActionMessagesRefresh();
 
         void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType);
 

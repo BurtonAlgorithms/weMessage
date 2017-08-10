@@ -258,6 +258,33 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return actionMessages;
     }
 
+
+    public List<ActionMessage> getReversedActionMessagesByTime(Chat chat, int startIndex, int numberToFetch){
+        List<ActionMessage> actionMessages = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        int finalRow = getMaxIdFromTable(ActionMessageTable.TABLE_NAME, MessageTable._ID);
+        long start = finalRow - startIndex;
+
+        String selectQuery = "SELECT * FROM " + ActionMessageTable.TABLE_NAME + " WHERE " + ActionMessageTable._ID + " <= ? AND "
+                + ActionMessageTable.CHAT_UUID + " = ? ORDER BY " + ActionMessageTable.DATE + " DESC LIMIT " + numberToFetch;
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {String.valueOf(start), chat.getUuid().toString()} );
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                ActionMessage message = buildActionMessage(cursor);
+
+                if (message != null) {
+                    actionMessages.add(message);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return actionMessages;
+    }
+
     public List<Message> getReversedMessages(Chat chat, int startIndex, int numberToFetch){
         List<Message> messages = new ArrayList<>();
 

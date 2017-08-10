@@ -13,6 +13,8 @@
 
         <ImageView
             android:id="@+id/audioPlayImage"
+            android:scaleType="centerInside"
+            android:adjustViewBounds="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@color/transparent"/>

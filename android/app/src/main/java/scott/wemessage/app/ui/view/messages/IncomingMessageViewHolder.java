@@ -14,6 +14,7 @@ import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
+import scott.wemessage.app.ui.view.messages.media.AttachmentUndefinedView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentVideoView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentView;
 import scott.wemessage.app.weMessage;
@@ -96,7 +97,18 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
                         }
                         break;
                     case UNDEFINED:
-                        //TODO: Do some kind of file type unknown, include extension at end
+                        AttachmentUndefinedView attachmentUndefinedView = (AttachmentUndefinedView) inflater.inflate(R.layout.message_undefined_attachment, null);
+
+                        attachmentUndefinedView.bind(message, attachment, AttachmentView.MessageType.INCOMING);
+                        attachmentsContainer.addView(attachmentUndefinedView);
+
+                        if (i++ != message.getMessage().getAttachments().size()) {
+                            attachmentUndefinedView.setBottomPadding(16);
+                        } else {
+                            if (!StringUtils.isEmpty(message.getText())) {
+                                attachmentUndefinedView.setBottomPadding(16);
+                            }
+                        }
                         break;
                 }
             }catch(Exception ex){

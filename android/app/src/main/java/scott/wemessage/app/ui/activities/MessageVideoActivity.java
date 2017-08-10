@@ -26,7 +26,6 @@ public class MessageVideoActivity extends AppCompatActivity implements EasyVideo
 
     private String videoUri;
     private String previousChatId;
-    private boolean isCollapsed;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -35,11 +34,9 @@ public class MessageVideoActivity extends AppCompatActivity implements EasyVideo
         setContentView(R.layout.message_video_full_screen);
 
         if (savedInstanceState == null) {
-            isCollapsed = false;
             videoUri = getIntent().getStringExtra(weMessage.BUNDLE_FULL_SCREEN_VIDEO_URI);
             previousChatId = getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT);
         } else {
-            isCollapsed = savedInstanceState.getBoolean("isCollapsed");
             videoUri = savedInstanceState.getString("fullScreenVideoUri");
             previousChatId = savedInstanceState.getString("previousChatId");
         }
@@ -65,7 +62,6 @@ public class MessageVideoActivity extends AppCompatActivity implements EasyVideo
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        outState.putBoolean("isCollapsed", isCollapsed);
         outState.putString("fullScreenVideoUri", videoUri);
         outState.putString("previousChatId", previousChatId);
 

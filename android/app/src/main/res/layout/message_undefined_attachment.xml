@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scott.wemessage.app.ui.view.messages.media.AttachmentUndefinedView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.stfalcon.chatkit.utils.RoundedImageView
+        android:id="@+id/undefinedAttachmentImageView"
+        android:src="@drawable/ic_unknown_filetype"
+        android:layout_height="128dp"
+        android:layout_width="128dp"
+        app:layout_widthPercent="100%" />
+
+    <scott.wemessage.app.ui.view.font.FontTextView
+        android:id="@+id/undefinedAttachmentTextView"
+        android:textSize="18sp"
+        android:gravity="center"
+        android:layout_marginTop="4dp"
+        android:layout_below="@id/undefinedAttachmentImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignStart="@id/undefinedAttachmentImageView"
+        android:layout_alignEnd="@id/undefinedAttachmentImageView"
+        app:font="orkney_light.ttf"/>
+
+</scott.wemessage.app.ui.view.messages.media.AttachmentUndefinedView>
