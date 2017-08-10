@@ -36,13 +36,9 @@ public interface Constants {
 
      int UNKNOWN_ERROR = 999;
      int SENT = 1000;
-     int DELIVERED = 1001;
-     int NO_INTERNET = 1002;
-     int MESSAGE_SERVER_NOT_AVAILABLE = 1003;
      int INVALID_NUMBER = 1004;
      int NUMBER_NOT_IMESSAGE = 1005;
      int GROUP_CHAT_NOT_FOUND = 1006;
-     int NOT_DELIVERED = 1007;
      int NOT_SENT = 1008;
      int SERVICE_NOT_AVAILABLE = 1009;
      int FILE_NOT_FOUND = 1010;
