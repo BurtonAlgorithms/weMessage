@@ -71,4 +71,8 @@ public class DateUtils {
         return (calendarOne.get(Calendar.YEAR) == calendarTwo.get(Calendar.YEAR)
                 && calendarOne.get(Calendar.DAY_OF_YEAR) == calendarTwo.get(Calendar.DAY_OF_YEAR));
     }
+
+    public static boolean isSameHour(Date dateNow, Date dateBefore){
+        return (dateNow.getTime() - dateBefore.getTime()) <= 60*60*1000;
+    }
 }
