@@ -5,6 +5,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.stfalcon.chatkit.messages.MessageHolders;
 import com.stfalcon.chatkit.utils.DateFormatter;
@@ -12,6 +13,7 @@ import com.stfalcon.chatkit.utils.DateFormatter;
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.objects.Attachment;
+import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentUndefinedView;
@@ -24,11 +26,13 @@ import scott.wemessage.commons.utils.StringUtils;
 public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessageViewHolder<MessageView>  {
 
     private LinearLayout attachmentsContainer;
+    private TextView senderName;
 
     public IncomingMessageViewHolder(View itemView) {
         super(itemView);
 
         attachmentsContainer = (LinearLayout) itemView.findViewById(R.id.attachmentsContainer);
+        senderName = (TextView) itemView.findViewById(R.id.senderName);
     }
 
     @Override
@@ -123,6 +127,13 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
             bubble.setVisibility(View.GONE);
         }else {
             bubble.setVisibility(View.VISIBLE);
+        }
+
+        if (message.getMessage().getChat().getChatType() == Chat.ChatType.GROUP) {
+            senderName.setText(message.getUser().getName());
+            senderName.setVisibility(View.VISIBLE);
+        }else {
+            senderName.setVisibility(View.GONE);
         }
     }
 

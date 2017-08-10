@@ -54,7 +54,6 @@ public class MessageVideoActivity extends AppCompatActivity implements EasyVideo
         videoPlayer.setSource(Uri.parse(videoUri));
         videoPlayer.setCallback(this);
         videoPlayer.setClickCallback(this);
-        videoPlayer.setAutoPlay(true);
         videoPlayer.setAutoFullscreen(true);
         videoPlayer.setLeft(EasyVideoPlayer.LEFT_ACTION_RESTART);
         videoPlayer.setRight(EasyVideoPlayer.RIGHT_ACTION_NONE);

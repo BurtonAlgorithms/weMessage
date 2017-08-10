@@ -28,7 +28,6 @@ import com.stfalcon.chatkit.messages.MessagesListAdapter;
 import com.stfalcon.chatkit.utils.DateFormatter;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -44,6 +43,7 @@ import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.ui.activities.ChatListActivity;
@@ -62,7 +62,6 @@ import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
-import scott.wemessage.commons.utils.DateUtils;
 
 public class ConversationFragment extends Fragment implements MessageManager.Callbacks, AudioAttachmentMediaPlayer.AttachmentAudioCallbacks {
 
@@ -293,8 +292,8 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         this.messageListAdapter = messageListAdapter;
 
         chatTitleView.setChat(chat);
-        messageManager.queueActionMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
         messageManager.queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
+
         messageManager.setHasUnreadMessages(chat, false, true);
 
         return view;
@@ -328,6 +327,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         MessageManager messageManager = weMessage.get().getMessageManager();
 
         messageMapIntegrity.clear();
+        actionMessageMapIntegrity.clear();
         messageListAdapter.clear();
         messageManager.unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(messageListBroadcastReceiver);
@@ -463,12 +463,12 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     }
 
     @Override
-    public void onMessageUpdate(Message oldData, final Message newData) {
+    public void onMessageUpdate(final Message oldData, final Message newData) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (isChatThis(newData.getChat())){
-                    messageListAdapter.update(new MessageView(newData));
+                    messageListAdapter.update(oldData.getUuid().toString(), new MessageView(newData));
                     messageMapIntegrity.put(newData.getUuid().toString(), newData);
                 }
             }
@@ -489,20 +489,35 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     }
 
     @Override
-    public void onMessagesQueueFinish(final List<Message> messages) {
+    public void onMessagesQueueFinish(final List<MessageBase> messages) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (messages.size() > 0) {
                     List<IMessage> messageViews = new ArrayList<>();
 
-                    for (Message message : messages) {
-                        if (isChatThis(message.getChat())) {
-                            if (!messageMapIntegrity.containsKey(message.getUuid().toString())) {
-                                MessageView messageView = new MessageView(message);
+                    for (MessageBase messageBase : messages){
+                        if (messageBase instanceof ActionMessage){
+                            ActionMessage actionMessage = (ActionMessage) messageBase;
 
-                                messageViews.add(messageView);
-                                messageMapIntegrity.put(message.getUuid().toString(), message);
+                            if (isChatThis(actionMessage.getChat())) {
+                                if (!actionMessageMapIntegrity.containsKey(actionMessage.getUuid().toString())) {
+                                    ActionMessageView messageView = new ActionMessageView(actionMessage);
+
+                                    messageViews.add(messageView);
+                                    actionMessageMapIntegrity.put(actionMessage.getUuid().toString(), actionMessage);
+                                }
+                            }
+                        } else if (messageBase instanceof Message){
+                            Message message = (Message) messageBase;
+
+                            if (isChatThis(message.getChat())) {
+                                if (!messageMapIntegrity.containsKey(message.getUuid().toString())) {
+                                    MessageView messageView = new MessageView(message);
+
+                                    messageViews.add(messageView);
+                                    messageMapIntegrity.put(message.getUuid().toString(), message);
+                                }
                             }
                         }
                     }
@@ -514,12 +529,12 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                     //TODO: TEMP CODE
 
 
-                    MessageView me = new MessageView(new Message(UUID.randomUUID(), "Mac-" + UUID.randomUUID().toString(), chat,
+                    /* MessageView me = new MessageView(new Message(UUID.randomUUID(), "Mac-" + UUID.randomUUID().toString(), chat,
                             weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())),
                             null, "This is a message from myself, as a test. hello. Lorem ispilum pi 214-868-7499", DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()), null, null,
                             false, true, false, false, false, true));
 
-                    messageListAdapter.addToStart(me, true);
+                    messageListAdapter.addToStart(me, true); */
                 }
             }
         });
@@ -529,6 +544,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     public void onMessagesRefresh() {
         messageListAdapter.clear();
         messageMapIntegrity.clear();
+        actionMessageMapIntegrity.clear();
         weMessage.get().getMessageManager().queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
     }
 
@@ -544,39 +560,6 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                 }
             }
         });
-    }
-
-    @Override
-    public void onActionMessagesQueueFinish(final List<ActionMessage> messages) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (messages.size() > 0) {
-                    List<IMessage> messageViews = new ArrayList<>();
-
-                    for (ActionMessage message : messages) {
-                        if (isChatThis(message.getChat())) {
-                            if (!actionMessageMapIntegrity.containsKey(message.getUuid().toString())) {
-                                ActionMessageView messageView = new ActionMessageView(message);
-
-                                messageViews.add(messageView);
-                                actionMessageMapIntegrity.put(message.getUuid().toString(), message);
-                            }
-                        }
-                    }
-
-                    if (messageViews.size() > 0) {
-                        messageListAdapter.addToEnd(messageViews, false);
-                    }
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onActionMessagesRefresh() {
-        actionMessageMapIntegrity.clear();
-        weMessage.get().getMessageManager().queueActionMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
     }
 
     @Override

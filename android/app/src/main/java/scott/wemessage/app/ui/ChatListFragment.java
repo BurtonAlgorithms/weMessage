@@ -36,6 +36,7 @@ import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
@@ -401,7 +402,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     }
 
     @Override
-    public void onMessagesQueueFinish(List<Message> messages) {
+    public void onMessagesQueueFinish(List<MessageBase> messages) {
 
     }
 
@@ -412,16 +413,6 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onActionMessageAdd(ActionMessage message) {
-
-    }
-
-    @Override
-    public void onActionMessagesQueueFinish(List<ActionMessage> messages) {
-
-    }
-
-    @Override
-    public void onActionMessagesRefresh() {
 
     }
 

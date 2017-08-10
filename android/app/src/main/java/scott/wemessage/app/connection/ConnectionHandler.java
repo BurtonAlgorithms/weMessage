@@ -75,7 +75,7 @@ public class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
-    private final int TIME_TO_CONNECT = 0;
+    private final int TIME_TO_CONNECT = 2;
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
@@ -589,7 +589,7 @@ public class ConnectionHandler extends Thread {
                                 }
 
                                 JSONChat jsonChat = jsonMessage.getChat();
-                                runChatCheck(messageManager, jsonChat);
+                                runChatCheck(messageManager, jsonChat, DateUtils.getDateUsing2001(jsonMessage.getDateSent() - 1));
 
                                 messageManager.setHasUnreadMessages(messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), true, false);
 
@@ -655,7 +655,7 @@ public class ConnectionHandler extends Thread {
                                 }
 
                                 JSONChat jsonChat = jsonMessage.getChat();
-                                runChatCheck(messageManager, jsonChat);
+                                runChatCheck(messageManager, jsonChat, DateUtils.getDateUsing2001(jsonMessage.getDateSent() - 1));
 
                                 if (messageDatabase.getMessageByMacGuid(jsonMessage.getMacGuid()) == null){
 
@@ -781,7 +781,7 @@ public class ConnectionHandler extends Thread {
         messageManager.addChat(newChat, false);
     }
 
-    private void updateGroupChat(MessageManager messageManager, GroupChat existingChat, JSONChat jsonChat, boolean overrideAll){
+    private void updateGroupChat(MessageManager messageManager, GroupChat existingChat, JSONChat jsonChat, Date executionTime, boolean overrideAll){
         MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
 
         ArrayList<String> existingChatParticipantList = new ArrayList<>();
@@ -792,18 +792,18 @@ public class ConnectionHandler extends Thread {
 
         for (String s : existingChatParticipantList){
             if (!jsonChat.getParticipants().contains(s)){
-                messageManager.removeParticipantFromGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), false);
+                messageManager.removeParticipantFromGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), executionTime, false);
             }
         }
 
         for (String s : jsonChat.getParticipants()){
             if (!existingChatParticipantList.contains(s)){
-                messageManager.addParticipantToGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), false);
+                messageManager.addParticipantToGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), executionTime, false);
             }
         }
 
         if (!existingChat.getDisplayName().equals(jsonChat.getDisplayName())) {
-            messageManager.renameGroupChat(existingChat, jsonChat.getDisplayName(), false);
+            messageManager.renameGroupChat(existingChat, jsonChat.getDisplayName(), executionTime, false);
         }
 
         if (overrideAll){
@@ -814,7 +814,7 @@ public class ConnectionHandler extends Thread {
         }
     }
 
-    private void runChatCheck(MessageManager messageManager, JSONChat jsonChat){
+    private void runChatCheck(MessageManager messageManager, JSONChat jsonChat, Date executionTime){
         MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
 
         if (messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()) == null) {
@@ -842,7 +842,7 @@ public class ConnectionHandler extends Thread {
                 } else if (groupChats.size() == 1) {
 
                     if (groupChats.get(0).getMacGuid() == null) {
-                        updateGroupChat(messageManager, groupChats.get(0), jsonChat, true);
+                        updateGroupChat(messageManager, groupChats.get(0), jsonChat, executionTime, true);
                     } else {
                         newGroupChat(messageManager, jsonChat);
                     }
@@ -851,7 +851,7 @@ public class ConnectionHandler extends Thread {
 
                     for (GroupChat groupChat : groupChats) {
                         if (groupChat.getMacGuid() == null) {
-                            updateGroupChat(messageManager, groupChat, jsonChat, true);
+                            updateGroupChat(messageManager, groupChat, jsonChat, executionTime, true);
                             updated = true;
                             break;
                         }
@@ -865,7 +865,7 @@ public class ConnectionHandler extends Thread {
             Chat existingChat = messageDatabase.getChatByMacGuid(jsonChat.getMacGuid());
 
             if (existingChat.getChatType() == Chat.ChatType.GROUP) {
-                updateGroupChat(messageManager, (GroupChat) existingChat, jsonChat, false);
+                updateGroupChat(messageManager, (GroupChat) existingChat, jsonChat, executionTime, false);
             }
         }
     }
@@ -995,7 +995,7 @@ public class ConnectionHandler extends Thread {
                             new NullPointerException());
                     return;
                 }
-                messageManager.addParticipantToGroup(apGroupChat, apContact, false);
+                messageManager.addParticipantToGroup(apGroupChat, apContact, Calendar.getInstance().getTime(), false);
                 break;
 
             case REMOVE_PARTICIPANT:
@@ -1020,7 +1020,7 @@ public class ConnectionHandler extends Thread {
                     AppLogger.error("Could not perform JSONAction Remove Participant because contact with Handle ID: " + args[3] + " was not found.", new NullPointerException());
                     return;
                 }
-                messageManager.removeParticipantFromGroup(rpGroupChat, rpContact, false);
+                messageManager.removeParticipantFromGroup(rpGroupChat, rpContact, Calendar.getInstance().getTime(), false);
                 break;
 
             case RENAME_GROUP:
@@ -1035,7 +1035,7 @@ public class ConnectionHandler extends Thread {
                             new NullPointerException());
                     return;
                 }
-                messageManager.renameGroupChat(rnGroupChat, args[3], false);
+                messageManager.renameGroupChat(rnGroupChat, args[3], Calendar.getInstance().getTime(), false);
                 break;
 
             case CREATE_GROUP:
@@ -1069,7 +1069,7 @@ public class ConnectionHandler extends Thread {
                             new NullPointerException());
                     return;
                 }
-                messageManager.leaveGroup(lvGroupChat, false);
+                messageManager.leaveGroup(lvGroupChat, Calendar.getInstance().getTime(), false);
                 break;
 
             default:

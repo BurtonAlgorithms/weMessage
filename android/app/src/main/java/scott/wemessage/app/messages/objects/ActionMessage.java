@@ -6,7 +6,7 @@ import java.util.UUID;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.commons.utils.DateUtils;
 
-public class ActionMessage {
+public class ActionMessage extends MessageBase {
 
     private UUID uuid;
     private Chat chat;
@@ -37,6 +37,11 @@ public class ActionMessage {
     }
 
     public Integer getDate() {
+        return date;
+    }
+
+    @Override
+    public Integer getTimeIdentifier() {
         return date;
     }
 

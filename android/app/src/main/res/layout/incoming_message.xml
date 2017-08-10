@@ -17,12 +17,23 @@
         android:layout_alignParentBottom="true"
         android:layout_marginEnd="8dp" />
 
+    <TextView
+        android:id="@+id/senderName"
+        android:textSize="14sp"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="4dp"
+        android:layout_marginEnd="@dimen/message_incoming_bubble_margin_right"
+        android:layout_toEndOf="@id/messageUserAvatar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
     <LinearLayout
         android:id="@+id/attachmentsContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="@dimen/message_incoming_bubble_margin_right"
         android:layout_toEndOf="@id/messageUserAvatar"
+        android:layout_below="@id/senderName"
         android:orientation="vertical" >
 
     </LinearLayout>

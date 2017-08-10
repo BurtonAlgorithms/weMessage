@@ -28,9 +28,10 @@ import scott.wemessage.app.weMessage;
 public class AttachmentAudioView extends AttachmentView {
 
     private boolean isInit = false;
-    private boolean isStopped = false;
 
     private String attachmentUuid = "";
+    private AudioCounterHandler currentAudioLoopHandler;
+
     private int currentPositionMillisecond = 0;
     private int durationMillisecond = 0;
 
@@ -185,7 +186,9 @@ public class AttachmentAudioView extends AttachmentView {
     }
 
     public void unbind(){
-        isStopped = true;
+        if (currentAudioLoopHandler != null){
+            currentAudioLoopHandler.setStopped(true);
+        }
     }
 
     public String getAttachmentUuid(){
@@ -241,27 +244,12 @@ public class AttachmentAudioView extends AttachmentView {
     }
 
     private void startCountHandler() {
-        final Handler handler = new Handler();
-
-        handler.postDelayed(new Runnable() {
-            public void run() {
-                try {
-                    if (!isStopped) {
-                        if (currentPositionMillisecond < durationMillisecond && getParentFragment().getAudioAttachmentMediaPlayer().isPlaying()) {
-                            currentPositionMillisecond += 1000;
-                            String countFormat = String.format(getResources().getConfiguration().locale, "%d:%02d",
-                                    TimeUnit.MILLISECONDS.toMinutes(currentPositionMillisecond),
-                                    TimeUnit.MILLISECONDS.toSeconds(currentPositionMillisecond)
-                                            - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(currentPositionMillisecond)));
-                            audioCounterView.setText(countFormat);
-                            handler.postDelayed(this, 1000);
-                        }
-                    }
-                }catch(Exception ex){
-
-                }
-            }
-        }, 1000);
+        if (currentAudioLoopHandler != null){
+            currentAudioLoopHandler.setStopped(true);
+            currentAudioLoopHandler = null;
+        }
+        currentAudioLoopHandler = new AudioCounterHandler();
+        currentAudioLoopHandler.runTask();
     }
 
     private class AudioTrackMetadata {
@@ -269,5 +257,46 @@ public class AttachmentAudioView extends AttachmentView {
         int durationMillisecond;
         int currentPositionMillisecond = 0;
         boolean isPlaying;
+    }
+
+    private class AudioCounterHandler {
+        private boolean isStopped = false;
+        private boolean firstLoop = false;
+        private Handler handler;
+
+        AudioCounterHandler(){
+            handler = new Handler();
+        }
+
+        void setStopped(boolean stopped) {
+            isStopped = stopped;
+        }
+
+        void runTask(){
+            firstLoop = false;
+
+            handler.postDelayed(new Runnable() {
+                public void run() {
+                    try {
+                        if (!isStopped) {
+                            if (currentPositionMillisecond < durationMillisecond && getParentFragment().getAudioAttachmentMediaPlayer().isPlaying()) {
+                                if (!firstLoop){
+                                    firstLoop = true;
+                                    currentPositionMillisecond = getParentFragment().getAudioAttachmentMediaPlayer().getCurrentPosition();
+                                }else {
+                                    currentPositionMillisecond += 1000;
+                                }
+                                String countFormat = String.format(getResources().getConfiguration().locale, "%d:%02d",
+                                        TimeUnit.MILLISECONDS.toMinutes(currentPositionMillisecond),
+                                        TimeUnit.MILLISECONDS.toSeconds(currentPositionMillisecond)
+                                                - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(currentPositionMillisecond)));
+                                audioCounterView.setText(countFormat);
+                                handler.postDelayed(this, 1000);
+                            }
+                        }
+                    }catch(Exception ex){ }
+                }
+            }, 1000);
+        }
     }
 }

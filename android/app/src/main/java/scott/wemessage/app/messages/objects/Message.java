@@ -22,7 +22,7 @@ import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
 
-public class Message {
+public class Message extends MessageBase {
 
     private UUID uuid;
     private String macGuid;
@@ -90,6 +90,11 @@ public class Message {
 
     public Integer getDateRead() {
         return dateRead;
+    }
+
+    @Override
+    public Integer getTimeIdentifier() {
+        return dateSent;
     }
 
     public Date getModernDateSent(){
