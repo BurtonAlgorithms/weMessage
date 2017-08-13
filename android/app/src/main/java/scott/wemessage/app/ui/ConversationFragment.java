@@ -5,7 +5,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
@@ -14,20 +16,30 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.webkit.MimeTypeMap;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.stfalcon.chatkit.commons.ImageLoader;
 import com.stfalcon.chatkit.commons.models.IMessage;
 import com.stfalcon.chatkit.messages.MessageHolders;
+import com.stfalcon.chatkit.messages.MessageInput;
 import com.stfalcon.chatkit.messages.MessagesList;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
 import com.stfalcon.chatkit.utils.DateFormatter;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -56,14 +68,19 @@ import scott.wemessage.app.ui.view.messages.ActionMessageView;
 import scott.wemessage.app.ui.view.messages.ActionMessageViewHolder;
 import scott.wemessage.app.ui.view.messages.IncomingMessageViewHolder;
 import scott.wemessage.app.ui.view.messages.MessageView;
+import scott.wemessage.app.ui.view.messages.OutgoingMessageViewHolder;
 import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.utils.media.AudioAttachmentMediaPlayer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.commons.utils.DateUtils;
 
-public class ConversationFragment extends Fragment implements MessageManager.Callbacks, AudioAttachmentMediaPlayer.AttachmentAudioCallbacks {
+public class ConversationFragment extends Fragment implements MessageManager.Callbacks, AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
+
+    //TODO: Ensure messages are getting updated, etc. etc.
 
     private final String TAG = "ConversationFragment";
     private final Object chatLock = new Object();
@@ -72,15 +89,21 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     private final byte CONTENT_TYPE_ACTION = 22;
 
     private String callbackUuid;
+    private boolean isBoundToConnectionService = false;
+    private boolean isPopupFragmentOpen = false;
+
     private Chat chat;
     private ChatTitleView chatTitleView;
+    private MessageInput messageInput;
     private MessagesList messageList;
+    private FrameLayout galleryFragmentContainer;
     private MessagesListAdapter<IMessage> messageListAdapter;
     private AudioAttachmentMediaPlayer audioAttachmentMediaPlayer;
+    private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
+
+    private List<String> attachmentsInput = new ArrayList<>();
     private ConcurrentHashMap<String, Message> messageMapIntegrity = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, ActionMessage> actionMessageMapIntegrity = new ConcurrentHashMap<>();
-    private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
-    private boolean isBoundToConnectionService = false;
 
     private BroadcastReceiver messageListBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -184,7 +207,8 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                 goToChatList(getString(R.string.conversation_load_failure));
             }
         }else {
-            chat = messageDatabase.getChatByUuid(savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT));
+            setChat(messageDatabase.getChatByUuid(savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT)));
+            attachmentsInput = savedInstanceState.getStringArrayList(weMessage.BUNDLE_SELECTED_GALLERY_STORE);
         }
 
         IntentFilter broadcastIntentFilter = new IntentFilter();
@@ -232,12 +256,15 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
         chatTitleView = (ChatTitleView) toolbar.findViewById(R.id.chatTitleView);
         messageList = (MessagesList) view.findViewById(R.id.messagesList);
+        messageInput = (MessageInput) view.findViewById(R.id.messageInputView);
+        galleryFragmentContainer = (FrameLayout) view.findViewById(R.id.galleryFragmentContainer);
 
         ImageLoader imageLoader;
-        MessageManager messageManager = weMessage.get().getMessageManager();
-        String meUuid = weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())).getUuid().toString();
+        final MessageManager messageManager = weMessage.get().getMessageManager();
+        final String meUuid = weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())).getUuid().toString();
         MessageHolders messageHolders = new MessageHolders()
                 .setIncomingTextConfig(IncomingMessageViewHolder.class, R.layout.incoming_message)
+                .setOutcomingTextConfig(OutgoingMessageViewHolder.class, R.layout.outgoing_message)
                 .registerContentType(CONTENT_TYPE_ACTION, ActionMessageViewHolder.class, R.layout.message_action, R.layout.message_action, new MessageHolders.ContentChecker() {
                     @Override
                     public boolean hasContentFor(IMessage message, byte type) {
@@ -249,7 +276,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                     }
                 });
 
-        if (chat instanceof PeerChat){
+        if (getChat() instanceof PeerChat){
             imageLoader = null;
         } else {
             imageLoader = new ImageLoader() {
@@ -261,7 +288,6 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         }
 
         MessagesListAdapter<IMessage> messageListAdapter = new MessagesListAdapter<>(meUuid, messageHolders, imageLoader);
-
         messageListAdapter.setDateHeadersFormatter(new DateFormatter.Formatter() {
             @Override
             public String format(Date date) {
@@ -282,27 +308,128 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         messageListAdapter.setLoadMoreListener(new MessagesListAdapter.OnLoadMoreListener() {
             @Override
             public void onLoadMore(int page, int totalItemsCount) {
-                weMessage.get().getMessageManager().queueMessages(chat, totalItemsCount, MESSAGE_QUEUE_AMOUNT, true);
+                weMessage.get().getMessageManager().queueMessages(getChat(), totalItemsCount, MESSAGE_QUEUE_AMOUNT, true);
             }
         });
 
-        //TODO: If onMessageClick listener is being added, make sure the fragment is still attached
-
+        chatTitleView.setChat(getChat());
         messageList.setAdapter(messageListAdapter);
         this.messageListAdapter = messageListAdapter;
 
-        chatTitleView.setChat(chat);
-        messageManager.queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
+        //TODO: When voice is recording, change drawable, if exit out, save audio, and add it to message
 
-        messageManager.setHasUnreadMessages(chat, false, true);
+        messageInput.setAttachmentsListener(new MessageInput.AttachmentsListener() {
+            @Override
+            public void onAddAttachments() {
+                clearEditText((EditText) messageInput.findViewById(R.id.messageInput), true);
+
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isPopupFragmentOpen) {
+                            launchAttachmentPopupFragment();
+                        }else {
+                            closeAttachmentPopupFragment();
+                        }
+                    }
+                }, 200);
+            }
+        });
+
+        messageInput.setInputListener(new MessageInput.InputListener() {
+            @Override
+            public boolean onSubmit(CharSequence input) {
+                List<Attachment> attachments = new ArrayList<>();
+
+                if (isPopupFragmentOpen) {
+                    if (getAttachmentPopupFragment() != null) {
+                        for (String s : getAttachmentPopupFragment().getSelectedAttachments()) {
+                            Attachment a = new Attachment(
+                                    UUID.randomUUID(),
+                                    null,
+                                    Uri.parse(s).getLastPathSegment(),
+                                    new FileLocationContainer(s),
+                                    MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(s)),
+                                    Math.round(new File(s).length())
+                            );
+                            attachments.add(a);
+                        }
+                    }
+                    getAttachmentPopupFragment().clearSelectedAttachments();
+                    closeAttachmentPopupFragment();
+                } else {
+                    for (String s : attachmentsInput) {
+                        Attachment a = new Attachment(
+                                UUID.randomUUID(),
+                                null,
+                                Uri.parse(s).getLastPathSegment(),
+                                new FileLocationContainer(s),
+                                MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(s)),
+                                Math.round(new File(s).length())
+                        );
+                        attachments.add(a);
+                    }
+                }
+
+                Message message = new Message(
+                        UUID.randomUUID(),
+                        null,
+                        getChat(),
+                        weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())),
+                        attachments,
+                        input.toString(),
+                        DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
+                        null,
+                        null,
+                        false,
+                        true,
+                        false,
+                        false,
+                        true,
+                        true
+                );
+                serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message);
+                attachmentsInput.clear();
+                return true;
+            }
+        });
+
+        messageInput.findViewById(R.id.messageInput).setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (isPopupFragmentOpen){
+                    closeAttachmentPopupFragment();
+                }
+                return false;
+            }
+        });
+
+        messageManager.queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
+        messageManager.setHasUnreadMessages(getChat(), false, true);
+
+        if (savedInstanceState != null) {
+            if (savedInstanceState.getBoolean(weMessage.BUNDLE_GALLERY_FRAGMENT_OPEN)) {
+                launchAttachmentPopupFragment();
+            }
+        }
 
         return view;
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, chat.getUuid().toString());
+        outState.putBoolean(weMessage.BUNDLE_GALLERY_FRAGMENT_OPEN, isPopupFragmentOpen);
+        outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
 
+        if (getAttachmentPopupFragment() != null) {
+            outState.putStringArrayList(weMessage.BUNDLE_SELECTED_GALLERY_STORE, new ArrayList<>(getAttachmentPopupFragment().getSelectedAttachments()));
+        }else {
+            outState.putStringArrayList(weMessage.BUNDLE_SELECTED_GALLERY_STORE, new ArrayList<>(attachmentsInput));
+        }
+
+        if (isPopupFragmentOpen){
+            closeAttachmentPopupFragment();
+        }
         super.onSaveInstanceState(outState);
     }
 
@@ -347,12 +474,12 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     @Override
     public void onContactUpdate(Contact oldData, Contact newData) {
-        //TODO: Work here
+
     }
 
     @Override
     public void onContactListRefresh(List<Contact> contacts) {
-        //TODO: Work here
+
     }
 
     @Override
@@ -456,7 +583,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                     MessageView messageView = new MessageView(message);
                     messageListAdapter.addToStart(messageView, true);
                     messageMapIntegrity.put(message.getUuid().toString(), message);
-                    weMessage.get().getMessageManager().setHasUnreadMessages(chat, false, true);
+                    weMessage.get().getMessageManager().setHasUnreadMessages(getChat(), false, true);
                 }
             }
         });
@@ -525,16 +652,6 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                     if (messageViews.size() > 0) {
                         messageListAdapter.addToEnd(messageViews, false);
                     }
-
-                    //TODO: TEMP CODE
-
-
-                    /* MessageView me = new MessageView(new Message(UUID.randomUUID(), "Mac-" + UUID.randomUUID().toString(), chat,
-                            weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())),
-                            null, "This is a message from myself, as a test. hello. Lorem ispilum pi 214-868-7499", DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()), null, null,
-                            false, true, false, false, false, true));
-
-                    messageListAdapter.addToStart(me, true); */
                 }
             }
         });
@@ -572,7 +689,6 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         //TODO: Stuff here
     }
 
-    //TODO: Outgoing
     @Override
     public void onPlaybackStart(Attachment a) {
         for (int childCount = messageList.getChildCount(), i = 0; i < childCount; ++i) {
@@ -582,11 +698,14 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                 IncomingMessageViewHolder incomingHolder = (IncomingMessageViewHolder) holder;
 
                 incomingHolder.notifyAudioPlaybackStart(a);
+            }else if (holder instanceof OutgoingMessageViewHolder){
+                OutgoingMessageViewHolder outgoingHolder = (OutgoingMessageViewHolder) holder;
+
+                outgoingHolder.notifyAudioPlaybackStart(a);
             }
         }
     }
 
-    //TODO: Outgoing
     @Override
     public void onPlaybackStop(String attachmentUuid) {
         for (int childCount = messageList.getChildCount(), i = 0; i < childCount; ++i) {
@@ -594,9 +713,24 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
             if (holder instanceof IncomingMessageViewHolder){
                 IncomingMessageViewHolder incomingHolder = (IncomingMessageViewHolder) holder;
+
                 incomingHolder.notifyAudioPlaybackStop(attachmentUuid);
+            }else if (holder instanceof OutgoingMessageViewHolder){
+                OutgoingMessageViewHolder outgoingHolder = (OutgoingMessageViewHolder) holder;
+
+                outgoingHolder.notifyAudioPlaybackStop(attachmentUuid);
             }
             audioAttachmentMediaPlayer = null;
+        }
+    }
+
+    @Override
+    public void setAttachmentsInput(List<String> attachments) {
+        if (isResumed()){
+            if (attachments.size() > 0 && attachments.size() != attachmentsInput.size()){
+                Toast.makeText(getActivity(), getString(R.string.attachments_added_toast, attachments.size()), Toast.LENGTH_SHORT).show();
+            }
+            attachmentsInput = new ArrayList<>(attachments);
         }
     }
 
@@ -660,6 +794,12 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         }
     }
 
+    private AttachmentPopupFragment getAttachmentPopupFragment(){
+        if (getChildFragmentManager().findFragmentById(R.id.galleryFragmentContainer) == null) return null;
+
+        return (AttachmentPopupFragment) getChildFragmentManager().findFragmentById(R.id.galleryFragmentContainer);
+    }
+
     private void bindService(){
         Intent intent = new Intent(getActivity(), ConnectionService.class);
         getActivity().bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
@@ -673,22 +813,11 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         }
     }
 
-    private void goToLauncher(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
-        }
-    }
-
     private void launchFullScreenImageActivity(String imageUri){
         Intent launcherIntent = new Intent(weMessage.get(), MessageImageActivity.class);
 
         launcherIntent.putExtra(weMessage.BUNDLE_FULL_SCREEN_IMAGE_URI, imageUri);
-        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chat.getUuid().toString());
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
 
         startActivity(launcherIntent);
         getActivity().finish();
@@ -698,14 +827,82 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         Intent launcherIntent = new Intent(weMessage.get(), MessageVideoActivity.class);
 
         launcherIntent.putExtra(weMessage.BUNDLE_FULL_SCREEN_VIDEO_URI, imageUri);
-        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chat.getUuid().toString());
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
 
         startActivity(launcherIntent);
         getActivity().finish();
     }
 
+    private void launchAttachmentPopupFragment(){
+        if (!isPopupFragmentOpen) {
+            isPopupFragmentOpen = true;
+
+            RelativeLayout.LayoutParams messageInputLayoutParams = (RelativeLayout.LayoutParams) messageInput.getLayoutParams();
+            RelativeLayout.LayoutParams fragmentContainerLayoutParams = (RelativeLayout.LayoutParams) galleryFragmentContainer.getLayoutParams();
+
+            messageInputLayoutParams.removeRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+            messageInputLayoutParams.addRule(RelativeLayout.ABOVE, R.id.galleryFragmentContainer);
+            fragmentContainerLayoutParams.removeRule(RelativeLayout.BELOW);
+            fragmentContainerLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+
+            messageInput.setLayoutParams(messageInputLayoutParams);
+            galleryFragmentContainer.setLayoutParams(fragmentContainerLayoutParams);
+            galleryFragmentContainer.setVisibility(View.VISIBLE);
+
+            AttachmentPopupFragment popupFragment = new AttachmentPopupFragment();
+            Bundle popupArgs = new Bundle();
+
+            popupArgs.putStringArrayList(weMessage.ARG_ATTACHMENT_GALLERY_CACHE, new ArrayList<>(attachmentsInput));
+            popupFragment.setArguments(popupArgs);
+
+            getChildFragmentManager().beginTransaction().add(R.id.galleryFragmentContainer, popupFragment).commit();
+        }
+    }
+
+    private void closeAttachmentPopupFragment(){
+
+        if (isPopupFragmentOpen) {
+            isPopupFragmentOpen = false;
+
+            RelativeLayout.LayoutParams messageInputLayoutParams = (RelativeLayout.LayoutParams) messageInput.getLayoutParams();
+            RelativeLayout.LayoutParams fragmentContainerLayoutParams = (RelativeLayout.LayoutParams) galleryFragmentContainer.getLayoutParams();
+
+            fragmentContainerLayoutParams.removeRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+            fragmentContainerLayoutParams.addRule(RelativeLayout.BELOW, R.id.messageInput);
+            messageInputLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+            messageInputLayoutParams.removeRule(RelativeLayout.ABOVE);
+
+            messageInput.setLayoutParams(messageInputLayoutParams);
+            galleryFragmentContainer.setLayoutParams(fragmentContainerLayoutParams);
+            galleryFragmentContainer.setVisibility(View.GONE);
+
+            getChildFragmentManager().beginTransaction().remove(getChildFragmentManager().findFragmentById(R.id.galleryFragmentContainer)).commit();
+        }
+    }
+
     private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
         DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage, runnable);
+    }
+
+    private void clearEditText(final EditText editText, boolean closeKeyboard){
+        if (closeKeyboard) {
+            closeKeyboard();
+        }
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                editText.clearFocus();
+            }
+        }, 100);
+    }
+
+    private void closeKeyboard(){
+        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+
+        if (getActivity().getCurrentFocus() != null) {
+            imm.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
+        }
     }
 
     private boolean isServiceRunning(Class<?> serviceClass) {
@@ -716,6 +913,10 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             }
         }
         return false;
+    }
+
+    private boolean isChatThis(Chat c){
+        return c.getUuid().toString().equals(getChat().getUuid().toString());
     }
 
     private Snackbar generateErroredSnackBar(View view, String message){
@@ -732,8 +933,15 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         return snackbar;
     }
 
-    private boolean isChatThis(Chat c){
-        return c.getUuid().toString().equals(getChat().getUuid().toString());
+    private void goToLauncher(){
+        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
+            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
+
+            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
+
+            startActivity(launcherIntent);
+            getActivity().finish();
+        }
     }
 
     private void goToChatList(String reason){

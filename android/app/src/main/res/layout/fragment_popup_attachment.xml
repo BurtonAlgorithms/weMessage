@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/popupAttachmentDividerView"
+        android:background="@color/shadedWhite"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_alignParentTop="true"/>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_below="@id/popupAttachmentDividerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/attachmentPopupWindowBackground" >
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="8dp">
+
+            <scott.wemessage.app.ui.view.font.FontButton
+                style="?android:attr/borderlessButtonStyle"
+                android:id="@+id/attachmentPopupCameraButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/popup_attachment_button_frame"
+                android:drawableTop="@drawable/ic_camera_black"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:drawablePadding="6sp"
+                android:textSize="14sp"
+                android:text="@string/word_camera"
+                android:textAllCaps="false"
+                app:buttonFont="orkney_light.ttf"/>
+
+            <scott.wemessage.app.ui.view.font.FontButton
+                style="?android:attr/borderlessButtonStyle"
+                android:id="@+id/attachmentPopupAudioButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/popup_attachment_button_frame"
+                android:drawableTop="@drawable/ic_mic_black"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:drawablePadding="6sp"
+                android:textSize="14sp"
+                android:text="@string/audio_record"
+                android:textAllCaps="false"
+                app:buttonFont="orkney_light.ttf"/>
+
+        </LinearLayout>
+
+        <scott.wemessage.app.ui.view.font.FontTextView
+            android:id="@+id/mediaErrorView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:textColor="@color/black"
+            android:textSize="16sp"
+            android:background="@color/white"
+            android:gravity="center"
+            app:font="orkney_light.ttf" />
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/galleryRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </android.support.v7.widget.RecyclerView>
+
+    </LinearLayout>
+
+</RelativeLayout>

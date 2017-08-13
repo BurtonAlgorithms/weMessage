@@ -25,6 +25,7 @@ import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
+import scott.wemessage.commons.utils.StringUtils;
 
 public final class MessageManager {
 
@@ -465,7 +466,7 @@ public final class MessageManager {
     private void addMessageTask(Message message){
         messages.put(message.getUuid().toString(), message);
         for (Attachment a : message.getAttachments()){
-            if (weMessage.get().getMessageDatabase().getAttachmentByMacGuid(a.getMacGuid()) == null){
+            if (StringUtils.isEmpty(a.getMacGuid()) || weMessage.get().getMessageDatabase().getAttachmentByMacGuid(a.getMacGuid()) == null){
                 weMessage.get().getMessageDatabase().addAttachment(a);
             }
         }

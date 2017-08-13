@@ -85,8 +85,10 @@ public class ConnectionHandler extends Thread {
     private AtomicBoolean isRunning = new AtomicBoolean(false);
     private AtomicBoolean hasTriedAuthenticating = new AtomicBoolean(false);
     private AtomicBoolean isConnected = new AtomicBoolean(false);
+
     private ConcurrentHashMap<String, ConnectionMessage>connectionMessagesMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, String>messageAndConnectionMessageMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Message>pendingMessagesMap = new ConcurrentHashMap<>();
 
     private ConnectionService service;
     private Socket connectionSocket;
@@ -119,7 +121,7 @@ public class ConnectionHandler extends Thread {
         return isConnected;
     }
 
-    public ConnectionService getParentService(){
+    private ConnectionService getParentService(){
         synchronized (serviceLock){
             return service;
         }
@@ -131,19 +133,19 @@ public class ConnectionHandler extends Thread {
         }
     }
 
-    public ObjectInputStream getInputStream(){
+    private ObjectInputStream getInputStream(){
         synchronized (inputStreamLock){
             return inputStream;
         }
     }
 
-    public ObjectOutputStream getOutputStream(){
+    private ObjectOutputStream getOutputStream(){
         synchronized (outputStreamLock){
             return outputStream;
         }
     }
 
-    public ServerMessage getIncomingMessage(String prefix, Object incomingStream){
+    private ServerMessage getIncomingMessage(String prefix, Object incomingStream){
         String data = ((String) incomingStream).split(prefix)[1];
         ServerMessage serverMessage = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().fromJson(data, ServerMessage.class);
 
@@ -151,7 +153,7 @@ public class ConnectionHandler extends Thread {
         return serverMessage;
     }
 
-    public void sendOutgoingMessage(String prefix, Object outgoingData, Class<?> dataClass) throws IOException {
+    private void sendOutgoingMessage(String prefix, Object outgoingData, Class<?> dataClass) throws IOException {
         Type type = TypeToken.get(dataClass).getType();
         String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().toJson(outgoingData, type);
         ClientMessage clientMessage = new ClientMessage(UUID.randomUUID().toString(), outgoingDataJson);
@@ -191,7 +193,7 @@ public class ConnectionHandler extends Thread {
         }).start();
     }
 
-    public void sendOutgoingGenericAction(final ActionType actionType, final String... args){
+    private void sendOutgoingGenericAction(final ActionType actionType, final String... args){
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -750,6 +752,12 @@ public class ConnectionHandler extends Thread {
                             getOutputStream().close();
                         }
                         getConnectionSocket().close();
+                        connectionMessagesMap.clear();
+
+                        //TODO: For all pending messages, mark as not delivered
+
+                        messageAndConnectionMessageMap.clear();
+                        pendingMessagesMap.clear();
                         ConnectionHandler.this.interrupt();
                     } catch (Exception ex) {
                         AppLogger.error(TAG, "An error occurred while terminating the connection to the weServer.", ex);
@@ -1179,8 +1187,16 @@ public class ConnectionHandler extends Thread {
                 .setIsSent(jsonMessage.isSent()).setDelivered(jsonMessage.isDelivered()).setRead(jsonMessage.isRead()).setFinished(jsonMessage.isFinished()).setFromMe(existingMessage.isFromMe());
 
         if (overrideAll){
+            Contact sender;
+
+            if (StringUtils.isEmpty(jsonMessage.getHandle())) {
+                sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount()));
+            } else {
+                sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+            }
+
             newData.setMacGuid(jsonMessage.getMacGuid()).setChat(messageDatabase.getChatByMacGuid(jsonMessage.getChat().getMacGuid()))
-                    .setSender(messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle())));
+                    .setSender(sender);
         }else {
             newData.setMacGuid(existingMessage.getMacGuid()).setChat(messageDatabase.getChatByUuid(existingMessage.getChat().getUuid().toString()))
                     .setSender(messageDatabase.getContactByHandle(existingMessage.getSender().getHandle()));

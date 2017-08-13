@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="128dp"
+    android:layout_height="128dp"
+    android:layout_margin="4dp">
+
+    <ImageView
+        android:id="@+id/galleryImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <TextView
+        android:id="@+id/galleryFileName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_centerHorizontal="true"
+        android:layout_above="@+id/checkmarkView"/>
+
+    <ImageView
+        android:id="@+id/videoIndicatorView"
+        android:src="@drawable/ic_videocam_white"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/galleryImageView"
+        android:layout_alignStart="@id/galleryImageView"
+        android:visibility="invisible"/>
+
+    <ImageView
+        android:id="@+id/checkmarkView"
+        android:src="@drawable/checkmark_circle_drawable"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignEnd="@id/galleryImageView"
+        android:layout_alignBottom="@id/galleryImageView"
+        android:scaleType="fitXY"
+        android:visibility="invisible"/>
+
+</RelativeLayout>

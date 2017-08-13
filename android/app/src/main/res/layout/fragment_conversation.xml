@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -7,13 +7,10 @@
 
     <com.stfalcon.chatkit.messages.MessagesList
         android:id="@+id/messagesList"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:scrollbars="vertical"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_above="@+id/messageInputView"
 
         app:textAutoLink="all"
         app:outcomingTextLinkColor="@color/white"
@@ -25,4 +22,37 @@
         app:incomingAvatarHeight="42dp"
         app:incomingAvatarWidth="42dp" />
 
-</android.support.constraint.ConstraintLayout>
+    <View
+        android:background="@color/shadedWhite"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_above="@+id/messageInputView" />
+
+    <com.stfalcon.chatkit.messages.MessageInput
+        android:id="@+id/messageInputView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+
+        app:showAttachmentButton="true"
+        app:inputHint="@string/message_input_hint"
+        app:inputButtonDefaultBgColor="@color/outgoingBubbleColor"
+        app:inputButtonDefaultBgPressedColor="@color/outgoingBubbleColorPressed"
+        app:inputButtonDefaultIconDisabledColor="@color/gray"
+        app:attachmentButtonDefaultBgColor="@color/outgoingBubbleColor"
+        app:attachmentButtonDefaultBgPressedColor="@color/outgoingBubbleColorPressed"
+        app:attachmentButtonDefaultIconColor="@android:color/white"
+        app:attachmentButtonDefaultIconPressedColor="@android:color/white" />
+
+
+    <FrameLayout
+        android:id="@+id/galleryFragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="256dp"
+        android:layout_below="@id/messageInputView"
+        android:visibility="gone">
+    </FrameLayout>
+
+</RelativeLayout>

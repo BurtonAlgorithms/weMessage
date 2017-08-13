@@ -61,5 +61,14 @@
     <string name="play_audio_attachment_error">An error occurred while trying to playback audio.</string>
     <string name="playback_error_title">Playback Error</string>
     <string name="play_video_attachment_error">An error occurred while trying to playback this video.</string>
+    <string name="message_input_hint">Enter a message&#8230;</string>
+    <string name="word_camera">Camera</string>
+    <string name="audio_record">Voice</string>
+    <string name="word_recording">Recording&#8230;</string>
+    <string name="no_media_found">No media was found on this device.</string>
+    <string name="permissions_error_title">Permissions Error</string>
+    <string name="no_media_permission">weMessage does not have permission to access media storage.\n\nPlease grant it permission in order to be able to send attachments.</string>
+    <string name="media_fetch_error">An error occurred while trying to get media from the device.</string>
+    <string name="attachments_added_toast">%1$d Attachments added to the message.</string>
 
 </resources>
