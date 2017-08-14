@@ -18,26 +18,28 @@ public class FontButton extends AppCompatButton {
         super(context, attributeSet);
 
         TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.FontButton);
-        String fontName = array.getString(R.styleable.FontButton_buttonFont);
+        String fontName = array.getString(R.styleable.FontButton_buttonFontName);
         array.recycle();
 
-        Typeface font = Typeface.createFromAsset(context.getAssets(), "fonts/" + fontName);
-        setTypeface(font);
+        setFont(fontName);
     }
 
     public FontButton(Context context, AttributeSet attributeSet, int defStyle){
         super(context, attributeSet, defStyle);
 
         TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.FontButton);
-        String fontName = array.getString(R.styleable.FontButton_buttonFont);
+        String fontName = array.getString(R.styleable.FontButton_buttonFontName);
         array.recycle();
 
-        Typeface font = Typeface.createFromAsset(context.getAssets(), "fonts/" + fontName);
-        setTypeface(font);
+        setFont(fontName);
     }
 
     public void setFont(String fontName){
-        Typeface font = Typeface.createFromAsset(getContext().getAssets(), "fonts/" + fontName);
-        setTypeface(font);
+        FontType fontType = FontType.getTypeFromName(fontName);
+
+        if (fontType != null){
+            Typeface font = Typeface.createFromAsset(getContext().getAssets(), "fonts/" + fontType.getFontFile());
+            setTypeface(font);
+        }
     }
 }

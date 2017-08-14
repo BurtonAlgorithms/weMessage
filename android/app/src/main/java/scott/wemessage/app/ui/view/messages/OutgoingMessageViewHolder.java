@@ -4,7 +4,9 @@ import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.stfalcon.chatkit.messages.MessageHolders;
 import com.stfalcon.chatkit.utils.DateFormatter;
@@ -24,11 +26,15 @@ import scott.wemessage.commons.utils.StringUtils;
 public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessageViewHolder<MessageView> {
 
     private LinearLayout attachmentsContainer;
+    private ImageView errorBubble;
+    private TextView errorMessageView;
 
     public OutgoingMessageViewHolder(View itemView) {
         super(itemView);
 
         attachmentsContainer = (LinearLayout) itemView.findViewById(R.id.attachmentsContainer);
+        errorBubble = (ImageView) itemView.findViewById(R.id.errorBubble);
+        errorMessageView = (TextView) itemView.findViewById(R.id.errorMessageView);
     }
 
     @Override
@@ -57,7 +63,7 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
                     case IMAGE:
                         AttachmentImageView attachmentImageView = (AttachmentImageView) inflater.inflate(R.layout.message_image, null);
 
-                        attachmentImageView.bind(message, attachment, AttachmentView.MessageType.OUTGOING);
+                        attachmentImageView.bind(message, attachment, AttachmentView.MessageType.OUTGOING, message.hasErrored());
                         attachmentsContainer.addView(attachmentImageView);
 
                         if (i++ != message.getMessage().getAttachments().size()) {
@@ -71,7 +77,7 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
                     case AUDIO:
                         AttachmentAudioView attachmentAudioView = (AttachmentAudioView) inflater.inflate(R.layout.message_audio, null);
 
-                        attachmentAudioView.bind(message, attachment, AttachmentView.MessageType.OUTGOING);
+                        attachmentAudioView.bind(message, attachment, AttachmentView.MessageType.OUTGOING, message.hasErrored());
                         attachmentsContainer.addView(attachmentAudioView);
 
                         if (i++ != message.getMessage().getAttachments().size()) {
@@ -85,7 +91,7 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
                     case VIDEO:
                         AttachmentVideoView attachmentVideoView = (AttachmentVideoView) inflater.inflate(R.layout.message_video, null);
 
-                        attachmentVideoView.bind(message, attachment, AttachmentView.MessageType.OUTGOING);
+                        attachmentVideoView.bind(message, attachment, AttachmentView.MessageType.OUTGOING, message.hasErrored());
                         attachmentsContainer.addView(attachmentVideoView);
 
                         if (i++ != message.getMessage().getAttachments().size()) {
@@ -99,7 +105,7 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
                     case UNDEFINED:
                         AttachmentUndefinedView attachmentUndefinedView = (AttachmentUndefinedView) inflater.inflate(R.layout.message_undefined_attachment, null);
 
-                        attachmentUndefinedView.bind(message, attachment, AttachmentView.MessageType.OUTGOING);
+                        attachmentUndefinedView.bind(message, attachment, AttachmentView.MessageType.OUTGOING, message.hasErrored());
                         attachmentsContainer.addView(attachmentUndefinedView);
 
                         if (i++ != message.getMessage().getAttachments().size()) {
@@ -123,6 +129,15 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
             bubble.setVisibility(View.GONE);
         }else {
             bubble.setVisibility(View.VISIBLE);
+        }
+
+        if (message.hasErrored()){
+            errorBubble.setVisibility(View.VISIBLE);
+            errorMessageView.setVisibility(View.VISIBLE);
+
+        }else {
+            errorBubble.setVisibility(View.GONE);
+            errorMessageView.setVisibility(View.GONE);
         }
     }
 

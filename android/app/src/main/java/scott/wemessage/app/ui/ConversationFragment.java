@@ -77,6 +77,7 @@ import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
+import scott.wemessage.commons.utils.FileUtils;
 
 public class ConversationFragment extends Fragment implements MessageManager.Callbacks, AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
 
@@ -341,24 +342,29 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             public boolean onSubmit(CharSequence input) {
                 List<Attachment> attachments = new ArrayList<>();
 
+                int totalSize = 0;
+
                 if (isPopupFragmentOpen) {
                     if (getAttachmentPopupFragment() != null) {
                         for (String s : getAttachmentPopupFragment().getSelectedAttachments()) {
+                            int totalBytes = Math.round(new File(s).length());
                             Attachment a = new Attachment(
                                     UUID.randomUUID(),
                                     null,
                                     Uri.parse(s).getLastPathSegment(),
                                     new FileLocationContainer(s),
                                     MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(s)),
-                                    Math.round(new File(s).length())
+                                    totalBytes
                             );
                             attachments.add(a);
+                            totalSize += totalBytes;
                         }
                     }
                     getAttachmentPopupFragment().clearSelectedAttachments();
                     closeAttachmentPopupFragment();
                 } else {
                     for (String s : attachmentsInput) {
+                        int totalBytes = Math.round(new File(s).length());
                         Attachment a = new Attachment(
                                 UUID.randomUUID(),
                                 null,
@@ -368,7 +374,14 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                                 Math.round(new File(s).length())
                         );
                         attachments.add(a);
+                        totalSize += totalBytes;
                     }
+                }
+
+                if (totalSize > weMessage.MAX_FILE_SIZE){
+                    DialogDisplayer.generateAlertDialog(getString(R.string.max_file_size_alert_title), getString(R.string.max_file_size_alert_message, FileUtils.getFileSizeString(weMessage.MAX_FILE_SIZE)))
+                            .show(getFragmentManager(), "AttachmentMaxFileSizeAlert");
+                    return false;
                 }
 
                 Message message = new Message(

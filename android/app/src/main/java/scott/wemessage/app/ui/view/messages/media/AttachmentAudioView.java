@@ -1,7 +1,9 @@
 package scott.wemessage.app.ui.view.messages.media;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.os.AsyncTask;
@@ -37,6 +39,7 @@ public class AttachmentAudioView extends AttachmentView {
 
     private ViewGroup attachmentAudioBubble;
     private ImageView playImage;
+    private ImageView errorBubble;
     private TextView audioCounterView;
     private TextView durationView;
 
@@ -60,10 +63,16 @@ public class AttachmentAudioView extends AttachmentView {
     }
 
     @Override
-    public void bind(MessageView messageView, final Attachment attachment, final MessageType messageType) {
+    public void bind(MessageView messageView, final Attachment attachment, final MessageType messageType, boolean isErrored) {
         init();
         applyStyle(messageType);
         attachmentAudioBubble.setSelected(isSelected());
+
+        if (isErrored && messageType == MessageType.OUTGOING){
+            errorBubble.setVisibility(VISIBLE);
+        }else {
+            errorBubble.setVisibility(GONE);
+        }
 
         new AsyncTask<Attachment, Void, AudioTrackMetadata>(){
             AudioAttachmentMediaPlayer audioAttachmentMediaPlayer;
@@ -100,6 +109,8 @@ public class AttachmentAudioView extends AttachmentView {
 
             @Override
             protected void onPostExecute(final AudioTrackMetadata audioTrackMetadata) {
+                if (getContext() instanceof Activity && ((Activity) getContext()).isDestroyed()) return;
+
                 if (messageType == MessageType.INCOMING) {
                     if (audioTrackMetadata.isPlaying) {
                         playImage.setImageDrawable(getResources().getDrawable(R.drawable.ic_pause_button_black));
@@ -214,9 +225,13 @@ public class AttachmentAudioView extends AttachmentView {
 
     private void applyStyle(MessageType messageType) {
         if (messageType == MessageType.INCOMING) {
+            audioCounterView.setTextColor(Color.BLACK);
+            durationView.setTextColor(Color.BLACK);
             attachmentAudioBubble.setPadding(defaultBubblePaddingLeft, defaultBubblePaddingTop, defaultPaddingPaddingRight, defaultBubblePaddingBottom);
             ViewCompat.setBackground(attachmentAudioBubble, getIncomingBubbleDrawable());
         }else {
+            audioCounterView.setTextColor(Color.WHITE);
+            durationView.setTextColor(Color.WHITE);
             attachmentAudioBubble.setPadding(defaultBubblePaddingLeft, defaultBubblePaddingTop, defaultPaddingPaddingRight, defaultBubblePaddingBottom);
             ViewCompat.setBackground(attachmentAudioBubble, getOutgoingBubbleDrawable());
         }
@@ -228,6 +243,7 @@ public class AttachmentAudioView extends AttachmentView {
             playImage = (ImageView) findViewById(R.id.audioPlayImage);
             audioCounterView = (TextView) findViewById(R.id.audioCounterView);
             durationView = (TextView) findViewById(R.id.audioDurationView);
+            errorBubble = (ImageView) findViewById(R.id.errorBubble);
 
             isInit = true;
         }

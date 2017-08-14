@@ -34,7 +34,7 @@ public abstract class AttachmentView extends RelativeLayout {
         super(context, attrs, defStyleAttr);
     }
 
-    public abstract void bind(MessageView messageView, Attachment attachment, MessageType messageType);
+    public abstract void bind(MessageView messageView, Attachment attachment, MessageType messageType, boolean isErrored);
 
     public void setBottomPadding(int paddingDp){
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) getLayoutParams();

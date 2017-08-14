@@ -8,11 +8,18 @@
     <android.support.percent.PercentFrameLayout
         android:id="@+id/attachmentVideoThumbnailLayout"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_toStartOf="@+id/errorBubble">
 
         <com.stfalcon.chatkit.utils.RoundedImageView
             android:id="@+id/attachmentVideoThumbnail"
             app:layout_widthPercent="95%"/>
+
+        <View
+            android:id="@+id/attachmentVideoOverlay"
+            android:layout_gravity="start"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
 
         <ImageView
             android:src="@drawable/ic_play_circle"
@@ -22,5 +29,14 @@
             app:layout_widthPercent="95%"/>
 
     </android.support.percent.PercentFrameLayout>
+
+    <ImageView
+        android:id="@+id/errorBubble"
+        android:layout_marginStart="8dp"
+        android:src="@drawable/ic_error_outline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_alignParentEnd="true"/>
 
 </scott.wemessage.app.ui.view.messages.media.AttachmentVideoView>

@@ -1,6 +1,7 @@
 package scott.wemessage.app.ui;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -139,6 +140,8 @@ public class AttachmentPopupFragment extends Fragment {
 
             @Override
             protected void onPostExecute(ArrayList<String> strings) {
+                if (getContext() instanceof Activity && ((Activity) getContext()).isDestroyed()) return;
+
                 onLoadGalleryItems(strings);
 
                 if (galleryAdapter.getItemCount() == 0){
@@ -322,7 +325,7 @@ public class AttachmentPopupFragment extends Fragment {
                         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
 
                         retriever.setDataSource(params[0]);
-                        Bitmap bitmap = ThumbnailUtils.createVideoThumbnail(params[0], MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
+                        Bitmap bitmap = ThumbnailUtils.createVideoThumbnail(params[0], MediaStore.Video.Thumbnails.FULL_SCREEN_KIND);
                         retriever.release();
 
                         return bitmap;
@@ -330,6 +333,8 @@ public class AttachmentPopupFragment extends Fragment {
 
                     @Override
                     protected void onPostExecute(Bitmap bitmap) {
+                        if (getContext() instanceof Activity && ((Activity) getContext()).isDestroyed()) return;
+
                         galleryImageView.setImageBitmap(bitmap);
                         videoIndicatorView.setVisibility(View.VISIBLE);
                         itemView.animate().alpha(1.0f).setDuration(250);

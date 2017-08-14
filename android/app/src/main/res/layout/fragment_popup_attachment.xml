@@ -42,7 +42,7 @@
                 android:textSize="14sp"
                 android:text="@string/word_camera"
                 android:textAllCaps="false"
-                app:buttonFont="orkney_light.ttf"/>
+                app:buttonFontName="OrkneyLight"/>
 
             <scott.wemessage.app.ui.view.font.FontButton
                 style="?android:attr/borderlessButtonStyle"
@@ -58,7 +58,7 @@
                 android:textSize="14sp"
                 android:text="@string/audio_record"
                 android:textAllCaps="false"
-                app:buttonFont="orkney_light.ttf"/>
+                app:buttonFontName="OrkneyLight"/>
 
         </LinearLayout>
 
@@ -70,7 +70,7 @@
             android:textSize="16sp"
             android:background="@color/white"
             android:gravity="center"
-            app:font="orkney_light.ttf" />
+            app:fontName="OrkneyLight" />
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/galleryRecyclerView"

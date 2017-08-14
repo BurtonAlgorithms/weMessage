@@ -61,7 +61,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
                     case IMAGE:
                         AttachmentImageView attachmentImageView = (AttachmentImageView) inflater.inflate(R.layout.message_image, null);
 
-                        attachmentImageView.bind(message, attachment, AttachmentView.MessageType.INCOMING);
+                        attachmentImageView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
                         attachmentsContainer.addView(attachmentImageView);
 
                         if (i++ != message.getMessage().getAttachments().size()) {
@@ -75,7 +75,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
                     case AUDIO:
                         AttachmentAudioView attachmentAudioView = (AttachmentAudioView) inflater.inflate(R.layout.message_audio, null);
 
-                        attachmentAudioView.bind(message, attachment, AttachmentView.MessageType.INCOMING);
+                        attachmentAudioView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
                         attachmentsContainer.addView(attachmentAudioView);
 
                         if (i++ != message.getMessage().getAttachments().size()) {
@@ -89,7 +89,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
                     case VIDEO:
                         AttachmentVideoView attachmentVideoView = (AttachmentVideoView) inflater.inflate(R.layout.message_video, null);
 
-                        attachmentVideoView.bind(message, attachment, AttachmentView.MessageType.INCOMING);
+                        attachmentVideoView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
                         attachmentsContainer.addView(attachmentVideoView);
 
                         if (i++ != message.getMessage().getAttachments().size()) {
@@ -103,7 +103,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
                     case UNDEFINED:
                         AttachmentUndefinedView attachmentUndefinedView = (AttachmentUndefinedView) inflater.inflate(R.layout.message_undefined_attachment, null);
 
-                        attachmentUndefinedView.bind(message, attachment, AttachmentView.MessageType.INCOMING);
+                        attachmentUndefinedView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
                         attachmentsContainer.addView(attachmentUndefinedView);
 
                         if (i++ != message.getMessage().getAttachments().size()) {

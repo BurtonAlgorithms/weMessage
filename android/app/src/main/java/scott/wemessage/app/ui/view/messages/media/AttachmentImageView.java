@@ -1,5 +1,6 @@
 package scott.wemessage.app.ui.view.messages.media;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -11,6 +12,7 @@ import android.support.percent.PercentFrameLayout;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -36,6 +38,7 @@ public class AttachmentImageView extends AttachmentView {
 
     private PercentFrameLayout attachmentImageLayout;
     private ImageView attachmentImage;
+    private ImageView errorBubble;
 
     private int incomingDefaultImageOverlayPressedColor = getResources().getColor(R.color.transparent);
     private int incomingDefaultImageOverlaySelectedColor = getResources().getColor(R.color.cornflower_blue_light_40);
@@ -55,9 +58,7 @@ public class AttachmentImageView extends AttachmentView {
         super(context, attrs, defStyleAttr);
     }
 
-    //TODO: Fix overlays
-
-    public void bind(MessageView messageView, Attachment attachment, MessageType messageType){
+    public void bind(MessageView messageView, Attachment attachment, final MessageType messageType, final boolean isErrored){
         init();
 
         int orientation = getResources().getConfiguration().orientation;
@@ -100,13 +101,28 @@ public class AttachmentImageView extends AttachmentView {
 
                 @Override
                 protected void onPostExecute(AttachmentBitmapResult attachmentBitmapResult) {
+                    if (getContext() instanceof Activity && ((Activity) getContext()).isDestroyed()) return;
+
                     PercentFrameLayout.LayoutParams layoutParams = (PercentFrameLayout.LayoutParams) attachmentAnimatedImageContainer.getLayoutParams();
                     layoutParams.getPercentLayoutInfo().aspectRatio = (float) attachmentBitmapResult.options.outWidth / (float) attachmentBitmapResult.options.outHeight;
                     layoutParams.height = 0;
+
+                    if (messageType == MessageType.INCOMING){
+                        layoutParams.gravity = Gravity.START;
+                    }else {
+                        layoutParams.gravity = Gravity.END;
+                    }
+
                     attachmentAnimatedImageContainer.setLayoutParams(layoutParams);
 
                     if (animatedImage != null && attachmentBitmapResult.attachment.getFileLocation() != null && attachmentBitmapResult.attachment.getFileLocation().getFile() != null) {
                         imageLoader.loadImage(animatedImage, AndroidIOUtils.getUriFromFile(attachmentBitmapResult.attachment.getFileLocation().getFile()).toString());
+                    }
+
+                    if (isErrored && messageType == MessageType.OUTGOING){
+                        errorBubble.setVisibility(VISIBLE);
+                    }else {
+                        errorBubble.setVisibility(GONE);
                     }
                 }
             }.execute(attachment);
@@ -167,13 +183,28 @@ public class AttachmentImageView extends AttachmentView {
 
                 @Override
                 protected void onPostExecute(AttachmentBitmapResult attachmentBitmapResult) {
+                    if (getContext() instanceof Activity && ((Activity) getContext()).isDestroyed()) return;
+
                     PercentFrameLayout.LayoutParams layoutParams = (PercentFrameLayout.LayoutParams) attachmentImage.getLayoutParams();
                     layoutParams.getPercentLayoutInfo().aspectRatio = (float) attachmentBitmapResult.options.outWidth / (float) attachmentBitmapResult.options.outHeight;
                     layoutParams.height = 0;
+
+                    if (messageType == MessageType.INCOMING){
+                        layoutParams.gravity = Gravity.START;
+                    }else {
+                        layoutParams.gravity = Gravity.END;
+                    }
+
                     attachmentImage.setLayoutParams(layoutParams);
 
                     if (attachmentImage != null && attachmentBitmapResult.attachment.getFileLocation() != null && attachmentBitmapResult.attachment.getFileLocation().getFile() != null) {
                         imageLoader.loadImage(attachmentImage, AndroidIOUtils.getUriFromFile(attachmentBitmapResult.attachment.getFileLocation().getFile()).toString());
+                    }
+
+                    if (isErrored && messageType == MessageType.OUTGOING){
+                        errorBubble.setVisibility(VISIBLE);
+                    }else {
+                        errorBubble.setVisibility(GONE);
                     }
                 }
             }.execute(attachment);
@@ -222,6 +253,7 @@ public class AttachmentImageView extends AttachmentView {
         if (!isInit) {
             attachmentImageLayout = (PercentFrameLayout) findViewById(R.id.attachmentImageLayout);
             attachmentImage = (ImageView) findViewById(R.id.attachmentImage);
+            errorBubble = (ImageView) findViewById(R.id.errorBubble);
 
             attachmentAnimatedImageLayout = (PercentFrameLayout) findViewById(R.id.attachmentAnimatedImageLayout);
             attachmentAnimatedImageContainer = (FrameLayout) findViewById(R.id.attachmentAnimatedImageContainer);

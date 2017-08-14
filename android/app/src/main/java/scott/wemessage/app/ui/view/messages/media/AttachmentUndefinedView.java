@@ -30,7 +30,7 @@ public class AttachmentUndefinedView extends AttachmentView {
         super(context, attrs, defStyleAttr);
     }
 
-    public void bind(MessageView messageView, Attachment attachment, MessageType messageType){
+    public void bind(MessageView messageView, Attachment attachment, MessageType messageType, boolean isErrored){
         init();
 
         if (messageType == MessageType.INCOMING) {

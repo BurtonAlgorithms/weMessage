@@ -33,7 +33,7 @@
             android:layout_marginTop="8dp"
             android:text="@string/app_name"
             android:textSize="25sp"
-            app:font="orkney_light.ttf"
+            app:fontName="OrkneyLight"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/launchAppIcon"
@@ -50,7 +50,7 @@
             android:paddingStart="12dp"
             android:text="@string/login_text"
             android:textSize="16sp"
-            app:font="orkney_light.ttf"
+            app:fontName="OrkneyLight"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/launchAppText" />
@@ -77,7 +77,7 @@
                 android:layout_width="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:labelFor="@+id/launchIpEditText"
-                app:font="orkney_bold.ttf"
+                app:fontName="OrkneyBold"
                 android:text="@string/login_IP"
                 android:textColor="@color/lightBlack" />
 
@@ -95,7 +95,7 @@
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:labelFor="@+id/launchEmailEditText"
-                app:font="orkney_bold.ttf"
+                app:fontName="OrkneyBold"
                 android:text="@string/login_email"
                 android:textColor="@color/lightBlack" />
 
@@ -113,7 +113,7 @@
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:labelFor="@+id/launchPasswordEditText"
-                app:font="orkney_bold.ttf"
+                app:fontName="OrkneyBold"
                 android:text="@string/login_password"
                 android:textColor="@color/lightBlack" />
 
@@ -129,7 +129,7 @@
 
         <scott.wemessage.app.ui.view.font.FontButton
             android:id="@+id/signInButton"
-            app:buttonFont="orkney_light.ttf"
+            app:buttonFontName="OrkneyLight"
             android:textAllCaps="false"
             android:textSize="24sp"
             android:textColor="@color/heavyBlue"

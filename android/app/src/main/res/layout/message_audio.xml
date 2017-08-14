@@ -9,7 +9,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_toStartOf="@+id/errorBubble">
 
         <ImageView
             android:id="@+id/audioPlayImage"
@@ -34,4 +35,13 @@
             android:textSize="15sp"/>
 
     </LinearLayout>
+
+    <ImageView
+        android:id="@+id/errorBubble"
+        android:layout_marginStart="8dp"
+        android:src="@drawable/ic_error_outline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_alignParentEnd="true"/>
 </scott.wemessage.app.ui.view.messages.media.AttachmentAudioView>

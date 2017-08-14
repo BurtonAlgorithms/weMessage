@@ -5,48 +5,63 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
-    <android.support.percent.PercentFrameLayout
-        android:id="@+id/attachmentImageLayout"
+    <RelativeLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_toStartOf="@+id/errorBubble">
 
-        <com.stfalcon.chatkit.utils.RoundedImageView
-            android:id="@+id/attachmentImage"/>
-
-        <View
-            android:id="@+id/attachmentImageOverlay"
-            android:layout_gravity="start"
+        <android.support.percent.PercentFrameLayout
+            android:id="@+id/attachmentImageLayout"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content">
 
-    </android.support.percent.PercentFrameLayout>
+            <com.stfalcon.chatkit.utils.RoundedImageView
+                android:id="@+id/attachmentImage"/>
 
-    <android.support.percent.PercentFrameLayout
-        android:id="@+id/attachmentAnimatedImageLayout"
+            <View
+                android:id="@+id/attachmentImageOverlay"
+                android:layout_gravity="start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+        </android.support.percent.PercentFrameLayout>
+
+        <android.support.percent.PercentFrameLayout
+            android:id="@+id/attachmentAnimatedImageLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <FrameLayout
+                android:id="@+id/attachmentAnimatedImageContainer">
+
+                <ImageView
+                    android:id="@+id/attachmentAnimatedImage"
+                    android:layout_margin="6dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <ImageView
+                    android:id="@+id/attachmentAnimatedImageMask"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </FrameLayout>
+
+            <View
+                android:id="@+id/attachmentAnimatedImageOverlay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"/>
+
+        </android.support.percent.PercentFrameLayout>
+    </RelativeLayout>
+
+    <ImageView
+        android:id="@+id/errorBubble"
+        android:layout_marginStart="8dp"
+        android:src="@drawable/ic_error_outline"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
-        <FrameLayout
-            android:id="@+id/attachmentAnimatedImageContainer">
-
-            <ImageView
-                android:id="@+id/attachmentAnimatedImage"
-                android:layout_margin="6dp"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
-            <ImageView
-                android:id="@+id/attachmentAnimatedImageMask"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-        </FrameLayout>
-
-        <View
-            android:id="@+id/attachmentAnimatedImageOverlay"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="start"/>
-
-    </android.support.percent.PercentFrameLayout>
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_alignParentEnd="true"/>
 
 </scott.wemessage.app.ui.view.messages.media.AttachmentImageView>

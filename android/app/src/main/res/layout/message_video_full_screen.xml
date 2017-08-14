@@ -22,7 +22,7 @@
         android:elevation="4dp">
 
         <scott.wemessage.app.ui.view.font.FontTextView
-            app:font="orkney_medium.ttf"
+            app:fontName="OrkneyMedium"
             android:id="@+id/doneButton"
             android:text="@string/word_done"
             android:textColor="@android:color/white"

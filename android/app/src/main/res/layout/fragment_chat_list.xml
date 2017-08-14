@@ -55,7 +55,7 @@
 
         <scott.wemessage.app.ui.view.font.FontTextView
             android:layout_marginTop="16dp"
-            app:font="orkney_medium.ttf"
+            app:fontName="OrkneyMedium"
             android:gravity="center"
             android:textSize="16sp"
             android:paddingEnd="8dp"

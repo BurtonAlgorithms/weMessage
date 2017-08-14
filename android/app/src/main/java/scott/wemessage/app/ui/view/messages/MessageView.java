@@ -51,6 +51,10 @@ public class MessageView implements IMessage {
         }
     }
 
+    public boolean hasErrored(){
+        return message.hasErrored();
+    }
+
     private String trimORC(String string){
         char[] chars = string.toCharArray();
         String finalString = "";

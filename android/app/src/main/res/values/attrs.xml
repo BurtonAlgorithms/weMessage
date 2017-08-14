@@ -2,11 +2,11 @@
 <resources>
 
     <declare-styleable name="FontTextView">
-        <attr name="font" format="string" />
+        <attr name="fontName" format="string" />
     </declare-styleable>
     
     <declare-styleable name="FontButton">
-        <attr name="buttonFont" format="string" />
+        <attr name="buttonFontName" format="string" />
     </declare-styleable>
     
 </resources>

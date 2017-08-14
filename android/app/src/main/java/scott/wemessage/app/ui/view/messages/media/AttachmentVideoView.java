@@ -1,5 +1,6 @@
 package scott.wemessage.app.ui.view.messages.media;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -10,6 +11,7 @@ import android.provider.MediaStore;
 import android.support.percent.PercentFrameLayout;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -26,6 +28,7 @@ public class AttachmentVideoView extends AttachmentView {
     private boolean isInit = false;
 
     private PercentFrameLayout attachmentVideoThumbnailLayout;
+    private ImageView errorBubble;
     private ImageView attachmentVideoThumbnail;
 
     public AttachmentVideoView(Context context) {
@@ -40,7 +43,7 @@ public class AttachmentVideoView extends AttachmentView {
         super(context, attrs, defStyleAttr);
     }
 
-    public void bind(MessageView messageView, Attachment attachment, MessageType messageType){
+    public void bind(MessageView messageView, Attachment attachment, final MessageType messageType, final boolean isErrored){
         init();
         attachmentVideoThumbnailLayout.setAlpha(0.0f);
 
@@ -52,8 +55,9 @@ public class AttachmentVideoView extends AttachmentView {
                 retriever.setDataSource(params[0].getFileLocation().getFileLocation());
 
                 ThumbnailBitmap thumbnailBitmap = new ThumbnailBitmap();
+
                 thumbnailBitmap.bitmap = ThumbnailUtils.createVideoThumbnail(params[0].getFileLocation().getFileLocation(),
-                        MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
+                        MediaStore.Video.Thumbnails.FULL_SCREEN_KIND);
                 thumbnailBitmap.width = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
                 thumbnailBitmap.height = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
 
@@ -64,15 +68,29 @@ public class AttachmentVideoView extends AttachmentView {
 
             @Override
             protected void onPostExecute(ThumbnailBitmap thumbnailBitmap) {
+                if (getContext() instanceof Activity && ((Activity) getContext()).isDestroyed()) return;
+
                 PercentFrameLayout.LayoutParams layoutParams = (PercentFrameLayout.LayoutParams) attachmentVideoThumbnail.getLayoutParams();
                 layoutParams.getPercentLayoutInfo().aspectRatio = (float) thumbnailBitmap.width / (float) thumbnailBitmap.height;
                 layoutParams.height = 0;
 
+                if (messageType == MessageType.INCOMING){
+                    layoutParams.gravity = Gravity.START;
+                }else {
+                    layoutParams.gravity = Gravity.END;
+                }
+
                 attachmentVideoThumbnail.setLayoutParams(layoutParams);
                 attachmentVideoThumbnail.setImageBitmap(thumbnailBitmap.bitmap);
                 attachmentVideoThumbnailLayout.animate().alpha(1.0f).setDuration(250);
+
+                if (isErrored && messageType == MessageType.OUTGOING){
+                    errorBubble.setVisibility(VISIBLE);
+                }else {
+                    errorBubble.setVisibility(GONE);
+                }
             }
-        }.execute(attachment);
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, attachment);
 
         if (messageType == MessageType.INCOMING) {
             if (attachmentVideoThumbnail != null && attachmentVideoThumbnail instanceof RoundedImageView) {
@@ -107,6 +125,7 @@ public class AttachmentVideoView extends AttachmentView {
         if (!isInit) {
             attachmentVideoThumbnailLayout = (PercentFrameLayout) findViewById(R.id.attachmentVideoThumbnailLayout);
             attachmentVideoThumbnail = (RoundedImageView) findViewById(R.id.attachmentVideoThumbnail);
+            errorBubble = (ImageView) findViewById(R.id.errorBubble);
             isInit = true;
         }
     }
