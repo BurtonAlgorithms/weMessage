@@ -25,4 +25,14 @@ public class ConversationActivity extends SingleFragmentActivity {
     public Fragment createFragment() {
         return new ConversationFragment();
     }
+
+    @Override
+    public void onBackPressed() {
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.conversationFragmentContainer);
+        if (fragment != null && fragment instanceof ConversationFragment){
+            ((ConversationFragment) fragment).goToChatList(null);
+        }else {
+            super.onBackPressed();
+        }
+    }
 }

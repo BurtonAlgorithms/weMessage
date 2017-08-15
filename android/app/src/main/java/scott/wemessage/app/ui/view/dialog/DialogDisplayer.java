@@ -87,7 +87,9 @@ public class DialogDisplayer {
         @Override
         public void onDismiss(DialogInterface dialog) {
             if (runnable != null) {
-                runnable.run();
+                if (getActivity() != null && !getActivity().isDestroyed() && !getActivity().isFinishing() && isAdded()) {
+                    runnable.run();
+                }
             }
 
             super.onDismiss(dialog);

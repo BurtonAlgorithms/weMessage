@@ -81,8 +81,6 @@ import scott.wemessage.commons.utils.FileUtils;
 
 public class ConversationFragment extends Fragment implements MessageManager.Callbacks, AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
 
-    //TODO: Ensure messages are getting updated, etc. etc.
-
     private final String TAG = "ConversationFragment";
     private final Object chatLock = new Object();
     private final int MESSAGE_QUEUE_AMOUNT = 50;
@@ -102,7 +100,9 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     private AudioAttachmentMediaPlayer audioAttachmentMediaPlayer;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
 
+    private String voiceMessageInput;
     private List<String> attachmentsInput = new ArrayList<>();
+
     private ConcurrentHashMap<String, Message> messageMapIntegrity = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, ActionMessage> actionMessageMapIntegrity = new ConcurrentHashMap<>();
 
@@ -210,6 +210,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         }else {
             setChat(messageDatabase.getChatByUuid(savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT)));
             attachmentsInput = savedInstanceState.getStringArrayList(weMessage.BUNDLE_SELECTED_GALLERY_STORE);
+            voiceMessageInput = savedInstanceState.getString(weMessage.BUNDLE_VOICE_MESSAGE_INPUT_FILE);
         }
 
         IntentFilter broadcastIntentFilter = new IntentFilter();
@@ -317,8 +318,6 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         messageList.setAdapter(messageListAdapter);
         this.messageListAdapter = messageListAdapter;
 
-        //TODO: When voice is recording, change drawable, if exit out, save audio, and add it to message
-
         messageInput.setAttachmentsListener(new MessageInput.AttachmentsListener() {
             @Override
             public void onAddAttachments() {
@@ -371,7 +370,24 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                                 Uri.parse(s).getLastPathSegment(),
                                 new FileLocationContainer(s),
                                 MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(s)),
-                                Math.round(new File(s).length())
+                                totalBytes
+                        );
+                        attachments.add(a);
+                        totalSize += totalBytes;
+                    }
+                }
+
+                if (voiceMessageInput != null){
+                    File inputFile = new File(voiceMessageInput);
+                    if (inputFile.exists()) {
+                        int totalBytes = Math.round(inputFile.length());
+                        Attachment a = new Attachment(
+                                UUID.randomUUID(),
+                                null,
+                                Uri.parse(voiceMessageInput).getLastPathSegment(),
+                                new FileLocationContainer(voiceMessageInput),
+                                MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(voiceMessageInput)),
+                                totalBytes
                         );
                         attachments.add(a);
                         totalSize += totalBytes;
@@ -390,7 +406,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                         getChat(),
                         weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())),
                         attachments,
-                        input.toString(),
+                        input.toString().trim(),
                         DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
                         null,
                         null,
@@ -403,6 +419,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                 );
                 serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message);
                 attachmentsInput.clear();
+                voiceMessageInput = null;
                 return true;
             }
         });
@@ -435,8 +452,10 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
 
         if (getAttachmentPopupFragment() != null) {
+            outState.putString(weMessage.BUNDLE_VOICE_MESSAGE_INPUT_FILE, getAttachmentPopupFragment().getAudioFile());
             outState.putStringArrayList(weMessage.BUNDLE_SELECTED_GALLERY_STORE, new ArrayList<>(getAttachmentPopupFragment().getSelectedAttachments()));
         }else {
+            outState.putString(weMessage.BUNDLE_VOICE_MESSAGE_INPUT_FILE, voiceMessageInput);
             outState.putStringArrayList(weMessage.BUNDLE_SELECTED_GALLERY_STORE, new ArrayList<>(attachmentsInput));
         }
 
@@ -694,7 +713,28 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     @Override
     public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) {
-        //TODO: Stuff here
+        if (getView() != null) {
+            switch (returnType) {
+                case INVALID_NUMBER:
+                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_invalid_number)).show();
+                    break;
+                case NUMBER_NOT_IMESSAGE:
+                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_imessage)).show();
+                    break;
+                case GROUP_CHAT_NOT_FOUND:
+                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_group_chat)).show();
+                    break;
+                case SERVICE_NOT_AVAILABLE:
+                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_service)).show();
+                    break;
+                case ASSISTIVE_ACCESS_DISABLED:
+                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_assistive)).show();
+                    break;
+                case UI_ERROR:
+                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_ui_error)).show();
+                    break;
+            }
+        }
     }
 
     @Override
@@ -738,12 +778,17 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
     }
 
     @Override
-    public void setAttachmentsInput(List<String> attachments) {
+    public void setAttachmentsInput(List<String> attachments, String audioFile) {
         if (isResumed()){
             if (attachments.size() > 0 && attachments.size() != attachmentsInput.size()){
                 Toast.makeText(getActivity(), getString(R.string.attachments_added_toast, attachments.size()), Toast.LENGTH_SHORT).show();
             }
             attachmentsInput = new ArrayList<>(attachments);
+
+            if (audioFile != null && audioFile.equals(voiceMessageInput)){
+                Toast.makeText(getActivity(), getString(R.string.audio_recording_added), Toast.LENGTH_SHORT).show();
+            }
+            voiceMessageInput = audioFile;
         }
     }
 
@@ -865,6 +910,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             AttachmentPopupFragment popupFragment = new AttachmentPopupFragment();
             Bundle popupArgs = new Bundle();
 
+            popupArgs.putString(weMessage.ARG_VOICE_RECORDING_FILE, voiceMessageInput);
             popupArgs.putStringArrayList(weMessage.ARG_ATTACHMENT_GALLERY_CACHE, new ArrayList<>(attachmentsInput));
             popupFragment.setArguments(popupArgs);
 
@@ -957,7 +1003,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         }
     }
 
-    private void goToChatList(String reason){
+    public void goToChatList(String reason){
         if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
             Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
 

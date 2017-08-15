@@ -14,6 +14,7 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import java.util.concurrent.TimeUnit;
@@ -68,11 +69,18 @@ public class AttachmentAudioView extends AttachmentView {
         applyStyle(messageType);
         attachmentAudioBubble.setSelected(isSelected());
 
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) attachmentAudioBubble.getLayoutParams();
+
         if (isErrored && messageType == MessageType.OUTGOING){
             errorBubble.setVisibility(VISIBLE);
+            layoutParams.removeRule(RelativeLayout.ALIGN_PARENT_END);
+            layoutParams.addRule(RelativeLayout.START_OF, R.id.errorBubble);
         }else {
             errorBubble.setVisibility(GONE);
+            layoutParams.removeRule(RelativeLayout.START_OF);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END);
         }
+        attachmentAudioBubble.setLayoutParams(layoutParams);
 
         new AsyncTask<Attachment, Void, AudioTrackMetadata>(){
             AudioAttachmentMediaPlayer audioAttachmentMediaPlayer;

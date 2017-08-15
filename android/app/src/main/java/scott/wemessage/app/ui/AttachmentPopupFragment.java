@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.media.MediaMetadataRetriever;
+import android.media.MediaRecorder;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -24,14 +25,19 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 
+import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
@@ -42,12 +48,16 @@ import scott.wemessage.commons.types.MimeType;
 public class AttachmentPopupFragment extends Fragment {
 
     private final int ERROR_SNACKBAR_DURATION = 5;
-    private final int REQUEST_PERMISSION_READ_STORAGE = 22;
 
     private List<String> attachments = new ArrayList<>();
     private RecyclerView galleryRecyclerView;
     private GalleryAdapter galleryAdapter;
     private TextView mediaErrorView;
+    private Button attachmentPopupCameraButton;
+
+    private boolean isRecording;
+    private String audioFile;
+    private MediaRecorder audioRecorder;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -55,6 +65,7 @@ public class AttachmentPopupFragment extends Fragment {
 
         if (getArguments() != null){
             attachments.addAll(getArguments().getStringArrayList(weMessage.ARG_ATTACHMENT_GALLERY_CACHE));
+            audioFile = getArguments().getString(weMessage.ARG_VOICE_RECORDING_FILE);
         }
     }
 
@@ -64,49 +75,68 @@ public class AttachmentPopupFragment extends Fragment {
         final View view = inflater.inflate(R.layout.fragment_popup_attachment, container, false);
 
         mediaErrorView = (TextView) view.findViewById(R.id.mediaErrorView);
+        attachmentPopupCameraButton = (Button) view.findViewById(R.id.attachmentPopupAudioButton);
         galleryRecyclerView = (RecyclerView) view.findViewById(R.id.galleryRecyclerView);
         galleryRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 2, GridLayoutManager.HORIZONTAL, false));
 
         mediaErrorView.setVisibility(View.GONE);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)){
-                DialogDisplayer.AlertDialogFragment alertDialogFragment = DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), getString(R.string.no_media_permission));
-
-                alertDialogFragment.setOnDismiss(new Runnable() {
-                    @Override
-                    public void run() {
-                        requestPermissions(new String[] { Manifest.permission.READ_EXTERNAL_STORAGE }, REQUEST_PERMISSION_READ_STORAGE);
-                    }
-                });
-                alertDialogFragment.show(getFragmentManager(), "MediaReadPermissionsAlertFragment");
-            } else {
-                requestPermissions(new String[] { Manifest.permission.READ_EXTERNAL_STORAGE }, REQUEST_PERMISSION_READ_STORAGE);
-            }
-        }else {
+        if (hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, getString(R.string.no_media_permission), "MediaReadPermissionAlertFragment", weMessage.REQUEST_PERMISSION_READ_STORAGE)){
             loadGalleryItems();
         }
+
+        if (audioFile != null){
+            attachmentPopupCameraButton.setSelected(false);
+            attachmentPopupCameraButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_trash_exit, 0, 0);
+            attachmentPopupCameraButton.setTextColor(Color.BLACK);
+            attachmentPopupCameraButton.setText(getString(R.string.delete_audio_recording));
+            attachmentPopupCameraButton.setTextSize(12);
+        }
+
+        attachmentPopupCameraButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (hasPermission(Manifest.permission.RECORD_AUDIO, getString(R.string.no_audio_record_permission), "AudioRecordPermissionAlertFragment", weMessage.REQUEST_PERMISSION_RECORD_AUDIO)){
+                    if (attachmentPopupCameraButton.getCompoundDrawables()[1].getConstantState().equals(getResources().getDrawable(R.drawable.ic_trash_exit).getConstantState())){
+                        deleteRecording();
+                    }else {
+                        toggleRecording();
+                    }
+                }
+            }
+        });
+
         return view;
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode){
-            case REQUEST_PERMISSION_READ_STORAGE:
+            case weMessage.REQUEST_PERMISSION_READ_STORAGE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
                     mediaErrorView.setVisibility(View.GONE);
                     loadGalleryItems();
-                }else {
+                } else {
                     galleryRecyclerView.setVisibility(View.GONE);
                     mediaErrorView.setText(getString(R.string.no_media_permission));
                     mediaErrorView.setVisibility(View.VISIBLE);
                 }
+                break;
+            case weMessage.REQUEST_PERMISSION_RECORD_AUDIO:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                    toggleRecording();
+                }
+                break;
         }
     }
 
     @Override
     public void onDestroy() {
-        ((AttachmentInputListener) getParentFragment()).setAttachmentsInput(attachments);
+        if (isRecording){
+            toggleRecording();
+            audioFile = null;
+        }
+        ((AttachmentInputListener) getParentFragment()).setAttachmentsInput(attachments, audioFile);
 
         super.onDestroy();
     }
@@ -117,6 +147,85 @@ public class AttachmentPopupFragment extends Fragment {
 
     public void clearSelectedAttachments(){
         attachments.clear();
+    }
+
+    public String getAudioFile(){
+        return audioFile;
+    }
+
+    private boolean hasPermission(final String permission, String rationaleString, String alertTagId, final int requestCode){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(getActivity(), permission) != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(permission)){
+                DialogDisplayer.AlertDialogFragment alertDialogFragment = DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), rationaleString);
+
+                alertDialogFragment.setOnDismiss(new Runnable() {
+                    @Override
+                    public void run() {
+                        requestPermissions(new String[] { permission }, requestCode);
+                    }
+                });
+                alertDialogFragment.show(getFragmentManager(), alertTagId);
+                return false;
+            } else {
+                requestPermissions(new String[] { permission }, requestCode);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void toggleRecording() {
+        if (!isRecording) {
+            String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
+            String fileName = weMessage.get().getAttachmentFolder().getAbsolutePath() + "/" + attachmentNamePrefix + "-VoiceMessage.amr";
+
+            isRecording = true;
+
+            getAudioRecorder().setAudioSource(MediaRecorder.AudioSource.MIC);
+            getAudioRecorder().setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
+            getAudioRecorder().setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+            getAudioRecorder().setOutputFile(fileName);
+
+            try {
+                getAudioRecorder().prepare();
+                getAudioRecorder().start();
+
+                attachmentPopupCameraButton.setSelected(true);
+                attachmentPopupCameraButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_mic_white, 0, 0);
+                attachmentPopupCameraButton.setTextColor(Color.WHITE);
+                attachmentPopupCameraButton.setText(getString(R.string.word_recording));
+
+                audioFile = fileName;
+            }catch(Exception ex){
+                isRecording = false;
+
+                generateErroredSnackBar(getParentFragment().getView(), getString(R.string.audio_record_error)).show();
+                AppLogger.error("An error occurred while recording an audio message.", ex);
+            }
+
+        } else {
+            isRecording = false;
+            getAudioRecorder().stop();
+            getAudioRecorder().release();
+            audioRecorder = null;
+
+            attachmentPopupCameraButton.setSelected(false);
+            attachmentPopupCameraButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_trash_exit, 0, 0);
+            attachmentPopupCameraButton.setTextColor(Color.BLACK);
+            attachmentPopupCameraButton.setText(getString(R.string.delete_audio_recording));
+            attachmentPopupCameraButton.setTextSize(12);
+        }
+    }
+
+    private void deleteRecording(){
+        if (audioFile != null){
+            File file = new File(audioFile);
+            audioFile = null;
+
+            attachmentPopupCameraButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_mic_black, 0, 0);
+            attachmentPopupCameraButton.setText(getString(R.string.audio_record));
+            attachmentPopupCameraButton.setTextSize(14);
+        }
     }
 
     private void loadGalleryItems(){
@@ -233,6 +342,13 @@ public class AttachmentPopupFragment extends Fragment {
         cursor.close();
 
         return videos;
+    }
+
+    private MediaRecorder getAudioRecorder(){
+        if (audioRecorder == null){
+            audioRecorder = new MediaRecorder();
+        }
+        return audioRecorder;
     }
 
     private Snackbar generateErroredSnackBar(View view, String message){
@@ -373,6 +489,6 @@ public class AttachmentPopupFragment extends Fragment {
 
     interface AttachmentInputListener {
 
-        void setAttachmentsInput(List<String> attachments);
+        void setAttachmentsInput(List<String> attachments, String audioRecordingPath);
     }
 }

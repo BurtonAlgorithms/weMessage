@@ -419,10 +419,6 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
     @Override
     public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) {
 
-
-        //TODO: Impl Soon
-
-
     }
 
     @Override

@@ -75,7 +75,7 @@ public class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
-    private final int TIME_TO_CONNECT = 0;
+    private final int TIME_TO_CONNECT = 2;
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
@@ -606,7 +606,7 @@ public class ConnectionHandler extends Thread {
                                 }
 
 
-                                String attachmentNamePrefix = new SimpleDateFormat("MM-dd-yy", Locale.US).format(Calendar.getInstance().getTime());
+                                String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
                                 ArrayList<Attachment> attachments = new ArrayList<>();
 
                                 for (JSONAttachment jsonAttachment : jsonMessage.getAttachments()) {
@@ -679,10 +679,12 @@ public class ConnectionHandler extends Thread {
                                         }
                                     }
 
-                                    if (!updated){
-                                        sendLocalBroadcast(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR, null);
-                                        AppLogger.log(AppLogger.Level.ERROR, TAG, "An error occurred while updating a message with Mac GUID: " + jsonMessage.getMacGuid() +
-                                                "  Reason: Previous message not found on system");
+                                    if (!updated) {
+                                        if (!StringUtils.isEmpty(StringUtils.trimORC(decryptedText))) {
+                                            sendLocalBroadcast(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR, null);
+                                            AppLogger.log(AppLogger.Level.ERROR, TAG, "An error occurred while updating a message with Mac GUID: " + jsonMessage.getMacGuid() +
+                                                    "  Reason: Previous message not found on system");
+                                        }
                                     }
                                 }else {
                                     updateMessage(messageManager, messageDatabase.getMessageByMacGuid(jsonMessage.getMacGuid()), jsonMessage, false);
@@ -1189,10 +1191,22 @@ public class ConnectionHandler extends Thread {
         if (overrideAll){
             Contact sender;
 
-            if (StringUtils.isEmpty(jsonMessage.getHandle())) {
-                sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount()));
-            } else {
-                sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+            if (messageDatabase.getChatByMacGuid(jsonMessage.getChat().getMacGuid()).getChatType() == Chat.ChatType.PEER){
+                if (jsonMessage.isFromMe()){
+                    sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount()));
+                }else {
+                    if (StringUtils.isEmpty(jsonMessage.getHandle())) {
+                        sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+                    }else {
+                        sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+                    }
+                }
+            }else {
+                if (StringUtils.isEmpty(jsonMessage.getHandle())) {
+                    sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount()));
+                } else {
+                    sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+                }
             }
 
             newData.setMacGuid(jsonMessage.getMacGuid()).setChat(messageDatabase.getChatByMacGuid(jsonMessage.getChat().getMacGuid()))

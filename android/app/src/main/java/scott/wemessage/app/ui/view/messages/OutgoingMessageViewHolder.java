@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.stfalcon.chatkit.messages.MessageHolders;
@@ -131,14 +132,22 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
             bubble.setVisibility(View.VISIBLE);
         }
 
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) bubble.getLayoutParams();
+
         if (message.hasErrored()){
             errorBubble.setVisibility(View.VISIBLE);
             errorMessageView.setVisibility(View.VISIBLE);
 
+            layoutParams.removeRule(RelativeLayout.ALIGN_PARENT_END);
+            layoutParams.addRule(RelativeLayout.START_OF, R.id.errorBubble);
         }else {
             errorBubble.setVisibility(View.GONE);
             errorMessageView.setVisibility(View.GONE);
+
+            layoutParams.removeRule(RelativeLayout.START_OF);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END);
         }
+        bubble.setLayoutParams(layoutParams);
     }
 
     public void notifyAudioPlaybackStart(Attachment a){

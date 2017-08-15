@@ -19,6 +19,9 @@ public final class weMessage extends Application implements Constants {
     public static final String IDENTIFIER_PREFIX = "scott.wemessage.app.";
     public static final String ATTACHMENT_FOLDER_NAME = "attachments";
 
+    public static final int REQUEST_PERMISSION_READ_STORAGE = 5000;
+    public static final int REQUEST_PERMISSION_RECORD_AUDIO = 5001;
+
     public static final String BUNDLE_HOST = IDENTIFIER_PREFIX + "bundleHost";
     public static final String BUNDLE_EMAIL = IDENTIFIER_PREFIX + "bundleEmail";
     public static final String BUNDLE_PASSWORD = IDENTIFIER_PREFIX + "bundlePassword";
@@ -37,6 +40,7 @@ public final class weMessage extends Application implements Constants {
     public static final String BUNDLE_FULL_SCREEN_VIDEO_URI = IDENTIFIER_PREFIX + "bundleFullScreenVideoUri";
     public static final String BUNDLE_SELECTED_GALLERY_STORE = IDENTIFIER_PREFIX + "bundleSelectedGalleryStore";
     public static final String BUNDLE_GALLERY_FRAGMENT_OPEN = IDENTIFIER_PREFIX + "bundleGalleryFragmentOpen";
+    public static final String BUNDLE_VOICE_MESSAGE_INPUT_FILE = IDENTIFIER_PREFIX + "bundleVoiceMessageInputFile";
 
     public static final String ARG_HOST = IDENTIFIER_PREFIX + "hostArg";
     public static final String ARG_PORT = IDENTIFIER_PREFIX + "portArg";
@@ -44,6 +48,7 @@ public final class weMessage extends Application implements Constants {
     public static final String ARG_PASSWORD = IDENTIFIER_PREFIX + "passwordArg";
     public static final String ARG_PASSWORD_ALREADY_HASHED = IDENTIFIER_PREFIX + "passwordAlreadyHashed";
     public static final String ARG_ATTACHMENT_GALLERY_CACHE = IDENTIFIER_PREFIX + "attachmentGalleryCacheArg";
+    public static final String ARG_VOICE_RECORDING_FILE = IDENTIFIER_PREFIX + "argVoiceRecordingFile";
 
     public static final String BROADCAST_LOGIN_TIMEOUT = IDENTIFIER_PREFIX + "LoginTimeout";
     public static final String BROADCAST_LOGIN_ERROR = IDENTIFIER_PREFIX + "LoginError";

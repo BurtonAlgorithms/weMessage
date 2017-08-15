@@ -68,10 +68,22 @@
     <string name="no_media_found">No media was found on this device.</string>
     <string name="permissions_error_title">Permissions Error</string>
     <string name="no_media_permission">weMessage does not have permission to access media storage.\n\nPlease grant it permission in order to be able to send attachments.</string>
+    <string name="no_audio_record_permission">weMessage does not have permission to record audio. \n\nPlease grant it permission in order to send voice messages.</string>
+    <string name="audio_record_error">An error occurred while trying record your audio.</string>
+    <string name="delete_audio_recording">Delete\nVoice Message</string>
+    <string name="audio_recording_added">Voice Message added to the message.</string>
     <string name="media_fetch_error">An error occurred while trying to get media from the device.</string>
     <string name="attachments_added_toast">%1$d Attachments added to the message.</string>
     <string name="max_file_size_alert_title">Files Too Large</string>
     <string name="max_file_size_alert_message">You have exceeded the maximum attachment size (%1$s). \n\nThe attachments selected are too large to be sent.</string>
     <string name="message_delivery_error">Not Delivered</string>
+    <string name="message_delivery_failure_unknown">This message could not be delivered due to an unknown error.</string>
+    <string name="message_delivery_failure_invalid_number">This message could not be delivered because the number is not valid.</string>
+    <string name="message_delivery_failure_imessage">This message could not be delivered because it is not registered with iMessage.</string>
+    <string name="message_delivery_failure_group_chat">This message could not be delivered because the group chat was not found.</string>
+    <string name="message_delivery_failure_service">This message could not be delivered because the service is not available.</string>
+    <string name="message_delivery_failure_assistive">This message could not be delivered because assistive access is disabled.</string>
+    <string name="message_delivery_failure_ui_error">This message could not be delivered due to a Mac User Interface Error.</string>
+
 
 </resources>

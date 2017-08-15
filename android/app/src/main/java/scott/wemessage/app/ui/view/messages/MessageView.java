@@ -6,6 +6,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.commons.utils.StringUtils;
 
 public class MessageView implements IMessage {
 
@@ -27,7 +28,7 @@ public class MessageView implements IMessage {
     @Override
     public String getText() {
         try {
-            return trimORC(message.getText());
+            return StringUtils.trimORC(message.getText());
         }catch(Exception ex){
             return null;
         }
@@ -53,19 +54,5 @@ public class MessageView implements IMessage {
 
     public boolean hasErrored(){
         return message.hasErrored();
-    }
-
-    private String trimORC(String string){
-        char[] chars = string.toCharArray();
-        String finalString = "";
-
-        for (char c : chars){
-            String hex = String.format("%04x", (int) c);
-
-            if (!hex.equals("fffc")){
-                finalString += c;
-            }
-        }
-        return finalString;
     }
 }

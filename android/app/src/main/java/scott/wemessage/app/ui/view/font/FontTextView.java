@@ -19,9 +19,10 @@ public class FontTextView extends AppCompatTextView {
 
         TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.FontTextView);
         String fontName = array.getString(R.styleable.FontTextView_fontName);
-        array.recycle();
+
 
         setFont(fontName);
+        array.recycle();
     }
 
     public FontTextView(Context context, AttributeSet attributeSet, int defStyle){
@@ -29,9 +30,10 @@ public class FontTextView extends AppCompatTextView {
 
         TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.FontTextView);
         String fontName = array.getString(R.styleable.FontTextView_fontName);
-        array.recycle();
+
 
         setFont(fontName);
+        array.recycle();
     }
 
     public void setFont(String fontName){
