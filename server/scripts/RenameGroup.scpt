@@ -15,11 +15,6 @@ on run {groupName, lastUpdated, lastMessage, newTitle}
 
 	tell handlerLib to foregroundApp("Messages", "Messages", true)
 	set returnSet to handlerLib's renameGroup(groupName, lastUpdated, lastMessage, newTitle)
-	tell application "System Events"
-		tell application process "Messages"
-			keystroke "m" using {command down}
-		end tell
-	end tell
 
 	return returnSet
 end run

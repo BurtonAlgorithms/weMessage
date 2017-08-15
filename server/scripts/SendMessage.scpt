@@ -15,14 +15,5 @@ on run {phoneNumber, fileLocation, message}
 
 	set returnSet to handlerLib's sendMessage(phoneNumber, fileLocation, message)
 
-	delay 0.1
-	tell application "Messages"
-		repeat with theWindow in windows
-			if theWindow's name as text is equal to "File Transfers" then
-				close theWindow
-			end if
-		end repeat
-	end tell
-
 	return returnSet
 end run

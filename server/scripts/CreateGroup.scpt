@@ -15,12 +15,6 @@ on run {groupName, participants, message}
 
 	tell handlerLib to foregroundApp("Messages", "Messages", true)
 	set returnSet to handlerLib's createGroup(groupName, participants, message)
-	delay 0.1
-	tell application "System Events"
-		tell application process "Messages"
-			keystroke "m" using {command down}
-		end tell
-	end tell
 
 	return returnSet
 end run

@@ -15,12 +15,6 @@ on run {groupName, lastUpdated, lastMessage, iMessageAcc}
 
 	tell handlerLib to foregroundApp("Messages", "Messages", true)
 	set returnSet to handlerLib's removeParticipantFromGroup(groupName, lastUpdated, lastMessage, iMessageAcc)
-	delay 0.1
-	tell application "System Events"
-		tell application process "Messages"
-			keystroke "m" using {command down}
-		end tell
-	end tell
 
 	return returnSet
 end run

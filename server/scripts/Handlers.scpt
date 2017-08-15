@@ -692,6 +692,16 @@ on foregroundApp(theApp, theProcess, theBoolean)
 end foregroundApp
 
 
+on closeMessagesApp()
+	delay 0.2
+	tell application "System Events"
+		tell application process "Messages"
+			keystroke "m" using {command down}
+		end tell
+	end tell
+end closeMessagesApp
+
+
 
 on isServerRunning()
 	tell application "Terminal"
