@@ -40,6 +40,20 @@ public class StringUtils {
         }
     }
 
+    public static String trimORC(String string){
+        char[] chars = string.toCharArray();
+        String finalString = "";
+
+        for (char c : chars){
+            String hex = String.format("%04x", (int) c);
+
+            if (!hex.equals("fffc")){
+                finalString += c;
+            }
+        }
+        return finalString;
+    }
+
     public static String uppercaseFirst(String string){
         return string.substring(0, 1).toUpperCase() + string.substring(1);
     }
