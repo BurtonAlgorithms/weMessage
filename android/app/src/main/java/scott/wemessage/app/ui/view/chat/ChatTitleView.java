@@ -72,19 +72,19 @@ public class ChatTitleView extends LinearLayout {
             setOrientation(VERTICAL);
             setLayoutParams(layoutParams);
 
-            imageView.setLayoutParams(new LayoutParams(Math.round(DisplayUtils.convertDpToPixel(SINGLE_IMAGE_SIZE, getContext())),
-                    Math.round(DisplayUtils.convertDpToPixel(SINGLE_IMAGE_SIZE, getContext()))));
+            imageView.setLayoutParams(new LayoutParams(DisplayUtils.convertDpToRoundedPixel(SINGLE_IMAGE_SIZE, getContext()),
+                    DisplayUtils.convertDpToRoundedPixel(SINGLE_IMAGE_SIZE, getContext())));
 
             Glide.with(getContext()).load(url).into(imageView);
 
             LayoutParams textLayoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            textLayoutParams.topMargin = Math.round(DisplayUtils.convertDpToPixel(8, getContext()));
+            textLayoutParams.topMargin = DisplayUtils.convertDpToRoundedPixel(8, getContext());
 
             titleTextView.setTextSize(TEXT_SIZE);
             titleTextView.setTypeface(titleTextView.getTypeface(), Typeface.NORMAL);
             titleTextView.setTextColor(Color.WHITE);
             titleTextView.setSingleLine();
-            titleTextView.setFilters(new InputFilter[] { new InputFilter.LengthFilter(22) });
+            titleTextView.setFilters(new InputFilter[] { new InputFilter.LengthFilter(28) });
             titleTextView.setEllipsize(TextUtils.TruncateAt.END);
             titleTextView.setText(contact.getUIDisplayName());
             titleTextView.setLayoutParams(textLayoutParams);
@@ -96,8 +96,8 @@ public class ChatTitleView extends LinearLayout {
 
             setOrientation(HORIZONTAL);
 
-            imageView.setLayoutParams(new LayoutParams(Math.round(DisplayUtils.convertDpToPixel(GROUP_IMAGE_SIZE, getContext())),
-                    Math.round(DisplayUtils.convertDpToPixel(GROUP_IMAGE_SIZE, getContext()))));
+            imageView.setLayoutParams(new LayoutParams(DisplayUtils.convertDpToRoundedPixel(GROUP_IMAGE_SIZE, getContext()),
+                    DisplayUtils.convertDpToRoundedPixel(GROUP_IMAGE_SIZE, getContext())));
 
             Glide.with(getContext()).load(url).into(imageView);
 
@@ -107,12 +107,12 @@ public class ChatTitleView extends LinearLayout {
             LinearLayout textLayout = new LinearLayout(getContext());
             LayoutParams textLayoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
 
-            textLayoutParams.setMarginStart(Math.round(DisplayUtils.convertDpToPixel(24, getContext())));
+            textLayoutParams.setMarginStart(DisplayUtils.convertDpToRoundedPixel(24, getContext()));
             textLayout.setOrientation(VERTICAL);
             textLayout.setLayoutParams(textLayoutParams);
 
             LayoutParams titleLayoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            titleLayoutParams.bottomMargin = Math.round(DisplayUtils.convertDpToPixel(2, getContext()));
+            titleLayoutParams.bottomMargin = DisplayUtils.convertDpToRoundedPixel(2, getContext());
 
             titleTextView.setTextSize(BIG_TEXT_SIZE);
             titleTextView.setTypeface(titleTextView.getTypeface(), Typeface.BOLD);

@@ -38,7 +38,7 @@ public abstract class AttachmentView extends RelativeLayout {
 
     public void setBottomPadding(int paddingDp){
         LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) getLayoutParams();
-        layoutParams.bottomMargin = Math.round(DisplayUtils.convertDpToPixel(paddingDp, getContext()));
+        layoutParams.bottomMargin = DisplayUtils.convertDpToRoundedPixel(paddingDp, getContext());
 
         setLayoutParams(layoutParams);
     }

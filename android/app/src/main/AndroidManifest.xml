@@ -29,6 +29,7 @@
         <activity android:name=".app.ui.activities.MessageVideoActivity"
                   android:theme="@style/AppTheme.VideoPlayer"
                   android:configChanges="orientation|keyboardHidden|screenLayout|screenSize"> </activity>
+        <activity android:name=".app.ui.activities.CreateChatActivity"> </activity>
 
         <service android:name=".app.connection.ConnectionService" />
     </application>

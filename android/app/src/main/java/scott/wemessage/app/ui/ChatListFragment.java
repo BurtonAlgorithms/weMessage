@@ -7,12 +7,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -39,6 +42,7 @@ import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.ui.activities.ConversationActivity;
+import scott.wemessage.app.ui.activities.CreateChatActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.view.chat.ChatDialogView;
 import scott.wemessage.app.ui.view.chat.ChatDialogViewHolder;
@@ -51,19 +55,18 @@ import scott.wemessage.commons.types.ReturnType;
 
 public class ChatListFragment extends Fragment implements MessageManager.Callbacks {
 
-
-    //TODO: Find a recycler view adapter
-
     private final String TAG = "ChatListFragment";
     private final String GO_BACK_REASON_ALERT_TAG = "GoBackReasonAlert";
     private final int ERROR_SNACKBAR_DURATION = 5000;
 
     private String callbackUuid;
+    private boolean isBoundToConnectionService = false;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
+
     private LinearLayout noConversationsView;
+    private FloatingActionButton addChatButton;
     private DialogsList dialogsList;
     private DialogsListAdapter<IDialog> dialogsListAdapter;
-    private boolean isBoundToConnectionService = false;
 
     private BroadcastReceiver chatListBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -160,6 +163,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
         dialogsList = (DialogsList) view.findViewById(R.id.chatDialogsList);
         noConversationsView = (LinearLayout) view.findViewById(R.id.noConversationsView);
+        addChatButton = (FloatingActionButton) view.findViewById(R.id.addChatButton);
 
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.chatListToolbar);
         toolbar.setTitle("");
@@ -197,6 +201,42 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
                 launcherIntent.putExtra(weMessage.BUNDLE_RETURN_POINT, getActivity().getClass().getName());
                 launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, dialog.getId());
+
+                startActivity(launcherIntent);
+                getActivity().finish();
+            }
+        });
+
+        dialogsList.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                closeDeleteButtonViews();
+                return false;
+            }
+        });
+
+        dialogsList.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
+            @Override
+            public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+                closeDeleteButtonViews();
+                return false;
+            }
+
+            @Override
+            public void onTouchEvent(RecyclerView rv, MotionEvent e) {
+
+            }
+
+            @Override
+            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+
+            }
+        });
+
+        addChatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent launcherIntent = new Intent(weMessage.get(), CreateChatActivity.class);
 
                 startActivity(launcherIntent);
                 getActivity().finish();
@@ -440,6 +480,18 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
         if (isBoundToConnectionService) {
             getActivity().unbindService(serviceConnection);
             isBoundToConnectionService = false;
+        }
+    }
+
+    private void closeDeleteButtonViews(){
+        if (dialogsList != null) {
+            for (int childCount = dialogsList.getChildCount(), i = 0; i < childCount; ++i) {
+                RecyclerView.ViewHolder holder = dialogsList.getChildViewHolder(dialogsList.getChildAt(i));
+
+                if (holder instanceof ChatDialogViewHolder) {
+                    ((ChatDialogViewHolder) holder).closeView();
+                }
+            }
         }
     }
 

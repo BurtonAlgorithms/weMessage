@@ -6,6 +6,10 @@ import android.util.TypedValue;
 
 public class DisplayUtils {
 
+    public static int convertDpToRoundedPixel(float dp, Context context){
+        return Math.round(convertDpToPixel(dp, context));
+    }
+
     public static float convertDpToPixel(float dp, Context context){
         DisplayMetrics metrics = context.getResources().getDisplayMetrics();
         return (dp * ((float) metrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT));

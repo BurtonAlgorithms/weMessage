@@ -15,7 +15,7 @@
     <string name="password_too_easy">This password is too easy to guess. Enter a harder one.</string>
     <string name="connecting_dialog_title">Connecting&#8230;</string>
     <string name="connecting_dialog_message">Connecting to weServer with IP: %1$s on Port: %2$d</string>
-    <string name="cancel_button">Cancel</string>
+    <string name="word_cancel">Cancel</string>
     <string name="ok_button">Okay</string>
     <string name="timeout_alert_title">Connection Timed Out</string>
     <string name="timeout_alert_content">Could not connect to the weServer. Make sure it is turned on and you entered the right IP address!
@@ -84,6 +84,9 @@
     <string name="message_delivery_failure_service">This message could not be delivered because the service is not available.</string>
     <string name="message_delivery_failure_assistive">This message could not be delivered because assistive access is disabled.</string>
     <string name="message_delivery_failure_ui_error">This message could not be delivered due to a Mac User Interface Error.</string>
+    <string name="new_message">New Message</string>
+    <string name="word_to">To: </string>
+    <string name="contact_enter">Enter a name, phone, or email</string>
 
 
 </resources>

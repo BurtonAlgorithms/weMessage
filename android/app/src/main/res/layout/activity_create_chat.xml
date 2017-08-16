@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:focusableInTouchMode="true">
+
+    <include
+        android:id="@+id/newChatToolbar"
+        layout="@layout/toolbar_new_chat" />
+
+    <com.google.android.flexbox.FlexboxLayout
+        android:id="@+id/selectedContactsView"
+        android:background="@color/shadedWhiteLight"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/newChatToolbar"
+        android:padding="12dp"
+        app:flexDirection="row"
+        app:flexWrap="wrap"
+        app:alignItems="flex_start"
+        app:alignContent="flex_start">
+
+        <scott.wemessage.app.ui.view.font.FontTextView
+            app:fontName="OrkneyLight"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/word_to"
+            android:textSize="16sp"/>
+
+    </com.google.android.flexbox.FlexboxLayout>
+
+    <LinearLayout
+        android:id="@+id/contactsEditTextContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/selectedContactsView"
+        android:background="@color/lighterGray">
+
+        <EditText
+            android:id="@+id/searchContactEditText"
+            android:background="@drawable/edit_text_rounded"
+            android:inputType="text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:textColor="@color/black"
+            android:minHeight="18dp"
+            android:hint="@string/contact_enter"/>
+    </LinearLayout>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/contactsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/messageInputDivider"
+        android:layout_below="@id/contactsEditTextContainer">
+
+    </android.support.v7.widget.RecyclerView>
+
+    <View
+        android:id="@+id/messageInputDivider"
+        android:background="@color/shadedWhite"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_above="@+id/newChatMessageInputView" />
+
+    <com.stfalcon.chatkit.messages.MessageInput
+        android:id="@+id/newChatMessageInputView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@color/white"
+
+        app:inputHint="@string/message_input_hint"
+        app:inputButtonDefaultBgColor="@color/outgoingBubbleColor"
+        app:inputButtonDefaultBgPressedColor="@color/outgoingBubbleColorPressed"
+        app:inputButtonDefaultIconDisabledColor="@color/gray" />
+
+</RelativeLayout>

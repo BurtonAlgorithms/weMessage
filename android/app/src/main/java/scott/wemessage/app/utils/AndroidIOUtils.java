@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import java.io.File;
 
 import scott.wemessage.R;
+import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
@@ -53,5 +54,17 @@ public class AndroidIOUtils {
         }
     }
 
-
+    public static String getContactIconUri(Contact contact){
+        try {
+            if (contact.getContactPictureFileLocation() == null) {
+                return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
+            } else if (StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())) {
+                return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
+            } else {
+                return Uri.fromFile(contact.getContactPictureFileLocation().getFile()).toString();
+            }
+        }catch (Exception ex){
+            return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
+        }
+    }
 }

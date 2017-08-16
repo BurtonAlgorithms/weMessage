@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/selectableItemBackground"
+    android:padding="8dp">
+
+    <ImageView
+        android:layout_margin="8dp"
+        android:id="@+id/selectedContactBubble"
+        android:src="@drawable/circle_outline"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:adjustViewBounds="true"
+        android:scaleType="fitStart"
+        android:layout_gravity="center_vertical"/>
+
+    <com.github.siyamed.shapeimageview.CircularImageView
+        android:id="@+id/contactPictureView"
+        android:layout_margin="8dp"
+        android:layout_width="52dp"
+        android:layout_height="52dp"/>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_margin="8dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <scott.wemessage.app.ui.view.font.FontTextView
+            app:fontName="OrkneyBold"
+            android:id="@+id/contactDisplayNameView"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textColor="@color/black"/>
+
+        <scott.wemessage.app.ui.view.font.FontTextView
+            app:fontName="OrkneyLight"
+            android:id="@+id/contactHandle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@color/black"
+            android:layout_marginTop="2dp"/>
+    </LinearLayout>
+
+</LinearLayout>

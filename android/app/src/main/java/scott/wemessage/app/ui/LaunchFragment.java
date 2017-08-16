@@ -578,7 +578,7 @@ public class LaunchFragment extends Fragment {
 
         progressDialogLayout.setTitle(title);
         progressDialogLayout.setMessage(message);
-        progressDialogLayout.setButton(getString(R.string.cancel_button), new View.OnClickListener() {
+        progressDialogLayout.setButton(getString(R.string.word_cancel), new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 serviceConnection.scheduleTask(new Runnable() {

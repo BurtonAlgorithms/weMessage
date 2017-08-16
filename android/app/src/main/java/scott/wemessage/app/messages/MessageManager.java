@@ -31,7 +31,7 @@ public final class MessageManager {
 
     private Context context;
     private ConcurrentHashMap<String, Callbacks> callbacksMap = new ConcurrentHashMap<>();
-    public ConcurrentHashMap<String, Contact> contacts = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Contact> contacts = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Chat> chats = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Message> messages = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, ActionMessage> actionMessages = new ConcurrentHashMap<>();
@@ -47,6 +47,10 @@ public final class MessageManager {
 
     public ConcurrentHashMap<String, Chat> getChats(){
         return chats;
+    }
+
+    public ConcurrentHashMap<String, Contact> getContacts(){
+        return contacts;
     }
 
     public void hookCallbacks(String uuid, Callbacks callbacks){

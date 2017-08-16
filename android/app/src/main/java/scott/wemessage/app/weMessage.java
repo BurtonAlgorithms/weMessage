@@ -41,6 +41,7 @@ public final class weMessage extends Application implements Constants {
     public static final String BUNDLE_SELECTED_GALLERY_STORE = IDENTIFIER_PREFIX + "bundleSelectedGalleryStore";
     public static final String BUNDLE_GALLERY_FRAGMENT_OPEN = IDENTIFIER_PREFIX + "bundleGalleryFragmentOpen";
     public static final String BUNDLE_VOICE_MESSAGE_INPUT_FILE = IDENTIFIER_PREFIX + "bundleVoiceMessageInputFile";
+    public static final String BUNDLE_CREATE_CHAT_CONTACT_UUIDS = IDENTIFIER_PREFIX + "bundleCreateChatContactUuids";
 
     public static final String ARG_HOST = IDENTIFIER_PREFIX + "hostArg";
     public static final String ARG_PORT = IDENTIFIER_PREFIX + "portArg";
