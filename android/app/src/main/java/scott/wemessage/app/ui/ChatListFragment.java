@@ -167,7 +167,6 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.chatListToolbar);
         toolbar.setTitle("");
-
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
         DialogsListAdapter<IDialog> dialogsListAdapter = new DialogsListAdapter<>(R.layout.list_item_chat, ChatDialogViewHolder.class, new ImageLoader() {

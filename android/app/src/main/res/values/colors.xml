@@ -14,6 +14,7 @@
     <color name="superHeavyBlue">#0013e2</color>
 
     <color name="brightRed">#ff3b2f</color>
+    <color name="brightRedPressed">#ff281b</color>
     <color name="lightRed">#f70a32</color>
     <color name="invalidRed">#b30522</color>
     <color name="invalidRedLight">#3bff0544</color>

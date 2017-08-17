@@ -195,6 +195,35 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return chats;
     }
 
+    public List<GroupChat> getGroupChatsWithLikeName(String displayName){
+        List<GroupChat> chats = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        Cursor cursor;
+
+        if (displayName == null) {
+            String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME + " WHERE " + ChatTable.DISPLAY_NAME + " IS NULL";
+            cursor = db.rawQuery(selectQuery, null);
+        }else {
+            String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME + " WHERE " + ChatTable.DISPLAY_NAME + " LIKE ?";
+            cursor = db.rawQuery(selectQuery, new String[]{ displayName + "%" });
+        }
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                Chat chat = buildChat(cursor);
+
+                if (chat != null) {
+                    chats.add((GroupChat) chat);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return chats;
+    }
+
     public PeerChat getChatByHandle(Handle handle){
         SQLiteDatabase db = getWritableDatabase();
         String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME + " WHERE " + ChatTable.CONTACT_UUID + " = ?";

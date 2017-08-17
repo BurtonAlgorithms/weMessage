@@ -75,7 +75,7 @@ public class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
-    private final int TIME_TO_CONNECT = 0;
+    private final int TIME_TO_CONNECT = 2;
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
@@ -167,7 +167,7 @@ public class ConnectionHandler extends Thread {
 
     //TODO: If not registered with imessage, use sms factory to send message see if that works if not add message failure etc.
 
-    public void sendOutgoingMessage(final Message message){
+    public void sendOutgoingMessage(final Message message, final boolean performMessageManagerAdd){
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -180,7 +180,10 @@ public class ConnectionHandler extends Thread {
 
                     connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
                     messageAndConnectionMessageMap.put(clientMessageUuid, message.getUuid().toString());
-                    weMessage.get().getMessageManager().addMessage(message, false);
+
+                    if (performMessageManagerAdd) {
+                        weMessage.get().getMessageManager().addMessage(message, false);
+                    }
 
                     getOutputStream().writeObject(weMessage.JSON_NEW_MESSAGE + outgoingJson);
                     getOutputStream().flush();
@@ -188,7 +191,6 @@ public class ConnectionHandler extends Thread {
                     sendLocalBroadcast(weMessage.BROADCAST_SEND_MESSAGE_ERROR, null);
                     AppLogger.error(TAG, "An error occurred while trying to send a new message", ex);
                 }
-
             }
         }).start();
     }
@@ -681,9 +683,20 @@ public class ConnectionHandler extends Thread {
 
                                     if (!updated) {
                                         if (!StringUtils.isEmpty(StringUtils.trimORC(decryptedText))) {
-                                            sendLocalBroadcast(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR, null);
-                                            AppLogger.log(AppLogger.Level.ERROR, TAG, "An error occurred while updating a message with Mac GUID: " + jsonMessage.getMacGuid() +
-                                                    "  Reason: Previous message not found on system");
+                                            if (jsonMessage.isFromMe()) {
+                                                Contact sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount()));
+
+                                                Message message = new Message(UUID.randomUUID(), jsonMessage.getMacGuid(),
+                                                        messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, new ArrayList<Attachment>(),
+                                                        textDecryptionTask.getDecryptedText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(),
+                                                        jsonMessage.getDateRead(), jsonMessage.getErrored(), jsonMessage.isSent(), jsonMessage.isDelivered(),
+                                                        jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe());
+                                                messageManager.addMessage(message, false);
+                                            } else {
+                                                sendLocalBroadcast(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR, null);
+                                                AppLogger.log(AppLogger.Level.ERROR, TAG, "An error occurred while updating a message with Mac GUID: " + jsonMessage.getMacGuid() +
+                                                        "  Reason: Previous message not found on system");
+                                            }
                                         }
                                     }
                                 }else {

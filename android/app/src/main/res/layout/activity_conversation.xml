@@ -7,8 +7,7 @@
     android:orientation="vertical">
 
     <include
-        layout="@layout/toolbar_conversation_info"
-        />
+        layout="@layout/toolbar_conversation_info"/>
 
     <FrameLayout
         android:layout_height="match_parent"

@@ -87,6 +87,7 @@
     <string name="new_message">New Message</string>
     <string name="word_to">To: </string>
     <string name="contact_enter">Enter a name, phone, or email</string>
-
+    <string name="create_chat_minimum">You must enter in an email or phone number to send this message to.</string>
+    <string name="create_chat_contact_invalid_format">Please enter a valid email or phone number.</string>
 
 </resources>

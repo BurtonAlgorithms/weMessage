@@ -18,7 +18,7 @@
         <ImageButton
             android:id="@+id/chatDeleteButton"
             android:src="@drawable/ic_trash"
-            android:background="@color/brightRed"
+            android:background="@drawable/red_button_background_drawable"
             android:layout_width="84dp"
             android:layout_height="match_parent"/>
 
@@ -148,6 +148,9 @@
                     android:layout_marginStart="24dp"
                     android:layout_marginEnd="8dp" />
             </FrameLayout>
+
         </android.support.constraint.ConstraintLayout>
+
     </FrameLayout>
+
 </com.daimajia.swipe.SwipeLayout>

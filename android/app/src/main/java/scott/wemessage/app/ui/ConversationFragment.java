@@ -78,6 +78,7 @@ import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
+import scott.wemessage.commons.utils.StringUtils;
 
 public class ConversationFragment extends Fragment implements MessageManager.Callbacks, AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
 
@@ -339,8 +340,9 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         messageInput.setInputListener(new MessageInput.InputListener() {
             @Override
             public boolean onSubmit(CharSequence input) {
-                List<Attachment> attachments = new ArrayList<>();
+                if (StringUtils.isEmpty(input.toString().trim())) return false;
 
+                List<Attachment> attachments = new ArrayList<>();
                 int totalSize = 0;
 
                 if (isPopupFragmentOpen) {
@@ -417,7 +419,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                         true,
                         true
                 );
-                serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message);
+                serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
                 attachmentsInput.clear();
                 voiceMessageInput = null;
                 return true;
