@@ -177,100 +177,8 @@ public class Device extends Thread {
         AppleScriptExecutor executor = getDeviceManager().getMessageServer().getScriptExecutor();
 
         try {
-            ChatBase chat = messagesDb.getChatByGuid(message.getChat().getMacGuid());
-
-            if (chat == null) {
-                if (message.getChat().getParticipants().size() == 1) {
-                    Object result;
-                    String firstArg = message.getChat().getParticipants().get(0);
-
-                    String decryptedMessage = AESCrypto.decryptString(message.getEncryptedText().getEncryptedText(), message.getEncryptedText().getKey());
-                    List<File> attachments = new ArrayList<>();
-
-                    for (JSONAttachment a : message.getAttachments()) {
-                        byte[] bytes = a.getFileData().getEncryptedData();
-                        String key = a.getFileData().getKey();
-                        String ivParam = a.getFileData().getIvParams();
-
-                        byte[] decryptedBytes = AESCrypto.decryptBytes(new CipherByteArrayIvMac(bytes, ivParam), key);
-                        File file = new File(executor.getTempFolder().toString(), a.getTransferName());
-
-                        if (!file.exists()) {
-                            file.createNewFile();
-                        }
-                        FileUtils.writeBytesToFile(file, decryptedBytes);
-                        attachments.add(file);
-                    }
-
-
-                    if (attachments.isEmpty()) {
-                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, "", decryptedMessage});
-                    } else if (attachments.size() == 1) {
-                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, attachments.get(0).getAbsolutePath(), decryptedMessage});
-                    } else {
-                        for (File file : attachments) {
-                            executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, file.getAbsolutePath(), ""});
-                        }
-                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, "", decryptedMessage});
-                    }
-
-                    return parseResult(result);
-                }else {
-                    ArrayList<Integer> results = new ArrayList<>();
-                    results.add(ReturnType.GROUP_CHAT_NOT_FOUND.getCode());
-
-                    return results;
-                }
-            }
-
-            Message lastMessage = messagesDb.getLastMessageFromChat(chat);
-            Date lastMessageDate = lastMessage.getModernDateSent();
-            String timeArgument;
-            String lastMessageText;
-
-            if (lastMessage.getText() == null){
-                lastMessageText = "";
-            }else {
-                lastMessageText = lastMessage.getText();
-            }
-
-            if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)){
-                timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
-            }else {
-                if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())){
-                    timeArgument = "Yesterday";
-                }else {
-                    timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
-                }
-            }
-
-            ActionType type;
-            String firstArg;
-            Object result;
-
-            if (chat instanceof PeerChat){
-                type = ActionType.SEND_MESSAGE;
-                firstArg = ((PeerChat) chat).getPeer().getHandleID();
-            }else {
-                GroupChat groupChat = (GroupChat) chat;
-                type = ActionType.SEND_GROUP_MESSAGE;
-
-                List<String>participantDummyList = new ArrayList<>();
-
-                for (Handle h : groupChat.getParticipants()){
-                    participantDummyList.add(h.getHandleID());
-                }
-
-                participantDummyList.remove(participantDummyList.size() - 1);
-
-                if(groupChat.getDisplayName() == null || groupChat.getDisplayName().equals("")){
-                    firstArg = StringUtils.join(participantDummyList, ", ", 2) + " & " + groupChat.getParticipants().get(groupChat.getParticipants().size() - 1).getHandleID();
-                }else {
-                    firstArg = groupChat.getDisplayName();
-                }
-            }
-
             String decryptedMessage = AESCrypto.decryptString(message.getEncryptedText().getEncryptedText(), message.getEncryptedText().getKey());
+
             List<File> attachments = new ArrayList<>();
 
             for (JSONAttachment a : message.getAttachments()){
@@ -288,7 +196,38 @@ public class Device extends Thread {
                 attachments.add(file);
             }
 
-            if (type == ActionType.SEND_MESSAGE){
+            ChatBase chat = messagesDb.getChatByGuid(message.getChat().getMacGuid());
+
+             if (chat == null) {
+                if (message.getChat().getParticipants().size() < 2) {
+                    Object result;
+                    String firstArg = message.getChat().getParticipants().get(0);
+
+                    if (attachments.isEmpty()) {
+                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, "", decryptedMessage});
+                    } else if (attachments.size() == 1) {
+                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, attachments.get(0).getAbsolutePath(), decryptedMessage});
+                    } else {
+                        for (File file : attachments) {
+                            executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, file.getAbsolutePath(), ""});
+                        }
+                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, "", decryptedMessage});
+                    }
+
+                    return parseResult(result);
+                } else {
+                    ArrayList<Integer> results = new ArrayList<>();
+                    results.add(ReturnType.NULL_MESSAGE.getCode());
+                    results.add(ReturnType.GROUP_CHAT_NOT_FOUND.getCode());
+
+                    return results;
+                }
+            }
+
+            Object result;
+            if (chat instanceof PeerChat){
+                String firstArg = ((PeerChat) chat).getPeer().getHandleID();
+
                 if (attachments.isEmpty()){
                     result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{ firstArg, "", decryptedMessage});
                 }else if (attachments.size() == 1){
@@ -300,6 +239,49 @@ public class Device extends Thread {
                     result = executor.runScript(ActionType.SEND_MESSAGE, new String[] { firstArg, "", decryptedMessage });
                 }
             }else {
+                GroupChat groupChat = (GroupChat) chat;
+
+                List<String>participantDummyList = new ArrayList<>();
+                Message lastMessage = messagesDb.getLastMessageFromChat(chat);
+                String firstArg;
+                String timeArgument;
+                String lastMessageText;
+
+                if (lastMessage == null) {
+                    timeArgument = "";
+                    lastMessageText = "";
+                } else {
+                    Date lastMessageDate = lastMessage.getModernDateSent();
+
+                    if (lastMessage.getText() == null){
+                        lastMessageText = "";
+                    }else {
+                        lastMessageText = lastMessage.getText();
+                    }
+
+                    if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)){
+                        timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
+                    } else {
+                        if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())){
+                            timeArgument = "Yesterday";
+                        }else {
+                            timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
+                        }
+                    }
+                }
+
+                for (Handle h : groupChat.getParticipants()){
+                    participantDummyList.add(h.getHandleID());
+                }
+
+                participantDummyList.remove(participantDummyList.size() - 1);
+
+                if(groupChat.getDisplayName() == null || groupChat.getDisplayName().equals("")){
+                    firstArg = StringUtils.join(participantDummyList, ", ", 2) + " & " + groupChat.getParticipants().get(groupChat.getParticipants().size() - 1).getHandleID();
+                }else {
+                    firstArg = groupChat.getDisplayName();
+                }
+
                 if (attachments.isEmpty()){
                     result = executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[]{ firstArg, timeArgument, lastMessageText, "", decryptedMessage});
                 }else if (attachments.size() == 1){
