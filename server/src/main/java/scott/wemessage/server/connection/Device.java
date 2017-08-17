@@ -174,9 +174,55 @@ public class Device extends Thread {
 
     public List<Integer> relayIncomingMessage(JSONMessage message){
         MessagesDatabase messagesDb = getDeviceManager().getMessageServer().getMessagesDatabase();
+        AppleScriptExecutor executor = getDeviceManager().getMessageServer().getScriptExecutor();
 
         try {
             ChatBase chat = messagesDb.getChatByGuid(message.getChat().getMacGuid());
+
+            if (chat == null) {
+                if (message.getChat().getParticipants().size() == 1) {
+                    Object result;
+                    String firstArg = message.getChat().getParticipants().get(0);
+
+                    String decryptedMessage = AESCrypto.decryptString(message.getEncryptedText().getEncryptedText(), message.getEncryptedText().getKey());
+                    List<File> attachments = new ArrayList<>();
+
+                    for (JSONAttachment a : message.getAttachments()) {
+                        byte[] bytes = a.getFileData().getEncryptedData();
+                        String key = a.getFileData().getKey();
+                        String ivParam = a.getFileData().getIvParams();
+
+                        byte[] decryptedBytes = AESCrypto.decryptBytes(new CipherByteArrayIvMac(bytes, ivParam), key);
+                        File file = new File(executor.getTempFolder().toString(), a.getTransferName());
+
+                        if (!file.exists()) {
+                            file.createNewFile();
+                        }
+                        FileUtils.writeBytesToFile(file, decryptedBytes);
+                        attachments.add(file);
+                    }
+
+
+                    if (attachments.isEmpty()) {
+                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, "", decryptedMessage});
+                    } else if (attachments.size() == 1) {
+                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, attachments.get(0).getAbsolutePath(), decryptedMessage});
+                    } else {
+                        for (File file : attachments) {
+                            executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, file.getAbsolutePath(), ""});
+                        }
+                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, "", decryptedMessage});
+                    }
+
+                    return parseResult(result);
+                }else {
+                    ArrayList<Integer> results = new ArrayList<>();
+                    results.add(ReturnType.GROUP_CHAT_NOT_FOUND.getCode());
+
+                    return results;
+                }
+            }
+
             Message lastMessage = messagesDb.getLastMessageFromChat(chat);
             Date lastMessageDate = lastMessage.getModernDateSent();
             String timeArgument;
@@ -198,7 +244,6 @@ public class Device extends Thread {
                 }
             }
 
-            AppleScriptExecutor executor = getDeviceManager().getMessageServer().getScriptExecutor();
             ActionType type;
             String firstArg;
             Object result;
