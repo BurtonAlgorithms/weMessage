@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -80,7 +79,7 @@ import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ConversationFragment extends Fragment implements MessageManager.Callbacks, AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
+public class ConversationFragment extends MessagingFragment implements MessageManager.Callbacks, AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
 
     private final String TAG = "ConversationFragment";
     private final Object chatLock = new Object();
@@ -141,37 +140,23 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_NEW_MESSAGE_ERROR)){
-                if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.new_message_error)).show();
-                }
+                showErroredSnackbar(getString(R.string.new_message_error));
             }else if(intent.getAction().equals(weMessage.BROADCAST_SEND_MESSAGE_ERROR)){
-                if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.send_message_error)).show();
-                }
+                showErroredSnackbar(getString(R.string.send_message_error));
             }else if(intent.getAction().equals(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR)) {
-                if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.message_update_error)).show();
-                }
+                showErroredSnackbar(getString(R.string.message_update_error));
             }else if(intent.getAction().equals(weMessage.BROADCAST_ACTION_PERFORM_ERROR)){
-                if (getView() != null) {
-                    if (intent.getExtras() != null){
-                        generateErroredSnackBar(getView(), intent.getStringExtra(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE)).show();
-                    }else {
-                        generateErroredSnackBar(getView(), getString(R.string.action_perform_error_default)).show();
-                    }
+                if (intent.getExtras() != null){
+                    showErroredSnackbar(intent.getStringExtra(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE));
+                }else {
+                    showErroredSnackbar(getString(R.string.action_perform_error_default));
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
-                if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.result_process_error)).show();
-                }
+                showErroredSnackbar(getString(R.string.result_process_error));
             }else if(intent.getAction().equals(weMessage.BROADCAST_LOAD_ATTACHMENT_ERROR)){
-                if (getView() != null){
-                    generateErroredSnackBar(getView(), getString(R.string.load_attachment_error)).show();
-                }
+                showErroredSnackbar(getString(R.string.load_attachment_error));
             }else if(intent.getAction().equals(weMessage.BROADCAST_PLAY_AUDIO_ATTACHMENT_ERROR)){
-                if (getView() != null){
-                    generateErroredSnackBar(getView(), getString(R.string.play_audio_attachment_error)).show();
-                }
+                showErroredSnackbar(getString(R.string.play_audio_attachment_error));
             }else if (intent.getAction().equals(weMessage.BROADCAST_IMAGE_FULLSCREEN_ACTIVITY_START)){
                 launchFullScreenImageActivity(intent.getStringExtra(weMessage.BUNDLE_FULL_SCREEN_IMAGE_URI));
             }else if (intent.getAction().equals(weMessage.BROADCAST_VIDEO_FULLSCREEN_ACTIVITY_START)){
@@ -718,22 +703,22 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         if (getView() != null) {
             switch (returnType) {
                 case INVALID_NUMBER:
-                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_invalid_number)).show();
+                    showErroredSnackbar(getString(R.string.message_delivery_failure_invalid_number));
                     break;
                 case NUMBER_NOT_IMESSAGE:
-                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_imessage)).show();
+                    showErroredSnackbar(getString(R.string.message_delivery_failure_imessage));
                     break;
                 case GROUP_CHAT_NOT_FOUND:
-                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_group_chat)).show();
+                    showErroredSnackbar(getString(R.string.message_delivery_failure_group_chat));
                     break;
                 case SERVICE_NOT_AVAILABLE:
-                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_service)).show();
+                    showErroredSnackbar(getString(R.string.message_delivery_failure_service));
                     break;
                 case ASSISTIVE_ACCESS_DISABLED:
-                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_assistive)).show();
+                    showErroredSnackbar(getString(R.string.message_delivery_failure_assistive));
                     break;
                 case UI_ERROR:
-                    generateErroredSnackBar(getView(), getString(R.string.message_delivery_failure_ui_error)).show();
+                    showErroredSnackbar(getString(R.string.message_delivery_failure_ui_error));
                     break;
             }
         }
@@ -741,7 +726,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     @Override
     public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
-        //TODO: Stuff here
+        showActionFailureSnackbar(jsonAction, returnType);
     }
 
     @Override
@@ -812,7 +797,7 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
             return true;
         }catch(Exception ex){
             AppLogger.error("An error occurred while trying to play Audio Attachment: " + a.getUuid().toString(), ex);
-            generateErroredSnackBar(getView(), getString(R.string.play_audio_attachment_error)).show();
+            showErroredSnackbar(getString(R.string.play_audio_attachment_error));
             getAudioAttachmentMediaPlayer().forceRelease();
             return false;
         }
@@ -966,6 +951,22 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
         }
     }
 
+    private void showErroredSnackbar(String message){
+        if (getView() != null) {
+            final Snackbar snackbar = Snackbar.make(getView(), message, ERROR_SNACKBAR_DURATION * 1000);
+
+            snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackbar.dismiss();
+                }
+            });
+            snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+            snackbar.show();
+        }
+    }
+
+
     private boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -978,20 +979,6 @@ public class ConversationFragment extends Fragment implements MessageManager.Cal
 
     private boolean isChatThis(Chat c){
         return c.getUuid().toString().equals(getChat().getUuid().toString());
-    }
-
-    private Snackbar generateErroredSnackBar(View view, String message){
-        final Snackbar snackbar = Snackbar.make(view, message, ERROR_SNACKBAR_DURATION * 1000);
-
-        snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                snackbar.dismiss();
-            }
-        });
-        snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
-
-        return snackbar;
     }
 
     private void goToLauncher(){

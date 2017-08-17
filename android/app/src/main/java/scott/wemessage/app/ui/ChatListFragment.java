@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -53,7 +52,7 @@ import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 
-public class ChatListFragment extends Fragment implements MessageManager.Callbacks {
+public class ChatListFragment extends MessagingFragment implements MessageManager.Callbacks {
 
     private final String TAG = "ChatListFragment";
     private final String GO_BACK_REASON_ALERT_TAG = "GoBackReasonAlert";
@@ -462,11 +461,7 @@ public class ChatListFragment extends Fragment implements MessageManager.Callbac
 
     @Override
     public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
-
-
-        //TODO: Impl Soon
-
-
+        showActionFailureSnackbar(jsonAction, returnType);
     }
 
     private void bindService(){

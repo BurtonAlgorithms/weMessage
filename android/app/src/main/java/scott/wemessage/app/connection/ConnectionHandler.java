@@ -75,7 +75,7 @@ public class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
-    private final int TIME_TO_CONNECT = 2;
+    private final int TIME_TO_CONNECT = 0;
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
@@ -88,7 +88,6 @@ public class ConnectionHandler extends Thread {
 
     private ConcurrentHashMap<String, ConnectionMessage>connectionMessagesMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, String>messageAndConnectionMessageMap = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, Message>pendingMessagesMap = new ConcurrentHashMap<>();
 
     private ConnectionService service;
     private Socket connectionSocket;
@@ -340,6 +339,7 @@ public class ConnectionHandler extends Thread {
             @Override
             public void run() {
                 try {
+                    Thread.sleep(500);
                     sendOutgoingGenericAction(ActionType.CREATE_GROUP, groupName, StringUtils.join(participants, ",", 1), initMessage);
                 }catch(Exception ex){
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
@@ -768,11 +768,8 @@ public class ConnectionHandler extends Thread {
                         }
                         getConnectionSocket().close();
                         connectionMessagesMap.clear();
-
-                        //TODO: For all pending messages, mark as not delivered
-
                         messageAndConnectionMessageMap.clear();
-                        pendingMessagesMap.clear();
+
                         ConnectionHandler.this.interrupt();
                     } catch (Exception ex) {
                         AppLogger.error(TAG, "An error occurred while terminating the connection to the weServer.", ex);
@@ -963,7 +960,13 @@ public class ConnectionHandler extends Thread {
 
             if (isAMessage){
                 JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, byteArrayAdapter);
-                boolean isValid = (validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(0)) && validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(1)));
+                boolean isValid;
+
+                if (returnTypes.size() == 1){
+                    isValid = validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(0));
+                }else {
+                    isValid = (validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(0)) && validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(1)));
+                }
 
                 if (!isValid){
                     String correspondingMessageUUID = messageAndConnectionMessageMap.get(jsonResult.getCorrespondingUUID());

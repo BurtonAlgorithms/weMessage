@@ -74,7 +74,7 @@ import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.font.FontTextView;
 import scott.wemessage.app.utils.AndroidIOUtils;
-import scott.wemessage.app.utils.view.CreateChatBottomSheet;
+import scott.wemessage.app.ui.view.chat.CreateChatBottomSheet;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
@@ -317,10 +317,23 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
                         selectedNameViews.add((SelectedNameView) v);
                     }
                 }
+
+                if (selectedNameViews.size() < 1){
+                    closeKeyboard();
+                    invalidateField(searchContactEditText);
+                    showErroredSnackbar(getString(R.string.create_chat_minimum), 5);
+                    return true;
+                }
+
                 boolean value = processMessage(text, selectedNameViews);
 
                 if (value){
-                    //TODO: Go to chat list soon
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            goToChatList();
+                        }
+                    }, 200L);
                 }
 
                 return value;
@@ -429,10 +442,13 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
     public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) { }
 
     @Override
-    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
+    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) { }
 
-        //TODO: Stuff goes here
+    public void goToChatList(){
+        Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
 
+        startActivity(returnIntent);
+        getActivity().finish();
     }
 
     private void bindService(){
@@ -448,19 +464,8 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
         }
     }
 
-    //TODO: Stuff after msg is sent
-    //TODO: Delay when going to chat list
-    //TODO: When do we go to chat list? Put in a listener on chat list for this instead of here
-
     private boolean processMessage(String text, List<SelectedNameView> selectedNameViews){
         MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
-
-        if (selectedNameViews.size() < 1){
-            closeKeyboard();
-            invalidateField(searchContactEditText);
-            showErroredSnackbar(getString(R.string.create_chat_minimum), 5);
-            return true;
-        }
 
         if (selectedNameViews.size() == 1){
             if (selectedNameViews.get(0) instanceof SelectedContactNameView){
@@ -507,14 +512,14 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
 
             int count = 1;
 
-            for (GroupChat groupChat : messageDatabase.getGroupChatsWithLikeName(weMessage.DEFAULT_GROUP_NAME)){
+            for (GroupChat groupChat : messageDatabase.getGroupChatsWithLikeName(getString(R.string.default_group_name))){
                 count++;
             }
 
             if (count == 1){
-                groupName = weMessage.DEFAULT_GROUP_NAME;
+                groupName = getString(R.string.default_group_name);
             }else {
-                groupName = weMessage.DEFAULT_GROUP_NAME + " " + count;
+                groupName = getString(R.string.default_group_name) + " " + count;
             }
 
             serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingCreateGroupAction(groupName, participants, text);
@@ -541,13 +546,6 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
                 true
         );
         serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
-    }
-
-    public void goToChatList(){
-        Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
-
-        startActivity(returnIntent);
-        getActivity().finish();
     }
 
     private void addContactToSelectedView(Contact contact){
@@ -598,8 +596,12 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
         }
     }
 
-    private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
-        DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage, runnable);
+    private void closeKeyboard(){
+        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+
+        if (getActivity().getCurrentFocus() != null) {
+            imm.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
+        }
     }
 
     private void clearEditText(final EditText editText, boolean closeKeyboard){
@@ -637,11 +639,23 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
         editText.setTextColor(oldEditTextColor);
     }
 
-    private void closeKeyboard(){
-        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+    private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
+        DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage, runnable);
+    }
 
-        if (getActivity().getCurrentFocus() != null) {
-            imm.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
+    private void showErroredSnackbar(String message, int duration){
+        if (getView() != null) {
+            final Snackbar snackbar = Snackbar.make(getView(), message, duration * 1000);
+
+            snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackbar.dismiss();
+                }
+            });
+            snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+
+            snackbar.show();
         }
     }
 
@@ -664,22 +678,6 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
             }
         }
         return false;
-    }
-
-    private void showErroredSnackbar(String message, int duration){
-        if (getView() != null) {
-            final Snackbar snackbar = Snackbar.make(getView(), message, duration * 1000);
-
-            snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackbar.dismiss();
-                }
-            });
-            snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
-
-            snackbar.show();
-        }
     }
 
 
@@ -978,6 +976,7 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
     }
 
     private class SelectedContactNameView extends SelectedNameView {
+
         private Contact contact;
 
         public SelectedContactNameView(Context context) {
@@ -1038,10 +1037,10 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
 
     public abstract class SelectedNameView extends FontTextView implements View.OnClickListener {
 
-        boolean isSelected = false;
         private int marginHorizontalDp = 8;
         private int paddingVerticalDp = 4;
         private int paddingHorizontalDp = 6;
+        boolean isSelected = false;
 
         public SelectedNameView(Context context) {
             super(context);
@@ -1053,6 +1052,32 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
 
         public SelectedNameView(Context context, AttributeSet attributeSet, int defStyle) {
             super(context, attributeSet, defStyle);
+        }
+
+        @Override
+        public void onClick(View view) {
+            toggleSelect();
+            bottomSheetLayout.setSelectedNameView(this);
+            bottomSheetLayout.showWithSheetView(LayoutInflater.from(getActivity()).inflate(R.layout.sheet_create_chat_delete_contact, bottomSheetLayout, false));
+
+            bottomSheetLayout.findViewById(R.id.createChatSheetDeleteButton).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (bottomSheetLayout.getSelectedNameView() instanceof SelectedUnknownNameView){
+                        removeUnknownContactFromSelectedView(((SelectedUnknownNameView) bottomSheetLayout.getSelectedNameView()).getHandle());
+                    }else if (bottomSheetLayout.getSelectedNameView() instanceof SelectedContactNameView){
+                        removeContactFromSelectedView(((SelectedContactNameView) bottomSheetLayout.getSelectedNameView()).getContactUuid());
+                    }
+                    bottomSheetLayout.dismissSheet();
+                }
+            });
+
+            bottomSheetLayout.findViewById(R.id.createChatSheetCancelButton).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    bottomSheetLayout.dismissSheet();
+                }
+            });
         }
 
         public void initializeView(){
@@ -1085,32 +1110,6 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
                 setBackgroundColor(Color.TRANSPARENT);
                 setTextColor(getResources().getColor(R.color.colorHeader));
             }
-        }
-
-        @Override
-        public void onClick(View view) {
-            toggleSelect();
-            bottomSheetLayout.setSelectedNameView(this);
-            bottomSheetLayout.showWithSheetView(LayoutInflater.from(getActivity()).inflate(R.layout.sheet_create_chat_delete_contact, bottomSheetLayout, false));
-
-            bottomSheetLayout.findViewById(R.id.createChatSheetDeleteButton).setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (bottomSheetLayout.getSelectedNameView() instanceof SelectedUnknownNameView){
-                        removeUnknownContactFromSelectedView(((SelectedUnknownNameView) bottomSheetLayout.getSelectedNameView()).getHandle());
-                    }else if (bottomSheetLayout.getSelectedNameView() instanceof SelectedContactNameView){
-                        removeContactFromSelectedView(((SelectedContactNameView) bottomSheetLayout.getSelectedNameView()).getContactUuid());
-                    }
-                    bottomSheetLayout.dismissSheet();
-                }
-            });
-
-            bottomSheetLayout.findViewById(R.id.createChatSheetCancelButton).setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    bottomSheetLayout.dismissSheet();
-                }
-            });
         }
     }
 

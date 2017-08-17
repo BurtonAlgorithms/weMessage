@@ -1,4 +1,4 @@
-package scott.wemessage.app.utils.view;
+package scott.wemessage.app.ui.view.chat;
 
 import android.content.Context;
 import android.util.AttributeSet;
