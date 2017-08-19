@@ -6,7 +6,7 @@ public interface Constants {
      int WEMESSAGE_BUILD_VERSION = 1;
      int DEFAULT_PORT = 22222;
      int MINIMUM_PASSWORD_LENGTH = 8;
-     int MAX_FILE_SIZE = 524288000;
+     int MAX_FILE_SIZE = 262144000;
      String DEFAULT_PASSWORD = "password";
 
      String JSON_INIT_CONNECT = "INIT CONNECT - ";
