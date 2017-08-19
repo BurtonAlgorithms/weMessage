@@ -242,8 +242,8 @@ public class Message extends MessageBase {
 
         for (Attachment attachment : getAttachments()){
             byte[] fileBytes = FileUtils.readBytesFromFile(new File(attachment.getFileLocation().getFileLocation()));
-            FileEncryptionTask fileEncryptionTask = new FileEncryptionTask(fileBytes, null, CryptoType.AES);
 
+            FileEncryptionTask fileEncryptionTask = new FileEncryptionTask(fileBytes, null, CryptoType.AES);
             fileEncryptionTask.runEncryptTask();
 
             JSONAttachment jsonAttachment = new JSONAttachment(

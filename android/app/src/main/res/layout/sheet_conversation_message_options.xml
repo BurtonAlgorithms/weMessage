@@ -10,8 +10,8 @@
 
     <scott.wemessage.app.ui.view.font.FontButton
         style="?android:attr/borderlessButtonStyle"
-        android:id="@+id/createChatSheetDeleteButton"
-        android:text="@string/word_delete"
+        android:id="@+id/conversationSheetCopyButton"
+        android:text="@string/word_copy"
         android:gravity="center"
         android:textAllCaps="false"
         android:textSize="16sp"
@@ -29,8 +29,27 @@
 
     <scott.wemessage.app.ui.view.font.FontButton
         style="?android:attr/borderlessButtonStyle"
-        android:id="@+id/createChatSheetCancelButton"
-        android:text="@string/word_cancel"
+        android:id="@+id/conversationSheetDeleteButton"
+        android:text="@string/word_delete"
+        android:gravity="center"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="@color/colorHeader"
+        android:background="@drawable/bottom_sheet_button_frame_middle"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="OrkneyLight"/>
+
+    <View
+        android:background="@color/shadedWhite"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"/>
+
+    <scott.wemessage.app.ui.view.font.FontButton
+        style="?android:attr/borderlessButtonStyle"
+        android:id="@+id/conversationSheetMoreButton"
+        android:text="@string/word_more"
         android:gravity="center"
         android:textAllCaps="false"
         android:textSize="16sp"

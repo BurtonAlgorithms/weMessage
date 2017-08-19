@@ -1143,7 +1143,9 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     public void deleteMessageByUuid(String uuid){
         String whereClause = MessageTable.UUID + " = ?";
 
-        for (Attachment a : getMessageByUuid(uuid).getAttachments()){
+        List<Attachment> attachments = getMessageByUuid(uuid).getAttachments();
+
+        for (Attachment a : attachments){
             if (a != null) {
                 deleteAttachmentByUuid(a.getUuid().toString());
             }

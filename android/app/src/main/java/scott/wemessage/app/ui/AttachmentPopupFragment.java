@@ -2,6 +2,7 @@ package scott.wemessage.app.ui;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -13,6 +14,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -29,6 +31,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.afollestad.materialcamera.MaterialCamera;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 
@@ -54,9 +57,11 @@ public class AttachmentPopupFragment extends Fragment {
     private GalleryAdapter galleryAdapter;
     private TextView mediaErrorView;
     private Button attachmentPopupCameraButton;
+    private Button attachmentPopupAudioButton;
 
     private boolean isRecording;
     private String audioFile;
+    private String cameraAttachmentFile;
     private MediaRecorder audioRecorder;
 
     @Override
@@ -66,6 +71,7 @@ public class AttachmentPopupFragment extends Fragment {
         if (getArguments() != null){
             attachments.addAll(getArguments().getStringArrayList(weMessage.ARG_ATTACHMENT_GALLERY_CACHE));
             audioFile = getArguments().getString(weMessage.ARG_VOICE_RECORDING_FILE);
+            cameraAttachmentFile = getArguments().getString(weMessage.ARG_CAMERA_ATTACHMENT_FILE);
         }
     }
 
@@ -75,29 +81,57 @@ public class AttachmentPopupFragment extends Fragment {
         final View view = inflater.inflate(R.layout.fragment_popup_attachment, container, false);
 
         mediaErrorView = (TextView) view.findViewById(R.id.mediaErrorView);
-        attachmentPopupCameraButton = (Button) view.findViewById(R.id.attachmentPopupAudioButton);
+        attachmentPopupCameraButton = (Button) view.findViewById(R.id.attachmentPopupCameraButton);
+        attachmentPopupAudioButton = (Button) view.findViewById(R.id.attachmentPopupAudioButton);
         galleryRecyclerView = (RecyclerView) view.findViewById(R.id.galleryRecyclerView);
         galleryRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 2, GridLayoutManager.HORIZONTAL, false));
 
         mediaErrorView.setVisibility(View.GONE);
+        attachmentPopupCameraButton.getCompoundDrawables()[1].setTint(Color.BLACK);
 
         if (hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, getString(R.string.no_media_permission), "MediaReadPermissionAlertFragment", weMessage.REQUEST_PERMISSION_READ_STORAGE)){
             loadGalleryItems();
         }
 
-        if (audioFile != null){
-            attachmentPopupCameraButton.setSelected(false);
+        if (cameraAttachmentFile != null){
             attachmentPopupCameraButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_trash_exit, 0, 0);
             attachmentPopupCameraButton.setTextColor(Color.BLACK);
-            attachmentPopupCameraButton.setText(getString(R.string.delete_audio_recording));
+            attachmentPopupCameraButton.setText(getString(R.string.delete_camera_attachment));
             attachmentPopupCameraButton.setTextSize(12);
+        }
+
+        if (audioFile != null){
+            attachmentPopupAudioButton.setSelected(false);
+            attachmentPopupAudioButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_trash_exit, 0, 0);
+            attachmentPopupAudioButton.setTextColor(Color.BLACK);
+            attachmentPopupAudioButton.setText(getString(R.string.delete_audio_recording));
+            attachmentPopupAudioButton.setTextSize(12);
+        }
+
+        if (getArguments() != null && getArguments().getParcelable(weMessage.ARG_ATTACHMENT_POPUP_CAMERA_INTENT) != null){
+            Parcelable parcelable = getArguments().getParcelable(weMessage.ARG_ATTACHMENT_POPUP_CAMERA_INTENT);
+
+            if (parcelable instanceof Intent) {
+                onCameraResult(getArguments().getInt(weMessage.ARG_ATTACHMENT_POPUP_CAMERA_RESULT_CODE), (Intent) parcelable);
+            }
         }
 
         attachmentPopupCameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if (attachmentPopupCameraButton.getCompoundDrawables()[1].getConstantState().equals(getResources().getDrawable(R.drawable.ic_trash_exit).getConstantState())) {
+                    deleteCameraAttachment();
+                }else {
+                    launchCamera();
+                }
+            }
+        });
+
+        attachmentPopupAudioButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
                 if (hasPermission(Manifest.permission.RECORD_AUDIO, getString(R.string.no_audio_record_permission), "AudioRecordPermissionAlertFragment", weMessage.REQUEST_PERMISSION_RECORD_AUDIO)){
-                    if (attachmentPopupCameraButton.getCompoundDrawables()[1].getConstantState().equals(getResources().getDrawable(R.drawable.ic_trash_exit).getConstantState())){
+                    if (attachmentPopupAudioButton.getCompoundDrawables()[1].getConstantState().equals(getResources().getDrawable(R.drawable.ic_trash_exit).getConstantState())){
                         deleteRecording();
                     }else {
                         toggleRecording();
@@ -113,7 +147,7 @@ public class AttachmentPopupFragment extends Fragment {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode){
             case weMessage.REQUEST_PERMISSION_READ_STORAGE:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                if (isGranted(grantResults)){
                     mediaErrorView.setVisibility(View.GONE);
                     loadGalleryItems();
                 } else {
@@ -122,8 +156,13 @@ public class AttachmentPopupFragment extends Fragment {
                     mediaErrorView.setVisibility(View.VISIBLE);
                 }
                 break;
+            case weMessage.REQUEST_PERMISSION_CAMERA:
+                if (isGranted(grantResults)){
+                    launchCamera();
+                }
+                break;
             case weMessage.REQUEST_PERMISSION_RECORD_AUDIO:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                if (isGranted(grantResults)){
                     toggleRecording();
                 }
                 break;
@@ -136,7 +175,7 @@ public class AttachmentPopupFragment extends Fragment {
             toggleRecording();
             audioFile = null;
         }
-        ((AttachmentInputListener) getParentFragment()).setAttachmentsInput(attachments, audioFile);
+        ((AttachmentInputListener) getParentFragment()).setAttachmentsInput(attachments, cameraAttachmentFile, audioFile);
 
         super.onDestroy();
     }
@@ -149,8 +188,27 @@ public class AttachmentPopupFragment extends Fragment {
         attachments.clear();
     }
 
+    public String getCameraAttachmentFile(){
+        return cameraAttachmentFile;
+    }
+
     public String getAudioFile(){
         return audioFile;
+    }
+
+    public void onCameraResult(int resultCode, Intent data) {
+        if (resultCode == Activity.RESULT_OK){
+            cameraAttachmentFile = data.getData().getPath();
+
+            attachmentPopupCameraButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_trash_exit, 0, 0);
+            attachmentPopupCameraButton.setTextColor(Color.BLACK);
+            attachmentPopupCameraButton.setText(getString(R.string.delete_camera_attachment));
+            attachmentPopupCameraButton.setTextSize(12);
+
+        }else if (data != null){
+            AppLogger.error("An error occurred while trying to get Camera data.", (Exception) data.getSerializableExtra(MaterialCamera.ERROR_EXTRA));
+            showErroredSnackBar(getString(R.string.camera_capture_error));
+        }
     }
 
     private boolean hasPermission(final String permission, String rationaleString, String alertTagId, final int requestCode){
@@ -174,6 +232,39 @@ public class AttachmentPopupFragment extends Fragment {
         return true;
     }
 
+    private boolean isGranted(int[] grantResults){
+        return (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
+    }
+
+    private void launchCamera(){
+        if (hasPermission(Manifest.permission.CAMERA, getString(R.string.no_camera_permission), "CameraPermissionAlertFragment", weMessage.REQUEST_PERMISSION_CAMERA)) {
+
+            new MaterialCamera(getParentFragment())
+                    .allowRetry(true)
+                    .autoSubmit(false)
+                    .saveDir(weMessage.get().getCapturedMediaStorageFolder())
+                    .primaryColorAttr(R.attr.colorPrimary)
+                    .showPortraitWarning(true)
+                    .defaultToFrontFacing(false)
+                    .retryExits(false)
+                    .stillShot()
+                    .start(weMessage.REQUEST_CODE_CAMERA);
+        }
+    }
+
+    private void deleteCameraAttachment(){
+        if (cameraAttachmentFile != null){
+            File file = new File(cameraAttachmentFile);
+            file.delete();
+            cameraAttachmentFile = null;
+
+            attachmentPopupCameraButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_camera, 0, 0);
+            attachmentPopupCameraButton.getCompoundDrawables()[1].setTint(Color.BLACK);
+            attachmentPopupCameraButton.setText(getString(R.string.word_camera));
+            attachmentPopupCameraButton.setTextSize(14);
+        }
+    }
+
     private void toggleRecording() {
         if (!isRecording) {
             String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
@@ -190,16 +281,16 @@ public class AttachmentPopupFragment extends Fragment {
                 getAudioRecorder().prepare();
                 getAudioRecorder().start();
 
-                attachmentPopupCameraButton.setSelected(true);
-                attachmentPopupCameraButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_mic_white, 0, 0);
-                attachmentPopupCameraButton.setTextColor(Color.WHITE);
-                attachmentPopupCameraButton.setText(getString(R.string.word_recording));
+                attachmentPopupAudioButton.setSelected(true);
+                attachmentPopupAudioButton.getCompoundDrawables()[1].setTint(Color.WHITE);
+                attachmentPopupAudioButton.setTextColor(Color.WHITE);
+                attachmentPopupAudioButton.setText(getString(R.string.word_recording));
 
                 audioFile = fileName;
             }catch(Exception ex){
                 isRecording = false;
 
-                generateErroredSnackBar(getParentFragment().getView(), getString(R.string.audio_record_error)).show();
+                showErroredSnackBar(getString(R.string.audio_record_error));
                 AppLogger.error("An error occurred while recording an audio message.", ex);
             }
 
@@ -209,22 +300,24 @@ public class AttachmentPopupFragment extends Fragment {
             getAudioRecorder().release();
             audioRecorder = null;
 
-            attachmentPopupCameraButton.setSelected(false);
-            attachmentPopupCameraButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_trash_exit, 0, 0);
-            attachmentPopupCameraButton.setTextColor(Color.BLACK);
-            attachmentPopupCameraButton.setText(getString(R.string.delete_audio_recording));
-            attachmentPopupCameraButton.setTextSize(12);
+            attachmentPopupAudioButton.setSelected(false);
+            attachmentPopupAudioButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_trash_exit, 0, 0);
+            attachmentPopupAudioButton.setTextColor(Color.BLACK);
+            attachmentPopupAudioButton.setText(getString(R.string.delete_audio_recording));
+            attachmentPopupAudioButton.setTextSize(12);
         }
     }
 
     private void deleteRecording(){
         if (audioFile != null){
             File file = new File(audioFile);
+            file.delete();
             audioFile = null;
 
-            attachmentPopupCameraButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_mic_black, 0, 0);
-            attachmentPopupCameraButton.setText(getString(R.string.audio_record));
-            attachmentPopupCameraButton.setTextSize(14);
+            attachmentPopupAudioButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_mic, 0, 0);
+            attachmentPopupAudioButton.getCompoundDrawables()[1].setTint(Color.BLACK);
+            attachmentPopupAudioButton.setText(getString(R.string.audio_record));
+            attachmentPopupAudioButton.setTextSize(14);
         }
     }
 
@@ -240,7 +333,7 @@ public class AttachmentPopupFragment extends Fragment {
                     allUris.addAll(getAllAudio());
                     allUris.addAll(getAllVideo());
                 }catch (Exception ex){
-                    generateErroredSnackBar(getParentFragment().getView(), getString(R.string.media_fetch_error)).show();
+                    showErroredSnackBar(getString(R.string.media_fetch_error));
                     AppLogger.error("An error occurred while fetching media from the device.", ex);
                 }
 
@@ -351,18 +444,20 @@ public class AttachmentPopupFragment extends Fragment {
         return audioRecorder;
     }
 
-    private Snackbar generateErroredSnackBar(View view, String message){
-        final Snackbar snackbar = Snackbar.make(view, message, ERROR_SNACKBAR_DURATION * 1000);
+    private void showErroredSnackBar(String message){
+        if (getParentFragment().getView() != null) {
+            final Snackbar snackbar = Snackbar.make(getParentFragment().getView(), message, ERROR_SNACKBAR_DURATION * 1000);
 
-        snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                snackbar.dismiss();
-            }
-        });
-        snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+            snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackbar.dismiss();
+                }
+            });
+            snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
 
-        return snackbar;
+            snackbar.show();
+        }
     }
 
 
@@ -489,6 +584,6 @@ public class AttachmentPopupFragment extends Fragment {
 
     interface AttachmentInputListener {
 
-        void setAttachmentsInput(List<String> attachments, String audioRecordingPath);
+        void setAttachmentsInput(List<String> attachments, String cameraAttachmentPath, String audioRecordingPath);
     }
 }

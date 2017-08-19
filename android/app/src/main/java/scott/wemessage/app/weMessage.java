@@ -1,6 +1,7 @@
 package scott.wemessage.app;
 
 import android.app.Application;
+import android.os.Environment;
 
 import java.io.File;
 
@@ -18,9 +19,14 @@ public final class weMessage extends Application implements Constants {
     public static final String APP_IDENTIFIER = "scott.wemessage.app";
     public static final String IDENTIFIER_PREFIX = "scott.wemessage.app.";
     public static final String ATTACHMENT_FOLDER_NAME = "attachments";
+    public static final String CAPTURED_MEDIA_STORAGE_FOLDER = "weMessage Captured Media";
 
     public static final int REQUEST_PERMISSION_READ_STORAGE = 5000;
-    public static final int REQUEST_PERMISSION_RECORD_AUDIO = 5001;
+    public static final int REQUEST_PERMISSION_WRITE_STORAGE = 5001;
+    public static final int REQUEST_PERMISSION_CAMERA = 5002;
+    public static final int REQUEST_PERMISSION_RECORD_AUDIO = 5003;
+
+    public static final int REQUEST_CODE_CAMERA = 6000;
 
     public static final String BUNDLE_HOST = IDENTIFIER_PREFIX + "bundleHost";
     public static final String BUNDLE_EMAIL = IDENTIFIER_PREFIX + "bundleEmail";
@@ -40,6 +46,7 @@ public final class weMessage extends Application implements Constants {
     public static final String BUNDLE_FULL_SCREEN_VIDEO_URI = IDENTIFIER_PREFIX + "bundleFullScreenVideoUri";
     public static final String BUNDLE_SELECTED_GALLERY_STORE = IDENTIFIER_PREFIX + "bundleSelectedGalleryStore";
     public static final String BUNDLE_GALLERY_FRAGMENT_OPEN = IDENTIFIER_PREFIX + "bundleGalleryFragmentOpen";
+    public static final String BUNDLE_CAMERA_ATTACHMENT_FILE = IDENTIFIER_PREFIX + "bundleCameraAttachmentFile";
     public static final String BUNDLE_VOICE_MESSAGE_INPUT_FILE = IDENTIFIER_PREFIX + "bundleVoiceMessageInputFile";
     public static final String BUNDLE_CREATE_CHAT_CONTACT_UUIDS = IDENTIFIER_PREFIX + "bundleCreateChatContactUuids";
     public static final String BUNDLE_CREATE_CHAT_UNKNOWN_HANDLES = IDENTIFIER_PREFIX + "bundleCreateChatUnknownHandles";
@@ -50,6 +57,9 @@ public final class weMessage extends Application implements Constants {
     public static final String ARG_PASSWORD = IDENTIFIER_PREFIX + "passwordArg";
     public static final String ARG_PASSWORD_ALREADY_HASHED = IDENTIFIER_PREFIX + "passwordAlreadyHashed";
     public static final String ARG_ATTACHMENT_GALLERY_CACHE = IDENTIFIER_PREFIX + "attachmentGalleryCacheArg";
+    public static final String ARG_CAMERA_ATTACHMENT_FILE = IDENTIFIER_PREFIX + "argCameraAttachmentFile";
+    public static final String ARG_ATTACHMENT_POPUP_CAMERA_RESULT_CODE = IDENTIFIER_PREFIX + "argAttachmentPopupCameraResultCode";
+    public static final String ARG_ATTACHMENT_POPUP_CAMERA_INTENT = IDENTIFIER_PREFIX + "argAttachmentPopupCameraIntent";
     public static final String ARG_VOICE_RECORDING_FILE = IDENTIFIER_PREFIX + "argVoiceRecordingFile";
 
     public static final String BROADCAST_LOGIN_TIMEOUT = IDENTIFIER_PREFIX + "LoginTimeout";
@@ -85,6 +95,7 @@ public final class weMessage extends Application implements Constants {
     private MessageManager messageManager;
     private Account currentAccount;
     private File attachmentFolder;
+    private File capturedMediaStorageFolder;
 
     public static weMessage get(){
         return instance;
@@ -95,9 +106,13 @@ public final class weMessage extends Application implements Constants {
         super.onCreate();
 
         File attachmentFolder = new File(getFilesDir(), weMessage.ATTACHMENT_FOLDER_NAME);
+        File capturedMediaStorageFolder = new File(Environment.getExternalStorageDirectory(), weMessage.CAPTURED_MEDIA_STORAGE_FOLDER);
+
         attachmentFolder.mkdir();
+        capturedMediaStorageFolder.mkdirs();
 
         this.attachmentFolder = attachmentFolder;
+        this.capturedMediaStorageFolder = capturedMediaStorageFolder;
         this.messageDatabase = new MessageDatabase(this);
 
         instance = this;
@@ -126,6 +141,10 @@ public final class weMessage extends Application implements Constants {
 
     public synchronized File getAttachmentFolder(){
         return attachmentFolder;
+    }
+
+    public synchronized File getCapturedMediaStorageFolder(){
+        return capturedMediaStorageFolder;
     }
 
     public synchronized void dumpMessageManager(){

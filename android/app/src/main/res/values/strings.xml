@@ -44,10 +44,10 @@
     <string name="new_message_error">An error occurred while trying to receive a new message.</string>
     <string name="message_update_error">An error occurred while trying to update a message.</string>
     <string name="result_process_error">An error occurred while trying to process a result returned from a message.</string>
-    <string name="yesterday">Yesterday</string>
-    <string name="today">Today</string>
-    <string name="conversations">Conversations</string>
-    <string name="delete">Delete</string>
+    <string name="word_yesterday">Yesterday</string>
+    <string name="word_today">Today</string>
+    <string name="word_conversations">Conversations</string>
+    <string name="word_delete">Delete</string>
     <string name="no_conversations_message">You currently have no messages. Click the New Message button to start a new conversation.</string>
     <string name="action_message_add_participant">%1$s has been added to the group.</string>
     <string name="action_message_remove_participant">%1$s has been removed from the group.</string>
@@ -56,6 +56,8 @@
     <string name="conversation_load_failure">The messages for that conversation could not be loaded due to an internal error.</string>
     <string name="word_and">and</string>
     <string name="word_done">Done</string>
+    <string name="word_copy">Copy</string>
+    <string name="word_more">More&#8230;</string>
     <string name="chat_delete_message_go_back">The chat you were viewing was deleted.</string>
     <string name="load_attachment_error">An unknown error occurred while trying to load an attachment.</string>
     <string name="play_audio_attachment_error">An error occurred while trying to playback audio.</string>
@@ -68,9 +70,14 @@
     <string name="no_media_found">No media was found on this device.</string>
     <string name="permissions_error_title">Permissions Error</string>
     <string name="no_media_permission">weMessage does not have permission to access media storage.\n\nPlease grant it permission in order to be able to send attachments.</string>
+    <string name="no_media_write_permission">weMessage does not have permission to write to your storage.\n\nPlease grant it permission in order to use the Camera.</string>
+    <string name="no_camera_permission">weMessage does not have permission to access the camera. \n\nPlease grant it permission in order to use the Camera.</string>
     <string name="no_audio_record_permission">weMessage does not have permission to record audio. \n\nPlease grant it permission in order to send voice messages.</string>
     <string name="audio_record_error">An error occurred while trying record your audio.</string>
+    <string name="camera_capture_error">An error occurred during camera capture.</string>
+    <string name="delete_camera_attachment">Delete\nAttachment</string>
     <string name="delete_audio_recording">Delete\nVoice Message</string>
+    <string name="camera_attachment_added">Camera Attachment added to the message.</string>
     <string name="audio_recording_added">Voice Message added to the message.</string>
     <string name="media_fetch_error">An error occurred while trying to get media from the device.</string>
     <string name="attachments_added_toast">%1$d Attachments added to the message.</string>
@@ -96,6 +103,9 @@
     <string name="action_failure_create_group_number_not_imessage">A group chat could not be created because one of the participants\' numbers was not registered with iMessage.</string>
     <string name="action_failure_create_group_assistive_access">A group chat could not be created because assistive access is disabled for the weServer.</string>
     <string name="action_failure_create_group_ui_error">A group chat could not be created due to a Messages Application Error.</string>
-
+    <string name="copy_message_attachments">You cannot copy attachments to the clipboard.</string>
+    <string name="copy_message_success_single">Message copied to clipboard</string>
+    <string name="copy_message_success_multiple">Messages copied to clipboard</string>
+    <string name="selection_mode_no_messages">You have not selected any messages.</string>
 
 </resources>

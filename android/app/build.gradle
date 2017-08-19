@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply from: '../../Commons/version.gradle'
 
 android {
     compileSdkVersion 26
@@ -7,8 +8,8 @@ android {
         applicationId "scott.wemessage"
         minSdkVersion 21
         targetSdkVersion 26
-        versionCode 1
-        versionName "Alpha 0.1"
+        versionCode weMessageVersion.versionBuild
+        versionName weMessageVersion.versionName
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -30,12 +31,15 @@ dependencies {
     compile 'com.android.support:design:26.0.1'
     compile 'com.android.support:percent:26.0.1'
     compile 'com.android.support:support-v4:26.0.1'
+    compile 'com.android.support:support-v13:26.0.1'
+    compile 'com.github.bumptech.glide:glide:4.0.0'
     compile 'com.github.stfalcon:chatkit:0.2.2'
     compile 'com.afollestad:easyvideoplayer:0.3.0'
+    compile 'com.afollestad:material-camera:0.4.4'
+    compile 'com.flipboard:bottomsheet-core:1.5.3'
     compile 'com.daimajia.swipelayout:library:1.2.0@aar'
     compile 'com.github.siyamed:android-shape-imageview:0.9.3@aar'
-    compile 'com.github.bumptech.glide:glide:4.0.0'
-    compile 'com.flipboard:bottomsheet-core:1.5.3'
+
     annotationProcessor 'com.github.bumptech.glide:compiler:4.0.0'
     testCompile 'junit:junit:4.12'
 }

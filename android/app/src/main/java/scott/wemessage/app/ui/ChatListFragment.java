@@ -181,7 +181,7 @@ public class ChatListFragment extends MessagingFragment implements MessageManage
                 if (DateFormatter.isToday(date)){
                     return DateFormatter.format(date, "h:mm a");
                 }else if (DateFormatter.isYesterday(date)){
-                    return getString(R.string.yesterday);
+                    return getString(R.string.word_yesterday);
                 }else {
                     if (DateFormatter.isCurrentYear(date)){
                         return DateFormatter.format(date, "MMMM d");

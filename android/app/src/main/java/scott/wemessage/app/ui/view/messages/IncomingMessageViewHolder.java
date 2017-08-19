@@ -1,9 +1,14 @@
 package scott.wemessage.app.ui.view.messages;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -14,6 +19,7 @@ import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentUndefinedView;
@@ -23,21 +29,29 @@ import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessageViewHolder<MessageView>  {
+public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessageViewHolder<MessageView> implements MessageViewHolder {
+
+    private String messageId;
+    private boolean isSelectionMode = false;
+    private boolean isSelected = false;
 
     private LinearLayout attachmentsContainer;
     private TextView senderName;
+    private ImageView selectedBubble;
 
     public IncomingMessageViewHolder(View itemView) {
         super(itemView);
 
         attachmentsContainer = (LinearLayout) itemView.findViewById(R.id.attachmentsContainer);
         senderName = (TextView) itemView.findViewById(R.id.senderName);
+        selectedBubble = (ImageView) itemView.findViewById(R.id.selectedMessageBubble);
     }
 
     @Override
     public void onBind(MessageView message) {
         super.onBind(message);
+
+        messageId = message.getId();
 
         time.setText(DateFormatter.format(message.getCreatedAt(), "h:mm a"));
 
@@ -137,8 +151,17 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         }else {
             senderName.setVisibility(View.GONE);
         }
+
+        toggleSelectionMode(getParentFragment().isInSelectionMode());
+        setSelected(getParentFragment().getSelectedMessages().containsKey(message.getId()));
     }
 
+    @Override
+    public String getMessageId() {
+        return messageId;
+    }
+
+    @Override
     public void notifyAudioPlaybackStart(Attachment a){
         final int childCount = attachmentsContainer.getChildCount();
 
@@ -155,6 +178,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         }
     }
 
+    @Override
     public void notifyAudioPlaybackStop(String attachmentUuid){
         final int childCount = attachmentsContainer.getChildCount();
 
@@ -169,5 +193,42 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
                 }
             }
         }
+    }
+
+    @Override
+    public void setSelected(boolean value){
+        if (value){
+            isSelected = true;
+            selectedBubble.setImageDrawable(getActivity().getDrawable(R.drawable.ic_checkmark_circle));
+        } else {
+            isSelected = false;
+            selectedBubble.setImageDrawable(getActivity().getDrawable(R.drawable.circle_outline));
+        }
+    }
+
+    @Override
+    public void toggleSelectionMode(boolean value){
+        if (value){
+            isSelectionMode = true;
+            selectedBubble.setVisibility(View.VISIBLE);
+        } else {
+            isSelectionMode = false;
+            selectedBubble.setVisibility(View.GONE);
+        }
+    }
+
+    private ConversationFragment getParentFragment(){
+        return ((ConversationFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.conversationFragmentContainer));
+    }
+
+    private AppCompatActivity getActivity() {
+        Context context = itemView.getContext();
+        while (context instanceof ContextWrapper) {
+            if (context instanceof Activity) {
+                return (AppCompatActivity) context;
+            }
+            context = ((ContextWrapper)context).getBaseContext();
+        }
+        return null;
     }
 }

@@ -71,7 +71,7 @@ import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ConnectionHandler extends Thread {
+public final class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
@@ -252,7 +252,7 @@ public class ConnectionHandler extends Thread {
                         timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
                     } else {
                         if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
-                            timeArgument = getParentService().getString(R.string.yesterday);
+                            timeArgument = getParentService().getString(R.string.word_yesterday);
                         } else {
                             timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
                         }
@@ -286,7 +286,7 @@ public class ConnectionHandler extends Thread {
                         timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
                     } else {
                         if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
-                            timeArgument = getParentService().getString(R.string.yesterday);
+                            timeArgument = getParentService().getString(R.string.word_yesterday);
                         } else {
                             timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
                         }
@@ -320,7 +320,7 @@ public class ConnectionHandler extends Thread {
                         timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
                     } else {
                         if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
-                            timeArgument = getParentService().getString(R.string.yesterday);
+                            timeArgument = getParentService().getString(R.string.word_yesterday);
                         } else {
                             timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
                         }
@@ -369,7 +369,7 @@ public class ConnectionHandler extends Thread {
                         timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
                     } else {
                         if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
-                            timeArgument = getParentService().getString(R.string.yesterday);
+                            timeArgument = getParentService().getString(R.string.word_yesterday);
                         } else {
                             timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
                         }

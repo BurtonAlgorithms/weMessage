@@ -31,9 +31,9 @@ public class ActionMessageViewHolder extends MessageHolders.BaseMessageViewHolde
         Date date = message.getCreatedAt();
 
         if (DateFormatter.isToday(date)){
-            actionMessageDayTextView.setText(itemView.getContext().getString(R.string.today));
+            actionMessageDayTextView.setText(itemView.getContext().getString(R.string.word_today));
         }else if (DateFormatter.isYesterday(date)){
-            actionMessageDayTextView.setText(itemView.getContext().getString(R.string.yesterday));
+            actionMessageDayTextView.setText(itemView.getContext().getString(R.string.word_yesterday));
         }else {
             if (DateFormatter.isCurrentYear(date)){
                 actionMessageDayTextView.setText(DateFormatter.format(date, "MMMM d"));
