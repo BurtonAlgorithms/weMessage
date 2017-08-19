@@ -1,7 +1,9 @@
 group 'scott.wemessage'
-version 'Alpha 0.1'
 
 apply plugin: 'java'
+apply from: '../Commons/version.gradle'
+
+version weMessageVersion.versionName
 
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
