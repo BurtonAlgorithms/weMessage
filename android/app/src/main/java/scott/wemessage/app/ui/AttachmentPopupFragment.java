@@ -19,7 +19,6 @@ import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -48,7 +47,7 @@ import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
 
-public class AttachmentPopupFragment extends Fragment {
+public class AttachmentPopupFragment extends MessagingFragment {
 
     private final int ERROR_SNACKBAR_DURATION = 5;
 
@@ -242,11 +241,12 @@ public class AttachmentPopupFragment extends Fragment {
             new MaterialCamera(getParentFragment())
                     .allowRetry(true)
                     .autoSubmit(false)
-                    .saveDir(weMessage.get().getCapturedMediaStorageFolder())
-                    .primaryColorAttr(R.attr.colorPrimary)
+                    .saveDir(weMessage.get().getAttachmentFolder())
                     .showPortraitWarning(true)
                     .defaultToFrontFacing(false)
                     .retryExits(false)
+                    .labelRetry(R.string.word_redo)
+                    .labelConfirm(R.string.ok_button)
                     .stillShot()
                     .start(weMessage.REQUEST_CODE_CAMERA);
         }
@@ -316,7 +316,7 @@ public class AttachmentPopupFragment extends Fragment {
 
             attachmentPopupAudioButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_mic, 0, 0);
             attachmentPopupAudioButton.getCompoundDrawables()[1].setTint(Color.BLACK);
-            attachmentPopupAudioButton.setText(getString(R.string.audio_record));
+            attachmentPopupAudioButton.setText(getString(R.string.word_voice));
             attachmentPopupAudioButton.setTextSize(14);
         }
     }
@@ -355,17 +355,7 @@ public class AttachmentPopupFragment extends Fragment {
         }.execute();
     }
 
-    private void onLoadGalleryItems(final List<String> filePaths){
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                galleryAdapter = new GalleryAdapter(filePaths);
-                galleryRecyclerView.setAdapter(galleryAdapter);
-            }
-        });
-    }
-
-    private ArrayList<String> getAllImages(){
+    protected ArrayList<String> getAllImages(){
         ArrayList<String> images = new ArrayList<>();
         Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
 
@@ -389,7 +379,7 @@ public class AttachmentPopupFragment extends Fragment {
         return images;
     }
 
-    private ArrayList<String> getAllAudio(){
+    protected ArrayList<String> getAllAudio(){
         ArrayList<String> audio = new ArrayList<>();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 
@@ -413,7 +403,7 @@ public class AttachmentPopupFragment extends Fragment {
         return audio;
     }
 
-    private ArrayList<String> getAllVideo(){
+    protected ArrayList<String> getAllVideo(){
         ArrayList<String> videos = new ArrayList<>();
         Uri uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
 
@@ -437,6 +427,17 @@ public class AttachmentPopupFragment extends Fragment {
         return videos;
     }
 
+    private void onLoadGalleryItems(final List<String> filePaths){
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                galleryAdapter = new GalleryAdapter(filePaths);
+                galleryRecyclerView.setAdapter(galleryAdapter);
+            }
+        });
+    }
+
+
     private MediaRecorder getAudioRecorder(){
         if (audioRecorder == null){
             audioRecorder = new MediaRecorder();
@@ -459,7 +460,6 @@ public class AttachmentPopupFragment extends Fragment {
             snackbar.show();
         }
     }
-
 
     private class GalleryAdapter extends RecyclerView.Adapter<GalleryHolder> {
 

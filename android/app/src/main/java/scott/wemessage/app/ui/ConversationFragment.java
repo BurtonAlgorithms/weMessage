@@ -65,6 +65,7 @@ import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.ui.activities.ChatListActivity;
+import scott.wemessage.app.ui.activities.ContactViewActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.activities.MessageImageActivity;
 import scott.wemessage.app.ui.activities.MessageVideoActivity;
@@ -250,6 +251,7 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
 
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.conversationToolbar);
         ImageButton backButton = (ImageButton) toolbar.findViewById(R.id.conversationBackButton);
+        ImageButton infoButton = (ImageButton) toolbar.findViewById(R.id.conversationInfoButton);
 
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -257,6 +259,18 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
                 goToChatList(null);
             }
         });
+
+        infoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (getChat() instanceof PeerChat){
+                    launchContactView();
+                }else {
+                    //TODO: Launch chat view
+                }
+            }
+        });
+
         toolbar.setTitle(null);
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
@@ -1093,6 +1107,18 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
                 }
             }
         }
+    }
+
+    //TODO: add args
+
+    private void launchContactView(){
+        Intent launcherIntent = new Intent(weMessage.get(), ContactViewActivity.class);
+
+        launcherIntent.putExtra(weMessage.BUNDLE_CONTACT_VIEW_UUID, ((PeerChat) getChat()).getContact().getUuid().toString());
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
+
+        startActivity(launcherIntent);
+        getActivity().finish();
     }
 
     private void launchFullScreenImageActivity(String imageUri){

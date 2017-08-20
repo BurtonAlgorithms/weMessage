@@ -65,8 +65,9 @@
     <string name="play_video_attachment_error">An error occurred while trying to playback this video.</string>
     <string name="message_input_hint">Enter a message&#8230;</string>
     <string name="word_camera">Camera</string>
-    <string name="audio_record">Voice</string>
+    <string name="word_voice">Voice</string>
     <string name="word_recording">Recording&#8230;</string>
+    <string name="word_redo">Redo</string>
     <string name="no_media_found">No media was found on this device.</string>
     <string name="permissions_error_title">Permissions Error</string>
     <string name="no_media_permission">weMessage does not have permission to access media storage.\n\nPlease grant it permission in order to be able to send attachments.</string>
@@ -107,5 +108,12 @@
     <string name="copy_message_success_single">Message copied to clipboard</string>
     <string name="copy_message_success_multiple">Messages copied to clipboard</string>
     <string name="selection_mode_no_messages">You have not selected any messages.</string>
+    <string name="word_edit">Edit</string>
+    <string name="block_contact">Block Contact</string>
+    <string name="do_not_disturb">Do Not Disturb</string>
+    <string name="word_attachments">Attachments</string>
+    <string name="word_phone">Phone Number</string>
+    <string name="word_email">Email</string>
+    <string name="word_mobile">Mobile</string>
 
 </resources>

@@ -56,7 +56,7 @@
                 android:paddingBottom="16dp"
                 android:drawablePadding="6sp"
                 android:textSize="14sp"
-                android:text="@string/audio_record"
+                android:text="@string/word_voice"
                 android:textAllCaps="false"
                 app:buttonFontName="OrkneyLight"/>
 

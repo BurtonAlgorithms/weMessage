@@ -9,6 +9,7 @@ import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import com.bumptech.glide.Glide;
 import com.github.siyamed.shapeimageview.CircularImageView;
@@ -64,13 +65,14 @@ public class ChatTitleView extends LinearLayout {
         if (chat instanceof PeerChat){
             Contact contact = ((PeerChat) chat).getContact();
             String url = AndroidIOUtils.getChatIconUri(chat);
+            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
 
-            LayoutParams layoutParams = (LayoutParams) getLayoutParams();
-            LayoutParams imageLayoutParams = (LayoutParams) ((LinearLayout) getParent()).findViewById(R.id.conversationBackButton).getLayoutParams();
-            layoutParams.setMarginStart((imageLayoutParams.width + imageLayoutParams.getMarginEnd()) * -1);
+            layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
+            layoutParams.removeRule(RelativeLayout.END_OF);
+            layoutParams.removeRule(RelativeLayout.START_OF);
 
-            setOrientation(VERTICAL);
             setLayoutParams(layoutParams);
+            setOrientation(VERTICAL);
 
             imageView.setLayoutParams(new LayoutParams(DisplayUtils.convertDpToRoundedPixel(SINGLE_IMAGE_SIZE, getContext()),
                     DisplayUtils.convertDpToRoundedPixel(SINGLE_IMAGE_SIZE, getContext())));
@@ -93,7 +95,13 @@ public class ChatTitleView extends LinearLayout {
         } else {
             GroupChat groupChat = (GroupChat) chat;
             String url = AndroidIOUtils.getChatIconUri(groupChat);
+            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
 
+            layoutParams.removeRule(RelativeLayout.CENTER_IN_PARENT);
+            layoutParams.addRule(RelativeLayout.END_OF, R.id.conversationBackButton);
+            layoutParams.addRule(RelativeLayout.START_OF, R.id.conversationInfoButton);
+
+            setLayoutParams(layoutParams);
             setOrientation(HORIZONTAL);
 
             imageView.setLayoutParams(new LayoutParams(DisplayUtils.convertDpToRoundedPixel(GROUP_IMAGE_SIZE, getContext()),

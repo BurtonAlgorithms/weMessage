@@ -4,7 +4,6 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
@@ -25,19 +24,17 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".app.ui.activities.ChatListActivity"> </activity>
-        <activity android:name=".app.ui.activities.ConversationActivity"> </activity>
-        <activity android:name=".app.ui.activities.CreateChatActivity"> </activity>
-        <activity android:name=".app.ui.activities.MessageImageActivity"> </activity>
+        <activity android:name=".app.ui.activities.ChatListActivity" />
+        <activity android:name=".app.ui.activities.ConversationActivity" />
+        <activity android:name=".app.ui.activities.CreateChatActivity" />
+        <activity android:name=".app.ui.activities.ContactViewActivity" />
+        <activity android:name=".app.ui.activities.MessageImageActivity" />
         <activity android:name=".app.ui.activities.MessageVideoActivity"
                   android:theme="@style/AppTheme.VideoPlayer"
                   android:configChanges="orientation|keyboardHidden|screenLayout|screenSize"> </activity>
-        <activity
-            android:name="com.afollestad.materialcamera.CaptureActivity"
-            android:theme="@style/MaterialCamera.CaptureActivity" />
-        <activity
-            android:name="com.afollestad.materialcamera.CaptureActivity2"
-            android:theme="@style/MaterialCamera.CaptureActivity" />
+
+        <activity android:name="com.afollestad.materialcamera.CaptureActivity" />
+        <activity android:name="com.afollestad.materialcamera.CaptureActivity2" />
 
         <service android:name=".app.connection.ConnectionService" />
     </application>

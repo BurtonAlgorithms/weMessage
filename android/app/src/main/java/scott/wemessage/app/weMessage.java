@@ -1,7 +1,6 @@
 package scott.wemessage.app;
 
 import android.app.Application;
-import android.os.Environment;
 
 import java.io.File;
 
@@ -19,10 +18,8 @@ public final class weMessage extends Application implements Constants {
     public static final String APP_IDENTIFIER = "scott.wemessage.app";
     public static final String IDENTIFIER_PREFIX = "scott.wemessage.app.";
     public static final String ATTACHMENT_FOLDER_NAME = "attachments";
-    public static final String CAPTURED_MEDIA_STORAGE_FOLDER = "weMessage Captured Media";
 
     public static final int REQUEST_PERMISSION_READ_STORAGE = 5000;
-    public static final int REQUEST_PERMISSION_WRITE_STORAGE = 5001;
     public static final int REQUEST_PERMISSION_CAMERA = 5002;
     public static final int REQUEST_PERMISSION_RECORD_AUDIO = 5003;
 
@@ -50,6 +47,7 @@ public final class weMessage extends Application implements Constants {
     public static final String BUNDLE_VOICE_MESSAGE_INPUT_FILE = IDENTIFIER_PREFIX + "bundleVoiceMessageInputFile";
     public static final String BUNDLE_CREATE_CHAT_CONTACT_UUIDS = IDENTIFIER_PREFIX + "bundleCreateChatContactUuids";
     public static final String BUNDLE_CREATE_CHAT_UNKNOWN_HANDLES = IDENTIFIER_PREFIX + "bundleCreateChatUnknownHandles";
+    public static final String BUNDLE_CONTACT_VIEW_UUID = IDENTIFIER_PREFIX + "bundleContactViewUuid";
 
     public static final String ARG_HOST = IDENTIFIER_PREFIX + "hostArg";
     public static final String ARG_PORT = IDENTIFIER_PREFIX + "portArg";
@@ -95,7 +93,6 @@ public final class weMessage extends Application implements Constants {
     private MessageManager messageManager;
     private Account currentAccount;
     private File attachmentFolder;
-    private File capturedMediaStorageFolder;
 
     public static weMessage get(){
         return instance;
@@ -106,13 +103,10 @@ public final class weMessage extends Application implements Constants {
         super.onCreate();
 
         File attachmentFolder = new File(getFilesDir(), weMessage.ATTACHMENT_FOLDER_NAME);
-        File capturedMediaStorageFolder = new File(Environment.getExternalStorageDirectory(), weMessage.CAPTURED_MEDIA_STORAGE_FOLDER);
 
         attachmentFolder.mkdir();
-        capturedMediaStorageFolder.mkdirs();
-
         this.attachmentFolder = attachmentFolder;
-        this.capturedMediaStorageFolder = capturedMediaStorageFolder;
+
         this.messageDatabase = new MessageDatabase(this);
 
         instance = this;
@@ -141,10 +135,6 @@ public final class weMessage extends Application implements Constants {
 
     public synchronized File getAttachmentFolder(){
         return attachmentFolder;
-    }
-
-    public synchronized File getCapturedMediaStorageFolder(){
-        return capturedMediaStorageFolder;
     }
 
     public synchronized void dumpMessageManager(){

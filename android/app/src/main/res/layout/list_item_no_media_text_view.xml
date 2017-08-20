@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scott.wemessage.app.ui.view.font.FontTextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mediaErrorView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textColor="@color/black"
+    android:textSize="22sp"
+    android:gravity="center"
+    android:layout_margin="24dp"
+    app:fontName="OrkneyLight" />

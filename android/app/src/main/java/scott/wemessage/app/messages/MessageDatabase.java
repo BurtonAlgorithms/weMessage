@@ -119,7 +119,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        //When it comes time for it alter tables
+        //TODO: When it comes time for it alter tables
     }
 
     public List<Contact> getContacts(){
@@ -142,6 +142,30 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         cursor.close();
 
         return contacts;
+    }
+
+    public List<Attachment> getAttachmentsInChat(String chatUuid, int startIndex, int numberToFetch){
+        List<Attachment> attachments = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        int finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
+        long start = finalRow - startIndex;
+
+        String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
+                + MessageTable.CHAT_UUID + " = ? ORDER BY " + MessageTable._ID + " DESC LIMIT " + numberToFetch;
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {String.valueOf(start), chatUuid} );
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                if (cursor.getString(cursor.getColumnIndex(MessageTable.ACCOUNT_UUID)).equals(weMessage.get().getCurrentAccount().getUuid().toString())){
+                    attachments.addAll(stringListToAttachments(Arrays.asList(cursor.getString(cursor.getColumnIndex(MessageTable.ATTACHMENTS)).split(", "))));
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return attachments;
     }
 
     public List<Chat> getChats(){
