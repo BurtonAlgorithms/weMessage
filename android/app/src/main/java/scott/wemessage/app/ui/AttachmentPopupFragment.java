@@ -500,7 +500,7 @@ public class AttachmentPopupFragment extends MessagingFragment {
         private TextView galleryFileName;
 
         public GalleryHolder(LayoutInflater inflater, ViewGroup parent) {
-            super(inflater.inflate(R.layout.list_item_gallery_view, parent, false));
+            super(inflater.inflate(R.layout.list_item_popup_gallery_view, parent, false));
 
             galleryImageView = (ImageView) itemView.findViewById(R.id.galleryImageView);
             checkmarkView = (ImageView) itemView.findViewById(R.id.checkmarkView);

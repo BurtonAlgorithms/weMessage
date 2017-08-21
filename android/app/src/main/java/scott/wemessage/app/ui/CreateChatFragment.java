@@ -670,7 +670,7 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
         }
     }
 
-    private boolean isServiceRunning(Class<?> serviceClass) {
+    protected boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
             if (serviceClass.getName().equals(service.service.getClassName())) {
@@ -679,7 +679,6 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
         }
         return false;
     }
-
 
     private <T> Collection<T> filter(Collection<T> target, IPredicate<T> predicate) {
         Collection<T> result = new ArrayList<>();

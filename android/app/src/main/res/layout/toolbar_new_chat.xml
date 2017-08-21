@@ -30,8 +30,8 @@
         <scott.wemessage.app.ui.view.font.FontButton
             android:id="@+id/chatCreateCancelButton"
             app:buttonFontName="OrkneyMedium"
-            android:background="?android:attr/selectableItemBackground"
-            android:textColor="#ffffff"
+            android:background="@color/transparent"
+            android:textColor="@drawable/button_text_white_drawable"
             android:text="@string/word_cancel"
             android:textSize="16sp"
             android:textAllCaps="false"

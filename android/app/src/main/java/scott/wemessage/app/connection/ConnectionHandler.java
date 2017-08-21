@@ -75,7 +75,7 @@ public final class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
-    private final int TIME_TO_CONNECT = 0;
+    private final int TIME_TO_CONNECT = 2; //TODO: Work
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();

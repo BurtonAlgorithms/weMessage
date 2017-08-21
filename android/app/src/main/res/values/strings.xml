@@ -115,5 +115,8 @@
     <string name="word_phone">Phone Number</string>
     <string name="word_email">Email</string>
     <string name="word_mobile">Mobile</string>
+    <string name="no_attachments_found">No attachments have been sent to this contact.</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
 
 </resources>

@@ -80,6 +80,12 @@ public class AttachmentAudioView extends AttachmentView {
             layoutParams.removeRule(RelativeLayout.START_OF);
             layoutParams.addRule(RelativeLayout.ALIGN_PARENT_END);
         }
+
+        if (messageType == MessageType.INCOMING) {
+            layoutParams.removeRule(RelativeLayout.ALIGN_PARENT_END);
+            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+        }
+
         attachmentAudioBubble.setLayoutParams(layoutParams);
 
         new AsyncTask<Attachment, Void, AudioTrackMetadata>(){

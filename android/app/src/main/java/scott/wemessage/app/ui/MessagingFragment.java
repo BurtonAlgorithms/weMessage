@@ -1,5 +1,7 @@
 package scott.wemessage.app.ui;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.view.View;
@@ -49,6 +51,17 @@ public abstract class MessagingFragment extends Fragment {
                 break;
         }
     }
+
+    protected boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     private void showErroredSnackbar(String message){
         if (getView() != null) {

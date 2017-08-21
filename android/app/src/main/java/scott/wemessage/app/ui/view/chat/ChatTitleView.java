@@ -3,7 +3,6 @@ package scott.wemessage.app.ui.view.chat;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.text.InputFilter;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.Gravity;
@@ -22,9 +21,9 @@ import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.ui.view.font.FontTextView;
 import scott.wemessage.app.utils.AndroidIOUtils;
 import scott.wemessage.app.utils.view.DisplayUtils;
-import scott.wemessage.app.ui.view.font.FontTextView;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ChatTitleView extends LinearLayout {
@@ -86,7 +85,6 @@ public class ChatTitleView extends LinearLayout {
             titleTextView.setTypeface(titleTextView.getTypeface(), Typeface.NORMAL);
             titleTextView.setTextColor(Color.WHITE);
             titleTextView.setSingleLine();
-            titleTextView.setFilters(new InputFilter[] { new InputFilter.LengthFilter(28) });
             titleTextView.setEllipsize(TextUtils.TruncateAt.END);
             titleTextView.setText(contact.getUIDisplayName());
             titleTextView.setLayoutParams(textLayoutParams);

@@ -1,6 +1,5 @@
 package scott.wemessage.app.ui;
 
-import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -1109,8 +1108,6 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
         }
     }
 
-    //TODO: add args
-
     private void launchContactView(){
         Intent launcherIntent = new Intent(weMessage.get(), ContactViewActivity.class);
 
@@ -1269,17 +1266,6 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
             snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
             snackbar.show();
         }
-    }
-
-
-    private boolean isServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean isChatThis(Chat c){

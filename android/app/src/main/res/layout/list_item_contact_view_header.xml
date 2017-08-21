@@ -17,21 +17,64 @@
             android:layout_marginTop="32dp"
             android:layout_centerHorizontal="true"
             android:layout_width="128dp"
-            android:layout_height="128dp"/>
+            android:layout_height="128dp" />
 
-        <scott.wemessage.app.ui.view.font.FontTextView
-            android:id="@+id/contactViewName"
-            android:textSize="24sp"
-            android:textColor="@color/black"
-            android:layout_width="wrap_content"
+        <ViewSwitcher
+            android:id="@+id/contactViewNameSwitcher"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerHorizontal="true"
             android:layout_below="@id/contactViewPicture"
             android:layout_marginTop="16dp"
             android:layout_marginStart="24dp"
             android:layout_marginEnd="24dp"
-            android:gravity="center"
-            app:fontName="OrkneyLight"/>
+            android:measureAllChildren="false">
+
+            <scott.wemessage.app.ui.view.font.FontTextView
+                android:id="@+id/contactViewName"
+                android:textSize="24sp"
+                android:textColor="@color/black"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:maxLines="2"
+                android:ellipsize="end"
+                app:fontName="OrkneyLight"/>
+
+            <LinearLayout
+                android:id="@+id/contactViewEditLayout"
+                android:orientation="vertical"
+                android:background="@drawable/contact_view_border"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp">
+
+                <EditText
+                    android:id="@+id/contactViewEditFirstName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/first_name"
+                    android:textSize="16sp"
+                    android:textColor="@color/black"
+                    android:inputType="text"
+                    android:maxLines="1"/>
+
+                <EditText
+                    android:id="@+id/contactViewEditLastName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/last_name"
+                    android:textSize="16sp"
+                    android:textColor="@color/black"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:imeOptions="actionDone"/>
+            </LinearLayout>
+
+        </ViewSwitcher>
 
     </RelativeLayout>
 
@@ -106,9 +149,9 @@
 
             <scott.wemessage.app.ui.view.font.FontButton
                 android:id="@+id/contactViewBlockButton"
-                android:background="?android:attr/selectableItemBackground"
+                android:background="@color/transparent"
                 android:text="@string/block_contact"
-                android:textColor="@color/brightRed"
+                android:textColor="@drawable/button_text_red_drawable"
                 android:textSize="18sp"
                 android:textAllCaps="false"
                 android:layout_width="wrap_content"
@@ -126,7 +169,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/contactViewDetailsLayout"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
         app:contentPadding="8dp"
         app:cardCornerRadius="4dp">
 
@@ -136,7 +179,8 @@
             android:textColor="@color/colorHeader"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"/>
+            android:layout_gravity="center"
+            android:padding="4dp"/>
 
     </android.support.v7.widget.CardView>
 
