@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="32dp"
+    android:layout_marginStart="32dp"
+    android:background="@drawable/bottom_sheet_frame">
+
+    <scott.wemessage.app.ui.view.font.FontButton
+        style="?android:attr/borderlessButtonStyle"
+        android:id="@+id/contactViewEditPictureTake"
+        android:text="@string/take_picture"
+        android:gravity="center"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="@color/colorHeader"
+        android:background="@drawable/bottom_sheet_button_frame_top"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="OrkneyLight"/>
+
+    <View
+        android:background="@color/shadedWhite"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"/>
+
+    <scott.wemessage.app.ui.view.font.FontButton
+        style="?android:attr/borderlessButtonStyle"
+        android:id="@+id/contactViewEditPictureChoose"
+        android:text="@string/choose_picture"
+        android:gravity="center"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="@color/colorHeader"
+        android:background="@drawable/bottom_sheet_button_frame_middle"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="OrkneyLight"/>
+
+    <View
+        android:background="@color/shadedWhite"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"/>
+
+    <scott.wemessage.app.ui.view.font.FontButton
+        style="?android:attr/borderlessButtonStyle"
+        android:id="@+id/contactViewEditPictureDelete"
+        android:text="@string/delete_picture"
+        android:gravity="center"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="@color/colorHeader"
+        android:background="@drawable/bottom_sheet_button_frame_middle"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="OrkneyLight"/>
+
+    <View
+        android:background="@color/shadedWhite"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"/>
+
+    <scott.wemessage.app.ui.view.font.FontButton
+        style="?android:attr/borderlessButtonStyle"
+        android:id="@+id/contactViewEditPictureCancel"
+        android:text="@string/word_cancel"
+        android:gravity="center"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="@color/colorHeader"
+        android:textStyle="bold"
+        android:background="@drawable/bottom_sheet_button_frame_bottom"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="OrkneyBold"/>
+</LinearLayout>

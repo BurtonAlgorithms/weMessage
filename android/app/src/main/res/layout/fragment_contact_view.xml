@@ -1,7 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<android.support.v7.widget.RecyclerView
+<com.flipboard.bottomsheet.BottomSheetLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/contactViewRecyclerView"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/contactViewBottomSheetLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"/>
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/contactViewRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <RelativeLayout
+            android:id="@+id/contactViewChoosePhotoLayout"
+            android:background="@color/defaultBackgroundColor"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_alignParentBottom="true"
+            android:visibility="gone">
+
+            <scott.wemessage.app.ui.view.font.FontTextView
+                android:id="@+id/contactViewChoosePhotoTextView"
+                android:text="@string/choose_picture"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:textSize="18sp"
+                android:textColor="@color/white"
+                android:background="@color/colorAccent"
+                app:fontName="OrkneyMedium"/>
+
+            <scott.wemessage.app.ui.view.font.FontTextView
+                android:id="@+id/contactViewChoosePhotoErrorTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/black"
+                android:textSize="16sp"
+                android:background="@color/white"
+                android:gravity="center"
+                app:fontName="OrkneyLight"
+                android:layout_below="@id/contactViewChoosePhotoTextView"/>
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/contactViewChoosePhotoRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_below="@id/contactViewChoosePhotoTextView"/>
+
+        </RelativeLayout>
+    </RelativeLayout>
+
+
+</com.flipboard.bottomsheet.BottomSheetLayout>

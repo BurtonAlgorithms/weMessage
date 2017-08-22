@@ -29,4 +29,5 @@
     <color name="incomingBubbleColorPressed">#dedee2</color>
     <color name="attachmentPopupWindowBackground">#d6d6da</color>
     <color name="outgoingDateColor">#ebebef</color>
+    <color name="defaultBackgroundColor">#FAFAFA</color>
 </resources>

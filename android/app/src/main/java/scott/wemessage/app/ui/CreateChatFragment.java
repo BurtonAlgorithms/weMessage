@@ -2,7 +2,6 @@ package scott.wemessage.app.ui;
 
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
-import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,7 +13,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -71,10 +69,10 @@ import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
+import scott.wemessage.app.ui.view.chat.CreateChatBottomSheet;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.font.FontTextView;
 import scott.wemessage.app.utils.AndroidIOUtils;
-import scott.wemessage.app.ui.view.chat.CreateChatBottomSheet;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
@@ -84,7 +82,7 @@ import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class CreateChatFragment extends Fragment implements MessageManager.Callbacks {
+public class CreateChatFragment extends MessagingFragment implements MessageManager.Callbacks {
 
     private String callbackUuid;
     private int oldEditTextColor;
@@ -442,7 +440,9 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
     public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) { }
 
     @Override
-    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) { }
+    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
+        showActionFailureSnackbar(jsonAction, returnType);
+    }
 
     public void goToChatList(){
         Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
@@ -668,16 +668,6 @@ public class CreateChatFragment extends Fragment implements MessageManager.Callb
             startActivity(launcherIntent);
             getActivity().finish();
         }
-    }
-
-    protected boolean isServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private <T> Collection<T> filter(Collection<T> target, IPredicate<T> predicate) {

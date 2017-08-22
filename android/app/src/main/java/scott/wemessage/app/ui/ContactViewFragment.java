@@ -1,20 +1,27 @@
 package scott.wemessage.app.ui;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
 import android.media.ThumbnailUtils;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
@@ -23,6 +30,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -31,15 +39,19 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
+import com.afollestad.materialcamera.MaterialCamera;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.flipboard.bottomsheet.BottomSheetLayout;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -62,6 +74,7 @@ import scott.wemessage.app.ui.activities.MessageImageActivity;
 import scott.wemessage.app.ui.activities.MessageVideoActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
@@ -77,17 +90,33 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
     private final int TYPE_ITEM = 1;
     private final int TYPE_MEDIA_ERROR = 2;
 
+    private String BUNDLE_IS_IN_EDIT_MODE = "bundleIsInEditMode";
+    private String BUNDLE_IS_CHOOSE_PHOTO_LAYOUT_SHOWN = "bundleIsChoosePhotoLayoutShown";
+    private String BUNDLE_EDITED_FIRST_NAME = "bundleEditedFirstName";
+    private String BUNDLE_EDITED_LAST_NAME = "bundleEditedLastName";
+    private String BUNDLE_EDITED_CONTACT_PICTURE = "bundleEditedContactPicture";
+
     private boolean isBoundToConnectionService = false;
+    private boolean isInEditMode = false;
+    private boolean isChoosePhotoLayoutShown = false;
+
     private String previousChatId;
     private String contactUuid;
     private String callbackUuid;
 
-    private boolean isInEditMode = false;
     private String editedFirstName;
     private String editedLastName;
+    private String editedContactPicture;
 
     private RecyclerView contactViewRecyclerView;
+    private BottomSheetLayout bottomSheetLayout;
     private ContactViewRecyclerAdapter contactViewRecyclerAdapter;
+
+    private RelativeLayout contactViewChoosePhotoLayout;
+    private TextView contactViewChoosePhotoErrorTextView;
+    private RecyclerView contactViewChoosePhotoRecyclerView;
+    private ChoosePhotoAdapter choosePhotoAdapter;
+
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
 
     private BroadcastReceiver contactViewBroadcastReceiver = new BroadcastReceiver() {
@@ -175,6 +204,12 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
         } else {
             contactUuid = savedInstanceState.getString(weMessage.BUNDLE_CONTACT_VIEW_UUID);
             previousChatId = savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT);
+
+            isInEditMode = savedInstanceState.getBoolean(BUNDLE_IS_IN_EDIT_MODE);
+            isChoosePhotoLayoutShown = savedInstanceState.getBoolean(BUNDLE_IS_CHOOSE_PHOTO_LAYOUT_SHOWN);
+            editedFirstName = savedInstanceState.getString(BUNDLE_EDITED_FIRST_NAME);
+            editedLastName = savedInstanceState.getString(BUNDLE_EDITED_LAST_NAME);
+            editedContactPicture = savedInstanceState.getString(BUNDLE_EDITED_CONTACT_PICTURE);
         }
 
         Contact c = weMessage.get().getMessageDatabase().getContactByUuid(contactUuid);
@@ -206,7 +241,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                     if (contactViewRecyclerAdapter != null){
                         isInEditMode = true;
                         contactViewRecyclerAdapter.toggleEditMode(true);
-                        editButton.setText(getString(R.string.word_done));
+                        editButton.setText(R.string.word_done);
                     }
                 }else {
                     if (contactViewRecyclerAdapter != null){
@@ -222,10 +257,18 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                             oldVal.setLastName(editedLastName);
                         }
 
+                        if (!StringUtils.isEmpty(editedContactPicture)){
+                            if (editedContactPicture.equals("DELETE")){
+                                oldVal.setContactPictureFileLocation(null);
+                            }else {
+                                oldVal.setContactPictureFileLocation(new FileLocationContainer(editedContactPicture));
+                            }
+                        }
+
                         weMessage.get().getMessageManager().updateContact(contactUuid, oldVal, true);
 
                         contactViewRecyclerAdapter.toggleEditMode(false);
-                        editButton.setText(getString(R.string.word_edit));
+                        editButton.setText(R.string.word_edit);
                     }
                 }
             }
@@ -251,19 +294,92 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
 
         contactViewRecyclerAdapter = new ContactViewRecyclerAdapter();
         contactViewRecyclerView = (RecyclerView) view.findViewById(R.id.contactViewRecyclerView);
+        bottomSheetLayout = (BottomSheetLayout) view.findViewById(R.id.contactViewBottomSheetLayout);
 
         contactViewRecyclerView.setLayoutManager(layoutManager);
         contactViewRecyclerView.setAdapter(contactViewRecyclerAdapter);
 
-        loadItems();
+        contactViewChoosePhotoLayout = (RelativeLayout) view.findViewById(R.id.contactViewChoosePhotoLayout);
+        contactViewChoosePhotoErrorTextView = (TextView) view.findViewById(R.id.contactViewChoosePhotoErrorTextView);
+        contactViewChoosePhotoRecyclerView = (RecyclerView) view.findViewById(R.id.contactViewChoosePhotoRecyclerView);
+
+        ViewGroup.LayoutParams layoutParams = contactViewChoosePhotoLayout.getLayoutParams();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        layoutParams.height = displayMetrics.heightPixels / 2;
+
+        contactViewChoosePhotoLayout.setLayoutParams(layoutParams);
+        contactViewChoosePhotoRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 2, GridLayoutManager.VERTICAL, false));
+
+        contactViewRecyclerView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (isChoosePhotoLayoutShown){
+                    toggleChoosePhotoLayout(false);
+                }
+                return false;
+            }
+        });
+
+        if (isInEditMode){
+            editButton.setText(R.string.word_done);
+        }
+
+        loadAttachmentItems();
 
         return view;
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == weMessage.REQUEST_CODE_CAMERA){
+            if (resultCode == Activity.RESULT_OK){
+                editedContactPicture = data.getData().getPath();
+
+                if (contactViewRecyclerAdapter != null){
+                    contactViewRecyclerAdapter.updatePicture(editedContactPicture);
+                }
+
+            }else if (data != null){
+                AppLogger.error("An error occurred while trying to get Camera data.", (Exception) data.getSerializableExtra(MaterialCamera.ERROR_EXTRA));
+                showErroredSnackBar(getString(R.string.camera_capture_error));
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode){
+            case weMessage.REQUEST_PERMISSION_CAMERA:
+                if (isGranted(grantResults)){
+                    launchCamera();
+                }
+                break;
+            case weMessage.REQUEST_PERMISSION_READ_STORAGE:
+                if (isGranted(grantResults)){
+                    contactViewChoosePhotoErrorTextView.setVisibility(View.GONE);
+                    loadChoosePhotoItems();
+                } else {
+                    contactViewChoosePhotoRecyclerView.setVisibility(View.GONE);
+                    contactViewChoosePhotoErrorTextView.setText(getString(R.string.no_media_permission));
+                    contactViewChoosePhotoErrorTextView.setVisibility(View.VISIBLE);
+                }
+                break;
+        }
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         outState.putString(weMessage.BUNDLE_CONTACT_VIEW_UUID, contactUuid);
         outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, previousChatId);
+
+        outState.putBoolean(BUNDLE_IS_IN_EDIT_MODE, isInEditMode);
+        outState.putBoolean(BUNDLE_IS_CHOOSE_PHOTO_LAYOUT_SHOWN, isChoosePhotoLayoutShown);
+        outState.putString(BUNDLE_EDITED_FIRST_NAME, editedFirstName);
+        outState.putString(BUNDLE_EDITED_LAST_NAME, editedLastName);
+        outState.putString(BUNDLE_EDITED_CONTACT_PICTURE, editedContactPicture);
 
         super.onSaveInstanceState(outState);
     }
@@ -276,7 +392,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
         if (isBoundToConnectionService){
             unbindService();
         }
-        
+
         super.onDestroy();
     }
 
@@ -352,7 +468,9 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
     public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) { }
 
     @Override
-    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) { }
+    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
+        showActionFailureSnackbar(jsonAction, returnType);
+    }
 
     public void returnToConversationScreen() {
         Intent launcherIntent = new Intent(weMessage.get(), ConversationActivity.class);
@@ -364,7 +482,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
         getActivity().finish();
     }
 
-    private void loadItems(){
+    private void loadAttachmentItems(){
         new AsyncTask<Void, Void, ArrayList<String>>() {
 
             @Override
@@ -395,12 +513,14 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
             protected void onPostExecute(ArrayList<String> strings) {
                 if (getContext() instanceof Activity && ((Activity) getContext()).isDestroyed()) return;
 
-                onLoadGalleryItems(strings);
+                onLoadAttachmentItems(strings);
             }
         }.execute();
     }
 
-    private void onLoadGalleryItems(final List<String> filePaths){
+
+
+    private void onLoadAttachmentItems(final List<String> filePaths){
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -427,6 +547,127 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
 
         startActivity(launcherIntent);
         getActivity().finish();
+    }
+
+    private void showContactPictureEditSheet(){
+        bottomSheetLayout.showWithSheetView(LayoutInflater.from(getContext()).inflate(R.layout.sheet_contact_view_edit_picture, bottomSheetLayout, false));
+
+        bottomSheetLayout.findViewById(R.id.contactViewEditPictureTake).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                bottomSheetLayout.dismissSheet();
+                launchCamera();
+            }
+        });
+
+        bottomSheetLayout.findViewById(R.id.contactViewEditPictureChoose).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                bottomSheetLayout.dismissSheet();
+                toggleChoosePhotoLayout(true);
+            }
+        });
+
+        bottomSheetLayout.findViewById(R.id.contactViewEditPictureDelete).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                deleteContactPicture();
+                bottomSheetLayout.dismissSheet();
+            }
+        });
+
+        bottomSheetLayout.findViewById(R.id.contactViewEditPictureCancel).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                bottomSheetLayout.dismissSheet();
+            }
+        });
+    }
+
+    private void launchCamera(){
+        if (hasPermission(Manifest.permission.CAMERA, getString(R.string.no_camera_permission), "CameraPermissionAlertFragment", weMessage.REQUEST_PERMISSION_CAMERA)) {
+            new MaterialCamera(this)
+                    .allowRetry(true)
+                    .autoSubmit(false)
+                    .saveDir(weMessage.get().getAttachmentFolder())
+                    .showPortraitWarning(true)
+                    .defaultToFrontFacing(false)
+                    .retryExits(false)
+                    .labelRetry(R.string.word_redo)
+                    .labelConfirm(R.string.ok_button)
+                    .stillShot()
+                    .start(weMessage.REQUEST_CODE_CAMERA);
+        }
+    }
+
+    private void toggleChoosePhotoLayout(boolean value){
+        if (isChoosePhotoLayoutShown != value){
+            if (value){
+                isChoosePhotoLayoutShown = true;
+                contactViewChoosePhotoLayout.setVisibility(View.VISIBLE);
+
+                if (hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, getString(R.string.no_media_permission), "MediaReadPermissionAlertFragment", weMessage.REQUEST_PERMISSION_READ_STORAGE)){
+                    loadChoosePhotoItems();
+                }
+            }else {
+                isChoosePhotoLayoutShown = false;
+                contactViewChoosePhotoLayout.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void deleteContactPicture() {
+        if (editedContactPicture != null && !editedContactPicture.equals("DELETE")) {
+            File file = new File(editedContactPicture);
+            file.delete();
+        }
+        editedContactPicture = "DELETE";
+        contactViewRecyclerAdapter.updatePicture("DELETE");
+    }
+
+    private void loadChoosePhotoItems(){
+        new AsyncTask<Void, Void, ArrayList<String>>(){
+
+            @Override
+            protected ArrayList<String> doInBackground(Void... params) {
+                ArrayList<String> allUris = new ArrayList<>();
+
+                try {
+                    allUris.addAll(getAllImages());
+                }catch (Exception ex){
+                    showErroredSnackBar(getString(R.string.media_fetch_error));
+                    AppLogger.error("An error occurred while fetching media from the device.", ex);
+                }
+
+                return allUris;
+            }
+
+            @Override
+            protected void onPostExecute(ArrayList<String> strings) {
+                if (getContext() instanceof Activity && ((Activity) getContext()).isDestroyed()) return;
+
+                onLoadChoosePhotoItems(strings);
+
+                if (choosePhotoAdapter.getItemCount() == 0){
+                    contactViewRecyclerView.setVisibility(View.GONE);
+                    contactViewChoosePhotoErrorTextView.setText(getString(R.string.no_media_found));
+                    contactViewChoosePhotoErrorTextView.setVisibility(View.VISIBLE);
+                }else {
+                    contactViewRecyclerView.setVisibility(View.VISIBLE);
+                    contactViewChoosePhotoErrorTextView.setVisibility(View.GONE);
+                }
+            }
+        }.execute();
+    }
+
+    private void onLoadChoosePhotoItems(final List<String> filePaths){
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                choosePhotoAdapter = new ChoosePhotoAdapter(filePaths);
+                contactViewChoosePhotoRecyclerView.setAdapter(choosePhotoAdapter);
+            }
+        });
     }
 
     private void showErroredSnackBar(String message){
@@ -490,8 +731,57 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
         }
     }
 
+    private ArrayList<String> getAllImages(){
+        ArrayList<String> images = new ArrayList<>();
+        Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+
+        String[] projection = { MediaStore.Images.Media.DATA, MediaStore.Images.ImageColumns.DATE_TAKEN, MediaStore.Images.ImageColumns.MIME_TYPE };
+        String orderBy = MediaStore.Images.ImageColumns.DATE_TAKEN + " DESC";
+
+        Cursor cursor = getActivity().getContentResolver().query(uri, projection, null, null, orderBy);
+        int columnIndexData = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+        int mimeIndexData = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE);
+
+        if (cursor.getCount() > 0) {
+            while (cursor.moveToNext()) {
+                if (MimeType.getTypeFromString(cursor.getString(mimeIndexData)) == MimeType.IMAGE) {
+                    String imagePath = cursor.getString(columnIndexData);
+                    images.add(imagePath);
+                }
+            }
+        }
+        cursor.close();
+
+        return images;
+    }
+
     private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
         DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage, runnable);
+    }
+
+    private boolean hasPermission(final String permission, String rationaleString, String alertTagId, final int requestCode){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(getActivity(), permission) != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(permission)){
+                DialogDisplayer.AlertDialogFragment alertDialogFragment = DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), rationaleString);
+
+                alertDialogFragment.setOnDismiss(new Runnable() {
+                    @Override
+                    public void run() {
+                        requestPermissions(new String[] { permission }, requestCode);
+                    }
+                });
+                alertDialogFragment.show(getFragmentManager(), alertTagId);
+                return false;
+            } else {
+                requestPermissions(new String[] { permission }, requestCode);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isGranted(int[] grantResults){
+        return (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
     }
 
     private class ContactViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -530,6 +820,19 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
             if (position == 0) return TYPE_HEADER;
             if (position == 1) return TYPE_MEDIA_ERROR;
             return TYPE_ITEM;
+        }
+
+        public void updatePicture(String path){
+            try {
+                RecyclerView.ViewHolder viewHolder = contactViewRecyclerView.getChildViewHolder(contactViewRecyclerView.getChildAt(0));
+
+                if (viewHolder instanceof ContactViewHeader) {
+                    ((ContactViewHeader) viewHolder).updatePicture(path);
+
+                    contactViewRecyclerView.scrollBy(0, 0);
+                    notifyItemChanged(0);
+                }
+            }catch (Exception ex){ }
         }
 
         public void updateContact(Contact contact){
@@ -596,7 +899,9 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
 
         private boolean isInit = false;
 
+        private LinearLayout contactPictureContainer;
         private ImageView contactPicture;
+        private TextView contactPictureEditTextView;
         private TextView contactName;
         private TextView contactHandleHeader;
         private TextView contactHandleTextView;
@@ -629,7 +934,14 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                 }
             }
             contactHandleTextView.setText(handleID);
-            Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getContactIconUri(contact)).into(contactPicture);
+
+            if (StringUtils.isEmpty(editedContactPicture)) {
+                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getContactIconUri(contact)).into(contactPicture);
+            }else if (editedContactPicture.equals("DELETE")) {
+                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getDefaultContactUri()).into(contactPicture);
+            }else {
+                Glide.with(ContactViewFragment.this).load(editedContactPicture).into(contactPicture);
+            }
             toggleEditMode(isInEditMode);
         }
 
@@ -638,6 +950,15 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                 if (contactViewNameSwitcher.getNextView().getId() == R.id.contactViewEditLayout) {
                     contactViewNameSwitcher.showNext();
                 }
+                contactPictureEditTextView.setVisibility(View.VISIBLE);
+                contactPictureContainer.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        if (!isChoosePhotoLayoutShown) {
+                            showContactPictureEditSheet();
+                        }
+                    }
+                });
             }
 
             if (!value) {
@@ -651,6 +972,17 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
 
                 contactViewEditFirstName.setText(editedFirstName);
                 contactViewEditLastName.setText(editedLastName);
+                contactPictureEditTextView.setVisibility(View.GONE);
+                contactPictureContainer.setOnClickListener(null);
+                contactPictureContainer.setClickable(false);
+            }
+        }
+
+        public void updatePicture(String path){
+            if (path.equals("DELETE")) {
+                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getDefaultContactUri()).into(contactPicture);
+            }else {
+                Glide.with(ContactViewFragment.this).load(path).into(contactPicture);
             }
         }
 
@@ -663,7 +995,9 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
             if (!isInit){
                 isInit = true;
 
+                contactPictureContainer = (LinearLayout) itemView.findViewById(R.id.contactViewPictureContainer);
                 contactPicture = (ImageView) itemView.findViewById(R.id.contactViewPicture);
+                contactPictureEditTextView = (TextView) itemView.findViewById(R.id.contactViewEditPictureTextView);
                 contactName = (TextView) itemView.findViewById(R.id.contactViewName);
                 contactHandleHeader = (TextView) itemView.findViewById(R.id.contactViewHandleHeader);
                 contactHandleTextView = (TextView) itemView.findViewById(R.id.contactViewHandleTextView);
@@ -787,6 +1121,76 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                 launchFullScreenImageActivity(path);
             }else if (mimeType == MimeType.VIDEO){
                 launchFullScreenVideoActivity(path);
+            }
+        }
+    }
+
+    private class ChoosePhotoAdapter extends RecyclerView.Adapter<ChoosePhotoHolder> {
+
+        private List<String> filePaths = new ArrayList<>();
+
+        public ChoosePhotoAdapter(List<String> filePaths){
+            this.filePaths = filePaths;
+        }
+
+        @Override
+        public ChoosePhotoHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
+
+            return new ChoosePhotoHolder(layoutInflater, parent);
+        }
+
+        @Override
+        public void onBindViewHolder(ChoosePhotoHolder holder, int position) {
+            String path = filePaths.get(position);
+            int size = contactViewChoosePhotoRecyclerView.getWidth() / 2;
+
+            holder.bind(path, size);
+        }
+
+        @Override
+        public int getItemCount() {
+            return filePaths.size();
+        }
+    }
+
+    private class ChoosePhotoHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+
+        private String path;
+        private RelativeLayout galleryViewLayout;
+        private ImageView galleryImageView;
+
+        public ChoosePhotoHolder(LayoutInflater inflater, ViewGroup parent) {
+            super(inflater.inflate(R.layout.list_item_full_gallery_view, parent, false));
+
+            galleryViewLayout = (RelativeLayout) itemView.findViewById(R.id.galleryViewLayout);
+            galleryImageView = (ImageView) itemView.findViewById(R.id.galleryImageView);
+
+            itemView.setOnClickListener(this);
+        }
+
+        public void bind(String path, int imageSize){
+            this.path = path;
+
+            ViewGroup.LayoutParams layoutParams = galleryViewLayout.getLayoutParams();
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+
+            layoutParams.width = imageSize;
+            layoutParams.height = imageSize;
+
+            galleryViewLayout.setLayoutParams(layoutParams);
+
+            Glide.with(itemView.getContext()).load(path).transition(DrawableTransitionOptions.withCrossFade()).into(galleryImageView);
+
+        }
+
+        @Override
+        public void onClick(View v) {
+            if (contactViewRecyclerAdapter != null){
+                editedContactPicture = path;
+                contactViewRecyclerAdapter.updatePicture(editedContactPicture);
+                toggleChoosePhotoLayout(false);
             }
         }
     }

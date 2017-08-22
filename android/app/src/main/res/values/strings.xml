@@ -118,5 +118,8 @@
     <string name="no_attachments_found">No attachments have been sent to this contact.</string>
     <string name="first_name">First Name</string>
     <string name="last_name">Last Name</string>
+    <string name="take_picture">Take Photo</string>
+    <string name="choose_picture">Choose Photo</string>
+    <string name="delete_picture">Delete Photo</string>
 
 </resources>

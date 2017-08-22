@@ -12,19 +12,39 @@
         android:layout_height="wrap_content"
         android:paddingBottom="16dp">
 
-        <com.github.siyamed.shapeimageview.CircularImageView
-            android:id="@+id/contactViewPicture"
-            android:layout_marginTop="32dp"
+        <LinearLayout
+            android:id="@+id/contactViewPictureContainer"
+            android:orientation="vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_centerHorizontal="true"
-            android:layout_width="128dp"
-            android:layout_height="128dp" />
+            android:layout_marginTop="32dp">
+
+            <com.github.siyamed.shapeimageview.CircularImageView
+                android:id="@+id/contactViewPicture"
+                android:layout_width="128dp"
+                android:layout_height="128dp"
+                android:layout_gravity="center"
+                android:src="@color/black"/>
+
+            <scott.wemessage.app.ui.view.font.FontTextView
+                android:id="@+id/contactViewEditPictureTextView"
+                android:text="@string/word_edit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:textSize="18sp"
+                android:textColor="@color/colorHeader"
+                app:fontName="OrkneyLight" />
+        </LinearLayout>
 
         <ViewSwitcher
             android:id="@+id/contactViewNameSwitcher"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerHorizontal="true"
-            android:layout_below="@id/contactViewPicture"
+            android:layout_below="@id/contactViewPictureContainer"
             android:layout_marginTop="16dp"
             android:layout_marginStart="24dp"
             android:layout_marginEnd="24dp"
