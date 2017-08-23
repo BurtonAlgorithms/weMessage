@@ -4,15 +4,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".app.ui.activities.ContactViewActivity"
+    tools:context=".app.ui.activities.ChatViewActivity"
     android:orientation="vertical">
 
-    <include layout="@layout/toolbar_contact_view" />
+    <include layout="@layout/toolbar_chat_view" />
 
     <FrameLayout
         android:layout_height="match_parent"
         android:layout_width="match_parent"
-        android:id="@+id/contactViewFragmentContainer">
+        android:id="@+id/chatViewFragmentContainer">
     </FrameLayout>
 
 </LinearLayout>

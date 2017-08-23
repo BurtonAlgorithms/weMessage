@@ -1,6 +1,8 @@
 package scott.wemessage.app.ui;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -224,13 +226,35 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
         final View view = inflater.inflate(R.layout.fragment_contact_view, container, false);
 
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.contactViewToolbar);
-        ImageButton backButton = (ImageButton) toolbar.findViewById(R.id.contactViewBackButton);
+        final ImageButton backButton = (ImageButton) toolbar.findViewById(R.id.contactViewBackButton);
         final Button editButton = (Button) toolbar.findViewById(R.id.contactViewEditButton);
+        final Button cancelButton = (Button) toolbar.findViewById(R.id.contactViewCancelButton);
 
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                returnToConversationScreen();
+                if (!isInEditMode) {
+                    returnToConversationScreen();
+                }
+            }
+        });
+
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (isInEditMode){
+                    isInEditMode = false;
+
+                    if (isChoosePhotoLayoutShown){
+                        toggleChoosePhotoLayout(false);
+                    }
+                    cancelChanges();
+                    contactViewRecyclerAdapter.toggleEditMode(false);
+
+                    editButton.setText(R.string.word_edit);
+                    backButton.setVisibility(View.VISIBLE);
+                    cancelButton.setVisibility(View.GONE);
+                }
             }
         });
 
@@ -241,7 +265,10 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                     if (contactViewRecyclerAdapter != null){
                         isInEditMode = true;
                         contactViewRecyclerAdapter.toggleEditMode(true);
+
                         editButton.setText(R.string.word_done);
+                        backButton.setVisibility(View.INVISIBLE);
+                        cancelButton.setVisibility(View.VISIBLE);
                     }
                 }else {
                     if (contactViewRecyclerAdapter != null){
@@ -266,9 +293,15 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                         }
 
                         weMessage.get().getMessageManager().updateContact(contactUuid, oldVal, true);
-
                         contactViewRecyclerAdapter.toggleEditMode(false);
+
                         editButton.setText(R.string.word_edit);
+                        backButton.setVisibility(View.VISIBLE);
+                        cancelButton.setVisibility(View.GONE);
+
+                        if (isChoosePhotoLayoutShown){
+                            toggleChoosePhotoLayout(false);
+                        }
                     }
                 }
             }
@@ -490,6 +523,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                 ArrayList<String> allUris = new ArrayList<>();
 
                 try {
+                    String previousChatId = weMessage.get().getMessageDatabase().getChatByHandle(weMessage.get().getMessageDatabase().getContactByUuid(contactUuid).getHandle()).getUuid().toString();
+
                     for (Attachment a : weMessage.get().getMessageDatabase().getReversedAttachmentsInChat(previousChatId, 0, Integer.MAX_VALUE)) {
                         String fileLoc = a.getFileLocation().getFileLocation();
 
@@ -604,14 +639,30 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
         if (isChoosePhotoLayoutShown != value){
             if (value){
                 isChoosePhotoLayoutShown = true;
-                contactViewChoosePhotoLayout.setVisibility(View.VISIBLE);
+
+                contactViewChoosePhotoLayout.animate().alpha(1.0f).translationY(0).setDuration(250).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationStart(Animator animation) {
+                        super.onAnimationStart(animation);
+                        contactViewChoosePhotoLayout.setVisibility(View.VISIBLE);
+                    }
+                });
 
                 if (hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE, getString(R.string.no_media_permission), "MediaReadPermissionAlertFragment", weMessage.REQUEST_PERMISSION_READ_STORAGE)){
                     loadChoosePhotoItems();
                 }
             }else {
                 isChoosePhotoLayoutShown = false;
-                contactViewChoosePhotoLayout.setVisibility(View.GONE);
+
+                int height = contactViewChoosePhotoLayout.getHeight();
+
+                contactViewChoosePhotoLayout.animate().alpha(0.f).translationY(height).setDuration(250).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        contactViewChoosePhotoLayout.setVisibility(View.GONE);
+                    }
+                });
             }
         }
     }
@@ -649,11 +700,11 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                 onLoadChoosePhotoItems(strings);
 
                 if (choosePhotoAdapter.getItemCount() == 0){
-                    contactViewRecyclerView.setVisibility(View.GONE);
+                    contactViewChoosePhotoRecyclerView.setVisibility(View.GONE);
                     contactViewChoosePhotoErrorTextView.setText(getString(R.string.no_media_found));
                     contactViewChoosePhotoErrorTextView.setVisibility(View.VISIBLE);
                 }else {
-                    contactViewRecyclerView.setVisibility(View.VISIBLE);
+                    contactViewChoosePhotoRecyclerView.setVisibility(View.VISIBLE);
                     contactViewChoosePhotoErrorTextView.setVisibility(View.GONE);
                 }
             }
@@ -668,6 +719,14 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                 contactViewChoosePhotoRecyclerView.setAdapter(choosePhotoAdapter);
             }
         });
+    }
+
+    private void cancelChanges(){
+        Contact c = weMessage.get().getMessageDatabase().getContactByUuid(contactUuid);
+
+        editedFirstName = c.getFirstName();
+        editedLastName = c.getLastName();
+        editedContactPicture = null;
     }
 
     private void showErroredSnackBar(String message){
@@ -829,8 +888,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                 if (viewHolder instanceof ContactViewHeader) {
                     ((ContactViewHeader) viewHolder).updatePicture(path);
 
-                    contactViewRecyclerView.scrollBy(0, 0);
                     notifyItemChanged(0);
+                    contactViewRecyclerView.scrollBy(0, 0);
                 }
             }catch (Exception ex){ }
         }
@@ -842,8 +901,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                 if (viewHolder instanceof ContactViewHeader) {
                     ((ContactViewHeader) viewHolder).bind(contact);
 
-                    contactViewRecyclerView.scrollBy(0, 0);
                     notifyItemChanged(0);
+                    contactViewRecyclerView.scrollBy(0, 0);
                 }
             }catch (Exception ex){ }
         }
@@ -855,8 +914,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                 if (viewHolder instanceof ContactViewHeader) {
                     ((ContactViewHeader) viewHolder).toggleEditMode(value);
 
-                    contactViewRecyclerView.scrollBy(0, 0);
                     notifyItemChanged(0);
+                    contactViewRecyclerView.scrollBy(0, 0);
                 }
             }catch (Exception ex){ }
         }
@@ -886,8 +945,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
                 }
             }catch(Exception ex){}
 
-            contactViewRecyclerView.scrollBy(0, 0);
             notifyDataSetChanged();
+            contactViewRecyclerView.scrollBy(0, 0);
         }
 
         private String getItem(int position) {

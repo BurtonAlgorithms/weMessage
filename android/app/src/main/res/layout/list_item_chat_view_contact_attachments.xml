@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <android.support.v7.widget.CardView
+        android:id="@+id/chatViewAddParticipant"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:background="?android:attr/selectableItemBackground"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp">
+
+            <ImageView
+                android:src="@drawable/ic_add"
+                android:tint="@color/colorAccent"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_margin="8dp"
+                android:layout_gravity="center"/>
+
+            <scott.wemessage.app.ui.view.font.FontTextView
+                android:text="@string/action_add_participant"
+                android:textColor="@color/colorAccent"
+                android:layout_margin="8dp"
+                android:textSize="18sp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"/>
+        </LinearLayout>
+
+    </android.support.v7.widget.CardView>
+
+
+    <android.support.v7.widget.CardView
+        android:id="@+id/chatViewAttachmentsCardView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/chatViewAddParticipant"
+        android:layout_marginTop="24dp"
+        app:contentPadding="8dp"
+        app:cardCornerRadius="4dp"
+        app:cardElevation="0dp">
+
+        <TextView
+            android:text="@string/word_attachments"
+            android:textSize="20sp"
+            android:textColor="@color/colorHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:padding="4dp"/>
+
+    </android.support.v7.widget.CardView>
+
+    <scott.wemessage.app.ui.view.font.FontTextView
+        android:id="@+id/mediaErrorTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/black"
+        android:textSize="20sp"
+        android:text="@string/no_attachments_found_chat"
+        android:gravity="center"
+        android:layout_margin="24dp"
+        android:layout_below="@id/chatViewAttachmentsCardView"
+        app:fontName="OrkneyLight"/>
+
+</RelativeLayout>

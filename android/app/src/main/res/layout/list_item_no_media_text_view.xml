@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:textColor="@color/black"
         android:textSize="20sp"
-        android:text="@string/no_attachments_found"
+        android:text="@string/no_attachments_found_contact"
         android:gravity="center"
         android:layout_margin="24dp"
         app:fontName="OrkneyLight"/>

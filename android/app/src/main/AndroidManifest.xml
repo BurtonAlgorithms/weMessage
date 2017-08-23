@@ -27,6 +27,7 @@
         <activity android:name=".app.ui.activities.ChatListActivity" />
         <activity android:name=".app.ui.activities.ConversationActivity" />
         <activity android:name=".app.ui.activities.CreateChatActivity" />
+        <activity android:name=".app.ui.activities.ChatViewActivity" />
         <activity android:name=".app.ui.activities.ContactViewActivity" />
         <activity android:name=".app.ui.activities.MessageImageActivity" />
         <activity android:name=".app.ui.activities.MessageVideoActivity"

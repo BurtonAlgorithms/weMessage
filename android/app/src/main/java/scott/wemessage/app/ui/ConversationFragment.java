@@ -64,6 +64,7 @@ import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.ui.activities.ChatListActivity;
+import scott.wemessage.app.ui.activities.ChatViewActivity;
 import scott.wemessage.app.ui.activities.ContactViewActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.activities.MessageImageActivity;
@@ -265,7 +266,7 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
                 if (getChat() instanceof PeerChat){
                     launchContactView();
                 }else {
-                    //TODO: Launch chat view
+                    launchChatView();
                 }
             }
         });
@@ -902,34 +903,61 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
         if (isPopupFragmentOpen) {
             if (getAttachmentPopupFragment() != null) {
                 for (String s : getAttachmentPopupFragment().getSelectedAttachments()) {
-                    int totalBytes = Math.round(new File(s).length());
-                    Attachment a = new Attachment(
-                            UUID.randomUUID(),
-                            null,
-                            Uri.parse(s).getLastPathSegment(),
-                            new FileLocationContainer(s),
-                            MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(s)),
-                            totalBytes
-                    );
-                    attachments.add(a);
-                    totalSize += totalBytes;
+
+                    try {
+                        String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
+                        String transferName = Uri.parse(s).getLastPathSegment();
+                        File copiedFile = new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + transferName);
+
+                        copiedFile.createNewFile();
+                        FileUtils.copy(new File(s), copiedFile);
+
+                        int totalBytes = Math.round(copiedFile.length());
+                        Attachment a = new Attachment(
+                                UUID.randomUUID(),
+                                null,
+                                transferName,
+                                new FileLocationContainer(copiedFile),
+                                MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(s)),
+                                totalBytes
+                        );
+                        attachments.add(a);
+                        totalSize += totalBytes;
+
+                    }catch (Exception ex){
+                        showErroredSnackbar(getString(R.string.send_attachment_error));
+                        AppLogger.error("An error occurred while loading a file into a message.", ex);
+                    }
                 }
             }
             getAttachmentPopupFragment().clearSelectedAttachments();
             closeAttachmentPopupFragment();
         } else {
             for (String s : attachmentsInput) {
-                int totalBytes = Math.round(new File(s).length());
-                Attachment a = new Attachment(
-                        UUID.randomUUID(),
-                        null,
-                        Uri.parse(s).getLastPathSegment(),
-                        new FileLocationContainer(s),
-                        MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(s)),
-                        totalBytes
-                );
-                attachments.add(a);
-                totalSize += totalBytes;
+                try {
+                    String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
+                    String transferName = Uri.parse(s).getLastPathSegment();
+                    File copiedFile = new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + transferName);
+
+                    copiedFile.createNewFile();
+                    FileUtils.copy(new File(s), copiedFile);
+
+                    int totalBytes = Math.round(copiedFile.length());
+                    Attachment a = new Attachment(
+                            UUID.randomUUID(),
+                            null,
+                            transferName,
+                            new FileLocationContainer(copiedFile),
+                            MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(s)),
+                            totalBytes
+                    );
+                    attachments.add(a);
+                    totalSize += totalBytes;
+
+                }catch (Exception ex){
+                    showErroredSnackbar(getString(R.string.send_attachment_error));
+                    AppLogger.error("An error occurred while loading a file into a message.", ex);
+                }
             }
         }
 
@@ -1112,6 +1140,14 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
         Intent launcherIntent = new Intent(weMessage.get(), ContactViewActivity.class);
 
         launcherIntent.putExtra(weMessage.BUNDLE_CONTACT_VIEW_UUID, ((PeerChat) getChat()).getContact().getUuid().toString());
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
+
+        startActivity(launcherIntent);
+        getActivity().finish();
+    }
+
+    private void launchChatView(){
+        Intent launcherIntent = new Intent(weMessage.get(), ChatViewActivity.class);
         launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
 
         startActivity(launcherIntent);

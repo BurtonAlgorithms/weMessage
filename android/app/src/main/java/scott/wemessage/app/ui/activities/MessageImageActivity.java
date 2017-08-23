@@ -85,7 +85,7 @@ public class MessageImageActivity extends AppCompatActivity {
                 } else {
                     isCollapsed = false;
 
-                    doneBar.animate().alpha(1.f).translationY(0).setDuration(250).setListener(new AnimatorListenerAdapter() {
+                    doneBar.animate().alpha(1.0f).translationY(0).setDuration(250).setListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationStart(Animator animation) {
                             super.onAnimationStart(animation);

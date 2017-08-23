@@ -60,6 +60,7 @@
     <string name="word_more">More&#8230;</string>
     <string name="chat_delete_message_go_back">The chat you were viewing was deleted.</string>
     <string name="load_attachment_error">An unknown error occurred while trying to load an attachment.</string>
+    <string name="send_attachment_error">An unknown error occurred while trying to send an attachment.</string>
     <string name="play_audio_attachment_error">An error occurred while trying to playback audio.</string>
     <string name="playback_error_title">Playback Error</string>
     <string name="play_video_attachment_error">An error occurred while trying to playback this video.</string>
@@ -115,11 +116,16 @@
     <string name="word_phone">Phone Number</string>
     <string name="word_email">Email</string>
     <string name="word_mobile">Mobile</string>
-    <string name="no_attachments_found">No attachments have been sent to this contact.</string>
+    <string name="no_attachments_found_contact">No attachments have been sent to this contact.</string>
     <string name="first_name">First Name</string>
     <string name="last_name">Last Name</string>
     <string name="take_picture">Take Photo</string>
     <string name="choose_picture">Choose Photo</string>
     <string name="delete_picture">Delete Photo</string>
+    <string name="file_not_found">File Not Found</string>
+    <string name="chat_name">Chat Name</string>
+    <string name="leave_chat">Leave Conversation</string>
+    <string name="participants">%1$d Participants</string>
+    <string name="no_attachments_found_chat">No attachments have been sent to this chat.</string>
 
 </resources>

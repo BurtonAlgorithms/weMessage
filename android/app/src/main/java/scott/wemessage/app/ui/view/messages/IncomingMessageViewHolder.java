@@ -15,6 +15,8 @@ import android.widget.TextView;
 import com.stfalcon.chatkit.messages.MessageHolders;
 import com.stfalcon.chatkit.utils.DateFormatter;
 
+import java.io.File;
+
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.objects.Attachment;
@@ -68,73 +70,93 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         int i = 1;
         for (Attachment attachment : message.getMessage().getAttachments()) {
             if (!StringUtils.isEmpty(attachment.getFileType())) {
-                try {
-                    MimeType mimeType = MimeType.getTypeFromString(attachment.getFileType());
-                    LayoutInflater inflater = LayoutInflater.from(itemView.getContext());
 
-                    switch (mimeType) {
-                        case IMAGE:
-                            AttachmentImageView attachmentImageView = (AttachmentImageView) inflater.inflate(R.layout.message_image, null);
+                LayoutInflater inflater = LayoutInflater.from(itemView.getContext());
+                File file = new File(attachment.getFileLocation().getFileLocation());
 
-                            attachmentImageView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
-                            attachmentsContainer.addView(attachmentImageView);
+                if (file.exists() && file.canRead()) {
+                    try {
+                        MimeType mimeType = MimeType.getTypeFromString(attachment.getFileType());
 
-                            if (i++ != message.getMessage().getAttachments().size()) {
-                                attachmentImageView.setBottomPadding(16);
-                            } else {
-                                if (!StringUtils.isEmpty(message.getText())) {
+                        switch (mimeType) {
+                            case IMAGE:
+                                AttachmentImageView attachmentImageView = (AttachmentImageView) inflater.inflate(R.layout.message_image, null);
+
+                                attachmentImageView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
+                                attachmentsContainer.addView(attachmentImageView);
+
+                                if (i++ != message.getMessage().getAttachments().size()) {
                                     attachmentImageView.setBottomPadding(16);
+                                } else {
+                                    if (!StringUtils.isEmpty(message.getText())) {
+                                        attachmentImageView.setBottomPadding(16);
+                                    }
                                 }
-                            }
-                            break;
-                        case AUDIO:
-                            AttachmentAudioView attachmentAudioView = (AttachmentAudioView) inflater.inflate(R.layout.message_audio, null);
+                                break;
+                            case AUDIO:
+                                AttachmentAudioView attachmentAudioView = (AttachmentAudioView) inflater.inflate(R.layout.message_audio, null);
 
-                            attachmentAudioView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
-                            attachmentsContainer.addView(attachmentAudioView);
+                                attachmentAudioView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
+                                attachmentsContainer.addView(attachmentAudioView);
 
-                            if (i++ != message.getMessage().getAttachments().size()) {
-                                attachmentAudioView.setBottomPadding(16);
-                            } else {
-                                if (!StringUtils.isEmpty(message.getText())) {
+                                if (i++ != message.getMessage().getAttachments().size()) {
                                     attachmentAudioView.setBottomPadding(16);
+                                } else {
+                                    if (!StringUtils.isEmpty(message.getText())) {
+                                        attachmentAudioView.setBottomPadding(16);
+                                    }
                                 }
-                            }
-                            break;
-                        case VIDEO:
-                            AttachmentVideoView attachmentVideoView = (AttachmentVideoView) inflater.inflate(R.layout.message_video, null);
+                                break;
+                            case VIDEO:
+                                AttachmentVideoView attachmentVideoView = (AttachmentVideoView) inflater.inflate(R.layout.message_video, null);
 
-                            attachmentVideoView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
-                            attachmentsContainer.addView(attachmentVideoView);
+                                attachmentVideoView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
+                                attachmentsContainer.addView(attachmentVideoView);
 
-                            if (i++ != message.getMessage().getAttachments().size()) {
-                                attachmentVideoView.setBottomPadding(16);
-                            } else {
-                                if (!StringUtils.isEmpty(message.getText())) {
+                                if (i++ != message.getMessage().getAttachments().size()) {
                                     attachmentVideoView.setBottomPadding(16);
+                                } else {
+                                    if (!StringUtils.isEmpty(message.getText())) {
+                                        attachmentVideoView.setBottomPadding(16);
+                                    }
                                 }
-                            }
-                            break;
-                        case UNDEFINED:
-                            AttachmentUndefinedView attachmentUndefinedView = (AttachmentUndefinedView) inflater.inflate(R.layout.message_undefined_attachment, null);
+                                break;
+                            case UNDEFINED:
+                                AttachmentUndefinedView attachmentUndefinedView = (AttachmentUndefinedView) inflater.inflate(R.layout.message_undefined_attachment, null);
 
-                            attachmentUndefinedView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
-                            attachmentsContainer.addView(attachmentUndefinedView);
+                                attachmentUndefinedView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
+                                attachmentsContainer.addView(attachmentUndefinedView);
 
-                            if (i++ != message.getMessage().getAttachments().size()) {
-                                attachmentUndefinedView.setBottomPadding(16);
-                            } else {
-                                if (!StringUtils.isEmpty(message.getText())) {
+                                if (i++ != message.getMessage().getAttachments().size()) {
                                     attachmentUndefinedView.setBottomPadding(16);
+                                } else {
+                                    if (!StringUtils.isEmpty(message.getText())) {
+                                        attachmentUndefinedView.setBottomPadding(16);
+                                    }
                                 }
-                            }
-                            break;
-                    }
-                } catch (Exception ex) {
-                    Intent broadcastIntent = new Intent(weMessage.BROADCAST_LOAD_ATTACHMENT_ERROR);
-                    LocalBroadcastManager.getInstance(itemView.getContext()).sendBroadcast(broadcastIntent);
+                                break;
+                        }
+                    } catch (Exception ex) {
+                        Intent broadcastIntent = new Intent(weMessage.BROADCAST_LOAD_ATTACHMENT_ERROR);
+                        LocalBroadcastManager.getInstance(itemView.getContext()).sendBroadcast(broadcastIntent);
 
-                    AppLogger.error("An error occurred while trying to load an attachment", ex);
+                        AppLogger.error("An error occurred while trying to load an attachment", ex);
+                    }
+                }else {
+                    AttachmentUndefinedView attachmentUndefinedView = (AttachmentUndefinedView) inflater.inflate(R.layout.message_undefined_attachment, null);
+
+                    attachmentUndefinedView.bind(message, attachment, AttachmentView.MessageType.INCOMING, message.hasErrored());
+                    attachmentUndefinedView.setLost(true);
+
+                    attachmentsContainer.addView(attachmentUndefinedView);
+
+                    if (i++ != message.getMessage().getAttachments().size()) {
+                        attachmentUndefinedView.setBottomPadding(16);
+                    } else {
+                        if (!StringUtils.isEmpty(message.getText())) {
+                            attachmentUndefinedView.setBottomPadding(16);
+                        }
+                    }
                 }
             }
         }

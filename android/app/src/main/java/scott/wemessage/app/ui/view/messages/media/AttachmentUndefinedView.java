@@ -52,7 +52,12 @@ public class AttachmentUndefinedView extends AttachmentView {
                 );
             }
         }
-        undefinedAttachmentTextView.setText(attachment.getFileType());
+    }
+
+    public void setLost(boolean isLost){
+        if (isLost){
+            undefinedAttachmentTextView.setText(R.string.file_not_found);
+        }
     }
 
     private void init(){

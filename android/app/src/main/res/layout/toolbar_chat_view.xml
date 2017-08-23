@@ -6,7 +6,7 @@
     android:layout_height="wrap_content"
     android:elevation="4dp"
     android:background="@color/colorHeader"
-    android:id="@+id/contactViewToolbar">
+    android:id="@+id/chatViewToolbar">
 
     <RelativeLayout
         android:layout_marginTop="12dp"
@@ -18,7 +18,7 @@
         android:paddingBottom="12dp">
 
         <ImageButton
-            android:id="@+id/contactViewBackButton"
+            android:id="@+id/chatViewBackButton"
             android:src="@drawable/ic_back_button"
             android:background="?android:attr/selectableItemBackground"
             android:layout_alignParentStart="true"
@@ -28,7 +28,7 @@
             android:layout_height="20dp" />
 
         <scott.wemessage.app.ui.view.font.FontButton
-            android:id="@+id/contactViewCancelButton"
+            android:id="@+id/chatViewCancelButton"
             android:text="@string/word_cancel"
             android:textColor="@color/white"
             android:textAllCaps="false"
@@ -46,7 +46,7 @@
             app:buttonFontName="OrkneyMedium"/>
 
         <scott.wemessage.app.ui.view.font.FontButton
-            android:id="@+id/contactViewEditButton"
+            android:id="@+id/chatViewEditButton"
             android:text="@string/word_edit"
             android:textColor="@color/white"
             android:textAllCaps="false"
