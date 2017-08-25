@@ -62,6 +62,7 @@ import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ChatViewActivity;
@@ -265,7 +266,7 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
             public void onClick(View view) {
                 if (getChat() instanceof PeerChat){
                     launchContactView();
-                }else {
+                }else if (getChat() instanceof GroupChat){
                     launchChatView();
                 }
             }
@@ -626,10 +627,15 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
     }
 
     @Override
-    public void onChatDelete(Chat chat) {
-        if (isChatThis(chat)){
-            goToChatList(getString(R.string.chat_delete_message_go_back));
-        }
+    public void onChatDelete(final Chat chat) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (isChatThis(chat)){
+                    goToChatList(getString(R.string.chat_delete_message_go_back));
+                }
+            }
+        });
     }
 
     @Override
@@ -743,34 +749,44 @@ public class ConversationFragment extends MessagingFragment implements MessageMa
     }
 
     @Override
-    public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) {
-        if (getView() != null) {
-            switch (returnType) {
-                case INVALID_NUMBER:
-                    showErroredSnackbar(getString(R.string.message_delivery_failure_invalid_number));
-                    break;
-                case NUMBER_NOT_IMESSAGE:
-                    showErroredSnackbar(getString(R.string.message_delivery_failure_imessage));
-                    break;
-                case GROUP_CHAT_NOT_FOUND:
-                    showErroredSnackbar(getString(R.string.message_delivery_failure_group_chat));
-                    break;
-                case SERVICE_NOT_AVAILABLE:
-                    showErroredSnackbar(getString(R.string.message_delivery_failure_service));
-                    break;
-                case ASSISTIVE_ACCESS_DISABLED:
-                    showErroredSnackbar(getString(R.string.message_delivery_failure_assistive));
-                    break;
-                case UI_ERROR:
-                    showErroredSnackbar(getString(R.string.message_delivery_failure_ui_error));
-                    break;
+    public void onMessageSendFailure(JSONMessage jsonMessage, final ReturnType returnType) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (getView() != null) {
+                    switch (returnType) {
+                        case INVALID_NUMBER:
+                            showErroredSnackbar(getString(R.string.message_delivery_failure_invalid_number));
+                            break;
+                        case NUMBER_NOT_IMESSAGE:
+                            showErroredSnackbar(getString(R.string.message_delivery_failure_imessage));
+                            break;
+                        case GROUP_CHAT_NOT_FOUND:
+                            showErroredSnackbar(getString(R.string.message_delivery_failure_group_chat));
+                            break;
+                        case SERVICE_NOT_AVAILABLE:
+                            showErroredSnackbar(getString(R.string.message_delivery_failure_service));
+                            break;
+                        case ASSISTIVE_ACCESS_DISABLED:
+                            showErroredSnackbar(getString(R.string.message_delivery_failure_assistive));
+                            break;
+                        case UI_ERROR:
+                            showErroredSnackbar(getString(R.string.message_delivery_failure_ui_error));
+                            break;
+                    }
+                }
             }
-        }
+        });
     }
 
     @Override
-    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
-        showActionFailureSnackbar(jsonAction, returnType);
+    public void onActionPerformFailure(final JSONAction jsonAction, final ReturnType returnType) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showActionFailureSnackbar(jsonAction, returnType);
+            }
+        });
     }
 
     @Override

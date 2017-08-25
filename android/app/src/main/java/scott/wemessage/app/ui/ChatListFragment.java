@@ -459,8 +459,13 @@ public class ChatListFragment extends MessagingFragment implements MessageManage
     }
 
     @Override
-    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
-        showActionFailureSnackbar(jsonAction, returnType);
+    public void onActionPerformFailure(final JSONAction jsonAction, final ReturnType returnType) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showActionFailureSnackbar(jsonAction, returnType);
+            }
+        });
     }
 
     private void bindService(){

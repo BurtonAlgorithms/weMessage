@@ -75,7 +75,7 @@ public final class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
-    private final int TIME_TO_CONNECT = 2; //TODO: Work
+    private final int TIME_TO_CONNECT = 0; //TODO: Work
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
@@ -903,21 +903,7 @@ public final class ConnectionHandler extends Thread {
 
         if (connectionMessage instanceof ServerMessage){
             ServerMessage serverMessage = (ServerMessage) connectionMessage;
-            boolean isAMessage;
-
-            try {
-                JSONMessage m = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class, byteArrayAdapter);
-                isAMessage = true;
-            }catch (Exception ex){
-                try {
-                    JSONAction a = (JSONAction) serverMessage.getOutgoing(JSONAction.class, byteArrayAdapter);
-                    isAMessage = false;
-                }catch(Exception e){
-                    sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
-                    AppLogger.error("Could not process result because an error occurred while parsing JSON", e);
-                    return;
-                }
-            }
+            boolean isAMessage = serverMessage.isJsonOfType(JSONMessage.class, byteArrayAdapter);
 
             if (isAMessage){
                 JSONMessage jsonMessage = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class, byteArrayAdapter);
@@ -942,21 +928,7 @@ public final class ConnectionHandler extends Thread {
 
         }else if (connectionMessage instanceof ClientMessage){
             ClientMessage clientMessage = (ClientMessage) connectionMessage;
-            boolean isAMessage;
-
-            try {
-                JSONMessage m = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, byteArrayAdapter);
-                isAMessage = true;
-            }catch (Exception ex){
-                try {
-                    JSONAction a = (JSONAction) clientMessage.getIncoming(JSONAction.class, byteArrayAdapter);
-                    isAMessage = false;
-                }catch(Exception e){
-                    sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
-                    AppLogger.error("Could not process result because an error occurred while parsing JSON", e);
-                    return;
-                }
-            }
+            boolean isAMessage = clientMessage.isJsonOfType(JSONMessage.class, byteArrayAdapter);
 
             if (isAMessage){
                 JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, byteArrayAdapter);

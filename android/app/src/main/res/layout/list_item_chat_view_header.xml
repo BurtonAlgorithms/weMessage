@@ -66,12 +66,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/chat_name"
-                android:textSize="24sp"
+                android:imeOptions="actionDone"
+                android:textSize="22sp"
                 android:textColor="@color/black"
                 android:inputType="text"
                 android:maxLines="1"
-                android:layout_marginStart="36dp"
-                android:layout_marginEnd="36dp"
+                android:layout_marginStart="32dp"
+                android:layout_marginEnd="32dp"
                 android:gravity="center"/>
 
         </ViewSwitcher>
@@ -84,6 +85,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/chatViewInfoLayout"
         android:layout_marginTop="8dp"
+        app:cardElevation="2dp"
         app:contentPadding="8dp"
         app:cardCornerRadius="4dp">
 
@@ -126,7 +128,7 @@
                 android:id="@+id/chatViewLeaveButton"
                 android:background="@color/transparent"
                 android:text="@string/leave_chat"
-                android:textColor="@drawable/button_text_red_drawable"
+                android:textColor="@drawable/text_red_drawable"
                 android:textSize="18sp"
                 android:textAllCaps="false"
                 android:layout_width="wrap_content"

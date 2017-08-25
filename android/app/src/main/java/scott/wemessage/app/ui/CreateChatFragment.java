@@ -368,27 +368,42 @@ public class CreateChatFragment extends MessagingFragment implements MessageMana
     }
 
     @Override
-    public void onContactCreate(Contact contact) {
-        if (contactAdapter != null){
-            contactAdapter.addContact(contact);
-            contactAdapter.addContactToOriginal(contact);
-        }
+    public void onContactCreate(final Contact contact) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (contactAdapter != null){
+                    contactAdapter.addContact(contact);
+                    contactAdapter.addContactToOriginal(contact);
+                }
+            }
+        });
     }
 
     @Override
-    public void onContactUpdate(Contact oldData, Contact newData) {
-        if (contactAdapter != null){
-            contactAdapter.updateContact(newData);
-            contactAdapter.updateContactToOriginal(newData);
-        }
+    public void onContactUpdate(Contact oldData, final Contact newData) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (contactAdapter != null){
+                    contactAdapter.updateContact(newData);
+                    contactAdapter.updateContactToOriginal(newData);
+                }
+            }
+        });
     }
 
     @Override
-    public void onContactListRefresh(List<Contact> contacts) {
-        if (contactAdapter != null){
-            contactAdapter.refreshList(contacts);
-            contactAdapter.setOriginalList(new ArrayList<>(contacts));
-        }
+    public void onContactListRefresh(final List<Contact> contacts) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (contactAdapter != null){
+                    contactAdapter.refreshList(contacts);
+                    contactAdapter.setOriginalList(new ArrayList<>(contacts));
+                }
+            }
+        });
     }
 
     @Override

@@ -71,4 +71,8 @@ public class AndroidIOUtils {
     public static String getDefaultContactUri(){
         return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
     }
+
+    public static String getDefaultChatUri(){
+        return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_group_chat).toString();
+    }
 }

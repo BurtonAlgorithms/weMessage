@@ -203,6 +203,11 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
 
             contactUuid = startingIntent.getStringExtra(weMessage.BUNDLE_CONTACT_VIEW_UUID);
             previousChatId = startingIntent.getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT);
+
+            Contact c = weMessage.get().getMessageDatabase().getContactByUuid(contactUuid);
+
+            editedFirstName = c.getFirstName();
+            editedLastName = c.getLastName();
         } else {
             contactUuid = savedInstanceState.getString(weMessage.BUNDLE_CONTACT_VIEW_UUID);
             previousChatId = savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT);
@@ -213,11 +218,6 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
             editedLastName = savedInstanceState.getString(BUNDLE_EDITED_LAST_NAME);
             editedContactPicture = savedInstanceState.getString(BUNDLE_EDITED_CONTACT_PICTURE);
         }
-
-        Contact c = weMessage.get().getMessageDatabase().getContactByUuid(contactUuid);
-
-        editedFirstName = c.getFirstName();
-        editedLastName = c.getLastName();
     }
 
     @Nullable
@@ -356,6 +356,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
 
         if (isInEditMode){
             editButton.setText(R.string.word_done);
+            backButton.setVisibility(View.INVISIBLE);
+            cancelButton.setVisibility(View.VISIBLE);
         }
 
         loadAttachmentItems();
@@ -433,23 +435,33 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
     public void onContactCreate(Contact contact) { }
 
     @Override
-    public void onContactUpdate(Contact oldData, Contact newData) {
-        if (newData.getUuid().toString().equals(contactUuid)) {
-            if (contactViewRecyclerAdapter != null) {
-                contactViewRecyclerAdapter.updateContact(newData);
+    public void onContactUpdate(Contact oldData, final Contact newData) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (newData.getUuid().toString().equals(contactUuid)) {
+                    if (contactViewRecyclerAdapter != null) {
+                        contactViewRecyclerAdapter.updateContact(newData);
+                    }
+                }
             }
-        }
+        });
     }
 
     @Override
-    public void onContactListRefresh(List<Contact> contacts) {
-        for (Contact c : contacts){
-            if (c.getUuid().toString().equals(contactUuid)){
-                if (contactViewRecyclerAdapter != null) {
-                    contactViewRecyclerAdapter.updateContact(c);
+    public void onContactListRefresh(final List<Contact> contacts) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                for (Contact c : contacts){
+                    if (c.getUuid().toString().equals(contactUuid)){
+                        if (contactViewRecyclerAdapter != null) {
+                            contactViewRecyclerAdapter.updateContact(c);
+                        }
+                    }
                 }
             }
-        }
+        });
     }
 
     @Override
@@ -501,8 +513,13 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
     public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) { }
 
     @Override
-    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
-        showActionFailureSnackbar(jsonAction, returnType);
+    public void onActionPerformFailure(final JSONAction jsonAction, final ReturnType returnType) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showActionFailureSnackbar(jsonAction, returnType);
+            }
+        });
     }
 
     public void returnToConversationScreen() {
@@ -591,7 +608,10 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
             @Override
             public void onClick(View view) {
                 bottomSheetLayout.dismissSheet();
-                launchCamera();
+
+                if (isInEditMode) {
+                    launchCamera();
+                }
             }
         });
 
@@ -599,14 +619,19 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
             @Override
             public void onClick(View view) {
                 bottomSheetLayout.dismissSheet();
-                toggleChoosePhotoLayout(true);
+
+                if (isInEditMode) {
+                    toggleChoosePhotoLayout(true);
+                }
             }
         });
 
         bottomSheetLayout.findViewById(R.id.contactViewEditPictureDelete).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                deleteContactPicture();
+                if (isInEditMode) {
+                    deleteContactPicture();
+                }
                 bottomSheetLayout.dismissSheet();
             }
         });
@@ -730,8 +755,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
     }
 
     private void showErroredSnackBar(String message){
-        if (getParentFragment().getView() != null) {
-            final Snackbar snackbar = Snackbar.make(getParentFragment().getView(), message, ERROR_SNACKBAR_DURATION * 1000);
+        if (getView() != null) {
+            final Snackbar snackbar = Snackbar.make(getView(), message, ERROR_SNACKBAR_DURATION * 1000);
 
             snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
                 @Override

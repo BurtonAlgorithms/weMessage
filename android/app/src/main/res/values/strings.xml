@@ -101,10 +101,20 @@
     <string name="default_group_name">weMessage Group</string>
     <string name="action_failure_generic">An action could not be performed due to an error.</string>
     <string name="action_failure_create_group_unknown">An error occurred while creating a group chat.</string>
-    <string name="action_failure_create_group_invalid_number">A group chat could not be created because one of the participants\' numbers was invalid.</string>
-    <string name="action_failure_create_group_number_not_imessage">A group chat could not be created because one of the participants\' numbers was not registered with iMessage.</string>
+    <string name="action_failure_create_group_invalid_number">A group chat could not be created because one of the participants\' emails or numbers was invalid.</string>
+    <string name="action_failure_create_group_number_not_imessage">A group chat could not be created because one of the participants\' emails or numbers was not registered with iMessage.</string>
     <string name="action_failure_create_group_assistive_access">A group chat could not be created because assistive access is disabled for the weServer.</string>
     <string name="action_failure_create_group_ui_error">A group chat could not be created due to a Messages Application Error.</string>
+    <string name="action_failure_rename_group_unknown">An error occurred while renaming a group chat.</string>
+    <string name="action_failure_rename_group_assistive_access">Cannot rename group chat because assistive access is disabled for the weServer.</string>
+    <string name="action_failure_rename_group_ui_error">Cannot rename group due to a Messages Application Error.</string>
+    <string name="action_failure_rename_group_not_found">Cannot rename group because the group chat was not found!</string>
+    <string name="action_failure_remove_participant_group_size">You cannot remove people in a chat with only 2 members.</string>
+    <string name="action_failure_remove_participant_unknown">An error occurred while removing a person from the chat.</string>
+    <string name="action_failure_remove_participant_invalid_number">Unable to remove a participant because the email or phone number was not found.</string>
+    <string name="action_failure_remove_participant_group_not_found">Unable to remove participant because the group chat was not found.</string>
+    <string name="action_failure_remove_participant_assistive_access">Cannot remove participant because assistive access is disabled for the weServer.</string>
+    <string name="action_failure_remove_participant_ui_error">Cannot remove participant due to a Messages Application error.</string>
     <string name="copy_message_attachments">You cannot copy attachments to the clipboard.</string>
     <string name="copy_message_success_single">Message copied to clipboard</string>
     <string name="copy_message_success_multiple">Messages copied to clipboard</string>
@@ -127,5 +137,6 @@
     <string name="leave_chat">Leave Conversation</string>
     <string name="participants">%1$d Participants</string>
     <string name="no_attachments_found_chat">No attachments have been sent to this chat.</string>
+    <string name="return_chat_list_chat_deleted">This chat has been deleted.</string>
 
 </resources>

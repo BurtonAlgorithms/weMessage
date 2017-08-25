@@ -13,6 +13,8 @@
     <color name="heavierBlue">#053bff</color>
     <color name="superHeavyBlue">#0013e2</color>
 
+    <color name="brightRedText">#ff0f00</color>
+    <color name="brightRedTextPressed">#d20c00</color>
     <color name="brightRed">#ff3b2f</color>
     <color name="brightRedPressed">#ff281b</color>
     <color name="lightRed">#f70a32</color>
