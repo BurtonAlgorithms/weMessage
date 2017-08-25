@@ -23,8 +23,7 @@ public class ServerMessage extends ConnectionMessage {
 
     public boolean isJsonOfType(Class<?> type, ByteArrayAdapter byteArrayAdapter){
         try {
-            getOutgoing(type, byteArrayAdapter);
-            return true;
+            return !(new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().toJson(getOutgoing(type, byteArrayAdapter), type).equals("{}"));
         }catch(Exception ex){
             return false;
         }
