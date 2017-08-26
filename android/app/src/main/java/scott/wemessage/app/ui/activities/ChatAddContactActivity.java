@@ -1,13 +1,13 @@
-package scott.wemessage.app.ui;
+package scott.wemessage.app.ui.activities;
 
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,12 +17,8 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.text.Editable;
-import android.text.InputFilter;
-import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,76 +27,55 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.CycleInterpolator;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
-import com.flipboard.bottomsheet.BottomSheetLayout;
-import com.flipboard.bottomsheet.OnSheetDismissedListener;
-import com.google.android.flexbox.FlexboxLayout;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
-import com.stfalcon.chatkit.messages.MessageInput;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.UUID;
 
 import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageCallbacks;
-import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.objects.ActionMessage;
-import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.Handle;
 import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
-import scott.wemessage.app.messages.objects.chats.PeerChat;
-import scott.wemessage.app.ui.activities.ChatListActivity;
-import scott.wemessage.app.ui.activities.LaunchActivity;
-import scott.wemessage.app.ui.view.chat.CreateChatBottomSheet;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
-import scott.wemessage.app.ui.view.font.FontTextView;
 import scott.wemessage.app.utils.AndroidIOUtils;
-import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.AuthenticationUtils;
-import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class CreateChatFragment extends MessagingFragment implements MessageCallbacks {
+public class ChatAddContactActivity extends AppCompatActivity implements MessageCallbacks {
 
-    private String callbackUuid;
+    //TODO: Fix broken applescripts
+
     private int oldEditTextColor;
     private boolean isBoundToConnectionService = false;
 
-    private ArrayList<String> selectedContactUuids = new ArrayList<>();
-    private ArrayList<String> selectedContactsViewIntegrity = new ArrayList<>();
-    private ArrayList<String> selectedUnknownContacts = new ArrayList<>();
+    private String chatUuid;
 
-    private CreateChatBottomSheet bottomSheetLayout;
-    private FlexboxLayout selectedContactsView;
     private EditText searchContactEditText;
-    private MessageInput newChatMessageInputView;
     private RecyclerView contactsRecyclerView;
     private ContactAdapter contactAdapter;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
 
-    private BroadcastReceiver createChatBroadcastReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver addContactBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED)){
@@ -148,14 +123,20 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     };
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_chat_add_contact);
 
         if (isServiceRunning(ConnectionService.class)){
             bindService();
         }
 
-        callbackUuid = UUID.randomUUID().toString();
+        if (savedInstanceState != null){
+            chatUuid = savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT);
+        }else {
+            chatUuid = getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT);
+        }
+
         IntentFilter broadcastIntentFilter = new IntentFilter();
 
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED);
@@ -167,52 +148,22 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
 
-        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(createChatBroadcastReceiver, broadcastIntentFilter);
-        weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
-    }
+        LocalBroadcastManager.getInstance(this).registerReceiver(addContactBroadcastReceiver, broadcastIntentFilter);
 
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        final View view = inflater.inflate(R.layout.fragment_create_chat, container, false);
-
-        Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.newChatToolbar);
-        Button cancelButton = (Button) toolbar.findViewById(R.id.chatCreateCancelButton);
-
-        bottomSheetLayout = (CreateChatBottomSheet) view.findViewById(R.id.createChatSheetLayout);
-        selectedContactsView = (FlexboxLayout) view.findViewById(R.id.selectedContactsView);
-        searchContactEditText = (EditText) view.findViewById(R.id.searchContactEditText);
-        newChatMessageInputView = (MessageInput) view.findViewById(R.id.newChatMessageInputView);
-        contactsRecyclerView = (RecyclerView) view.findViewById(R.id.contactsRecyclerView);
+        searchContactEditText = (EditText) findViewById(R.id.searchContactEditText);
+        contactsRecyclerView = (RecyclerView) findViewById(R.id.contactsRecyclerView);
         oldEditTextColor = searchContactEditText.getCurrentTextColor();
 
-        cancelButton.setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.chatAddContactCancelButton).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                goToChatList();
+            public void onClick(View view) {
+                goToChatView();
             }
         });
-        toolbar.setTitle(null);
-        ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
         contactAdapter = new ContactAdapter();
-        contactsRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        contactsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         contactsRecyclerView.setAdapter(contactAdapter);
-
-        if (savedInstanceState != null){
-            selectedContactUuids = savedInstanceState.getStringArrayList(weMessage.BUNDLE_CREATE_CHAT_CONTACT_UUIDS);
-
-            for (String unknown : savedInstanceState.getStringArrayList(weMessage.BUNDLE_CREATE_CHAT_UNKNOWN_HANDLES)){
-                addUnknownContactToSelectedView(unknown);
-            }
-        }
-
-        bottomSheetLayout.addOnSheetDismissedListener(new OnSheetDismissedListener() {
-            @Override
-            public void onDismissed(BottomSheetLayout bottomSheetLayout) {
-                ((CreateChatBottomSheet) bottomSheetLayout).getSelectedNameView().toggleSelect();
-            }
-        });
 
         searchContactEditText.addTextChangedListener(new TextWatcher() {
             private Timer timer = new Timer();
@@ -232,7 +183,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 timer.schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        getActivity().runOnUiThread(new Runnable() {
+                        runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 String searchVal = editable.toString().trim();
@@ -272,21 +223,21 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     Contact attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
 
                     if (attemptedSearchContact != null){
-                        addContactToSelectedView(attemptedSearchContact);
                         clearEditText(searchContactEditText, true);
+                        performAddParticipantAction(attemptedSearchContact.getHandle().getHandleID());
                         return true;
                     }
 
                     if (AuthenticationUtils.isValidEmailFormat(text)){
-                        addUnknownContactToSelectedView(text);
                         clearEditText(searchContactEditText, true);
+                        performAddParticipantAction(text);
                         return true;
                     }else {
                         PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
 
                         if (phoneNumberUtil.isPossibleNumber(text, Resources.getSystem().getConfiguration().locale.getCountry())){
-                            addUnknownContactToSelectedView(text);
                             clearEditText(searchContactEditText, true);
+                            performAddParticipantAction(text);
                             return true;
                         } else {
                             closeKeyboard();
@@ -300,56 +251,15 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             }
         });
 
-        newChatMessageInputView.setInputListener(new MessageInput.InputListener() {
-            @Override
-            public boolean onSubmit(CharSequence input) {
-                String text = input.toString().trim();
-                ArrayList<SelectedNameView> selectedNameViews = new ArrayList<>();
-
-                if (StringUtils.isEmpty(text)) return false;
-
-                for (int i = 0; i < selectedContactsView.getChildCount(); i++) {
-                    View v = selectedContactsView.getChildAt(i);
-
-                    if (v instanceof SelectedNameView) {
-                        selectedNameViews.add((SelectedNameView) v);
-                    }
-                }
-
-                if (selectedNameViews.size() < 1){
-                    closeKeyboard();
-                    invalidateField(searchContactEditText);
-                    showErroredSnackbar(getString(R.string.create_chat_minimum), 5);
-                    return true;
-                }
-
-                boolean value = processMessage(text, selectedNameViews);
-
-                if (value){
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            goToChatList();
-                        }
-                    }, 200L);
-                }
-
-                return value;
-            }
-        });
-
         ArrayList<Contact> contacts = new ArrayList<>(weMessage.get().getMessageManager().getContacts().values());
 
         contactAdapter.refreshList(contacts);
         contactAdapter.setOriginalList(contacts);
-
-        return view;
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
-        outState.putStringArrayList(weMessage.BUNDLE_CREATE_CHAT_CONTACT_UUIDS, selectedContactUuids);
-        outState.putStringArrayList(weMessage.BUNDLE_CREATE_CHAT_UNKNOWN_HANDLES, selectedUnknownContacts);
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, chatUuid);
 
         super.onSaveInstanceState(outState);
     }
@@ -365,9 +275,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     @Override
     public void onDestroy() {
-
-        weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
-        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(createChatBroadcastReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(addContactBroadcastReceiver);
 
         if (isBoundToConnectionService){
             unbindService();
@@ -377,8 +285,13 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     }
 
     @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+    }
+
+    @Override
     public void onContactCreate(final Contact contact) {
-        getActivity().runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
@@ -391,7 +304,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     @Override
     public void onContactUpdate(Contact oldData, final Contact newData) {
-        getActivity().runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
@@ -404,7 +317,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     @Override
     public void onContactListRefresh(final List<Contact> contacts) {
-        getActivity().runOnUiThread(new Runnable() {
+        runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
@@ -464,167 +377,45 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) { }
 
     @Override
-    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
-        showActionFailureSnackbar(jsonAction, returnType);
+    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) { }
+
+    private void performAddParticipantAction(String participant){
+        serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingAddParticipantAction(((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid)), participant);
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                goToChatView();
+            }
+        }, 100L);
     }
 
-    public void goToChatList(){
-        Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
+    private void goToChatView(){
+        Intent launcherIntent = new Intent(weMessage.get(), ChatViewActivity.class);
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chatUuid);
 
-        startActivity(returnIntent);
-        getActivity().finish();
+        startActivity(launcherIntent);
+        finish();
     }
 
     private void bindService(){
-        Intent intent = new Intent(getActivity(), ConnectionService.class);
-        getActivity().bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
+        Intent intent = new Intent(this, ConnectionService.class);
+        bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
         isBoundToConnectionService = true;
     }
 
     private void unbindService(){
         if (isBoundToConnectionService) {
-            getActivity().unbindService(serviceConnection);
+            unbindService(serviceConnection);
             isBoundToConnectionService = false;
         }
     }
 
-    private boolean processMessage(String text, List<SelectedNameView> selectedNameViews){
-        MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
-
-        if (selectedNameViews.size() == 1){
-            if (selectedNameViews.get(0) instanceof SelectedContactNameView){
-                Chat chat = messageDatabase.getChatByHandle(((SelectedContactNameView) selectedNameViews.get(0)).getContact().getHandle());
-                if (chat != null){
-                    sendMessage(text, chat);
-                    return true;
-                }else {
-                    sendMessage(text, new PeerChat(
-                            UUID.randomUUID(),
-                            null,
-                            null,
-                            null,
-                            true,
-                            false,
-                            ((SelectedContactNameView) selectedNameViews.get(0)).getContact()
-                    ));
-                    return true;
-                }
-            }else {
-                SelectedUnknownNameView selectedUnknownNameView = (SelectedUnknownNameView) selectedNameViews.get(0);
-                sendMessage(text, new PeerChat(
-                        UUID.randomUUID(),
-                        null,
-                        null,
-                        null,
-                        true,
-                        false,
-                        new Contact().setHandle(new Handle().setHandleID(selectedUnknownNameView.getHandle())
-                )));
-                return true;
-            }
-        }else {
-            String groupName;
-            List<String> participants = new ArrayList<>();
-
-            for (SelectedNameView nameView : selectedNameViews){
-                if (nameView instanceof SelectedContactNameView){
-                    participants.add(((SelectedContactNameView) nameView).getContact().getHandle().getHandleID());
-                }else if (nameView instanceof SelectedUnknownNameView){
-                    participants.add(((SelectedUnknownNameView) nameView).getHandle());
-                }
-            }
-
-            int count = 1;
-
-            for (GroupChat groupChat : messageDatabase.getGroupChatsWithLikeName(getString(R.string.default_group_name))){
-                count++;
-            }
-
-            if (count == 1){
-                groupName = getString(R.string.default_group_name);
-            }else {
-                groupName = getString(R.string.default_group_name) + " " + count;
-            }
-
-            serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingCreateGroupAction(groupName, participants, text);
-            return true;
-        }
-    }
-
-    private void sendMessage(String input, Chat chat){
-        Message message = new Message(
-                UUID.randomUUID(),
-                null,
-                chat,
-                weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())),
-                new ArrayList<Attachment>(),
-                input,
-                DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
-                null,
-                null,
-                false,
-                true,
-                false,
-                false,
-                true,
-                true
-        );
-        serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
-    }
-
-    private void addContactToSelectedView(Contact contact){
-        if (!selectedContactsViewIntegrity.contains(contact.getUuid().toString())) {
-            SelectedContactNameView selectedContactNameView = new SelectedContactNameView(getActivity());
-
-            selectedContactsView.addView(selectedContactNameView);
-            selectedContactNameView.initializeNameView(contact);
-        }
-    }
-
-    private void addUnknownContactToSelectedView(String handle){
-        if (!selectedUnknownContacts.contains(handle)) {
-            selectedUnknownContacts.add(handle);
-            SelectedUnknownNameView selectedUnknownNameView = new SelectedUnknownNameView(getActivity());
-
-            selectedContactsView.addView(selectedUnknownNameView);
-            selectedUnknownNameView.initializeNameView(handle);
-        }
-    }
-
-    private void removeContactFromSelectedView(String uuid){
-        if (selectedContactsViewIntegrity.contains(uuid)) {
-            for (int i = 0; i < selectedContactsView.getChildCount(); i++) {
-                View v = selectedContactsView.getChildAt(i);
-
-                if (v instanceof SelectedContactNameView) {
-                    if (((SelectedContactNameView) v).getContactUuid().equals(uuid)) {
-                        selectedContactsView.removeViewAt(i);
-                    }
-                }
-            }
-        }
-    }
-
-    private void removeUnknownContactFromSelectedView(String handle){
-        if (selectedUnknownContacts.contains(handle)) {
-            selectedUnknownContacts.remove(handle);
-            for (int i = 0; i < selectedContactsView.getChildCount(); i++) {
-                View v = selectedContactsView.getChildAt(i);
-
-                if (v instanceof SelectedUnknownNameView) {
-                    if (((SelectedUnknownNameView) v).getHandle().equals(handle)) {
-                        selectedContactsView.removeViewAt(i);
-                    }
-                }
-            }
-        }
-    }
-
     private void closeKeyboard(){
-        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 
-        if (getActivity().getCurrentFocus() != null) {
-            imm.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
+        if (getCurrentFocus() != null) {
+            imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
         }
     }
 
@@ -652,7 +443,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             }
         });
 
-        Animation invalidShake = AnimationUtils.loadAnimation(getActivity(), R.anim.invalid_shake);
+        Animation invalidShake = AnimationUtils.loadAnimation(this, R.anim.invalid_shake);
         invalidShake.setInterpolator(new CycleInterpolator(7F));
 
         colorAnimation.start();
@@ -664,12 +455,12 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     }
 
     private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
-        DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage, runnable);
+        DialogDisplayer.showDisconnectReasonDialog(this, getSupportFragmentManager(), bundledIntent, defaultMessage, runnable);
     }
 
     private void showErroredSnackbar(String message, int duration){
-        if (getView() != null) {
-            final Snackbar snackbar = Snackbar.make(getView(), message, duration * 1000);
+        if (!isFinishing() && !isDestroyed()) {
+            final Snackbar snackbar = Snackbar.make(findViewById(R.id.chatAddContactLayout), message, duration * 1000);
 
             snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
                 @Override
@@ -684,14 +475,24 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     }
 
     private void goToLauncher(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
+        if (!isFinishing() && !isDestroyed()) {
             Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
 
             launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
 
             startActivity(launcherIntent);
-            getActivity().finish();
+            finish();
         }
+    }
+
+    protected boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private <T> Collection<T> filter(Collection<T> target, IPredicate<T> predicate) {
@@ -706,11 +507,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     private class ContactHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
-        private boolean isSelected;
         private Contact contact;
-        private String contactUuid;
 
-        private ImageView selectedContactBubble;
         private ImageView contactPictureView;
         private TextView contactDisplayNameView;
         private TextView contactHandle;
@@ -718,7 +516,6 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         public ContactHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_item_contact, parent, false));
 
-            selectedContactBubble = (ImageView) itemView.findViewById(R.id.selectedContactBubble);
             contactPictureView = (ImageView) itemView.findViewById(R.id.contactPictureView);
             contactDisplayNameView = (TextView) itemView.findViewById(R.id.contactDisplayNameView);
             contactHandle = (TextView) itemView.findViewById(R.id.contactHandle);
@@ -729,49 +526,17 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         public void bind(Contact contact){
             if (!(contact.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()))) {
                 this.contact = contact;
-                contactUuid = contact.getUuid().toString();
+
                 contactDisplayNameView.setText(contact.getUIDisplayName());
                 contactHandle.setText(contact.getHandle().getHandleID());
 
-                Glide.with(CreateChatFragment.this).load(AndroidIOUtils.getContactIconUri(contact)).into(contactPictureView);
-
-                if (selectedContactUuids.contains(contactUuid)){
-                    setSelected(true);
-                }else {
-                    setSelected(false);
-                }
-            }
-        }
-
-        public void setSelected(boolean selected){
-            isSelected = selected;
-
-            if (selected){
-                if (!selectedContactUuids.contains(contactUuid)) {
-                    selectedContactUuids.add(contactUuid);
-                }
-                selectedContactBubble.setImageDrawable(getResources().getDrawable(R.drawable.ic_checkmark_circle));
-                addContactToSelectedView(contact);
-
-                if (!selectedContactsViewIntegrity.contains(contactUuid)){
-                    selectedContactsViewIntegrity.add(contactUuid);
-                }
-            } else {
-                if (selectedContactUuids.contains(contactUuid)) {
-                    selectedContactUuids.remove(contactUuid);
-                }
-                selectedContactBubble.setImageDrawable(getResources().getDrawable(R.drawable.circle_outline));
-                removeContactFromSelectedView(contactUuid);
-
-                if (selectedContactsViewIntegrity.contains(contactUuid)){
-                    selectedContactsViewIntegrity.remove(contactUuid);
-                }
+                Glide.with(ChatAddContactActivity.this).load(AndroidIOUtils.getContactIconUri(contact)).into(contactPictureView);
             }
         }
 
         @Override
         public void onClick(View view) {
-            setSelected(!isSelected);
+            performAddParticipantAction(contact.getHandle().getHandleID());
         }
     }
 
@@ -783,7 +548,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
         @Override
         public ContactHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
+            LayoutInflater layoutInflater = LayoutInflater.from(ChatAddContactActivity.this);
 
             return new ContactHolder(layoutInflater, parent);
         }
@@ -836,7 +601,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
                 @Override
                 protected void onPostExecute(Collection collection) {
-                    if (!getActivity().isFinishing() && !getActivity().isDestroyed()){
+                    if (!isFinishing() && !isDestroyed()){
                         refreshList(new ArrayList<Contact>(collection));
                     }
                 }
@@ -858,20 +623,20 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         }
 
         public void addContact(Contact c){
-            if (!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())){
+            if ((!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact(c)){
                 contacts.add(new SearchableContact(c));
                 notifyItemInserted(contacts.size() - 1);
             }
         }
 
         public void addContactToOriginal(Contact c){
-            if (!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())){
+            if ((!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact(c)){
                 originalList.add(c);
             }
         }
 
         public void updateContact(Contact c){
-            if (!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) {
+            if ((!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact(c)) {
 
                 new AsyncTask<Contact, Void, Integer>() {
 
@@ -890,7 +655,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
                     @Override
                     protected void onPostExecute(Integer integer) {
-                        if (!getActivity().isFinishing() && !getActivity().isDestroyed()) {
+                        if (!isFinishing() && !isDestroyed()) {
                             if (integer != -1) {
                                 notifyItemChanged(integer);
                             }
@@ -901,7 +666,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         }
 
         public void updateContactToOriginal(Contact c){
-            if (!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) {
+            if ((!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact(c)) {
                 new AsyncTask<Contact, Void, Void>() {
                     @Override
                     protected Void doInBackground(Contact... params) {
@@ -930,8 +695,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
                     for (Object o : lists[0]){
                         if (o instanceof Contact){
-                            if (!((Contact) o).getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase()
-                                    .getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) {
+                            if ((!((Contact) o).getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase()
+                                    .getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact((Contact) o)) {
                                 unsortedList.add(new SearchableContact((Contact) o));
                             }
                         }
@@ -954,11 +719,20 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
                 @Override
                 protected void onPostExecute(Void aVoid) {
-                    if (!getActivity().isFinishing() && !getActivity().isDestroyed()) {
+                    if (!isFinishing() && !isDestroyed()) {
                         notifyDataSetChanged();
                     }
                 }
             }.execute(contactsList);
+        }
+
+        private boolean containsContact(Contact contact){
+            GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid);
+
+            for (Contact c : groupChat.getParticipants()){
+                if (c.getUuid().toString().equals(contact.getUuid().toString())) return true;
+            }
+            return false;
         }
     }
 
@@ -985,144 +759,6 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         public SearchableContact setSearchName(String searchName){
             this.searchName = searchName;
             return this;
-        }
-    }
-
-    private class SelectedContactNameView extends SelectedNameView {
-
-        private Contact contact;
-
-        public SelectedContactNameView(Context context) {
-            super(context);
-        }
-
-        public SelectedContactNameView(Context context, AttributeSet attributeSet) {
-            super(context, attributeSet);
-        }
-
-        public SelectedContactNameView(Context context, AttributeSet attributeSet, int defStyle) {
-            super(context, attributeSet, defStyle);
-        }
-
-        public Contact getContact(){
-            return contact;
-        }
-
-        public String getContactUuid(){
-            return contact.getUuid().toString();
-        }
-
-        public void initializeNameView(Contact contact){
-            this.contact = contact;
-
-            super.initializeView();
-            setText(contact.getUIDisplayName());
-        }
-    }
-
-    public class SelectedUnknownNameView extends SelectedNameView {
-
-        private String handle;
-
-        public SelectedUnknownNameView(Context context) {
-            super(context);
-        }
-
-        public SelectedUnknownNameView(Context context, AttributeSet attributeSet) {
-            super(context, attributeSet);
-        }
-
-        public SelectedUnknownNameView(Context context, AttributeSet attributeSet, int defStyle) {
-            super(context, attributeSet, defStyle);
-        }
-
-        public String getHandle(){
-            return handle;
-        }
-
-        public void initializeNameView(String handle){
-            this.handle = handle;
-
-            super.initializeView();
-            setText(handle);
-        }
-    }
-
-    public abstract class SelectedNameView extends FontTextView implements View.OnClickListener {
-
-        private int marginHorizontalDp = 8;
-        private int paddingVerticalDp = 4;
-        private int paddingHorizontalDp = 6;
-        boolean isSelected = false;
-
-        public SelectedNameView(Context context) {
-            super(context);
-        }
-
-        public SelectedNameView(Context context, AttributeSet attributeSet) {
-            super(context, attributeSet);
-        }
-
-        public SelectedNameView(Context context, AttributeSet attributeSet, int defStyle) {
-            super(context, attributeSet, defStyle);
-        }
-
-        @Override
-        public void onClick(View view) {
-            toggleSelect();
-            bottomSheetLayout.setSelectedNameView(this);
-            bottomSheetLayout.showWithSheetView(LayoutInflater.from(getActivity()).inflate(R.layout.sheet_create_chat_delete_contact, bottomSheetLayout, false));
-
-            bottomSheetLayout.findViewById(R.id.createChatSheetDeleteButton).setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (bottomSheetLayout.getSelectedNameView() instanceof SelectedUnknownNameView){
-                        removeUnknownContactFromSelectedView(((SelectedUnknownNameView) bottomSheetLayout.getSelectedNameView()).getHandle());
-                    }else if (bottomSheetLayout.getSelectedNameView() instanceof SelectedContactNameView){
-                        removeContactFromSelectedView(((SelectedContactNameView) bottomSheetLayout.getSelectedNameView()).getContactUuid());
-                    }
-                    bottomSheetLayout.dismissSheet();
-                }
-            });
-
-            bottomSheetLayout.findViewById(R.id.createChatSheetCancelButton).setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    bottomSheetLayout.dismissSheet();
-                }
-            });
-        }
-
-        public void initializeView(){
-            FlexboxLayout.LayoutParams layoutParams = (FlexboxLayout.LayoutParams) getLayoutParams();
-            int paddingPxVer = DisplayUtils.convertDpToRoundedPixel(paddingVerticalDp, getContext());
-            int paddingPxHoz = DisplayUtils.convertDpToRoundedPixel(paddingHorizontalDp, getContext());
-
-            layoutParams.setMarginStart(DisplayUtils.convertDpToRoundedPixel(marginHorizontalDp, getContext()));
-            layoutParams.setMarginEnd(DisplayUtils.convertDpToRoundedPixel(marginHorizontalDp, getContext()));
-
-            setFont("OrkneyLight");
-            setTextSize(16);
-            setTextColor(getResources().getColor(R.color.colorHeader));
-            setFilters(new InputFilter[] { new InputFilter.LengthFilter(32) });
-            setEllipsize(TextUtils.TruncateAt.END);
-            setLayoutParams(layoutParams);
-            setPadding(paddingPxHoz, paddingPxVer, paddingPxHoz, paddingPxVer);
-
-            setOnClickListener(this);
-        }
-
-        public void toggleSelect(){
-            if (!isSelected) {
-                isSelected = true;
-                setTextColor(Color.WHITE);
-                setBackgroundColor(getResources().getColor(R.color.colorHeader));
-
-            } else {
-                isSelected = false;
-                setBackgroundColor(Color.TRANSPARENT);
-                setTextColor(getResources().getColor(R.color.colorHeader));
-            }
         }
     }
 

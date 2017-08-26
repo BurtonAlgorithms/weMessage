@@ -65,6 +65,31 @@ public abstract class MessagingFragment extends Fragment {
                         break;
                 }
                 break;
+            case ADD_PARTICIPANT:
+                switch (returnType){
+                    case UNKNOWN_ERROR:
+                        showErroredSnackbar(getString(R.string.action_failure_add_participant_unknown));
+                        break;
+                    case INVALID_NUMBER:
+                        showErroredSnackbar(getString(R.string.action_failure_add_participant_invalid_number));
+                        break;
+                    case NUMBER_NOT_IMESSAGE:
+                        showErroredSnackbar(getString(R.string.action_failure_add_participant_number_not_imessage));
+                        break;
+                    case GROUP_CHAT_NOT_FOUND:
+                        showErroredSnackbar(getString(R.string.action_failure_add_participant_group_not_found));
+                        break;
+                    case ASSISTIVE_ACCESS_DISABLED:
+                        showErroredSnackbar(getString(R.string.action_failure_add_participant_assistive_access));
+                        break;
+                    case UI_ERROR:
+                        showErroredSnackbar(getString(R.string.action_failure_add_participant_ui_error));
+                        break;
+                    default:
+                        showErroredSnackbar(getString(R.string.action_failure_add_participant_unknown));
+                        break;
+                }
+                break;
             case REMOVE_PARTICIPANT:
                 switch (returnType){
                     case UNKNOWN_ERROR:

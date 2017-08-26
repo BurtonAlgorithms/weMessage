@@ -33,6 +33,7 @@ import java.util.UUID;
 import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Contact;
@@ -51,7 +52,7 @@ import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 
-public class ChatListFragment extends MessagingFragment implements MessageManager.Callbacks {
+public class ChatListFragment extends MessagingFragment implements MessageCallbacks {
 
     private final String TAG = "ChatListFragment";
     private final String GO_BACK_REASON_ALERT_TAG = "GoBackReasonAlert";

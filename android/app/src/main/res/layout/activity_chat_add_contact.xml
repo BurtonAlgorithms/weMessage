@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/chatAddContactLayout">
+
+    <RelativeLayout
+        android:id="@+id/cancelBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorHeader"
+        android:elevation="4dp">
+
+        <scott.wemessage.app.ui.view.font.FontTextView
+            app:fontName="OrkneyMedium"
+            android:id="@+id/chatAddContactCancelButton"
+            android:text="@string/word_cancel"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:background="?android:attr/selectableItemBackground"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="24dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"/>
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/contactsEditTextContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/lighterGray"
+        android:layout_below="@id/cancelBar">
+
+        <EditText
+            android:id="@+id/searchContactEditText"
+            android:background="@drawable/edit_text_rounded"
+            android:inputType="text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:textColor="@color/black"
+            android:minHeight="18dp"
+            android:hint="@string/contact_enter"/>
+    </LinearLayout>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/contactsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/contactsEditTextContainer"/>
+
+</RelativeLayout>

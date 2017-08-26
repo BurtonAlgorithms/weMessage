@@ -97,7 +97,7 @@
     <string name="word_to">To: </string>
     <string name="contact_enter">Enter a name, phone, or email</string>
     <string name="create_chat_minimum">You must enter in an email or phone number to send this message to.</string>
-    <string name="create_chat_contact_invalid_format">Please enter a valid email or phone number.</string>
+    <string name="invalid_contact_format">Please enter a valid email or phone number.</string>
     <string name="default_group_name">weMessage Group</string>
     <string name="action_failure_generic">An action could not be performed due to an error.</string>
     <string name="action_failure_create_group_unknown">An error occurred while creating a group chat.</string>
@@ -109,6 +109,12 @@
     <string name="action_failure_rename_group_assistive_access">Cannot rename group chat because assistive access is disabled for the weServer.</string>
     <string name="action_failure_rename_group_ui_error">Cannot rename group due to a Messages Application Error.</string>
     <string name="action_failure_rename_group_not_found">Cannot rename group because the group chat was not found!</string>
+    <string name="action_failure_add_participant_unknown">An error occurred while adding a person to the chat.</string>
+    <string name="action_failure_add_participant_invalid_number">Could not add participant because the number or email entered was not valid.</string>
+    <string name="action_failure_add_participant_number_not_imessage">Unable to add participant because the number was not registered with iMessage.</string>
+    <string name="action_failure_add_participant_group_not_found">Unable to add participant because the group chat was not found.</string>
+    <string name="action_failure_add_participant_assistive_access">Cannot add participant because assistive access is disabled for the weServer.</string>
+    <string name="action_failure_add_participant_ui_error">Cannot add participant due to a Messages Application error.</string>
     <string name="action_failure_remove_participant_group_size">You cannot remove people in a chat with only 2 members.</string>
     <string name="action_failure_remove_participant_unknown">An error occurred while removing a person from the chat.</string>
     <string name="action_failure_remove_participant_invalid_number">Unable to remove a participant because the email or phone number was not found.</string>

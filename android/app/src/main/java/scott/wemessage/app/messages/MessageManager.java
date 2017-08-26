@@ -30,7 +30,7 @@ import scott.wemessage.commons.utils.StringUtils;
 public final class MessageManager {
 
     private Context context;
-    private ConcurrentHashMap<String, Callbacks> callbacksMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, MessageCallbacks> callbacksMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Contact> contacts = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Chat> chats = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Message> messages = new ConcurrentHashMap<>();
@@ -53,7 +53,7 @@ public final class MessageManager {
         return contacts;
     }
 
-    public void hookCallbacks(String uuid, Callbacks callbacks){
+    public void hookCallbacks(String uuid, MessageCallbacks callbacks){
         callbacksMap.put(uuid, callbacks);
     }
 
@@ -270,13 +270,13 @@ public final class MessageManager {
     }
 
     public void alertMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType){
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onMessageSendFailure(jsonMessage, returnType);
         }
     }
 
     public void alertActionPerformFailure(JSONAction jsonAction, ReturnType returnType){
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onActionPerformFailure(jsonAction, returnType);
         }
     }
@@ -289,7 +289,7 @@ public final class MessageManager {
                     contacts.put(c.getUuid().toString(), c);
                 }
 
-                for (Callbacks callbacks : callbacksMap.values()){
+                for (MessageCallbacks callbacks : callbacksMap.values()){
                     callbacks.onContactListRefresh(new ArrayList<>(contacts.values()));
                 }
             }
@@ -302,7 +302,7 @@ public final class MessageManager {
         contacts.put(contact.getUuid().toString(), contact);
         weMessage.get().getMessageDatabase().addContact(contact);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onContactCreate(contact);
         }
     }
@@ -355,7 +355,7 @@ public final class MessageManager {
             }
         }
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onContactUpdate(oldContact, newData);
         }
     }
@@ -364,7 +364,7 @@ public final class MessageManager {
         chats.put(chat.getUuid().toString(), chat);
         weMessage.get().getMessageDatabase().addChat(chat);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onChatAdd(chat);
         }
     }
@@ -375,7 +375,7 @@ public final class MessageManager {
         chats.put(uuid, newData);
         weMessage.get().getMessageDatabase().updateChat(uuid, newData);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onChatUpdate(oldChat, newData);
         }
     }
@@ -385,7 +385,7 @@ public final class MessageManager {
         chats.put(chat.getUuid().toString(), chat);
         weMessage.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onUnreadMessagesUpdate(chat, hasUnreadMessages);
         }
     }
@@ -399,7 +399,7 @@ public final class MessageManager {
                 UUID.randomUUID(), chat, getContext().getString(R.string.action_message_rename_group, newName), DateUtils.convertDateTo2001Time(executionTime));
         addActionMessageTask(actionMessage);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onChatRename(chat, newName);
         }
     }
@@ -413,7 +413,7 @@ public final class MessageManager {
                 UUID.randomUUID(), chat, getContext().getString(R.string.action_message_add_participant, contact.getUIDisplayName()), DateUtils.convertDateTo2001Time(executionTime));
         addActionMessageTask(actionMessage);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onParticipantAdd(chat, contact);
         }
     }
@@ -427,7 +427,7 @@ public final class MessageManager {
                 UUID.randomUUID(), chat, getContext().getString(R.string.action_message_remove_participant, contact.getUIDisplayName()), DateUtils.convertDateTo2001Time(executionTime));
         addActionMessageTask(actionMessage);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onParticipantRemove(chat, contact);
         }
     }
@@ -441,7 +441,7 @@ public final class MessageManager {
                 UUID.randomUUID(), chat, getContext().getString(R.string.action_message_leave_group), DateUtils.convertDateTo2001Time(executionTime));
         addActionMessageTask(actionMessage);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onLeaveGroup(chat);
         }
     }
@@ -450,7 +450,7 @@ public final class MessageManager {
         chats.remove(chat.getUuid().toString());
         weMessage.get().getMessageDatabase().deleteChatByUuid(chat.getUuid().toString());
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onChatDelete(chat);
         }
     }
@@ -462,7 +462,7 @@ public final class MessageManager {
             chats.put(c.getUuid().toString(), c);
         }
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onChatListRefresh(new ArrayList<>(chats.values()));
         }
     }
@@ -476,7 +476,7 @@ public final class MessageManager {
         }
         weMessage.get().getMessageDatabase().addMessage(message);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onMessageAdd(message);
         }
     }
@@ -487,7 +487,7 @@ public final class MessageManager {
         messages.put(uuid, newData);
         weMessage.get().getMessageDatabase().updateMessage(uuid, newData);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onMessageUpdate(oldMessage, newData);
         }
     }
@@ -499,7 +499,7 @@ public final class MessageManager {
         messages.remove(message.getUuid().toString());
         weMessage.get().getMessageDatabase().deleteMessageByUuid(message.getUuid().toString());
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onMessageDelete(message);
         }
     }
@@ -533,7 +533,7 @@ public final class MessageManager {
             }
         });
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onMessagesQueueFinish(joinedList);
         }
     }
@@ -542,7 +542,7 @@ public final class MessageManager {
         messages.clear();
         actionMessages.clear();
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onMessagesRefresh();
         }
     }
@@ -551,7 +551,7 @@ public final class MessageManager {
         weMessage.get().getMessageDatabase().addActionMessage(actionMessage);
         actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
 
-        for (Callbacks callbacks : callbacksMap.values()){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onActionMessageAdd(actionMessage);
         }
     }
@@ -568,46 +568,4 @@ public final class MessageManager {
         return new Thread(runnable);
     }
 
-    public interface Callbacks {
-
-        void onContactCreate(Contact contact);
-
-        void onContactUpdate(Contact oldData, Contact newData);
-
-        void onContactListRefresh(List<Contact> contacts);
-
-        void onChatAdd(Chat chat);
-
-        void onChatUpdate(Chat oldData, Chat newData);
-
-        void onUnreadMessagesUpdate(Chat chat, boolean hasUnreadMessages);
-
-        void onChatRename(Chat chat, String displayName);
-
-        void onParticipantAdd(Chat chat, Contact contact);
-
-        void onParticipantRemove(Chat chat, Contact contact);
-
-        void onLeaveGroup(Chat chat);
-
-        void onChatDelete(Chat chat);
-
-        void onChatListRefresh(List<Chat> chats);
-
-        void onMessageAdd(Message message);
-
-        void onMessageUpdate(Message oldData, Message newData);
-
-        void onMessageDelete(Message message);
-
-        void onMessagesQueueFinish(List<MessageBase> messages);
-
-        void onMessagesRefresh();
-
-        void onActionMessageAdd(ActionMessage message);
-
-        void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType);
-
-        void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType);
-    }
 }

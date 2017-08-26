@@ -62,6 +62,7 @@ import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
@@ -85,7 +86,7 @@ import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ContactViewFragment extends MessagingFragment implements MessageManager.Callbacks {
+public class ContactViewFragment extends MessagingFragment implements MessageCallbacks {
 
     private final int ERROR_SNACKBAR_DURATION = 5;
     private final int TYPE_HEADER = 0;
@@ -417,6 +418,15 @@ public class ContactViewFragment extends MessagingFragment implements MessageMan
         outState.putString(BUNDLE_EDITED_CONTACT_PICTURE, editedContactPicture);
 
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onResume() {
+        if (!isServiceRunning(ConnectionService.class)){
+            goToLauncher();
+        }
+
+        super.onResume();
     }
 
     @Override

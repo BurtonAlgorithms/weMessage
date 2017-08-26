@@ -44,7 +44,6 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
 import com.afollestad.materialcamera.MaterialCamera;
@@ -62,6 +61,7 @@ import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
@@ -70,6 +70,7 @@ import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
+import scott.wemessage.app.ui.activities.ChatAddContactActivity;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ContactViewActivity;
 import scott.wemessage.app.ui.activities.ConversationActivity;
@@ -86,7 +87,7 @@ import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ChatViewFragment extends MessagingFragment implements MessageManager.Callbacks {
+public class ChatViewFragment extends MessagingFragment implements MessageCallbacks {
 
     private final int ERROR_SNACKBAR_DURATION = 5;
     private final int TYPE_HEADER = 0;
@@ -363,6 +364,15 @@ public class ChatViewFragment extends MessagingFragment implements MessageManage
         outState.putString(BUNDLE_EDITED_PICTURE, editedChatPicture);
 
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onResume() {
+        if (!isServiceRunning(ConnectionService.class)){
+            goToLauncher();
+        }
+
+        super.onResume();
     }
 
     @Override
@@ -706,6 +716,15 @@ public class ChatViewFragment extends MessagingFragment implements MessageManage
         getActivity().finish();
     }
 
+    private void launchAddParticipantActivity(){
+        Intent launcherIntent = new Intent(weMessage.get(), ChatAddContactActivity.class);
+
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chatUuid);
+
+        startActivity(launcherIntent);
+        getActivity().finish();
+    }
+
     private void launchFullScreenImageActivity(String imageUri){
         Intent launcherIntent = new Intent(weMessage.get(), MessageImageActivity.class);
 
@@ -1034,7 +1053,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageManage
         private TextView chatViewName;
         private EditText chatViewEditName;
         private Switch chatDoNotDisturbSwitch;
-        private Button chatLeaveButton;
+        private Button chatLeaveButton; //TODO: Leave button
         private TextView chatViewContactsTextView;
 
         public ChatViewHeaderHolder(LayoutInflater inflater, ViewGroup parent){
@@ -1247,16 +1266,12 @@ public class ChatViewFragment extends MessagingFragment implements MessageManage
             itemView.findViewById(R.id.chatViewAddParticipant).setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    //TODO: Add participant fragment do mroe stuff.
-
-                    Toast.makeText(getContext(), "Add participant coming soon", Toast.LENGTH_SHORT).show();
+                    launchAddParticipantActivity();
                 }
             });
         }
 
-        public void bind(){
-
-        }
+        public void bind(){ }
     }
 
     private class AttachmentHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
