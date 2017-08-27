@@ -464,8 +464,13 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) { }
 
     @Override
-    public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) {
-        showActionFailureSnackbar(jsonAction, returnType);
+    public void onActionPerformFailure(final JSONAction jsonAction, final ReturnType returnType) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showActionFailureSnackbar(jsonAction, returnType);
+            }
+        });
     }
 
     public void goToChatList(){
@@ -733,7 +738,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 contactDisplayNameView.setText(contact.getUIDisplayName());
                 contactHandle.setText(contact.getHandle().getHandleID());
 
-                Glide.with(CreateChatFragment.this).load(AndroidIOUtils.getContactIconUri(contact)).into(contactPictureView);
+                Glide.with(CreateChatFragment.this).load(AndroidIOUtils.getContactIconUri(contact, AndroidIOUtils.IconSize.NORMAL)).into(contactPictureView);
 
                 if (selectedContactUuids.contains(contactUuid)){
                     setSelected(true);

@@ -550,7 +550,10 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                 ArrayList<String> allUris = new ArrayList<>();
 
                 try {
-                    String previousChatId = weMessage.get().getMessageDatabase().getChatByHandle(weMessage.get().getMessageDatabase().getContactByUuid(contactUuid).getHandle()).getUuid().toString();
+                    Chat handleChat = weMessage.get().getMessageDatabase().getChatByHandle(weMessage.get().getMessageDatabase().getContactByUuid(contactUuid).getHandle());
+                    if (handleChat == null) return allUris;
+
+                    String previousChatId = handleChat.getUuid().toString();
 
                     for (Attachment a : weMessage.get().getMessageDatabase().getReversedAttachmentsInChat(previousChatId, 0, Integer.MAX_VALUE)) {
                         String fileLoc = a.getFileLocation().getFileLocation();
@@ -1030,9 +1033,9 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             contactHandleTextView.setText(handleID);
 
             if (StringUtils.isEmpty(editedContactPicture)) {
-                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getContactIconUri(contact)).into(contactPicture);
+                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getContactIconUri(contact, AndroidIOUtils.IconSize.LARGE)).into(contactPicture);
             }else if (editedContactPicture.equals("DELETE")) {
-                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getDefaultContactUri()).into(contactPicture);
+                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getDefaultContactUri(AndroidIOUtils.IconSize.LARGE)).into(contactPicture);
             }else {
                 Glide.with(ContactViewFragment.this).load(editedContactPicture).into(contactPicture);
             }
@@ -1074,7 +1077,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
         public void updatePicture(String path){
             if (path.equals("DELETE")) {
-                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getDefaultContactUri()).into(contactPicture);
+                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getDefaultContactUri(AndroidIOUtils.IconSize.LARGE)).into(contactPicture);
             }else {
                 Glide.with(ContactViewFragment.this).load(path).into(contactPicture);
             }

@@ -461,6 +461,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             }
         }
 
+        toggleIsInChat(chat.isInChat());
+
         return view;
     }
 
@@ -559,6 +561,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             public void run() {
                 if (isChatThis(newData)){
                     setChat(newData);
+                    toggleIsInChat(chat.isInChat());
                 }
             }
         });
@@ -622,6 +625,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             public void run() {
                 if (isChatThis(chat)){
                     setChat(chat);
+                    toggleIsInChat(chat.isInChat());
                 }
             }
         });
@@ -1117,24 +1121,43 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         if (isSelectionMode != value) {
             isSelectionMode = value;
 
-            if (value) {
-                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) bottomDivider.getLayoutParams();
+            if (chat.isInChat()) {
+                if (value) {
+                    RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) bottomDivider.getLayoutParams();
 
-                layoutParams.removeRule(RelativeLayout.ABOVE);
-                layoutParams.addRule(RelativeLayout.ABOVE, R.id.messageSelectionModeBar);
+                    layoutParams.removeRule(RelativeLayout.ABOVE);
+                    layoutParams.addRule(RelativeLayout.ABOVE, R.id.messageSelectionModeBar);
 
-                bottomDivider.setLayoutParams(layoutParams);
-                messageInput.setVisibility(View.GONE);
-                messageSelectionModeBar.setVisibility(View.VISIBLE);
+                    bottomDivider.setLayoutParams(layoutParams);
+                    messageInput.setVisibility(View.GONE);
+                    messageSelectionModeBar.setVisibility(View.VISIBLE);
+                } else {
+                    RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) bottomDivider.getLayoutParams();
+
+                    layoutParams.removeRule(RelativeLayout.ABOVE);
+                    layoutParams.addRule(RelativeLayout.ABOVE, R.id.messageInputView);
+
+                    bottomDivider.setLayoutParams(layoutParams);
+                    messageSelectionModeBar.setVisibility(View.GONE);
+                    messageInput.setVisibility(View.VISIBLE);
+                }
             } else {
-                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) bottomDivider.getLayoutParams();
+                if (value) {
+                    RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) messageList.getLayoutParams();
 
-                layoutParams.removeRule(RelativeLayout.ABOVE);
-                layoutParams.addRule(RelativeLayout.ABOVE, R.id.messageInputView);
+                    layoutParams.removeRule(RelativeLayout.ABOVE);
+                    layoutParams.addRule(RelativeLayout.ABOVE, R.id.messageSelectionModeBar);
 
-                bottomDivider.setLayoutParams(layoutParams);
-                messageSelectionModeBar.setVisibility(View.GONE);
-                messageInput.setVisibility(View.VISIBLE);
+                    messageList.setLayoutParams(layoutParams);
+                    messageSelectionModeBar.setVisibility(View.VISIBLE);
+                } else {
+                    RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) messageList.getLayoutParams();
+
+                    layoutParams.removeRule(RelativeLayout.ABOVE);
+
+                    messageList.setLayoutParams(layoutParams);
+                    messageSelectionModeBar.setVisibility(View.GONE);
+                }
             }
 
             for (int childCount = messageList.getChildCount(), i = 0; i < childCount; ++i) {
@@ -1149,6 +1172,42 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
                     messageHolder.toggleSelectionMode(value);
                 }
+            }
+        }
+    }
+
+    private void toggleIsInChat(boolean value){
+        toggleSelectionMode(false);
+
+        if (value){
+            if (messageInput.getVisibility() != View.VISIBLE) {
+                messageInput.setVisibility(View.VISIBLE);
+                bottomDivider.setVisibility(View.VISIBLE);
+
+                RelativeLayout.LayoutParams messageListLayoutParams = (RelativeLayout.LayoutParams) messageList.getLayoutParams();
+                RelativeLayout.LayoutParams galleryFragmentLayoutParams = (RelativeLayout.LayoutParams) galleryFragmentContainer.getLayoutParams();
+
+                messageListLayoutParams.addRule(RelativeLayout.ABOVE, R.id.messageInputDivider);
+                galleryFragmentLayoutParams.removeRule(RelativeLayout.BELOW);
+                galleryFragmentLayoutParams.addRule(RelativeLayout.BELOW, R.id.messageInputView);
+
+                messageList.setLayoutParams(messageListLayoutParams);
+                galleryFragmentContainer.setLayoutParams(galleryFragmentLayoutParams);
+            }
+        }else {
+            if (messageInput.getVisibility() != View.GONE) {
+                messageInput.setVisibility(View.GONE);
+                bottomDivider.setVisibility(View.GONE);
+
+                RelativeLayout.LayoutParams messageListLayoutParams = (RelativeLayout.LayoutParams) messageList.getLayoutParams();
+                RelativeLayout.LayoutParams galleryFragmentLayoutParams = (RelativeLayout.LayoutParams) galleryFragmentContainer.getLayoutParams();
+
+                messageListLayoutParams.removeRule(RelativeLayout.ABOVE);
+                galleryFragmentLayoutParams.removeRule(RelativeLayout.BELOW);
+                galleryFragmentLayoutParams.addRule(RelativeLayout.BELOW, R.id.messagesList);
+
+                messageList.setLayoutParams(messageListLayoutParams);
+                galleryFragmentContainer.setLayoutParams(galleryFragmentLayoutParams);
             }
         }
     }

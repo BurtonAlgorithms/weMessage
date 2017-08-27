@@ -121,6 +121,11 @@
     <string name="action_failure_remove_participant_group_not_found">Unable to remove participant because the group chat was not found.</string>
     <string name="action_failure_remove_participant_assistive_access">Cannot remove participant because assistive access is disabled for the weServer.</string>
     <string name="action_failure_remove_participant_ui_error">Cannot remove participant due to a Messages Application error.</string>
+    <string name="action_failure_leave_chat_group_size">You cannot leave a chat with only 2 members.</string>
+    <string name="action_failure_leave_chat_unknown">An error occurred while trying to leave a chat.</string>
+    <string name="action_failure_leave_chat_group_not_found">Could not leave chat because the group chat was not found.</string>
+    <string name="action_failure_leave_chat_assistive_access">Cannot leave chat because assistive access is disabled for the weServer.</string>
+    <string name="action_failure_leave_chat_ui_error">Cannot leave chat due to a Messages Application error.</string>
     <string name="copy_message_attachments">You cannot copy attachments to the clipboard.</string>
     <string name="copy_message_success_single">Message copied to clipboard</string>
     <string name="copy_message_success_multiple">Messages copied to clipboard</string>

@@ -298,8 +298,10 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 return false;
             }
         });
+        GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid);
 
-        chatViewAdapter.loadChat((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid));
+        chatViewAdapter.loadChat(groupChat);
+        toggleIsInChat(groupChat.isInChat(), false);
 
         if (isInEditMode){
             toggleEditMode(true, false);
@@ -413,6 +415,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     public void run() {
                         if (chatViewAdapter != null) {
                             if (newData.getUuid().toString().equals(chatUuid) && newData instanceof GroupChat) {
+                                toggleIsInChat(newData.isInChat(), false);
                                 chatViewAdapter.loadChat((GroupChat) newData);
                             }
                         }
@@ -449,8 +452,26 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     }
 
     @Override
-    public void onParticipantAdd(Chat chat, Contact contact) {
+    public void onParticipantAdd(final Chat chat, Contact contact) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (isInEditMode){
+                    toggleEditMode(false, false);
+                }
 
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (chatViewAdapter != null){
+                            if (chat.getUuid().toString().equals(chatUuid)) {
+                                chatViewAdapter.loadChat((GroupChat) chat);
+                            }
+                        }
+                    }
+                }, 100L);
+            }
+        });
     }
 
     @Override
@@ -478,7 +499,12 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onLeaveGroup(Chat chat) {
-
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                toggleIsInChat(false, true);
+            }
+        });
     }
 
     @Override
@@ -678,6 +704,25 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     }
                 });
             }
+        }
+    }
+
+    private void toggleIsInChat(boolean value, boolean reloadLayout){
+        if (value){
+            if (toolbarEditButton.getVisibility() != View.VISIBLE) {
+                toolbarEditButton.setVisibility(View.VISIBLE);
+            }
+        }else {
+            if (isInEditMode){
+                toggleEditMode(false, false);
+            }
+            if (toolbarEditButton.getVisibility() != View.GONE) {
+                toolbarEditButton.setVisibility(View.GONE);
+            }
+        }
+
+        if (reloadLayout){
+            chatViewAdapter.loadChat((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid));
         }
     }
 
@@ -909,8 +954,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         public Integer showingDeletePosition;
         private GroupChat groupChat;
 
+        public ArrayList<String> attachmentUris = new ArrayList<>();
         private ArrayList<Contact> contacts = new ArrayList<>();
-        private ArrayList<String> attachmentUris = new ArrayList<>();
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -936,10 +981,10 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     ((ChatViewHeaderHolder) holder).bind(groupChat);
                     break;
                 case TYPE_CONTACT:
-                    ((ContactViewHolder) holder).bind(contacts.get(position - 1));
+                    ((ContactViewHolder) holder).bind(groupChat, contacts.get(position - 1));
                     break;
                 case TYPE_CONTACT_ATTACHMENT:
-                    ((ContactAttachmentViewHolder) holder).bind();
+                    ((ContactAttachmentViewHolder) holder).bind(groupChat);
                     break;
                 case TYPE_ATTACHMENT:
                     ((AttachmentHolder) holder).bind(attachmentUris.get(position - contacts.size() - 2));
@@ -1053,7 +1098,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         private TextView chatViewName;
         private EditText chatViewEditName;
         private Switch chatDoNotDisturbSwitch;
-        private Button chatLeaveButton; //TODO: Leave button
+        private Button chatLeaveButton;
         private TextView chatViewContactsTextView;
 
         public ChatViewHeaderHolder(LayoutInflater inflater, ViewGroup parent){
@@ -1061,21 +1106,29 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         }
 
         public void bind(GroupChat chat){
-            init();
+            init(chat);
 
-            Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getChatIconUri(chat)).into(chatViewPicture);
+            Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getChatIconUri(chat, AndroidIOUtils.IconSize.LARGE)).into(chatViewPicture);
             chatViewName.setText(chat.getUIDisplayName(false));
             chatViewContactsTextView.setText(getString(R.string.participants, chat.getParticipants().size()));
 
             if (StringUtils.isEmpty(editedChatPicture)) {
-                Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getChatIconUri(chat)).into(chatViewPicture);
+                Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getChatIconUri(chat, AndroidIOUtils.IconSize.LARGE)).into(chatViewPicture);
             }else if (editedChatPicture.equals("DELETE")) {
-                Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getDefaultChatUri()).into(chatViewPicture);
+                Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getDefaultChatUri(AndroidIOUtils.IconSize.LARGE)).into(chatViewPicture);
             }else {
                 Glide.with(ChatViewFragment.this).load(editedChatPicture).into(chatViewPicture);
             }
 
             toggleEditMode(isInEditMode, false);
+
+            if (chat.isInChat()){
+                itemView.findViewById(R.id.chatViewDividerOne).setVisibility(View.VISIBLE);
+                chatLeaveButton.setVisibility(View.VISIBLE);
+            }else {
+                itemView.findViewById(R.id.chatViewDividerOne).setVisibility(View.GONE);
+                chatLeaveButton.setVisibility(View.GONE);
+            }
         }
 
         public void toggleEditMode(boolean value, boolean saveChanges){
@@ -1113,17 +1166,15 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             }
         }
 
-
-
         public void updatePicture(String path){
             if (path.equals("DELETE")) {
-                Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getDefaultChatUri()).into(chatViewPicture);
+                Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getDefaultChatUri(AndroidIOUtils.IconSize.LARGE)).into(chatViewPicture);
             }else {
                 Glide.with(ChatViewFragment.this).load(path).into(chatViewPicture);
             }
         }
 
-        private void init(){
+        private void init(final GroupChat chat){
             if (!isInit){
                 isInit = true;
 
@@ -1148,6 +1199,17 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                         return false;
                     }
                 });
+
+                chatLeaveButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        if (chat.getParticipants().size() > 2) {
+                            serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingLeaveGroupAction(chat);
+                        }else {
+                            showErroredSnackBar(getString(R.string.action_failure_leave_chat_group_size));
+                        }
+                    }
+                });
             }
         }
     }
@@ -1166,7 +1228,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             super(inflater.inflate(R.layout.list_item_chat_view_contact, parent, false));
         }
 
-        public void bind(Contact contact){
+        public void bind(GroupChat chat, Contact contact){
             init();
 
             final String contactUuid = contact.getUuid().toString();
@@ -1194,7 +1256,9 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             });
 
             chatContactDisplayNameView.setText(contact.getUIDisplayName());
-            Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getContactIconUri(contact)).into(chatContactPictureView);
+            Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getContactIconUri(contact, AndroidIOUtils.IconSize.NORMAL)).into(chatContactPictureView);
+
+            swipeLayout.setSwipeEnabled(chat.isInChat());
 
             swipeLayout.addDrag(SwipeLayout.DragEdge.Right, itemView.findViewById(R.id.chatContactRemoveButtonLayout));
             swipeLayout.addSwipeListener(new SwipeLayout.SwipeListener() {
@@ -1235,7 +1299,6 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
                 }
             });
-
         }
 
         public void closeUnderlyingView(){
@@ -1271,7 +1334,19 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             });
         }
 
-        public void bind(){ }
+        public void bind(GroupChat chat){
+            if (chatViewAdapter.attachmentUris.size() > 0){
+                itemView.findViewById(R.id.mediaErrorTextView).setVisibility(View.GONE);
+            }else {
+                itemView.findViewById(R.id.mediaErrorTextView).setVisibility(View.VISIBLE);
+            }
+
+            if (chat.isInChat()){
+                itemView.findViewById(R.id.chatViewAddParticipant).setVisibility(View.VISIBLE);
+            }else {
+                itemView.findViewById(R.id.chatViewAddParticipant).setVisibility(View.GONE);
+            }
+        }
     }
 
     private class AttachmentHolder extends RecyclerView.ViewHolder implements View.OnClickListener {

@@ -47,8 +47,13 @@ public class ConnectionService extends Service {
         }
 
         synchronized (connectionHandlerLock){
-            ConnectionHandler connectionHandler = new ConnectionHandler(this, intent.getStringExtra(weMessage.ARG_HOST), intent.getIntExtra(weMessage.ARG_PORT, -1),
-                    intent.getStringExtra(weMessage.ARG_EMAIL), intent.getStringExtra(weMessage.ARG_PASSWORD), intent.getBooleanExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, false));
+            ConnectionHandler connectionHandler = new ConnectionHandler(this,
+                    intent.getStringExtra(weMessage.ARG_HOST),
+                    intent.getIntExtra(weMessage.ARG_PORT, -1),
+                    intent.getStringExtra(weMessage.ARG_EMAIL),
+                    intent.getStringExtra(weMessage.ARG_PASSWORD),
+                    intent.getBooleanExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, false),
+                    intent.getBooleanExtra(weMessage.ARG_FAST_CONNECT, false));
 
             connectionHandler.start();
             this.connectionHandler = connectionHandler;

@@ -29,6 +29,6 @@ public class ContactView implements IUser {
 
     @Override
     public String getAvatar() {
-        return AndroidIOUtils.getContactIconUri(contact);
+        return AndroidIOUtils.getContactIconUri(contact, AndroidIOUtils.IconSize.NORMAL);
     }
 }

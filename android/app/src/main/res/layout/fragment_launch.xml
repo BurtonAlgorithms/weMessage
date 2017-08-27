@@ -117,14 +117,32 @@
                 android:text="@string/login_password"
                 android:textColor="@color/lightBlack" />
 
-            <EditText
-                android:layout_height="wrap_content"
-                android:layout_width="match_parent"
-                android:id="@+id/launchPasswordEditText"
-                android:layout_columnWeight="20"
-                android:inputType="textPassword"
-                android:imeOptions="actionDone"
-                android:backgroundTint="@color/colorHeader"/>
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent">
+
+                <EditText
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:id="@+id/launchPasswordEditText"
+                    android:layout_columnWeight="20"
+                    android:inputType="textPassword"
+                    android:imeOptions="actionDone"
+                    android:backgroundTint="@color/colorHeader"
+                    android:layout_toStartOf="@+id/passwordRestoreButton"/>
+
+                <ImageView
+                    android:id="@+id/passwordRestoreButton"
+                    android:src="@drawable/ic_reset"
+                    android:tint="@color/colorStatusBar"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="8dp"/>
+
+            </RelativeLayout>
+
         </LinearLayout>
 
         <scott.wemessage.app.ui.view.font.FontButton

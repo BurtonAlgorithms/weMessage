@@ -530,7 +530,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                 contactDisplayNameView.setText(contact.getUIDisplayName());
                 contactHandle.setText(contact.getHandle().getHandleID());
 
-                Glide.with(ChatAddContactActivity.this).load(AndroidIOUtils.getContactIconUri(contact)).into(contactPictureView);
+                Glide.with(ChatAddContactActivity.this).load(AndroidIOUtils.getContactIconUri(contact, AndroidIOUtils.IconSize.NORMAL)).into(contactPictureView);
             }
         }
 

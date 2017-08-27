@@ -43,7 +43,7 @@ public class ChatDialogView implements IDialog {
 
     @Override
     public String getDialogPhoto() {
-        return AndroidIOUtils.getChatIconUri(chat);
+        return AndroidIOUtils.getChatIconUri(chat, AndroidIOUtils.IconSize.NORMAL);
     }
 
     @Override

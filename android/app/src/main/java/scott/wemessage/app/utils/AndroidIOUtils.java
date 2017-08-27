@@ -30,14 +30,14 @@ public class AndroidIOUtils {
         return Uri.fromFile(file);
     }
 
-    public static String getChatIconUri(Chat chat){
+    public static String getChatIconUri(Chat chat, IconSize iconSize){
         if (chat.getChatType() == Chat.ChatType.PEER){
             PeerChat peerChat = (PeerChat) chat;
 
             if (peerChat.getContact().getContactPictureFileLocation() == null){
-                return getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
+                return getDefaultContactUri(iconSize);
             }else if (StringUtils.isEmpty(peerChat.getContact().getContactPictureFileLocation().getFileLocation())){
-                return getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
+                return getDefaultContactUri(iconSize);
             }else {
                 return Uri.fromFile(peerChat.getContact().getContactPictureFileLocation().getFile()).toString();
             }
@@ -45,34 +45,59 @@ public class AndroidIOUtils {
             GroupChat groupChat = (GroupChat) chat;
 
             if (groupChat.getChatPictureFileLocation() == null){
-                return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_group_chat).toString();
+                return getDefaultChatUri(iconSize);
             } else if (StringUtils.isEmpty(groupChat.getChatPictureFileLocation().getFileLocation())){
-                return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_group_chat).toString();
+                return getDefaultChatUri(iconSize);
             } else {
                 return Uri.fromFile(groupChat.getChatPictureFileLocation().getFile()).toString();
             }
         }
     }
 
-    public static String getContactIconUri(Contact contact){
+    public static String getContactIconUri(Contact contact, IconSize iconSize){
         try {
             if (contact.getContactPictureFileLocation() == null) {
-                return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
+                return getDefaultContactUri(iconSize);
             } else if (StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())) {
-                return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
+                return getDefaultContactUri(iconSize);
             } else {
                 return Uri.fromFile(contact.getContactPictureFileLocation().getFile()).toString();
             }
         }catch (Exception ex){
-            return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
+            return getDefaultContactUri(iconSize);
         }
     }
 
-    public static String getDefaultContactUri(){
-        return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_contact).toString();
+    public static String getDefaultContactUri(IconSize iconSize){
+        int resId;
+
+        if (iconSize == IconSize.NORMAL){
+            resId = R.drawable.ic_default_contact;
+        }else if (iconSize == IconSize.LARGE){
+            resId = R.drawable.ic_default_contact_large;
+        }else {
+            resId = R.drawable.ic_default_contact;
+        }
+
+        return AndroidIOUtils.getUriFromResource(weMessage.get(), resId).toString();
     }
 
-    public static String getDefaultChatUri(){
-        return AndroidIOUtils.getUriFromResource(weMessage.get(), R.drawable.ic_default_group_chat).toString();
+    public static String getDefaultChatUri(IconSize iconSize){
+        int resId;
+
+        if (iconSize == IconSize.NORMAL){
+            resId = R.drawable.ic_default_group_chat;
+        }else if (iconSize == IconSize.LARGE){
+            resId = R.drawable.ic_default_group_chat_large;
+        }else {
+            resId = R.drawable.ic_default_group_chat;
+        }
+
+        return AndroidIOUtils.getUriFromResource(weMessage.get(), resId).toString();
+    }
+
+    public enum IconSize {
+        NORMAL,
+        LARGE
     }
 }

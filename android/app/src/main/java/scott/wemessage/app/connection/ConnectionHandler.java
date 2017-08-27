@@ -75,7 +75,7 @@ public final class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
-    private final int TIME_TO_CONNECT = 0; //TODO: Work
+    private final int TIME_TO_CONNECT = 2;
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
@@ -96,14 +96,16 @@ public final class ConnectionHandler extends Thread {
 
     private final String ipAddress;
     private final int port;
+    private final boolean fastConnect;
     private String emailPlainText;
     private String passwordPlainText, passwordHashedText;
 
-    protected ConnectionHandler(ConnectionService service, String ipAddress, int port, String emailPlainText, String password, boolean alreadyHashed){
+    protected ConnectionHandler(ConnectionService service, String ipAddress, int port, String emailPlainText, String password, boolean alreadyHashed, boolean fastConnect){
         this.service = service;
         this.ipAddress = ipAddress;
         this.port = port;
         this.emailPlainText = emailPlainText;
+        this.fastConnect = fastConnect;
 
         if (alreadyHashed){
             this.passwordHashedText = password;
@@ -392,10 +394,12 @@ public final class ConnectionHandler extends Thread {
             connectionSocket = new Socket();
         }
 
-        try {
-            Thread.sleep(TIME_TO_CONNECT * 1000);
-        }catch(Exception ex){
-            AppLogger.error(TAG, "An error occurred while trying to make a thread sleep", ex);
+        if (!fastConnect) {
+            try {
+                Thread.sleep(TIME_TO_CONNECT * 1000);
+            } catch (Exception ex) {
+                AppLogger.error(TAG, "An error occurred while trying to make a thread sleep", ex);
+            }
         }
 
         try {
@@ -521,7 +525,10 @@ public final class ConnectionHandler extends Thread {
 
                     editor.apply();
 
-                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_SUCCESSFUL, null);
+                    Bundle successExtras = new Bundle();
+                    successExtras.putBoolean(weMessage.BUNDLE_FAST_CONNECT, fastConnect);
+
+                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_SUCCESSFUL, successExtras);
                 } else if (incoming.startsWith(weMessage.JSON_CONNECTION_TERMINATED)) {
                     ServerMessage serverMessage = getIncomingMessage(weMessage.JSON_CONNECTION_TERMINATED, incoming);
                     DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer) serverMessage.getOutgoing(Integer.class, byteArrayAdapter)));
@@ -605,6 +612,11 @@ public final class ConnectionHandler extends Thread {
                                     sender = messageDatabase.getContactByHandle(meHandle);
                                 } else {
                                     sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+                                }
+
+                                Chat chat = messageDatabase.getChatByMacGuid(jsonChat.getMacGuid());
+                                if (!chat.isInChat()){
+                                    messageManager.updateChat(chat.getUuid().toString(), chat.setIsInChat(true), false);
                                 }
 
 

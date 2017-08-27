@@ -63,7 +63,7 @@ public class ChatTitleView extends LinearLayout {
 
         if (chat instanceof PeerChat){
             Contact contact = ((PeerChat) chat).getContact();
-            String url = AndroidIOUtils.getChatIconUri(chat);
+            String url = AndroidIOUtils.getChatIconUri(chat, AndroidIOUtils.IconSize.NORMAL);
             RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
 
             layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
@@ -92,7 +92,7 @@ public class ChatTitleView extends LinearLayout {
             participantsTextView.setVisibility(GONE);
         } else {
             GroupChat groupChat = (GroupChat) chat;
-            String url = AndroidIOUtils.getChatIconUri(groupChat);
+            String url = AndroidIOUtils.getChatIconUri(groupChat, AndroidIOUtils.IconSize.NORMAL);
             RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
 
             layoutParams.removeRule(RelativeLayout.CENTER_IN_PARENT);

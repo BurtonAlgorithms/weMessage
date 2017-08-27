@@ -29,6 +29,7 @@ public final class weMessage extends Application implements Constants {
     public static final String BUNDLE_EMAIL = IDENTIFIER_PREFIX + "bundleEmail";
     public static final String BUNDLE_PASSWORD = IDENTIFIER_PREFIX + "bundlePassword";
     public static final String BUNDLE_ALERT_TITLE = IDENTIFIER_PREFIX + "bundleAlertTitle";
+    public static final String BUNDLE_FAST_CONNECT = IDENTIFIER_PREFIX + "bundleFastConnect";
     public static final String BUNDLE_ALERT_MESSAGE = IDENTIFIER_PREFIX + "bundleAlertMessage";
     public static final String BUNDLE_DIALOG_ANIMATION = IDENTIFIER_PREFIX + "bundleDialogAnimation";
     public static final String BUNDLE_IS_LAUNCHER_STILL_CONNECTING = IDENTIFIER_PREFIX + "bundleIsLauncherStillConnecting";
@@ -54,6 +55,7 @@ public final class weMessage extends Application implements Constants {
     public static final String ARG_EMAIL = IDENTIFIER_PREFIX + "emailArg";
     public static final String ARG_PASSWORD = IDENTIFIER_PREFIX + "passwordArg";
     public static final String ARG_PASSWORD_ALREADY_HASHED = IDENTIFIER_PREFIX + "passwordAlreadyHashed";
+    public static final String ARG_FAST_CONNECT = IDENTIFIER_PREFIX + "fastConnectArg";
     public static final String ARG_ATTACHMENT_GALLERY_CACHE = IDENTIFIER_PREFIX + "attachmentGalleryCacheArg";
     public static final String ARG_CAMERA_ATTACHMENT_FILE = IDENTIFIER_PREFIX + "argCameraAttachmentFile";
     public static final String ARG_ATTACHMENT_POPUP_CAMERA_RESULT_CODE = IDENTIFIER_PREFIX + "argAttachmentPopupCameraResultCode";
