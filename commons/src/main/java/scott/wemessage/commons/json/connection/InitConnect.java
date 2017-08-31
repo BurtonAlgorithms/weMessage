@@ -9,13 +9,17 @@ public class InitConnect {
     private JSONEncryptedText email;
     private JSONEncryptedText password;
     private String deviceType;
+    private String deviceName;
+    private String registrationToken;
 
-    public InitConnect(int buildVersion, String deviceId, JSONEncryptedText email, JSONEncryptedText password, String deviceType){
+    public InitConnect(int buildVersion, String deviceId, JSONEncryptedText email, JSONEncryptedText password, String deviceType, String deviceName, String registrationToken){
         this.buildVersion = buildVersion;
         this.deviceId = deviceId;
         this.email = email;
         this.password = password;
         this.deviceType = deviceType;
+        this.deviceName = deviceName;
+        this.registrationToken = registrationToken;
     }
 
     public int getBuildVersion() {
@@ -38,6 +42,14 @@ public class InitConnect {
         return deviceType;
     }
 
+    public String getDeviceName() {
+        return deviceName;
+    }
+
+    public String getRegistrationToken() {
+        return registrationToken;
+    }
+
     public void setBuildVersion(int buildVersion) {
         this.buildVersion = buildVersion;
     }
@@ -56,5 +68,13 @@ public class InitConnect {
 
     public void setDeviceType(String deviceType) {
         this.deviceType = deviceType;
+    }
+
+    public void setDeviceName(String deviceName) {
+        this.deviceName = deviceName;
+    }
+
+    public void setRegistrationToken(String registrationToken) {
+        this.registrationToken = registrationToken;
     }
 }
