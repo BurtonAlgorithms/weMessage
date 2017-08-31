@@ -8,6 +8,10 @@ public class ConfigJSONData {
     private String ffmpegLocation;
     private ConfigAccountJSON accountInfo;
 
+    public ConfigJSONData(){
+
+    }
+
     public ConfigJSONData(Integer configVersion, Integer port, Boolean createLogFiles, String ffmpegLocation, ConfigAccountJSON accountInfo){
         this.configVersion = configVersion;
         this.port = port;

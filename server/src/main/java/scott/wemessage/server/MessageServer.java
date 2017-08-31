@@ -22,6 +22,7 @@ import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.listeners.connection.ClientMessageReceivedListener;
 import scott.wemessage.server.listeners.connection.DeviceJoinListener;
 import scott.wemessage.server.listeners.connection.DeviceQuitListener;
+import scott.wemessage.server.listeners.connection.DeviceUpdateListener;
 import scott.wemessage.server.listeners.database.ErrorWatcher;
 import scott.wemessage.server.listeners.database.MessagesDatabaseListener;
 import scott.wemessage.server.security.Authenticator;
@@ -29,7 +30,7 @@ import scott.wemessage.server.security.ServerBase64Wrapper;
 
 public final class MessageServer {
 
-    public final String TAG = "weServer";
+    public static final String TAG = "weServer";
 
     private AtomicBoolean isInitialized = new AtomicBoolean(false);
     private AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -221,6 +222,7 @@ public final class MessageServer {
                 eventManager.registerListener(new MessagesDatabaseListener());
                 eventManager.registerListener(new DeviceJoinListener());
                 eventManager.registerListener(new DeviceQuitListener());
+                eventManager.registerListener(new DeviceUpdateListener());
                 eventManager.registerListener(new ClientMessageReceivedListener());
             }
             commandManager.startService();

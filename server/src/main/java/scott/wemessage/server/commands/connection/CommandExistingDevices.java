@@ -30,10 +30,11 @@ public class CommandExistingDevices extends ConnectionCommand {
 
                 Device device = getDeviceManager().getDeviceById(s);
                 if (device != null){
-                    ServerLogger.log("Device " + i + " -  IP: " + device.getAddress() + "  Connected: True  Type: " + device.getDeviceType().getTypeName());
+                    ServerLogger.log("Device " + device.getDeviceName() + " -  IP: " + device.getAddress() + "  Connected: True  Type: " + device.getDeviceType().getTypeName());
                 }else {
                     String ip = getDeviceManager().getMessageServer().getDatabaseManager().getAddressByDeviceId(s);
-                    ServerLogger.log("Device " + i + " -  IP: " + ip + "  Connected: False");
+                    String name = getDeviceManager().getMessageServer().getDatabaseManager().getNameByDeviceId(s);
+                    ServerLogger.log("Device " + name + " -  IP: " + ip + "  Connected: False");
                 }
             }
         }catch (Exception ex){

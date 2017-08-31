@@ -28,13 +28,15 @@ public final class ServerConfiguration {
     private final int buildVersion = weMessage.WEMESSAGE_BUILD_VERSION;
     private final int port;
     private final boolean saveLogsToFile;
-
     private final String parentPathDirectory;
+
+    private MessageServer messageServer;
     private File parentDirectory;
     private File configFile;
     private File logFile;
 
     public ServerConfiguration(MessageServer messageServer) throws IOException {
+        this.messageServer = messageServer;
         this.parentPathDirectory = Paths.get("").toAbsolutePath().toString();
         this.parentDirectory = new File(parentPathDirectory);
 
@@ -50,12 +52,11 @@ public final class ServerConfiguration {
         ConfigJSON configJSON = gson.fromJson(jsonString, ConfigJSON.class);
 
         if (configJSON.getConfig().getConfigVersion() != weMessage.WEMESSAGE_CONFIG_VERSION){
-            ServerLogger.log(ServerLogger.Level.ERROR, messageServer.TAG, "The config version and the server version do not match! Resetting config.");
-            ServerLogger.log(ServerLogger.Level.ERROR, messageServer.TAG, "Note: You will have to reconfigure your config details. Shutting down!");
-
-            configFile.delete();
-            createConfig(configFile);
-            messageServer.shutdown(-1, false);
+            if (configJSON.getConfig().getConfigVersion() < weMessage.WEMESSAGE_CONFIG_VERSION){
+                onUpgrade(weMessage.WEMESSAGE_CONFIG_VERSION, configJSON.getConfig().getConfigVersion(), configJSON.getConfig());
+            }else if (configJSON.getConfig().getConfigVersion() > weMessage.WEMESSAGE_CONFIG_VERSION){
+                onDowngrade(weMessage.WEMESSAGE_CONFIG_VERSION, configJSON.getConfig().getConfigVersion(), configJSON.getConfig());
+            }
         }
 
         synchronized (configFileLock) {
@@ -146,5 +147,62 @@ public final class ServerConfiguration {
         try (PrintWriter out = new PrintWriter(file)){
             out.println(jsonOutput);
         }
+    }
+
+    private void createConfigWithJSON(File file, ConfigJSON configJSON) throws IOException{
+        file.createNewFile();
+
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        String jsonOutput = gson.toJson(configJSON);
+        try (PrintWriter out = new PrintWriter(file)){
+            out.println(jsonOutput);
+        }
+    }
+
+    private void onUpgrade(int newVersion, int oldVersion, ConfigJSONData oldJson) throws IOException {
+        ServerLogger.log(ServerLogger.Level.ERROR, MessageServer.TAG, "Your config is outdated! Resetting config. Please restart your weServer.");
+
+        ConfigJSONData newJson = new ConfigJSONData();
+        newJson.setConfigVersion(newVersion);
+
+        if (oldVersion == 1){
+            newJson.setPort(oldJson.getPort());
+            newJson.setCreateLogFiles(oldJson.getCreateLogFiles());
+            newJson.setFfmpegLocation(oldJson.getFfmpegLocation());
+            newJson.setAccountInfo(oldJson.getAccountInfo());
+
+            //Note: Add defaults of new version
+        }
+
+        if (oldVersion == 2){
+            //Note: Add previous values
+        }
+
+        configFile.delete();
+        createConfigWithJSON(configFile, new ConfigJSON(newJson));
+        messageServer.shutdown(-1, false);
+    }
+
+    private void onDowngrade(int newVersion, int oldVersion, ConfigJSONData oldJson) throws IOException {
+        ServerLogger.log(ServerLogger.Level.ERROR, MessageServer.TAG, "The config version and the server version do not match! Resetting config. Please restart your weServer.");
+
+        ConfigJSONData newJson = new ConfigJSONData();
+        newJson.setConfigVersion(newVersion);
+
+        if (newVersion == 1){
+            newJson.setPort(oldJson.getPort());
+            newJson.setCreateLogFiles(oldJson.getCreateLogFiles());
+            newJson.setFfmpegLocation(oldJson.getFfmpegLocation());
+            newJson.setAccountInfo(oldJson.getAccountInfo());
+        }
+
+        if (newVersion == 2){
+            //Note: Add previous values
+        }
+
+        configFile.delete();
+        createConfigWithJSON(configFile, new ConfigJSON(newJson));
+        messageServer.shutdown(-1, false);
     }
 }

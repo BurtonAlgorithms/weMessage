@@ -43,6 +43,7 @@ import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.database.MessagesDatabase;
 import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.events.connection.ClientMessageReceivedEvent;
+import scott.wemessage.server.events.connection.DeviceUpdateEvent;
 import scott.wemessage.server.messages.Handle;
 import scott.wemessage.server.messages.Message;
 import scott.wemessage.server.messages.chat.ChatBase;
@@ -57,9 +58,14 @@ public class Device extends Thread {
     private final Object deviceManagerLock = new Object();
     private final Object socketLock = new Object();
     private final Object deviceIdLock = new Object();
+    private final Object deviceNameLock = new Object();
     private final Object deviceTypeLock = new Object();
     private final Object inputStreamLock = new Object();
     private final Object outputStreamLock = new Object();
+    private final Object registrationTokenLock = new Object();
+
+    private AtomicBoolean isRunning = new AtomicBoolean(false);
+    private AtomicBoolean hasTriedVerifying = new AtomicBoolean(false);
 
     private DeviceManager deviceManager;
     private DeviceType deviceType;
@@ -67,8 +73,8 @@ public class Device extends Thread {
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;
     private String deviceId;
-    private AtomicBoolean isRunning = new AtomicBoolean(false);
-    private AtomicBoolean hasTriedVerifying = new AtomicBoolean(false);
+    private String deviceName;
+    private String registrationToken;
 
     public Device(DeviceManager deviceManager, Socket socket){
         synchronized (deviceManagerLock) {
@@ -94,6 +100,18 @@ public class Device extends Thread {
     public String getDeviceId(){
         synchronized (deviceIdLock){
             return deviceId;
+        }
+    }
+
+    public String getDeviceName(){
+        synchronized (deviceNameLock){
+            return deviceName;
+        }
+    }
+
+    public String getRegistrationToken(){
+        synchronized (registrationTokenLock){
+            return registrationToken;
         }
     }
 
@@ -153,8 +171,13 @@ public class Device extends Thread {
         }).start();
     }
 
-    public void sendOutgoingMessage(JSONMessage message) {
-        sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, message, JSONMessage.class);
+    public void sendOutgoingMessage(final JSONMessage message) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, message, JSONMessage.class);
+            }
+        }).start();
     }
 
     public void updateOutgoingMessage(final Message message){
@@ -420,8 +443,16 @@ public class Device extends Thread {
                         this.deviceId = initConnect.getDeviceId();
                     }
 
+                    synchronized (deviceNameLock){
+                        this.deviceName = initConnect.getDeviceName();
+                    }
+
                     synchronized (deviceTypeLock) {
                         this.deviceType = deviceType;
+                    }
+
+                    synchronized (registrationTokenLock){
+                        this.registrationToken = initConnect.getRegistrationToken();
                     }
 
                     getDeviceManager().addDevice(this);
@@ -444,6 +475,16 @@ public class Device extends Thread {
 
                     if (input.startsWith(weMessage.JSON_CONNECTION_TERMINATED)){
                         getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);
+                        return;
+                    }
+                    if (input.startsWith(weMessage.JSON_REGISTRATION_TOKEN)){
+                        ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_REGISTRATION_TOKEN, input);
+                        String token = (String) clientMessage.getIncoming(String.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
+
+                        synchronized (registrationTokenLock){
+                            this.registrationToken = token;
+                        }
+                        eventManager.callEvent(new DeviceUpdateEvent(eventManager, getDeviceManager(), this));
                         return;
                     }
                     if (input.startsWith(weMessage.JSON_NEW_MESSAGE)){

@@ -7,6 +7,7 @@ public final class weMessage implements Constants {
     private weMessage(){ }
 
     public static final int WEMESSAGE_CONFIG_VERSION = 1;
+    public static final int WEMESSAGE_DATABASE_VERSION = 1;
     public static final int MIN_OS_VERSION = 12;
     public static final boolean CREATE_LOG_FILES = true;
 
@@ -16,4 +17,5 @@ public final class weMessage implements Constants {
     public static final String DEFAULT_FFMPEG_LOCATION = "bin/ffmpeg/ffmpeg";
     public static final String DEFAULT_EMAIL = "email@icloud.com";
     public static final String DEFAULT_SECRET = "secret";
+    public static final String NOTIFICATION_FUNCTION_URL = "https://us-central1-wemessage-app.cloudfunctions.net/sendNotification";
 }

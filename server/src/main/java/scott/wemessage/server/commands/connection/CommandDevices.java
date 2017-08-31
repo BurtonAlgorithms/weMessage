@@ -23,7 +23,7 @@ public class CommandDevices extends ConnectionCommand {
         for(Device device : getDeviceManager().getDevices().values()){
             i++;
             ServerLogger.emptyLine();
-            ServerLogger.log("Device " + i + " -  IP: " + device.getAddress() + "  Type: " + device.getDeviceType().getTypeName());
+            ServerLogger.log("Device " + device.getDeviceName() + " -  IP: " + device.getAddress() + "  Type: " + device.getDeviceType().getTypeName());
         }
     }
 }

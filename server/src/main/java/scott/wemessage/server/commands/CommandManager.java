@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.commands.connection.CommandDeleteDevice;
 import scott.wemessage.server.commands.connection.CommandDevices;
 import scott.wemessage.server.commands.connection.CommandDisconnect;
 import scott.wemessage.server.commands.connection.CommandExistingDevices;
@@ -66,6 +67,7 @@ public final class CommandManager {
 
         addCommand(new CommandDevices(this));
         addCommand(new CommandDisconnect(this));
+        addCommand(new CommandDeleteDevice(this));
         addCommand(new CommandExistingDevices(this));
 
         addCommand(new CommandSendMessage(this));

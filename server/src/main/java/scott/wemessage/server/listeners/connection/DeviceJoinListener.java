@@ -29,22 +29,28 @@ public class DeviceJoinListener extends Listener {
             ResultSet resultSet = findStatement.executeQuery();
 
             if (!resultSet.isBeforeFirst()){
-                String insertStatementString = "INSERT INTO " + db.TABLE_DEVICES + "(" + db.COLUMN_DEVICE_ID + ", " + db.COLUMN_DEVICE_ADDRESS + ") VALUES (?, ?)";
+                String insertStatementString = "INSERT INTO " + db.TABLE_DEVICES + "(" + db.COLUMN_DEVICE_ID + ", "
+                        + db.COLUMN_DEVICE_ADDRESS + ", " + db.COLUMN_DEVICE_NAME + ") VALUES (?, ?, ?)";
                 PreparedStatement insertStatement = db.getServerDatabaseConnection().prepareStatement(insertStatementString);
                 insertStatement.setString(1, event.getDevice().getDeviceId());
                 insertStatement.setString(2, event.getDevice().getAddress());
+                insertStatement.setString(3, event.getDevice().getDeviceName());
 
                 insertStatement.executeUpdate();
                 insertStatement.close();
             }else {
-                String insertStatementString = "UPDATE " + db.TABLE_DEVICES + " SET " + db.COLUMN_DEVICE_ADDRESS + " = ? WHERE " + db.COLUMN_DEVICE_ID + " = ?";
+                String insertStatementString = "UPDATE " + db.TABLE_DEVICES + " SET " + db.COLUMN_DEVICE_ADDRESS + " = ?, "
+                        + db.COLUMN_DEVICE_NAME + " = ? WHERE " + db.COLUMN_DEVICE_ID + " = ?";
                 PreparedStatement insertStatement = db.getServerDatabaseConnection().prepareStatement(insertStatementString);
                 insertStatement.setString(1, event.getDevice().getAddress());
-                insertStatement.setString(2, event.getDevice().getDeviceId());
+                insertStatement.setString(2, event.getDevice().getName());
+                insertStatement.setString(3, event.getDevice().getDeviceId());
 
                 insertStatement.executeUpdate();
                 insertStatement.close();
             }
+
+            db.setRegistrationToken(event.getDevice().getDeviceId(), event.getDevice().getRegistrationToken());
 
             HashMap<String, Boolean>queuedMessages = db.getQueuedMessages(event.getDevice().getDeviceId());
             for (String guid : queuedMessages.keySet()){

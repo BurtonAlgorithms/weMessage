@@ -41,13 +41,19 @@ public final class DatabaseManager extends Thread {
 
     public final String serverDatabaseFileName = weMessage.SERVER_DATABASE_FILE_NAME;
 
+    public final String TABLE_PROPERTIES = "properties";
     public final String TABLE_DEVICES = "devices";
     public final String TABLE_ERRORS = "errors";
     public final String TABLE_QUEUE = "queue";
     public final String TABLE_ACTION_QUEUE = "action_queue";
+    public final String TABLE_REGISTRATION_TOKENS = "registration_tokens";
+
+    public final String COLUMN_PROPERTIES_ROWID = "id";
+    public final String COLUMN_PROPERTIES_VERSION = "version";
 
     public final String COLUMN_DEVICE_ROWID = "id";
     public final String COLUMN_DEVICE_ID = "device_id";
+    public final String COLUMN_DEVICE_NAME = "device_name";
     public final String COLUMN_DEVICE_ADDRESS = "address";
     
     public final String COLUMN_ERROR_ROWID = "id";
@@ -62,6 +68,10 @@ public final class DatabaseManager extends Thread {
     public final String COLUMN_QUEUE_ACTION_ROWID = "id";
     public final String COLUMN_QUEUE_ACTION_JSON = "action_json";
     public final String COLUMN_QUEUE_ACTION_DEVICES_WAITING = "devices_waiting";
+
+    public final String COLUMN_REGISTRATION_TOKEN_ROWID = "id";
+    public final String COLUMN_REGISTRATION_TOKEN_DEVICE_ID = "device_id";
+    public final String COLUMN_REGISTRATION_TOKEN_TOKEN = "token";
 
     private final Object serverDatabaseConnectionLock = new Object();
     private final Object chatDatabaseConnectionLock = new Object();
@@ -95,10 +105,19 @@ public final class DatabaseManager extends Thread {
                     throw new NullPointerException("The database could not be found.");
                 }
 
+                String createPropertiesStatementString = "CREATE TABLE IF NOT EXISTS " + TABLE_PROPERTIES
+                        + " (" + COLUMN_PROPERTIES_ROWID + " integer PRIMARY KEY,  "
+                        + COLUMN_PROPERTIES_VERSION + " text );";
+
+                Statement createPropertiesStatement = serverDatabaseConnection.createStatement();
+                createPropertiesStatement.execute(createPropertiesStatementString);
+                createPropertiesStatement.close();
+
                 String createDevicesStatementString = "CREATE TABLE IF NOT EXISTS " + TABLE_DEVICES
                         + " (" + COLUMN_DEVICE_ROWID + " integer PRIMARY KEY,  "
                         + COLUMN_DEVICE_ID + " text, "
-                        + COLUMN_DEVICE_ADDRESS + " text );";
+                        + COLUMN_DEVICE_ADDRESS + " text, "
+                        + COLUMN_DEVICE_NAME + " text );";
 
                 Statement createDevicesStatement = serverDatabaseConnection.createStatement();
                 createDevicesStatement.execute(createDevicesStatementString);
@@ -137,7 +156,37 @@ public final class DatabaseManager extends Thread {
                 Statement createActionQueueStatement = serverDatabaseConnection.createStatement();
                 createActionQueueStatement.execute(createActionQueueStatementString);
                 createActionQueueStatement.close();
+
+                String createRegistrationTokensStatementString = "CREATE TABLE IF NOT EXISTS " + TABLE_REGISTRATION_TOKENS
+                        + " (" + COLUMN_REGISTRATION_TOKEN_ROWID + " integer PRIMARY KEY,  "
+                        + COLUMN_REGISTRATION_TOKEN_DEVICE_ID + " text, "
+                        + COLUMN_REGISTRATION_TOKEN_TOKEN + " text );";
+
+                Statement createRegistrationTokenStatement = serverDatabaseConnection.createStatement();
+                createRegistrationTokenStatement.execute(createRegistrationTokensStatementString);
+                createRegistrationTokenStatement.close();
             }
+
+            if (getDatabaseVersion() == -1){
+                String insertStatementString = "INSERT INTO " + TABLE_PROPERTIES+ "(" + COLUMN_PROPERTIES_VERSION + ") VALUES (?)";
+                PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
+                insertStatement.setInt(1, weMessage.WEMESSAGE_DATABASE_VERSION);
+
+                insertStatement.executeUpdate();
+                insertStatement.close();
+            }
+
+            int localDbVersion = getDatabaseVersion();
+            int serverDbVersion = weMessage.WEMESSAGE_DATABASE_VERSION;
+
+            if (localDbVersion != serverDbVersion){
+                if (localDbVersion < serverDbVersion) {
+                    onUpgrade(serverDbVersion, localDbVersion);
+                } else if (localDbVersion > serverDbVersion) {
+                    onDowngrade(serverDbVersion, localDbVersion);
+                }
+            }
+
         }catch(Exception ex){
             ServerLogger.error(TAG, "An error occurred while connecting to the weServer database. Shutting down!", ex);
             messageServer.shutdown(-1, false);
@@ -210,6 +259,33 @@ public final class DatabaseManager extends Thread {
         return devices;
     }
 
+    public List<String> getAllRegistrationTokens() throws SQLException {
+        List<String> tokens = new ArrayList<>();
+        String selectTokensStatementString = "SELECT * FROM " + TABLE_REGISTRATION_TOKENS;
+        Statement selectTokensStatement = getServerDatabaseConnection().createStatement();
+
+        boolean isResultSet = selectTokensStatement.execute(selectTokensStatementString);
+
+        while(true) {
+            if(isResultSet) {
+                ResultSet resultSet = selectTokensStatement.getResultSet();
+                while(resultSet.next()) {
+                    String deviceId = resultSet.getString(COLUMN_REGISTRATION_TOKEN_TOKEN);
+                    tokens.add(deviceId);
+                }
+                resultSet.close();
+            } else {
+                if(selectTokensStatement.getUpdateCount() == -1) {
+                    break;
+                }
+            }
+            isResultSet = selectTokensStatement.getMoreResults();
+        }
+        selectTokensStatement.close();
+
+        return tokens;
+    }
+
     public String getAddressByDeviceId(String deviceId) throws SQLException {
         String selectStatementString = "SELECT * FROM " + TABLE_DEVICES + " WHERE " + COLUMN_DEVICE_ID + " = ?";
         PreparedStatement findStatement = getServerDatabaseConnection().prepareStatement(selectStatementString);
@@ -227,6 +303,44 @@ public final class DatabaseManager extends Thread {
         findStatement.close();
 
         return deviceAddress;
+    }
+
+    public String getNameByDeviceId(String deviceId) throws SQLException {
+        String selectStatementString = "SELECT * FROM " + TABLE_DEVICES + " WHERE " + COLUMN_DEVICE_ID + " = ?";
+        PreparedStatement findStatement = getServerDatabaseConnection().prepareStatement(selectStatementString);
+        findStatement.setString(1, deviceId);
+        ResultSet resultSet = findStatement.executeQuery();
+
+        if (!resultSet.isBeforeFirst()){
+            resultSet.close();
+            findStatement.close();
+            return null;
+        }
+        String deviceName = resultSet.getString(COLUMN_DEVICE_NAME);
+
+        resultSet.close();
+        findStatement.close();
+
+        return deviceName;
+    }
+
+    public String getDeviceIdByName(String deviceName) throws SQLException {
+        String selectStatementString = "SELECT * FROM " + TABLE_DEVICES + " WHERE " + COLUMN_DEVICE_NAME + " = ?";
+        PreparedStatement findStatement = getServerDatabaseConnection().prepareStatement(selectStatementString);
+        findStatement.setString(1, deviceName);
+        ResultSet resultSet = findStatement.executeQuery();
+
+        if (!resultSet.isBeforeFirst()){
+            resultSet.close();
+            findStatement.close();
+            return null;
+        }
+        String deviceId = resultSet.getString(COLUMN_DEVICE_ID);
+
+        resultSet.close();
+        findStatement.close();
+
+        return deviceId;
     }
 
     public HashMap<String, Boolean> getQueuedMessages(String deviceId) throws SQLException {
@@ -387,6 +501,55 @@ public final class DatabaseManager extends Thread {
         findStatement.close();
     }
 
+    public void setRegistrationToken(String deviceId, String token) throws SQLException {
+        String selectQuery = "SELECT * FROM " + TABLE_REGISTRATION_TOKENS + " WHERE " + COLUMN_REGISTRATION_TOKEN_DEVICE_ID + " = ?";
+        PreparedStatement findStatement = getServerDatabaseConnection().prepareStatement(selectQuery);
+        findStatement.setString(1, deviceId);
+        ResultSet resultSet = findStatement.executeQuery();
+
+        if (!resultSet.isBeforeFirst()){
+            String insertStatementString = "INSERT INTO " + TABLE_REGISTRATION_TOKENS + "(" + COLUMN_REGISTRATION_TOKEN_DEVICE_ID + ", " + COLUMN_REGISTRATION_TOKEN_TOKEN + ") VALUES (?, ?)";
+            PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
+            insertStatement.setString(1, deviceId);
+            insertStatement.setString(2, token);
+
+            insertStatement.executeUpdate();
+            insertStatement.close();
+        }else {
+            String insertStatementString = "UPDATE " + TABLE_REGISTRATION_TOKENS + " SET " + COLUMN_REGISTRATION_TOKEN_TOKEN + " = ? WHERE " + COLUMN_REGISTRATION_TOKEN_DEVICE_ID + " = ?";
+            PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
+            insertStatement.setString(1, token);
+            insertStatement.setString(2, deviceId);
+
+            insertStatement.executeUpdate();
+            insertStatement.close();
+        }
+    }
+
+    public void deleteDevice(String deviceId) throws SQLException {
+        for (String guid : getQueuedMessages(deviceId).keySet()){
+            unQueueMessage(guid, deviceId);
+        }
+
+        for (JSONAction action : getQueuedActions(deviceId)){
+            unQueueAction(action, deviceId);
+        }
+
+        String deleteRegistrationKeyStatementString = "DELETE FROM " + TABLE_REGISTRATION_TOKENS + " WHERE " + COLUMN_REGISTRATION_TOKEN_DEVICE_ID + " = ?";
+        PreparedStatement deleteRegistrationKeyStatement = getServerDatabaseConnection().prepareStatement(deleteRegistrationKeyStatementString);
+
+        deleteRegistrationKeyStatement.setString(1, deviceId);
+        deleteRegistrationKeyStatement.executeUpdate();
+        deleteRegistrationKeyStatement.close();
+
+        String deleteDeviceStatementString = "DELETE FROM " + TABLE_DEVICES + " WHERE " + COLUMN_DEVICE_ID + " = ?";
+        PreparedStatement deleteDeviceStatement = getServerDatabaseConnection().prepareStatement(deleteDeviceStatementString);
+
+        deleteDeviceStatement.setString(1, deviceId);
+        deleteDeviceStatement.executeUpdate();
+        deleteDeviceStatement.close();
+    }
+
     public void reloadChatDatabaseConnection() throws SQLException {
         isChatDbConnectionOpen.set(false);
 
@@ -458,5 +621,69 @@ public final class DatabaseManager extends Thread {
             }
         }
         return disconnectedDevices;
+    }
+
+    private int getDatabaseVersion() throws SQLException {
+        String selectStatementString = "SELECT * FROM " + TABLE_PROPERTIES;
+        Statement findStatement = getServerDatabaseConnection().createStatement();
+        ResultSet resultSet = findStatement.executeQuery(selectStatementString);
+
+        if (!resultSet.isBeforeFirst()){
+            resultSet.close();
+            findStatement.close();
+            return -1;
+        }
+        int version = resultSet.getInt(COLUMN_PROPERTIES_VERSION);
+
+        resultSet.close();
+        findStatement.close();
+
+        return version;
+    }
+
+    private void onUpgrade(int newVersion, int oldVersion) throws SQLException {
+        refreshProperties(newVersion);
+
+        if (oldVersion == 1){
+            //Note: Check ServerConfiguration for more info
+        }
+
+        if (oldVersion == 2){
+
+        }
+    }
+
+    private void onDowngrade(int newVersion, int oldVersion) throws SQLException {
+        refreshProperties(newVersion);
+
+        if (newVersion == 1){
+
+        }
+
+        if (newVersion == 2){
+
+        }
+    }
+
+    private void refreshProperties(int newVersion) throws SQLException {
+        String dropStatementString = "DROP TABLE IF EXISTS " + TABLE_PROPERTIES;
+        Statement dropStatement = getServerDatabaseConnection().createStatement();
+        dropStatement.executeUpdate(dropStatementString);
+        dropStatement.close();
+
+        String createPropertiesStatementString = "CREATE TABLE IF NOT EXISTS " + TABLE_PROPERTIES
+                + " (" + COLUMN_PROPERTIES_ROWID + " integer PRIMARY KEY,  "
+                + COLUMN_PROPERTIES_VERSION + " text );";
+
+        Statement createPropertiesStatement = serverDatabaseConnection.createStatement();
+        createPropertiesStatement.execute(createPropertiesStatementString);
+        createPropertiesStatement.close();
+
+        String insertStatementString = "INSERT INTO " + TABLE_PROPERTIES+ "(" + COLUMN_PROPERTIES_VERSION + ") VALUES (?)";
+        PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
+        insertStatement.setInt(1, newVersion);
+
+        insertStatement.executeUpdate();
+        insertStatement.close();
     }
 }

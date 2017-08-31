@@ -47,6 +47,10 @@ public class MessagesDatabaseListener extends Listener {
                     }else {
                         databaseManager.queueMessage(message.getGuid(), false);
 
+                        for (String token : databaseManager.getAllRegistrationTokens()){
+                            deviceManager.sendNotification(token, message);
+                        }
+
                         for (Device device : deviceManager.getDevices().values()){
                             device.sendOutgoingMessage(message);
                         }

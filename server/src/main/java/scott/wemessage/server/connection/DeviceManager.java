@@ -1,5 +1,7 @@
 package scott.wemessage.server.connection;
 
+import com.google.gson.Gson;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Map;
@@ -7,12 +9,22 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+
+import scott.wemessage.commons.crypto.AESCrypto;
+import scott.wemessage.commons.json.message.JSONNotification;
 import scott.wemessage.commons.types.DisconnectReason;
+import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.events.connection.DeviceJoinEvent;
 import scott.wemessage.server.events.connection.DeviceQuitEvent;
+import scott.wemessage.server.messages.Message;
+import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.weMessage;
 
 public final class DeviceManager extends Thread {
@@ -100,6 +112,45 @@ public final class DeviceManager extends Thread {
             return true;
         }
         return false;
+    }
+
+    public void sendNotification(final String registrationToken, final Message message){
+        if (!StringUtils.isEmpty(registrationToken)) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+
+                        String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
+                        String encryptedText = AESCrypto.encryptString(message.getText(), keys);
+                        String chatName = "";
+
+                        if (message.getChat() instanceof GroupChat) {
+                            if (!StringUtils.isEmpty(((GroupChat) message.getChat()).getDisplayName())) {
+                                chatName = ((GroupChat) message.getChat()).getDisplayName();
+                            }
+                        }
+
+                        JSONNotification notification = new JSONNotification(
+                                registrationToken,
+                                encryptedText,
+                                keys,
+                                message.getHandle().getHandleID(),
+                                message.getChat().getGuid(),
+                                chatName
+                        );
+
+                        OkHttpClient client = new OkHttpClient();
+                        RequestBody body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), new Gson().toJson(notification));
+                        Request request = new Request.Builder().url(weMessage.NOTIFICATION_FUNCTION_URL).post(body).build();
+
+                        client.newCall(request).execute();
+                    } catch (Exception ex) {
+                        ServerLogger.error(TAG, "An error occurred while trying to send a notification to Device with Token: " + registrationToken, ex);
+                    }
+                }
+            }).start();
+        }
     }
 
     public void stopService() {
