@@ -53,7 +53,7 @@ import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
-import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.message.JSONMessage;
@@ -530,7 +530,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                 contactDisplayNameView.setText(contact.getUIDisplayName());
                 contactHandle.setText(contact.getHandle().getHandleID());
 
-                Glide.with(ChatAddContactActivity.this).load(AndroidIOUtils.getContactIconUri(contact, AndroidIOUtils.IconSize.NORMAL)).into(contactPictureView);
+                Glide.with(ChatAddContactActivity.this).load(IOUtils.getContactIconUri(contact, IOUtils.IconSize.NORMAL)).into(contactPictureView);
             }
         }
 

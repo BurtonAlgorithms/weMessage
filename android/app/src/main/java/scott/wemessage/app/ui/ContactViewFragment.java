@@ -76,7 +76,7 @@ import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.activities.MessageImageActivity;
 import scott.wemessage.app.ui.activities.MessageVideoActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
-import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
@@ -1033,9 +1033,9 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             contactHandleTextView.setText(handleID);
 
             if (StringUtils.isEmpty(editedContactPicture)) {
-                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getContactIconUri(contact, AndroidIOUtils.IconSize.LARGE)).into(contactPicture);
+                Glide.with(ContactViewFragment.this).load(IOUtils.getContactIconUri(contact, IOUtils.IconSize.LARGE)).into(contactPicture);
             }else if (editedContactPicture.equals("DELETE")) {
-                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getDefaultContactUri(AndroidIOUtils.IconSize.LARGE)).into(contactPicture);
+                Glide.with(ContactViewFragment.this).load(IOUtils.getDefaultContactUri(IOUtils.IconSize.LARGE)).into(contactPicture);
             }else {
                 Glide.with(ContactViewFragment.this).load(editedContactPicture).into(contactPicture);
             }
@@ -1077,7 +1077,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
         public void updatePicture(String path){
             if (path.equals("DELETE")) {
-                Glide.with(ContactViewFragment.this).load(AndroidIOUtils.getDefaultContactUri(AndroidIOUtils.IconSize.LARGE)).into(contactPicture);
+                Glide.with(ContactViewFragment.this).load(IOUtils.getDefaultContactUri(IOUtils.IconSize.LARGE)).into(contactPicture);
             }else {
                 Glide.with(ContactViewFragment.this).load(path).into(contactPicture);
             }
@@ -1279,7 +1279,6 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             galleryViewLayout.setLayoutParams(layoutParams);
 
             Glide.with(itemView.getContext()).load(path).transition(DrawableTransitionOptions.withCrossFade()).into(galleryImageView);
-
         }
 
         @Override

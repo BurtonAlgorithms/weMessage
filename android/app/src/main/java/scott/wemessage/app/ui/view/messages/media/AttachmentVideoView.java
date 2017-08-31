@@ -20,7 +20,7 @@ import com.stfalcon.chatkit.utils.RoundedImageView;
 import scott.wemessage.R;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.ui.view.messages.MessageView;
-import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;
 
 public class AttachmentVideoView extends AttachmentView {
@@ -111,7 +111,7 @@ public class AttachmentVideoView extends AttachmentView {
                 );
             }
         }
-        final String uri = AndroidIOUtils.getUriFromFile(attachment.getFileLocation().getFile()).toString();
+        final String uri = IOUtils.getUriFromFile(attachment.getFileLocation().getFile()).toString();
 
         attachmentVideoThumbnailLayout.setOnClickListener(new OnClickListener() {
             @Override

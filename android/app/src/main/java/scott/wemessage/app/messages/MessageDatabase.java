@@ -119,7 +119,12 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        //TODO: When it comes time for it alter tables
+        //Note: Alter Tables
+    }
+
+    @Override
+    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
     }
 
     public List<Contact> getContacts(){

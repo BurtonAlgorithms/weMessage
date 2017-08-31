@@ -3,7 +3,7 @@ package scott.wemessage.app.ui.view.messages;
 import com.stfalcon.chatkit.commons.models.IUser;
 
 import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.IOUtils;
 
 public class ContactView implements IUser {
 
@@ -29,6 +29,6 @@ public class ContactView implements IUser {
 
     @Override
     public String getAvatar() {
-        return AndroidIOUtils.getContactIconUri(contact, AndroidIOUtils.IconSize.NORMAL);
+        return IOUtils.getContactIconUri(contact, IOUtils.IconSize.NORMAL);
     }
 }

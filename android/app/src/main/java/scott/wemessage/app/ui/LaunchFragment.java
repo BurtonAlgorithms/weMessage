@@ -41,6 +41,7 @@ import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.ui.view.font.FontButton;
 import scott.wemessage.app.ui.view.dialog.AnimationDialogLayout;
@@ -56,11 +57,13 @@ public class LaunchFragment extends Fragment {
     private final String LAUNCH_ALERT_DIALOG_TAG = "DialogLauncherAlert";
     private final String LAUNCH_ANIMATION_DIALOG_TAG = "DialogAnimationTag";
 
-    private String lastHashedPass;
     private int oldEditTextColor;
     private int errorSnackbarDuration = 5000;
     private boolean isBoundToConnectionService = false;
     private boolean isStillConnecting = false;
+
+    private String lastHashedPass;
+    private String goToConversationHolder;
 
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private ConstraintLayout launchConstraintLayout;
@@ -79,50 +82,63 @@ public class LaunchFragment extends Fragment {
                     generateAlertDialog(getString(R.string.timeout_alert_title), getString(R.string.timeout_alert_content)).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
                     loginProgressDialog = null;
                 }
+                goToConversationHolder = null;
             }else if(intent.getAction().equals(weMessage.BROADCAST_LOGIN_ERROR)){
                 if (loginProgressDialog != null) {
                     loginProgressDialog.dismiss();
                     generateAlertDialog(getString(R.string.login_error_alert_title), getString(R.string.login_error_alert_content)).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
                     loginProgressDialog = null;
                 }
+                goToConversationHolder = null;
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ALREADY_CONNECTED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_already_connected_message));
+                goToConversationHolder = null;
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_INVALID_LOGIN)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_invalid_login_message));
+                goToConversationHolder = null;
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message));
+                goToConversationHolder = null;
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message));
+                goToConversationHolder = null;
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message));
+                goToConversationHolder = null;
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message));
+                goToConversationHolder = null;
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_INCORRECT_VERSION)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_incorrect_version_message));
+                goToConversationHolder = null;
             }else if (intent.getAction().equals(weMessage.BROADCAST_LOGIN_SUCCESSFUL)){
                 if (loginProgressDialog != null){
                     loginProgressDialog.dismiss();
                     loginProgressDialog = null;
                 }
 
-                if (intent.getBooleanExtra(weMessage.BUNDLE_FAST_CONNECT, false)) {
-                    startChatListActivity();
+                if (canStartConversationActivity()){
+                    startConversationActivity(goToConversationHolder);
                 }else {
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            AnimationDialogFragment dialogFragment = generateAnimationDialog(R.raw.checkmark_animation);
+                    if (intent.getBooleanExtra(weMessage.BUNDLE_FAST_CONNECT, false)) {
+                        startChatListActivity();
+                    }else{
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                AnimationDialogFragment dialogFragment = generateAnimationDialog(R.raw.checkmark_animation);
 
-                            dialogFragment.setDialogCompleteListener(new Runnable() {
-                                @Override
-                                public void run() {
-                                    startChatListActivity();
-                                }
-                            });
-                            dialogFragment.show(getFragmentManager(), LAUNCH_ANIMATION_DIALOG_TAG);
-                            dialogFragment.startAnimation();
-                        }
-                    }, 100L);
+                                dialogFragment.setDialogCompleteListener(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        startChatListActivity();
+                                    }
+                                });
+                                dialogFragment.show(getFragmentManager(), LAUNCH_ANIMATION_DIALOG_TAG);
+                                dialogFragment.startAnimation();
+                            }
+                        }, 100L);
+                    }
                 }
             }
         }
@@ -135,11 +151,23 @@ public class LaunchFragment extends Fragment {
             bindService();
         }
 
+        if (savedInstanceState != null){
+            goToConversationHolder = savedInstanceState.getString(weMessage.BUNDLE_LAUNCHER_GO_TO_CONVERSATION_UUID);
+        }else {
+            if (getActivity().getIntent().getExtras() != null) {
+                goToConversationHolder = getActivity().getIntent().getStringExtra(weMessage.BUNDLE_LAUNCHER_GO_TO_CONVERSATION_UUID);
+            }
+        }
+
         serviceConnection.scheduleTask(new Runnable() {
             @Override
             public void run() {
                 if (serviceConnection.getConnectionService().getConnectionHandler().isConnected().get()) {
-                    startChatListActivity();
+                    if (canStartConversationActivity()){
+                        startConversationActivity(goToConversationHolder);
+                    }else {
+                        startChatListActivity();
+                    }
                 }
             }
         });
@@ -226,6 +254,10 @@ public class LaunchFragment extends Fragment {
                 if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
                     startConnectionService(view, ipAddress, port, email, hashedPass, true, true);
                 }
+            }
+
+            if (canStartConversationActivity()){
+                startConnectionService(view, ipAddress, port, email, hashedPass, true, true);
             }
         }
 
@@ -440,6 +472,7 @@ public class LaunchFragment extends Fragment {
         outState.putString(weMessage.BUNDLE_HOST, ipEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_EMAIL, emailEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_PASSWORD, passwordEditText.getText().toString());
+        outState.putString(weMessage.BUNDLE_LAUNCHER_GO_TO_CONVERSATION_UUID, goToConversationHolder);
         outState.putBoolean(weMessage.BUNDLE_IS_LAUNCHER_STILL_CONNECTING, loginProgressDialog != null);
 
         if (loginProgressDialog != null){
@@ -495,6 +528,18 @@ public class LaunchFragment extends Fragment {
 
         startActivity(chatListIntent);
         getActivity().finish();
+    }
+
+    private void startConversationActivity(String chatId){
+        if (!StringUtils.isEmpty(chatId)) {
+            Intent launcherIntent = new Intent(weMessage.get(), ConversationActivity.class);
+
+            launcherIntent.putExtra(weMessage.BUNDLE_RETURN_POINT, ChatListActivity.class);
+            launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chatId);
+
+            startActivity(launcherIntent);
+            getActivity().finish();
+        }
     }
 
     private void invalidateField(final EditText editText){
@@ -647,6 +692,10 @@ public class LaunchFragment extends Fragment {
             }
         }
         return false;
+    }
+
+    private boolean canStartConversationActivity(){
+        return !StringUtils.isEmpty(goToConversationHolder);
     }
 
     public static class AnimationDialogFragment extends DialogFragment {

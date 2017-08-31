@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "146201209710",
+    "firebase_url": "https://wemessage-app.firebaseio.com",
+    "project_id": "wemessage-app",
+    "storage_bucket": "wemessage-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:146201209710:android:21ed4c3baa7b60d4",
+        "android_client_info": {
+          "package_name": "scott.wemessage"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "146201209710-slgfm1009jfnve74tig3d4rdesqhapik.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "scott.wemessage",
+            "certificate_hash": "8c6afaa33910ce28def70107fc2316d71305dd77"
+          }
+        },
+        {
+          "client_id": "146201209710-gbdj98p40ti3d22v309gk3oaru24csd4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbHzPXZi1uC-IjegWvLdtSTOf8yo7Khlk"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "146201209710-gbdj98p40ti3d22v309gk3oaru24csd4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -72,7 +72,7 @@ import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.view.chat.CreateChatBottomSheet;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.font.FontTextView;
-import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
@@ -738,7 +738,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 contactDisplayNameView.setText(contact.getUIDisplayName());
                 contactHandle.setText(contact.getHandle().getHandleID());
 
-                Glide.with(CreateChatFragment.this).load(AndroidIOUtils.getContactIconUri(contact, AndroidIOUtils.IconSize.NORMAL)).into(contactPictureView);
+                Glide.with(CreateChatFragment.this).load(IOUtils.getContactIconUri(contact, IOUtils.IconSize.NORMAL)).into(contactPictureView);
 
                 if (selectedContactUuids.contains(contactUuid)){
                     setSelected(true);

@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.content.LocalBroadcastManager;
 
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -50,6 +51,7 @@ import scott.wemessage.app.security.EncryptionTask;
 import scott.wemessage.app.security.FileDecryptionTask;
 import scott.wemessage.app.security.KeyTextPair;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
+import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
@@ -385,6 +387,21 @@ public final class ConnectionHandler extends Thread {
         }).start();
     }
 
+    public void updateRegistrationToken(final String token){
+        if (isConnected.get()){
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        sendOutgoingMessage(weMessage.JSON_REGISTRATION_TOKEN, token, String.class);
+                    }catch (Exception ex){
+                        AppLogger.error(TAG, "An error occurred while updating the instance's registration token.", ex);
+                    }
+                }
+            }).run();
+        }
+    }
+
     public void run(){
         final ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new AndroidBase64Wrapper());
 
@@ -465,7 +482,9 @@ public final class ConnectionHandler extends Thread {
                             Settings.Secure.getString(getParentService().getContentResolver(), Settings.Secure.ANDROID_ID),
                             KeyTextPair.toEncryptedJSON(encryptedEmail),
                             KeyTextPair.toEncryptedJSON(encryptedHashedPassword),
-                            DeviceType.ANDROID.getTypeName()
+                            DeviceType.ANDROID.getTypeName(),
+                            AndroidUtils.getDeviceName(),
+                            FirebaseInstanceId.getInstance().getToken()
                     );
 
                     sendOutgoingMessage(weMessage.JSON_INIT_CONNECT, initConnect, InitConnect.class);

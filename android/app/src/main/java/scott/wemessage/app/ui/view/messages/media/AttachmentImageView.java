@@ -24,7 +24,7 @@ import com.stfalcon.chatkit.utils.RoundedImageView;
 import scott.wemessage.R;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.ui.view.messages.MessageView;
-import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
 
@@ -116,7 +116,7 @@ public class AttachmentImageView extends AttachmentView {
                     attachmentAnimatedImageContainer.setLayoutParams(layoutParams);
 
                     if (animatedImage != null && attachmentBitmapResult.attachment.getFileLocation() != null && attachmentBitmapResult.attachment.getFileLocation().getFile() != null) {
-                        imageLoader.loadImage(animatedImage, AndroidIOUtils.getUriFromFile(attachmentBitmapResult.attachment.getFileLocation().getFile()).toString());
+                        imageLoader.loadImage(animatedImage, IOUtils.getUriFromFile(attachmentBitmapResult.attachment.getFileLocation().getFile()).toString());
                     }
 
                     if (isErrored && messageType == MessageType.OUTGOING){
@@ -144,7 +144,7 @@ public class AttachmentImageView extends AttachmentView {
             attachmentAnimatedImageLayout.setVisibility(VISIBLE);
             attachmentImageLayout.setVisibility(GONE);
 
-            final String uri = AndroidIOUtils.getUriFromFile(attachment.getFileLocation().getFile()).toString();
+            final String uri = IOUtils.getUriFromFile(attachment.getFileLocation().getFile()).toString();
 
             animatedImage.setOnClickListener(new OnClickListener() {
                 @Override
@@ -198,7 +198,7 @@ public class AttachmentImageView extends AttachmentView {
                     attachmentImage.setLayoutParams(layoutParams);
 
                     if (attachmentImage != null && attachmentBitmapResult.attachment.getFileLocation() != null && attachmentBitmapResult.attachment.getFileLocation().getFile() != null) {
-                        imageLoader.loadImage(attachmentImage, AndroidIOUtils.getUriFromFile(attachmentBitmapResult.attachment.getFileLocation().getFile()).toString());
+                        imageLoader.loadImage(attachmentImage, IOUtils.getUriFromFile(attachmentBitmapResult.attachment.getFileLocation().getFile()).toString());
                     }
 
                     if (isErrored && messageType == MessageType.OUTGOING){
@@ -235,7 +235,7 @@ public class AttachmentImageView extends AttachmentView {
                 imageOverlay.setSelected(isSelected());
             }
 
-            final String uri = AndroidIOUtils.getUriFromFile(attachment.getFileLocation().getFile()).toString();
+            final String uri = IOUtils.getUriFromFile(attachment.getFileLocation().getFile()).toString();
 
             attachmentImage.setOnClickListener(new OnClickListener() {
                 @Override

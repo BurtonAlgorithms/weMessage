@@ -17,7 +17,7 @@ import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class AndroidIOUtils {
+public class IOUtils {
 
     public static Uri getUriFromResource(@NonNull Context context, @AnyRes int resId) throws Resources.NotFoundException {
         Resources res = context.getResources();
@@ -79,7 +79,7 @@ public class AndroidIOUtils {
             resId = R.drawable.ic_default_contact;
         }
 
-        return AndroidIOUtils.getUriFromResource(weMessage.get(), resId).toString();
+        return IOUtils.getUriFromResource(weMessage.get(), resId).toString();
     }
 
     public static String getDefaultChatUri(IconSize iconSize){
@@ -93,7 +93,7 @@ public class AndroidIOUtils {
             resId = R.drawable.ic_default_group_chat;
         }
 
-        return AndroidIOUtils.getUriFromResource(weMessage.get(), resId).toString();
+        return IOUtils.getUriFromResource(weMessage.get(), resId).toString();
     }
 
     public enum IconSize {

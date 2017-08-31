@@ -3,6 +3,7 @@ package scott.wemessage.app.utils;
 import java.io.File;
 import java.io.IOException;
 
+import scott.wemessage.app.AppLogger;
 import scott.wemessage.commons.utils.FileUtils;
 
 public class FileLocationContainer {
@@ -45,7 +46,7 @@ public class FileLocationContainer {
                 file.createNewFile();
             }
         }catch (IOException ex){
-            ex.printStackTrace();
+            AppLogger.error("An error occurred while trying to load a FileLocationContainer file", ex);
         }
     }
 }

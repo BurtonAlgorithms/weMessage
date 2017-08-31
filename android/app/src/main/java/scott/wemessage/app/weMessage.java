@@ -6,6 +6,7 @@ import java.io.File;
 
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
+import scott.wemessage.app.messages.firebase.NotificationCallbacks;
 import scott.wemessage.app.messages.objects.Account;
 import scott.wemessage.commons.Constants;
 
@@ -18,6 +19,7 @@ public final class weMessage extends Application implements Constants {
     public static final String APP_IDENTIFIER = "scott.wemessage.app";
     public static final String IDENTIFIER_PREFIX = "scott.wemessage.app.";
     public static final String ATTACHMENT_FOLDER_NAME = "attachments";
+    public static final String NOTIFICATION_TAG = "weMessage-Notification-";
 
     public static final int REQUEST_PERMISSION_READ_STORAGE = 5000;
     public static final int REQUEST_PERMISSION_CAMERA = 5002;
@@ -36,6 +38,7 @@ public final class weMessage extends Application implements Constants {
     public static final String BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE = IDENTIFIER_PREFIX + "bundleDisconnectReasonAlternateMessage";
     public static final String BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE = IDENTIFIER_PREFIX + "bundleActionPerformAlternateErrorMessage";
     public static final String BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT = IDENTIFIER_PREFIX + "bundleLauncherDoNotTryReconnect";
+    public static final String BUNDLE_LAUNCHER_GO_TO_CONVERSATION_UUID = IDENTIFIER_PREFIX + "bundleLauncherGoToConversationUuid";
 
     public static final String BUNDLE_RETURN_POINT = IDENTIFIER_PREFIX + "bundleReturnPoint";
     public static final String BUNDLE_CONVERSATION_CHAT = IDENTIFIER_PREFIX + "bundleConversationChat";
@@ -95,6 +98,7 @@ public final class weMessage extends Application implements Constants {
     private MessageManager messageManager;
     private Account currentAccount;
     private File attachmentFolder;
+    private NotificationCallbacks notificationCallbacks;
 
     public static weMessage get(){
         return instance;
@@ -142,5 +146,15 @@ public final class weMessage extends Application implements Constants {
     public synchronized void dumpMessageManager(){
         messageManager.dumpAll(this);
         messageManager = null;
+    }
+
+    public synchronized boolean performNotification(){
+        if (notificationCallbacks == null) return true;
+
+        return notificationCallbacks.onNotification();
+    }
+
+    public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){
+        this.notificationCallbacks = notificationCallbacks;
     }
 }

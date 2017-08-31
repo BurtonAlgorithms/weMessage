@@ -24,7 +24,7 @@ import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.MessageView;
-import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.media.AudioAttachmentMediaPlayer;
 import scott.wemessage.app.weMessage;
 
@@ -101,7 +101,7 @@ public class AttachmentAudioView extends AttachmentView {
             protected AudioTrackMetadata doInBackground(Attachment... params) {
                 MediaMetadataRetriever mmr = new MediaMetadataRetriever();
 
-                mmr.setDataSource(weMessage.get(), AndroidIOUtils.getUriFromFile(params[0].getFileLocation().getFile()));
+                mmr.setDataSource(weMessage.get(), IOUtils.getUriFromFile(params[0].getFileLocation().getFile()));
                 String durationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
 
                 int millSecond = Integer.parseInt(durationStr);

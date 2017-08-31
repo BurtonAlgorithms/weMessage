@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
 
     <application
         android:name="scott.wemessage.app.weMessage"
@@ -23,7 +25,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity android:name=".app.ui.activities.ChatListActivity" />
         <activity android:name=".app.ui.activities.ConversationActivity" />
         <activity android:name=".app.ui.activities.CreateChatActivity" />
@@ -34,11 +35,23 @@
         <activity android:name=".app.ui.activities.MessageVideoActivity"
                   android:theme="@style/AppTheme.VideoPlayer"
                   android:configChanges="orientation|keyboardHidden|screenLayout|screenSize"> </activity>
-
         <activity android:name="com.afollestad.materialcamera.CaptureActivity" />
         <activity android:name="com.afollestad.materialcamera.CaptureActivity2" />
 
         <service android:name=".app.connection.ConnectionService" />
+        <service
+            android:name=".app.messages.firebase.NotificationService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+        <service
+            android:name=".app.messages.firebase.FirebaseInstanceIDService">
+            <intent-filter>
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT"/>
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>

@@ -2,6 +2,8 @@ package scott.wemessage.app;
 
 import android.util.Log;
 
+import com.google.firebase.crash.FirebaseCrash;
+
 public final class AppLogger {
 
     private AppLogger() { }
@@ -48,8 +50,14 @@ public final class AppLogger {
     public static void error(String tag, String message, Exception ex){
         if(tag == null) {
             Log.e(DEFAULT_TAG, message, ex);
+
+            FirebaseCrash.log(message);
+            FirebaseCrash.report(ex);
         }else {
             Log.e(tag, message, ex);
+
+            FirebaseCrash.log(tag + "  " + message);
+            FirebaseCrash.report(ex);
         }
     }
 

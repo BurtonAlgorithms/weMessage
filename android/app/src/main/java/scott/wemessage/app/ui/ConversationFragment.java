@@ -1,5 +1,6 @@
 package scott.wemessage.app.ui;
 
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -7,8 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.service.notification.StatusBarNotification;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
@@ -57,6 +60,7 @@ import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
+import scott.wemessage.app.messages.firebase.NotificationCallbacks;
 import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Attachment;
 import scott.wemessage.app.messages.objects.Contact;
@@ -79,7 +83,7 @@ import scott.wemessage.app.ui.view.messages.IncomingMessageViewHolder;
 import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.ui.view.messages.MessageViewHolder;
 import scott.wemessage.app.ui.view.messages.OutgoingMessageViewHolder;
-import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.utils.media.AudioAttachmentMediaPlayer;
 import scott.wemessage.app.weMessage;
@@ -90,7 +94,8 @@ import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ConversationFragment extends MessagingFragment implements MessageCallbacks, AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
+public class ConversationFragment extends MessagingFragment implements MessageCallbacks, NotificationCallbacks,
+        AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
 
     private final String TAG = "ConversationFragment";
     private final Object chatLock = new Object();
@@ -240,6 +245,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         callbackUuid = UUID.randomUUID().toString();
 
         messageManager.hookCallbacks(callbackUuid, this);
+        weMessage.get().setNotificationCallbacks(this);
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(messageListBroadcastReceiver, broadcastIntentFilter);
 
         super.onCreate(savedInstanceState);
@@ -463,6 +469,24 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         toggleIsInChat(chat.isInChat());
 
+        NotificationManager notificationManager = (NotificationManager) getActivity().getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+            List<Integer> toCancel = new ArrayList<>();
+
+            for (StatusBarNotification notification : notificationManager.getActiveNotifications()){
+                if (notification.getTag().equals(weMessage.NOTIFICATION_TAG + chat.getUuid().toString()) || notification.getTag().equals(weMessage.NOTIFICATION_TAG)){
+                    toCancel.add(notification.getId());
+                }
+            }
+
+            for (Integer i : toCancel){
+                notificationManager.cancel(i);
+            }
+        }else {
+            notificationManager.cancelAll();
+        }
+
         return view;
     }
 
@@ -524,6 +548,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         actionMessageMapIntegrity.clear();
         messageListAdapter.clear();
         messageManager.unhookCallbacks(callbackUuid);
+        weMessage.get().setNotificationCallbacks(null);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(messageListBroadcastReceiver);
 
         if (isBoundToConnectionService){
@@ -841,6 +866,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
     }
 
+    @Override
+    public boolean onNotification() {
+        return false;
+    }
+
     public synchronized AudioAttachmentMediaPlayer getAudioAttachmentMediaPlayer(){
         if (audioAttachmentMediaPlayer == null){
             audioAttachmentMediaPlayer = new AudioAttachmentMediaPlayer();
@@ -859,7 +889,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                 getAudioAttachmentMediaPlayer().stopAudioPlayback();
             }
             getAudioAttachmentMediaPlayer().setAttachment(a);
-            getAudioAttachmentMediaPlayer().startAudioPlayback(AndroidIOUtils.getUriFromFile(a.getFileLocation().getFile()));
+            getAudioAttachmentMediaPlayer().startAudioPlayback(IOUtils.getUriFromFile(a.getFileLocation().getFile()));
             return true;
         }catch(Exception ex){
             AppLogger.error("An error occurred while trying to play Audio Attachment: " + a.getUuid().toString(), ex);

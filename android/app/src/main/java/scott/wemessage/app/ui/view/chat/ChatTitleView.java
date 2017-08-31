@@ -22,7 +22,7 @@ import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.ui.view.font.FontTextView;
-import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
@@ -63,7 +63,7 @@ public class ChatTitleView extends LinearLayout {
 
         if (chat instanceof PeerChat){
             Contact contact = ((PeerChat) chat).getContact();
-            String url = AndroidIOUtils.getChatIconUri(chat, AndroidIOUtils.IconSize.NORMAL);
+            String url = IOUtils.getChatIconUri(chat, IOUtils.IconSize.NORMAL);
             RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
 
             layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
@@ -92,7 +92,7 @@ public class ChatTitleView extends LinearLayout {
             participantsTextView.setVisibility(GONE);
         } else {
             GroupChat groupChat = (GroupChat) chat;
-            String url = AndroidIOUtils.getChatIconUri(groupChat, AndroidIOUtils.IconSize.NORMAL);
+            String url = IOUtils.getChatIconUri(groupChat, IOUtils.IconSize.NORMAL);
             RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
 
             layoutParams.removeRule(RelativeLayout.CENTER_IN_PARENT);

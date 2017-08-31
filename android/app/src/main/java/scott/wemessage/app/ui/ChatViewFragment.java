@@ -78,7 +78,7 @@ import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.activities.MessageImageActivity;
 import scott.wemessage.app.ui.activities.MessageVideoActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
-import scott.wemessage.app.utils.AndroidIOUtils;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
@@ -1108,14 +1108,14 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         public void bind(GroupChat chat){
             init(chat);
 
-            Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getChatIconUri(chat, AndroidIOUtils.IconSize.LARGE)).into(chatViewPicture);
+            Glide.with(ChatViewFragment.this).load(IOUtils.getChatIconUri(chat, IOUtils.IconSize.LARGE)).into(chatViewPicture);
             chatViewName.setText(chat.getUIDisplayName(false));
             chatViewContactsTextView.setText(getString(R.string.participants, chat.getParticipants().size()));
 
             if (StringUtils.isEmpty(editedChatPicture)) {
-                Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getChatIconUri(chat, AndroidIOUtils.IconSize.LARGE)).into(chatViewPicture);
+                Glide.with(ChatViewFragment.this).load(IOUtils.getChatIconUri(chat, IOUtils.IconSize.LARGE)).into(chatViewPicture);
             }else if (editedChatPicture.equals("DELETE")) {
-                Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getDefaultChatUri(AndroidIOUtils.IconSize.LARGE)).into(chatViewPicture);
+                Glide.with(ChatViewFragment.this).load(IOUtils.getDefaultChatUri(IOUtils.IconSize.LARGE)).into(chatViewPicture);
             }else {
                 Glide.with(ChatViewFragment.this).load(editedChatPicture).into(chatViewPicture);
             }
@@ -1168,7 +1168,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
         public void updatePicture(String path){
             if (path.equals("DELETE")) {
-                Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getDefaultChatUri(AndroidIOUtils.IconSize.LARGE)).into(chatViewPicture);
+                Glide.with(ChatViewFragment.this).load(IOUtils.getDefaultChatUri(IOUtils.IconSize.LARGE)).into(chatViewPicture);
             }else {
                 Glide.with(ChatViewFragment.this).load(path).into(chatViewPicture);
             }
@@ -1256,7 +1256,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             });
 
             chatContactDisplayNameView.setText(contact.getUIDisplayName());
-            Glide.with(ChatViewFragment.this).load(AndroidIOUtils.getContactIconUri(contact, AndroidIOUtils.IconSize.NORMAL)).into(chatContactPictureView);
+            Glide.with(ChatViewFragment.this).load(IOUtils.getContactIconUri(contact, IOUtils.IconSize.NORMAL)).into(chatContactPictureView);
 
             swipeLayout.setSwipeEnabled(chat.isInChat());
 
