@@ -679,6 +679,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             @Override
             public void run() {
                 if (isChatThis(message.getChat())){
+                    if (isMessageBlocked(message)) return;
+
                     MessageView messageView = new MessageView(message);
                     messageListAdapter.addToStart(messageView, true);
                     messageMapIntegrity.put(message.getUuid().toString(), message);
@@ -694,6 +696,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             @Override
             public void run() {
                 if (isChatThis(newData.getChat())){
+                    if (isMessageBlocked(newData)) return;
+
                     messageListAdapter.update(oldData.getUuid().toString(), new MessageView(newData));
                     messageMapIntegrity.put(newData.getUuid().toString(), newData);
                 }
@@ -707,6 +711,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             @Override
             public void run() {
                 if(isChatThis(message.getChat())){
+                    if (isMessageBlocked(message)) return;
+
                     messageListAdapter.deleteById(message.getUuid().toString());
                     messageMapIntegrity.remove(message.getUuid().toString());
                 }
@@ -738,6 +744,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                             Message message = (Message) messageBase;
 
                             if (isChatThis(message.getChat())) {
+                                if (isMessageBlocked(message)) return;
+
                                 if (!messageMapIntegrity.containsKey(message.getUuid().toString())) {
                                     MessageView messageView = new MessageView(message);
 
@@ -867,8 +875,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public boolean onNotification() {
-        return false;
+    public boolean onNotification(String macGuid) {
+        if (getChat().getMacGuid().equals(macGuid)){
+            return false;
+        }
+        return true;
     }
 
     public synchronized AudioAttachmentMediaPlayer getAudioAttachmentMediaPlayer(){
@@ -1355,6 +1366,10 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
             getChildFragmentManager().beginTransaction().remove(getChildFragmentManager().findFragmentById(R.id.galleryFragmentContainer)).commit();
         }
+    }
+
+    private boolean isMessageBlocked(Message message){
+        return message.getSender().isBlocked();
     }
 
     private void bindService(){

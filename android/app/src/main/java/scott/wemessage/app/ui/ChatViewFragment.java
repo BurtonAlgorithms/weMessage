@@ -37,6 +37,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -1031,7 +1032,9 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             showingDeletePosition = null;
 
             for (Contact c : groupChat.getParticipants()){
-                contacts.add(c);
+                if (!c.isBlocked()) {
+                    contacts.add(c);
+                }
             }
 
             loadAttachmentItems();
@@ -1197,6 +1200,16 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                             return true;
                         }
                         return false;
+                    }
+                });
+
+                chatDoNotDisturbSwitch.setChecked(chat.isDoNotDisturb());
+                chatDoNotDisturbSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                        GroupChat newChat = chat;
+
+                        weMessage.get().getMessageManager().updateChat(newChat.getUuid().toString(), newChat.setDoNotDisturb(b), true);
                     }
                 });
 

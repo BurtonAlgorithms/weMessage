@@ -12,18 +12,20 @@ public class GroupChat extends Chat {
 
     private String displayName;
     private List<Contact> participants;
+    private boolean isDoNotDisturb;
 
     public GroupChat(){
 
     }
 
     public GroupChat(UUID uuid, FileLocationContainer groupChatPictureFileLocation, String macGuid, String macGroupID, String macChatIdentifier,
-                     boolean isInChat, boolean hasUnreadMessages, String displayName, List<Contact> participants) {
+                     boolean isInChat, boolean hasUnreadMessages, boolean isDoNotDisturb, String displayName, List<Contact> participants) {
 
         super(uuid, groupChatPictureFileLocation, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
 
         this.displayName = displayName;
         this.participants = participants;
+        this.isDoNotDisturb = isDoNotDisturb;
     }
 
     @Override
@@ -66,6 +68,10 @@ public class GroupChat extends Chat {
         return participants;
     }
 
+    public boolean isDoNotDisturb() {
+        return isDoNotDisturb;
+    }
+
     public GroupChat setDisplayName(String displayName) {
         this.displayName = displayName;
         return this;
@@ -87,6 +93,11 @@ public class GroupChat extends Chat {
                 participants.remove(c);
             }
         }
+        return this;
+    }
+
+    public GroupChat setDoNotDisturb(boolean isDoNotDisturb) {
+        this.isDoNotDisturb = isDoNotDisturb;
         return this;
     }
 }

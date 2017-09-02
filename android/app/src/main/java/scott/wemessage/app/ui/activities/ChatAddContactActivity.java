@@ -581,7 +581,11 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
         }
 
         public void setOriginalList(ArrayList<Contact> contacts){
-            this.originalList = contacts;
+            for (Contact c : contacts){
+                if (!c.isBlocked()){
+                    originalList.add(c);
+                }
+            }
         }
 
         public void searchContacts(final String search){
@@ -624,6 +628,8 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
 
         public void addContact(Contact c){
             if ((!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact(c)){
+                if (c.isBlocked()) return;
+
                 contacts.add(new SearchableContact(c));
                 notifyItemInserted(contacts.size() - 1);
             }
@@ -631,6 +637,8 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
 
         public void addContactToOriginal(Contact c){
             if ((!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact(c)){
+                if (c.isBlocked()) return;
+
                 originalList.add(c);
             }
         }
@@ -645,6 +653,8 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                         int i = 0;
                         for (SearchableContact contact : contacts) {
                             if (contact.getContact().getUuid().toString().equals(params[0].getUuid().toString())) {
+                                if (params[0].isBlocked()) break;
+
                                 contacts.set(i, new SearchableContact(params[0]));
                                 return i;
                             }
@@ -673,6 +683,8 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                         int i = 0;
                         for (Contact contact : originalList) {
                             if (contact.getUuid().toString().equals(params[0].getUuid().toString())) {
+                                if (params[0].isBlocked()) break;
+
                                 originalList.set(i, params[0]);
                                 break;
                             }
@@ -697,7 +709,9 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                         if (o instanceof Contact){
                             if ((!((Contact) o).getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase()
                                     .getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact((Contact) o)) {
-                                unsortedList.add(new SearchableContact((Contact) o));
+                                if (!((Contact) o).isBlocked()) {
+                                    unsortedList.add(new SearchableContact((Contact) o));
+                                }
                             }
                         }
                     }

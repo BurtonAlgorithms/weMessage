@@ -149,5 +149,6 @@
     <string name="participants">%1$d Participants</string>
     <string name="no_attachments_found_chat">No attachments have been sent to this chat.</string>
     <string name="return_chat_list_chat_deleted">This chat has been deleted.</string>
+    <string name="settings_created_by">Created by Roman Scott</string>
 
 </resources>

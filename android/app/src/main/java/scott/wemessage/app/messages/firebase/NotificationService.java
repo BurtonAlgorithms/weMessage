@@ -38,7 +38,7 @@ public class NotificationService extends FirebaseMessagingService {
     }
 
     private void showNotification(RemoteMessage remoteMessage){
-        if (weMessage.get().performNotification()) {
+        if (weMessage.get().performNotification(remoteMessage.getData().get("chatId"))) {
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             JSONNotification jsonNotification = new JSONNotification(
                     null,
@@ -50,15 +50,24 @@ public class NotificationService extends FirebaseMessagingService {
             );
 
             MessageDatabase database = weMessage.get().getMessageDatabase();
+            Chat chat = database.getChatByMacGuid(jsonNotification.getChatId());
+            Handle handle = database.getHandleByHandleID(jsonNotification.getHandleId());
+
+            if (chat != null && chat instanceof GroupChat){
+                if (((GroupChat) chat).isDoNotDisturb()) return;
+            }
+
+            if (handle != null){
+                Contact c = weMessage.get().getMessageDatabase().getContactByHandle(handle);
+                if (c.isDoNotDisturb() || c.isBlocked()) return;
+            }
+
             DecryptionTask decryptionTask = new DecryptionTask(new KeyTextPair(jsonNotification.getEncryptedText(), jsonNotification.getKey()), CryptoType.AES);
             decryptionTask.runDecryptTask();
 
             String displayName = null;
             String message = "";
             Bitmap largeIcon = null;
-
-            Chat chat = database.getChatByMacGuid(jsonNotification.getChatId());
-            Handle handle = database.getHandleByHandleID(jsonNotification.getHandleId());
 
             if (!StringUtils.isEmpty(jsonNotification.getChatId())) {
                 if (chat != null && chat instanceof GroupChat) {

@@ -40,6 +40,7 @@ import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.ui.activities.CreateChatActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
@@ -245,7 +246,9 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         this.dialogsListAdapter = dialogsListAdapter;
 
         for (Chat chat : weMessage.get().getMessageManager().getChats().values()){
-            dialogsListAdapter.addItem(new ChatDialogView(chat));
+            if (!isChatBlocked(chat)) {
+                dialogsListAdapter.addItem(new ChatDialogView(chat));
+            }
         }
 
         if (getActivity().getIntent() != null && getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON) != null){
@@ -307,7 +310,9 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             @Override
             public void run() {
                 toggleNoConversations(false);
-                dialogsListAdapter.addItem(new ChatDialogView(chat));
+                if (!isChatBlocked(chat)) {
+                    dialogsListAdapter.addItem(new ChatDialogView(chat));
+                }
             }
         });
     }
@@ -316,83 +321,97 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     public void onChatUpdate(Chat oldData, Chat newData) {
         final ChatDialogView chatDialogView = new ChatDialogView(newData);
 
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                dialogsListAdapter.updateItemById(chatDialogView);
-            }
-        });
+        if (!isChatBlocked(newData)) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dialogsListAdapter.updateItemById(chatDialogView);
+                }
+            });
+        }
     }
 
     @Override
     public void onUnreadMessagesUpdate(Chat chat, boolean hasUnreadMessages) {
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                dialogsListAdapter.updateItemById(chatDialogView);
-            }
-        });
+        if (!isChatBlocked(chat)) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dialogsListAdapter.updateItemById(chatDialogView);
+                }
+            });
+        }
     }
 
     @Override
     public void onChatRename(Chat chat, String displayName) {
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                dialogsListAdapter.updateItemById(chatDialogView);
-            }
-        });
+        if (!isChatBlocked(chat)) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dialogsListAdapter.updateItemById(chatDialogView);
+                }
+            });
+        }
     }
 
     @Override
     public void onParticipantAdd(Chat chat, Contact contact) {
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                dialogsListAdapter.updateItemById(chatDialogView);
-            }
-        });
+        if (!isChatBlocked(chat)) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dialogsListAdapter.updateItemById(chatDialogView);
+                }
+            });
+        }
     }
 
     @Override
     public void onParticipantRemove(Chat chat, Contact contact) {
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                dialogsListAdapter.updateItemById(chatDialogView);
-            }
-        });
+        if (!isChatBlocked(chat)) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dialogsListAdapter.updateItemById(chatDialogView);
+                }
+            });
+        }
     }
 
     @Override
     public void onLeaveGroup(Chat chat) {
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                dialogsListAdapter.updateItemById(chatDialogView);
-            }
-        });
+        if (!isChatBlocked(chat)) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dialogsListAdapter.updateItemById(chatDialogView);
+                }
+            });
+        }
     }
 
     @Override
     public void onChatDelete(final Chat chat) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                dialogsListAdapter.deleteById(chat.getUuid().toString());
-                toggleNoConversations(dialogsListAdapter.isEmpty());
-            }
-        });
+        if (!isChatBlocked(chat)) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dialogsListAdapter.deleteById(chat.getUuid().toString());
+                    toggleNoConversations(dialogsListAdapter.isEmpty());
+                }
+            });
+        }
     }
 
     @Override
@@ -404,7 +423,9 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                     dialogsListAdapter.clear();
 
                     for (Chat chat : chats) {
-                        dialogsListAdapter.addItem(new ChatDialogView(chat));
+                        if (!isChatBlocked(chat)) {
+                            dialogsListAdapter.addItem(new ChatDialogView(chat));
+                        }
                     }
                     dialogsListAdapter.sortByLastMessageDate();
                 }
@@ -417,8 +438,10 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                MessageView messageView = new MessageView(message);
-                dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
+                if (!isChatBlocked(message.getChat())) {
+                    MessageView messageView = new MessageView(message);
+                    dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
+                }
             }
         });
     }
@@ -433,8 +456,10 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                MessageView messageView = new MessageView(weMessage.get().getMessageDatabase().getLastMessageFromChat(message.getChat()));
-                dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
+                if (!isChatBlocked(message.getChat())) {
+                    MessageView messageView = new MessageView(weMessage.get().getMessageDatabase().getLastMessageFromChat(message.getChat()));
+                    dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
+                }
             }
         });
     }
@@ -539,5 +564,9 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
 
         return snackbar;
+    }
+
+    private boolean isChatBlocked(Chat chat){
+        return chat instanceof PeerChat && (weMessage.get().getMessageDatabase().getContactByHandle(((PeerChat) chat).getContact().getHandle()).isBlocked());
     }
 }

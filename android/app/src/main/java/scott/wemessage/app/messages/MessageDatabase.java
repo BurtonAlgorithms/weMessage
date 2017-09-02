@@ -65,6 +65,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + ContactTable.FIRST_NAME + " TEXT, "
                 + ContactTable.LAST_NAME + " TEXT, "
                 + ContactTable.HANDLE_UUID + " TEXT, "
+                + ContactTable.IS_DO_NOT_DISTURB + " INTEGER, "
+                + ContactTable.IS_BLOCKED + " INTEGER, "
                 + ContactTable.CONTACT_PICTURE_FILE_LOCATION + " TEXT );";
 
         String createChatTable = "CREATE TABLE " + ChatTable.TABLE_NAME + " ("
@@ -76,6 +78,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + ChatTable.MAC_GROUP_ID + " TEXT, "
                 + ChatTable.MAC_CHAT_IDENTIFIER + " TEXT, "
                 + ChatTable.IS_IN_CHAT + " INTEGER, "
+                + ChatTable.IS_DO_NOT_DISTURB + " INTEGER, "
                 + ChatTable.HAS_UNREAD_MESSAGES + " INTEGER, "
                 + ChatTable.CONTACT_UUID + " TEXT, "
                 + ChatTable.DISPLAY_NAME + " TEXT, "
@@ -684,6 +687,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         Contact contact = new Contact().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ContactTable.UUID))))
                 .setFirstName(cursor.getString(cursor.getColumnIndex(ContactTable.FIRST_NAME))).setLastName(cursor.getString(cursor.getColumnIndex(ContactTable.LAST_NAME)))
                 .setHandle(getHandleByUuid(cursor.getString(cursor.getColumnIndex(ContactTable.HANDLE_UUID))))
+                .setDoNotDisturb(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ContactTable.IS_DO_NOT_DISTURB))))
+                .setBlocked(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ContactTable.IS_BLOCKED))))
                 .setContactPictureFileLocation(new FileLocationContainer(cursor.getString(cursor.getColumnIndex(ContactTable.CONTACT_PICTURE_FILE_LOCATION))));
         return contact;
     }
@@ -696,6 +701,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         values.put(ContactTable.FIRST_NAME, contact.getFirstName());
         values.put(ContactTable.LAST_NAME, contact.getLastName());
         values.put(ContactTable.HANDLE_UUID, contact.getHandle().getUuid().toString());
+        values.put(ContactTable.IS_DO_NOT_DISTURB, booleanToInteger(contact.isDoNotDisturb()));
+        values.put(ContactTable.IS_BLOCKED, booleanToInteger(contact.isBlocked()));
 
         if (contact.getContactPictureFileLocation() != null) {
             values.put(ContactTable.CONTACT_PICTURE_FILE_LOCATION, contact.getContactPictureFileLocation().getFileLocation());
@@ -861,6 +868,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         }else {
             chat = new GroupChat().setDisplayName(cursor.getString(cursor.getColumnIndex(ChatTable.DISPLAY_NAME)))
                     .setParticipants(stringListToContacts(Arrays.asList(cursor.getString(cursor.getColumnIndex(ChatTable.PARTICIPANTS)).split(", "))))
+                    .setDoNotDisturb(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_DO_NOT_DISTURB))))
                     .setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ChatTable.UUID)))).setMacGuid(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GUID)))
                     .setMacGroupID(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GROUP_ID))).setMacChatIdentifier(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_CHAT_IDENTIFIER)))
                     .setIsInChat(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_IN_CHAT))))
@@ -882,9 +890,11 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             values.put(ChatTable.CONTACT_UUID, ((PeerChat) chat).getContact().getUuid().toString());
             values.putNull(ChatTable.PARTICIPANTS);
             values.putNull(ChatTable.DISPLAY_NAME);
+            values.putNull(ChatTable.IS_DO_NOT_DISTURB);
         }else if (chat instanceof GroupChat){
             values.put(ChatTable.DISPLAY_NAME, ((GroupChat) chat).getDisplayName());
             values.put(ChatTable.PARTICIPANTS, StringUtils.join(contactsToStringList(((GroupChat) chat).getParticipants()), ", ", 2));
+            values.put(ChatTable.IS_DO_NOT_DISTURB, booleanToInteger(((GroupChat) chat).isDoNotDisturb()));
             values.putNull(ChatTable.CONTACT_UUID);
         }
 
@@ -1298,6 +1308,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         public static final String FIRST_NAME = "first_name";
         public static final String LAST_NAME = "last_name";
         public static final String HANDLE_UUID = "handle_uuid";
+        public static final String IS_DO_NOT_DISTURB = "is_do_not_disturb";
+        public static final String IS_BLOCKED = "is_blocked";
         public static final String CONTACT_PICTURE_FILE_LOCATION = "contact_picture_file_location";
     }
 
@@ -1311,6 +1323,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         public static final String MAC_GROUP_ID = "mac_group_id";
         public static final String MAC_CHAT_IDENTIFIER = "mac_chat_identifier";
         public static final String IS_IN_CHAT = "is_in_chat";
+        public static final String IS_DO_NOT_DISTURB = "is_do_not_disturb";
         public static final String HAS_UNREAD_MESSAGES = "has_unread_messages";
         public static final String CONTACT_UUID = "contact_uuid";
         public static final String DISPLAY_NAME = "display_name";

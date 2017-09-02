@@ -9,15 +9,32 @@
     android:background="@color/colorHeader"
     android:id="@+id/chatListToolbar" >
 
-    <scott.wemessage.app.ui.view.font.FontTextView
-        app:fontName="OrkneyLight"
-        android:layout_width="wrap_content"
+    <RelativeLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="@string/word_conversations"
-        android:textColor="#ffffff"
         android:paddingTop="16dp"
-        android:paddingBottom="16dp"
-        android:textSize="26sp" />
+        android:paddingBottom="16dp">
+
+        <ImageView
+            android:id="@+id/chatListSettingsButton"
+            android:src="@drawable/ic_settings"
+            android:tint="@color/white"
+            android:background="?android:attr/selectableItemBackground"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_alignParentStart="true" />
+
+        <scott.wemessage.app.ui.view.font.FontTextView
+            app:fontName="OrkneyLight"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/word_conversations"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:textColor="#ffffff"
+            android:textSize="26sp" />
+
+    </RelativeLayout>
 
 </android.support.v7.widget.Toolbar>

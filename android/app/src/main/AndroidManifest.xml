@@ -35,6 +35,7 @@
         <activity android:name=".app.ui.activities.MessageVideoActivity"
                   android:theme="@style/AppTheme.VideoPlayer"
                   android:configChanges="orientation|keyboardHidden|screenLayout|screenSize"> </activity>
+        <activity android:name=".app.ui.activities.SettingsActivity" />
         <activity android:name="com.afollestad.materialcamera.CaptureActivity" />
         <activity android:name="com.afollestad.materialcamera.CaptureActivity2" />
 

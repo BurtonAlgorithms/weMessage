@@ -821,7 +821,11 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         }
 
         public void setOriginalList(ArrayList<Contact> contacts){
-            this.originalList = contacts;
+            for (Contact c : contacts){
+                if (!c.isBlocked()){
+                    originalList.add(c);
+                }
+            }
         }
 
         public void searchContacts(final String search){
@@ -864,6 +868,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
         public void addContact(Contact c){
             if (!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())){
+                if (c.isBlocked()) return;
+
                 contacts.add(new SearchableContact(c));
                 notifyItemInserted(contacts.size() - 1);
             }
@@ -871,6 +877,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
         public void addContactToOriginal(Contact c){
             if (!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())){
+                if (c.isBlocked()) return;
+
                 originalList.add(c);
             }
         }
@@ -885,6 +893,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                         int i = 0;
                         for (SearchableContact contact : contacts) {
                             if (contact.getContact().getUuid().toString().equals(params[0].getUuid().toString())) {
+                                if (params[0].isBlocked()) break;
+
                                 contacts.set(i, new SearchableContact(params[0]));
                                 return i;
                             }
@@ -913,6 +923,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                         int i = 0;
                         for (Contact contact : originalList) {
                             if (contact.getUuid().toString().equals(params[0].getUuid().toString())) {
+                                if (params[0].isBlocked()) break;
+
                                 originalList.set(i, params[0]);
                                 break;
                             }
@@ -937,7 +949,9 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                         if (o instanceof Contact){
                             if (!((Contact) o).getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase()
                                     .getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) {
-                                unsortedList.add(new SearchableContact((Contact) o));
+                                if (!((Contact) o).isBlocked()) {
+                                    unsortedList.add(new SearchableContact((Contact) o));
+                                }
                             }
                         }
                     }

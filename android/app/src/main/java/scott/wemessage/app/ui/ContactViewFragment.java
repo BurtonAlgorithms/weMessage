@@ -38,6 +38,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -828,6 +829,15 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
         }
     }
 
+    private void goToChatList(){
+        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
+            Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
+
+            startActivity(returnIntent);
+            getActivity().finish();
+        }
+    }
+
     private ArrayList<String> getAllImages(){
         ArrayList<String> images = new ArrayList<>();
         Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
@@ -1039,6 +1049,26 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             }else {
                 Glide.with(ContactViewFragment.this).load(editedContactPicture).into(contactPicture);
             }
+
+            doNotDisturbSwitch.setChecked(contact.isDoNotDisturb());
+            doNotDisturbSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    Contact c = weMessage.get().getMessageDatabase().getContactByUuid(contactUuid);
+                    weMessage.get().getMessageManager().updateContact(c.getUuid().toString(), c.setDoNotDisturb(b), true);
+                }
+            });
+
+            blockButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Contact c = weMessage.get().getMessageDatabase().getContactByUuid(contactUuid);
+
+                    weMessage.get().getMessageManager().updateContact(c.getUuid().toString(), c.setBlocked(true), true);
+                    goToChatList();
+                }
+            });
+
             toggleEditMode(isInEditMode);
         }
 

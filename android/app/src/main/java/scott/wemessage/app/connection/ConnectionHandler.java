@@ -519,7 +519,7 @@ public final class ConnectionHandler extends Thread {
                         Handle meHandle = database.getHandleByAccount(weMessage.get().getCurrentAccount());
 
                         if (database.getContactByHandle(meHandle) == null) {
-                            weMessage.get().getMessageManager().addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null), false);
+                            weMessage.get().getMessageManager().addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null, false, false), false);
                         }
                     }else {
                         UUID oldUUID = database.getAccountByEmail(emailPlainText).getUuid();
@@ -614,7 +614,7 @@ public final class ConnectionHandler extends Thread {
 
                                 for (String s : jsonMessage.getChat().getParticipants()) {
                                     if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
-                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null), false);
+                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null, false, false), false);
                                     }
                                 }
 
@@ -685,7 +685,7 @@ public final class ConnectionHandler extends Thread {
 
                                 for (String s : jsonMessage.getChat().getParticipants()) {
                                     if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
-                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null), false);
+                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null, false, false), false);
                                     }
                                 }
 
@@ -827,7 +827,7 @@ public final class ConnectionHandler extends Thread {
             contactList.add(weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByHandleID(s)));
         }
         GroupChat newChat = new GroupChat(UUID.randomUUID(), null, jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
-                true, true, jsonChat.getDisplayName(), contactList);
+                true, true, false, jsonChat.getDisplayName(), contactList);
 
         messageManager.addChat(newChat, false);
     }
@@ -861,7 +861,7 @@ public final class ConnectionHandler extends Thread {
             GroupChat updatedChat = (GroupChat) messageDatabase.getChatByUuid(existingChat.getUuid().toString());
 
             messageManager.updateChat(existingChat.getUuid().toString(), new GroupChat(existingChat.getUuid(), null, jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
-                    updatedChat.isInChat(), updatedChat.hasUnreadMessages(), updatedChat.getDisplayName(), updatedChat.getParticipants()), false);
+                    updatedChat.isInChat(), updatedChat.hasUnreadMessages(), updatedChat.isDoNotDisturb(), updatedChat.getDisplayName(), updatedChat.getParticipants()), false);
         }
     }
 
@@ -1011,7 +1011,7 @@ public final class ConnectionHandler extends Thread {
                 }
 
                 if (apContact == null) {
-                    messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(args[3]), null), false);
+                    messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(args[3]), null, false, false), false);
                     apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
                 }
 
@@ -1079,11 +1079,11 @@ public final class ConnectionHandler extends Thread {
 
                 for (String s : participants) {
                     if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
-                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null), false);
+                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null, false, false), false);
                         contacts.add(messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
                     }
                 }
-                messageManager.addChat(new GroupChat(UUID.randomUUID(), null, null, null, null, true, true, args[0], contacts), false);
+                messageManager.addChat(new GroupChat(UUID.randomUUID(), null, null, null, null, true, true, false, args[0], contacts), false);
                 break;
 
             case LEAVE_GROUP:

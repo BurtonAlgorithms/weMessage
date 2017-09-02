@@ -148,10 +148,10 @@ public final class weMessage extends Application implements Constants {
         messageManager = null;
     }
 
-    public synchronized boolean performNotification(){
+    public synchronized boolean performNotification(String macGuid){
         if (notificationCallbacks == null) return true;
 
-        return notificationCallbacks.onNotification();
+        return notificationCallbacks.onNotification(macGuid);
     }
 
     public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){

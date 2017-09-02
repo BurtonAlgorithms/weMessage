@@ -17,17 +17,21 @@ public class Contact {
     private String lastName;
     private Handle handle;
     private FileLocationContainer contactPictureFileLocation;
+    private boolean isDoNotDisturb;
+    private boolean isBlocked;
 
     public Contact(){
 
     }
 
-    public Contact(UUID uuid, String firstName, String lastName, Handle handle, FileLocationContainer contactPictureFileLocation) {
+    public Contact(UUID uuid, String firstName, String lastName, Handle handle, FileLocationContainer contactPictureFileLocation, boolean isDoNotDisturb, boolean isBlocked) {
         this.uuid = uuid;
         this.firstName = firstName;
         this.lastName = lastName;
         this.handle = handle;
         this.contactPictureFileLocation = contactPictureFileLocation;
+        this.isDoNotDisturb = isDoNotDisturb;
+        this.isBlocked = isBlocked;
     }
 
     public UUID getUuid() {
@@ -80,6 +84,14 @@ public class Contact {
         return contactPictureFileLocation;
     }
 
+    public boolean isDoNotDisturb() {
+        return isDoNotDisturb;
+    }
+
+    public boolean isBlocked(){
+        return isBlocked;
+    }
+
     public Contact setUuid(UUID uuid) {
         this.uuid = uuid;
         return this;
@@ -102,6 +114,16 @@ public class Contact {
 
     public Contact setContactPictureFileLocation(FileLocationContainer contactPictureFileLocation) {
         this.contactPictureFileLocation = contactPictureFileLocation;
+        return this;
+    }
+
+    public Contact setDoNotDisturb(boolean isDoNotDisturb) {
+        this.isDoNotDisturb = isDoNotDisturb;
+        return this;
+    }
+
+    public Contact setBlocked(boolean isBlocked){
+        this.isBlocked = isBlocked;
         return this;
     }
 }
