@@ -33,12 +33,93 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@id/settingsAppIcon"
                 android:layout_centerHorizontal="true"
-                android:layout_marginEnd="8dp"
-                android:layout_marginStart="8dp"
                 android:layout_marginTop="16dp"
                 android:text="@string/app_name"
                 android:textSize="25sp"
                 app:fontName="OrkneyLight"/>
+
+            <scott.wemessage.app.ui.view.font.FontTextView
+                android:id="@+id/settingsVersionText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/settingsAppText"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp"
+                android:text="@string/settings_version"
+                android:textSize="16sp"
+                app:fontName="OrkneyLight"/>
+
+            <RelativeLayout
+                android:layout_margin="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/settingsVersionText">
+
+                <RelativeLayout
+                    android:id="@+id/settingsBlockedContacts"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp">
+
+                    <ImageView
+                        android:id="@+id/settingsBlockImage"
+                        android:src="@drawable/ic_blocked"
+                        android:tint="@color/brightRed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"/>
+
+                    <scott.wemessage.app.ui.view.font.FontTextView
+                        android:text="@string/blocked_contacts"
+                        android:textSize="18sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_centerVertical="true"
+                        android:layout_toStartOf="@+id/blockedContactsArrow"
+                        android:layout_toEndOf="@id/settingsBlockImage"
+                        app:fontName="OrkneyLight"/>
+
+                    <ImageView
+                        android:id="@+id/blockedContactsArrow"
+                        android:src="@drawable/ic_arrow_right"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:layout_alignParentEnd="true"/>
+
+                </RelativeLayout>
+
+                <LinearLayout
+                    android:id="@+id/settingsSignInOut"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/settingsBlockedContacts"
+                    android:padding="8dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:src="@drawable/ic_person"
+                        android:layout_marginStart="-4dp"
+                        android:layout_marginEnd="-4dp"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"/>
+
+                    <scott.wemessage.app.ui.view.font.FontTextView
+                        android:text="@string/sign_out"
+                        android:textSize="18sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        app:fontName="OrkneyLight"/>
+
+                </LinearLayout>
+
+            </RelativeLayout>
 
             <scott.wemessage.app.ui.view.font.FontTextView
                 android:text="@string/settings_created_by"

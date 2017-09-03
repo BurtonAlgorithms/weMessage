@@ -44,6 +44,7 @@ import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.ui.activities.CreateChatActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
+import scott.wemessage.app.ui.activities.SettingsActivity;
 import scott.wemessage.app.ui.view.chat.ChatDialogView;
 import scott.wemessage.app.ui.view.chat.ChatDialogViewHolder;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
@@ -166,6 +167,17 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         addChatButton = (FloatingActionButton) view.findViewById(R.id.addChatButton);
 
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.chatListToolbar);
+
+        toolbar.findViewById(R.id.chatListSettingsButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent launcherIntent = new Intent(weMessage.get(), SettingsActivity.class);
+
+                startActivity(launcherIntent);
+                getActivity().finish();
+            }
+        });
+
         toolbar.setTitle("");
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
