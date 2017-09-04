@@ -150,9 +150,11 @@
     <string name="no_attachments_found_chat">No attachments have been sent to this chat.</string>
     <string name="return_chat_list_chat_deleted">This chat has been deleted.</string>
     <string name="settings_created_by">Created by Roman Scott</string>
-    <string name="settings_version">Version: </string>
+    <string name="settings_version">Version: %1$s</string>
     <string name="blocked_contacts">Blocked Contacts</string>
     <string name="sign_out">Sign Out</string>
     <string name="word_unblock">Unblock</string>
+    <string name="word_delivered">Delivered</string>
+    <string name="word_read">Read</string>
 
 </resources>

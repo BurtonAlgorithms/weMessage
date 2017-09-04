@@ -33,7 +33,7 @@ public class NotificationService extends FirebaseMessagingService {
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-        //TODO: trim message
+        //TODO: trim message, check if notification email matches, jsonnotification
         showNotification(remoteMessage);
     }
 

@@ -77,6 +77,30 @@
 
     </RelativeLayout>
 
+    <LinearLayout
+        android:id="@+id/deliveryMessageContainer"
+        android:layout_marginTop="4dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/outgoingMessageContainer"
+        android:layout_alignParentEnd="true"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/deliveryMessageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="14sp"/>
+
+        <TextView
+            android:id="@+id/deliveryMessageTimeView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"/>
+    </LinearLayout>
+
     <TextView
         android:id="@+id/errorMessageView"
         android:layout_width="wrap_content"

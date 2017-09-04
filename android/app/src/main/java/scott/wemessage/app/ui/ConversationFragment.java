@@ -107,6 +107,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     private boolean isBoundToConnectionService = false;
     private boolean isPopupFragmentOpen = false;
     private boolean isSelectionMode = false;
+    private int lastMessageAdapterPosition = -1;
 
     private String cameraAttachmentInput;
     private String voiceMessageInput;
@@ -381,6 +382,62 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                         showMessageOptionsSheetView((MessageView) message);
                     }
                 }
+            }
+        });
+
+        messageListAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onChanged() {
+                showDeliveryStatus(messageList.getAdapter().getItemCount());
+                super.onChanged();
+            }
+
+            @Override
+            public void onItemRangeChanged(int positionStart, int itemCount) {
+                showDeliveryStatus(itemCount);
+                super.onItemRangeChanged(positionStart, itemCount);
+            }
+
+            @Override
+            public void onItemRangeChanged(int positionStart, int itemCount, Object payload) {
+                showDeliveryStatus(itemCount);
+                super.onItemRangeChanged(positionStart, itemCount, payload);
+            }
+
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                showDeliveryStatus(itemCount);
+                super.onItemRangeInserted(positionStart, itemCount);
+            }
+
+            @Override
+            public void onItemRangeRemoved(int positionStart, int itemCount) {
+                showDeliveryStatus(itemCount);
+                super.onItemRangeRemoved(positionStart, itemCount);
+            }
+
+            @Override
+            public void onItemRangeMoved(int fromPosition, int toPosition, int itemCount) {
+                showDeliveryStatus(itemCount);
+                super.onItemRangeMoved(fromPosition, toPosition, itemCount);
+            }
+
+            private void showDeliveryStatus(int position){
+                if (lastMessageAdapterPosition != -1){
+                    RecyclerView.ViewHolder previousViewHolder = messageList.findViewHolderForAdapterPosition(lastMessageAdapterPosition);
+
+                    if (previousViewHolder != null && previousViewHolder instanceof OutgoingMessageViewHolder){
+                        ((OutgoingMessageViewHolder) previousViewHolder).toggleDeliveryVisibility(false);
+                    }
+                }
+
+                RecyclerView.ViewHolder viewHolder = messageList.findViewHolderForAdapterPosition(position);
+
+                if (viewHolder != null && viewHolder instanceof OutgoingMessageViewHolder){
+                    ((OutgoingMessageViewHolder) viewHolder).toggleDeliveryVisibility(true);
+                }
+
+                lastMessageAdapterPosition = position;
             }
         });
 

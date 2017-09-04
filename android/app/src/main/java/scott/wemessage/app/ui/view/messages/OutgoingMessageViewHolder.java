@@ -17,6 +17,7 @@ import com.stfalcon.chatkit.messages.MessageHolders;
 import com.stfalcon.chatkit.utils.DateFormatter;
 
 import java.io.File;
+import java.util.Date;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
@@ -34,12 +35,15 @@ import scott.wemessage.commons.utils.StringUtils;
 public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessageViewHolder<MessageView> implements MessageViewHolder {
 
     private String messageId;
+    private boolean showDeliveryView = false;
     private boolean isSelectionMode = false;
     private boolean isSelected = false;
 
     private LinearLayout attachmentsContainer;
     private ImageView errorBubble;
     private TextView errorMessageView;
+    private TextView deliveryMessageView;
+    private TextView deliveryMessageTimeView;
     private ImageView selectedBubble;
 
     public OutgoingMessageViewHolder(View itemView) {
@@ -49,6 +53,8 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
         errorBubble = (ImageView) itemView.findViewById(R.id.errorBubble);
         errorMessageView = (TextView) itemView.findViewById(R.id.errorMessageView);
         selectedBubble = (ImageView) itemView.findViewById(R.id.selectedMessageBubble);
+        deliveryMessageView = (TextView) itemView.findViewById(R.id.deliveryMessageView);
+        deliveryMessageTimeView = (TextView) itemView.findViewById(R.id.deliveryMessageTimeView);
     }
 
     @Override
@@ -186,6 +192,37 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
 
         bubble.setLayoutParams(layoutParams);
 
+        if (!message.hasErrored() && (message.getMessage().isDelivered() || message.getMessage().isRead())){
+            showDeliveryView = true;
+        }else {
+            showDeliveryView = false;
+        }
+
+        if (message.getMessage().isDelivered()){
+            deliveryMessageView.setText(itemView.getContext().getString(R.string.word_delivered));
+            deliveryMessageTimeView.setVisibility(View.GONE);
+        }
+
+        if (message.getMessage().isRead() && message.getMessage().getModernDateRead() != null){
+            Date date = message.getMessage().getModernDateRead();
+
+            deliveryMessageView.setText(itemView.getContext().getString(R.string.word_read));
+
+            if (DateFormatter.isToday(date)){
+                deliveryMessageTimeView.setText(DateFormatter.format(date, " h:mm a"));
+            }else if (DateFormatter.isYesterday(date)){
+                String dateString = " " + itemView.getContext().getString(R.string.word_yesterday) + DateFormatter.format(date, " h:mm a");
+                deliveryMessageTimeView.setText(dateString);
+            }else {
+                if (DateFormatter.isCurrentYear(date)){
+                    deliveryMessageTimeView.setText(DateFormatter.format(date, " MMMM d"));
+                }else {
+                    deliveryMessageTimeView.setText(DateFormatter.format(date, " MMMM d yyyy"));
+                }
+            }
+            deliveryMessageTimeView.setVisibility(View.VISIBLE);
+        }
+
         toggleSelectionMode(getParentFragment().isInSelectionMode());
         setSelected(getParentFragment().getSelectedMessages().containsKey(message.getId()));
     }
@@ -248,6 +285,16 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
         } else {
             isSelectionMode = false;
             selectedBubble.setVisibility(View.GONE);
+        }
+    }
+
+    public void toggleDeliveryVisibility(boolean visible){
+        if (visible){
+            if (showDeliveryView){
+                itemView.findViewById(R.id.deliveryMessageContainer).setVisibility(View.VISIBLE);
+            }
+        }else {
+            itemView.findViewById(R.id.deliveryMessageContainer).setVisibility(View.GONE);
         }
     }
 
