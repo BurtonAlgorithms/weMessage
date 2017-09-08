@@ -547,6 +547,7 @@ public final class ConnectionHandler extends Thread {
                     Bundle successExtras = new Bundle();
                     successExtras.putBoolean(weMessage.BUNDLE_FAST_CONNECT, fastConnect);
 
+                    weMessage.get().signIn();
                     sendLocalBroadcast(weMessage.BROADCAST_LOGIN_SUCCESSFUL, successExtras);
                 } else if (incoming.startsWith(weMessage.JSON_CONNECTION_TERMINATED)) {
                     ServerMessage serverMessage = getIncomingMessage(weMessage.JSON_CONNECTION_TERMINATED, incoming);

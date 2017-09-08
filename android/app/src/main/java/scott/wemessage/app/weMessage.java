@@ -1,6 +1,9 @@
 package scott.wemessage.app;
 
 import android.app.Application;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.content.SharedPreferences;
 
 import java.io.File;
 
@@ -92,6 +95,7 @@ public final class weMessage extends Application implements Constants {
     public static final String SHARED_PREFERENCES_LAST_HOST = IDENTIFIER_PREFIX + "lastHost";
     public static final String SHARED_PREFERENCES_LAST_EMAIL = IDENTIFIER_PREFIX + "lastEmail";
     public static final String SHARED_PREFERENCES_LAST_HASHED_PASSWORD = IDENTIFIER_PREFIX + "lastHashedPassword";
+    public static final String SHARED_PREFERENCES_SIGNED_OUT = IDENTIFIER_PREFIX + "signedOut";
 
     private static weMessage instance;
     private MessageDatabase messageDatabase;
@@ -118,6 +122,10 @@ public final class weMessage extends Application implements Constants {
         instance = this;
     }
 
+    public synchronized File getAttachmentFolder(){
+        return attachmentFolder;
+    }
+
     public synchronized MessageDatabase getMessageDatabase(){
         return messageDatabase;
     }
@@ -135,17 +143,10 @@ public final class weMessage extends Application implements Constants {
         return currentAccount;
     }
 
-    public synchronized void setCurrentAccount(Account account){
-        this.currentAccount = account;
-    }
+    public synchronized boolean isSignedIn(){
+        SharedPreferences sharedPreferences = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
 
-    public synchronized File getAttachmentFolder(){
-        return attachmentFolder;
-    }
-
-    public synchronized void dumpMessageManager(){
-        messageManager.dumpAll(this);
-        messageManager = null;
+        return !sharedPreferences.getBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
     }
 
     public synchronized boolean performNotification(String macGuid){
@@ -154,7 +155,34 @@ public final class weMessage extends Application implements Constants {
         return notificationCallbacks.onNotification(macGuid);
     }
 
+    public synchronized void setCurrentAccount(Account account){
+        this.currentAccount = account;
+    }
+
+    public synchronized void signIn(){
+        SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+
+        editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
+        editor.apply();
+    }
+
+    public synchronized void signOut(){
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+
+        notificationManager.cancelAll();
+        editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
+        editor.apply();
+
+        //TODO: Dump all goes here
+    }
+
     public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){
         this.notificationCallbacks = notificationCallbacks;
+    }
+
+    public synchronized void dumpMessageManager(){
+        messageManager.dumpAll(this);
+        messageManager = null;
     }
 }

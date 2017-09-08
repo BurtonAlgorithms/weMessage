@@ -23,10 +23,6 @@ public class CreateChatBottomSheet extends BottomSheetLayout {
         super(context, attrs, defStyleAttr);
     }
 
-    public CreateChatBottomSheet(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-    }
-
     public CreateChatFragment.SelectedNameView getSelectedNameView(){
         return selectedNameView;
     }

@@ -38,7 +38,7 @@ public class NotificationService extends FirebaseMessagingService {
     }
 
     private void showNotification(RemoteMessage remoteMessage){
-        if (weMessage.get().performNotification(remoteMessage.getData().get("chatId"))) {
+        if (weMessage.get().isSignedIn() && weMessage.get().performNotification(remoteMessage.getData().get("chatId"))) {
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             JSONNotification jsonNotification = new JSONNotification(
                     null,

@@ -4,7 +4,9 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/blockedContactsLayout">
+    android:id="@+id/blockedContactsLayout"
+    android:descendantFocusability="beforeDescendants"
+    android:focusableInTouchMode="true" >
 
     <include
         layout="@layout/toolbar_blocked_contacts" />

@@ -250,14 +250,16 @@ public class LaunchFragment extends Fragment {
             ipEditText.setText(host);
             emailEditText.setText(email);
 
-            if (!(getActivity().getIntent().getExtras() != null && getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false))){
-                if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
+            if (weMessage.get().isSignedIn()) {
+                if (!(getActivity().getIntent().getExtras() != null && getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false))) {
+                    if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
+                        startConnectionService(view, ipAddress, port, email, hashedPass, true, true);
+                    }
+                }
+
+                if (canStartConversationActivity()) {
                     startConnectionService(view, ipAddress, port, email, hashedPass, true, true);
                 }
-            }
-
-            if (canStartConversationActivity()){
-                startConnectionService(view, ipAddress, port, email, hashedPass, true, true);
             }
         }
 

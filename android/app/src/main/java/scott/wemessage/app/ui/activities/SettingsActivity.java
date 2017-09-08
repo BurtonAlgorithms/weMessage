@@ -106,7 +106,7 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        toolbar.setTitle(null);
+        toolbar.setTitle("");
         setSupportActionBar(toolbar);
 
         TextView settingsVersionText = (TextView) findViewById(R.id.settingsVersionText);
@@ -128,6 +128,9 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 serviceConnection.getConnectionService().endService();
+                weMessage.get().signOut();
+
+                //TODO: Go home, end service if is connected, move to signOut()?
             }
         });
     }

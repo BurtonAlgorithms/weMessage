@@ -156,5 +156,6 @@
     <string name="word_unblock">Unblock</string>
     <string name="word_delivered">Delivered</string>
     <string name="word_read">Read</string>
+    <string name="offline_mode">Offline Mode</string>
 
 </resources>
