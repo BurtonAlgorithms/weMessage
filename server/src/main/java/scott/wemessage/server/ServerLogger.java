@@ -122,7 +122,7 @@ public final class ServerLogger {
     }
 
     private static void logToFile(String text){
-        if (messageServer != null) {
+        if (messageServer != null && messageServer.getConfiguration() != null) {
             if (messageServer.getConfiguration().saveLogFiles()) {
                 try {
                     if (text.equals(" ") || text.equals("")){

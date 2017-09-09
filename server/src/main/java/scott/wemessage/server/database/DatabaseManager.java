@@ -37,6 +37,8 @@ import scott.wemessage.server.weMessage;
 @SuppressWarnings("Duplicates")
 public final class DatabaseManager extends Thread {
 
+    //TODO: Tied email associations for registration token
+
     private final String TAG = "weServer Database Service";
 
     public final String serverDatabaseFileName = weMessage.SERVER_DATABASE_FILE_NAME;
@@ -644,11 +646,11 @@ public final class DatabaseManager extends Thread {
     private void onUpgrade(int newVersion, int oldVersion) throws SQLException {
         refreshProperties(newVersion);
 
-        if (oldVersion == 1){
-            //Note: Check ServerConfiguration for more info
+        if (oldVersion >= 1){
+
         }
 
-        if (oldVersion == 2){
+        if (oldVersion >= 2){
 
         }
     }
@@ -656,11 +658,11 @@ public final class DatabaseManager extends Thread {
     private void onDowngrade(int newVersion, int oldVersion) throws SQLException {
         refreshProperties(newVersion);
 
-        if (newVersion == 1){
+        if (newVersion >= 1){
 
         }
 
-        if (newVersion == 2){
+        if (newVersion >= 2){
 
         }
     }

@@ -222,7 +222,6 @@ public class Message {
     }
 
     public JSONMessage toJson(ServerConfiguration serverConfiguration, AppleScriptExecutor appleScriptExecutor) throws IOException, GeneralSecurityException {
-        FFmpeg ffmpeg = new FFmpeg(serverConfiguration.getConfigJSON().getConfig().getFfmpegLocation());
         ChatBase chat = getChat();
         List<String> participants = new ArrayList<>();
         List<JSONAttachment> attachments = new ArrayList<>();
@@ -256,6 +255,9 @@ public class Message {
                         + " because it exceeds the maximum file size of " + FileUtils.getFileSizeString(weMessage.MAX_FILE_SIZE));
             } else {
                 if (MimeType.MimeExtension.getExtensionFromString(attachment.getFileType()) == MimeType.MimeExtension.MOV) {
+                    if (!serverConfiguration.getConfigJSON().getConfig().getTranscodeVideos()) continue;
+
+                    FFmpeg ffmpeg = new FFmpeg(serverConfiguration.getConfigJSON().getConfig().getFfmpegLocation());
                     String outputName = FilenameUtils.removeExtension(attachment.getTransferName()) + ".webm";
 
                     ServerLogger.log(ServerLogger.Level.INFO, "An encoding process has just started for file: " + outputName + ". This allows videos to be played on Android devices.");

@@ -53,9 +53,9 @@ public final class ServerConfiguration {
 
         if (configJSON.getConfig().getConfigVersion() != weMessage.WEMESSAGE_CONFIG_VERSION){
             if (configJSON.getConfig().getConfigVersion() < weMessage.WEMESSAGE_CONFIG_VERSION){
-                onUpgrade(weMessage.WEMESSAGE_CONFIG_VERSION, configJSON.getConfig().getConfigVersion(), configJSON.getConfig());
+                onUpgrade(weMessage.WEMESSAGE_CONFIG_VERSION, configJSON.getConfig().getConfigVersion(), configJSON.getConfig(), configFile);
             }else if (configJSON.getConfig().getConfigVersion() > weMessage.WEMESSAGE_CONFIG_VERSION){
-                onDowngrade(weMessage.WEMESSAGE_CONFIG_VERSION, configJSON.getConfig().getConfigVersion(), configJSON.getConfig());
+                onDowngrade(weMessage.WEMESSAGE_CONFIG_VERSION, configJSON.getConfig().getConfigVersion(), configJSON.getConfig(), configFile);
             }
         }
 
@@ -136,7 +136,7 @@ public final class ServerConfiguration {
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         ConfigJSON configJSON = new ConfigJSON(
-                new ConfigJSONData(weMessage.WEMESSAGE_CONFIG_VERSION, weMessage.DEFAULT_PORT, weMessage.CREATE_LOG_FILES, weMessage.DEFAULT_FFMPEG_LOCATION,
+                new ConfigJSONData(weMessage.WEMESSAGE_CONFIG_VERSION, weMessage.DEFAULT_PORT, weMessage.CREATE_LOG_FILES, weMessage.TRANSCODE_VIDEO, weMessage.DEFAULT_FFMPEG_LOCATION,
                         new ConfigAccountJSON(
                                 weMessage.DEFAULT_EMAIL,
                                 weMessage.DEFAULT_PASSWORD,
@@ -160,23 +160,23 @@ public final class ServerConfiguration {
         }
     }
 
-    private void onUpgrade(int newVersion, int oldVersion, ConfigJSONData oldJson) throws IOException {
+    private void onUpgrade(int newVersion, int oldVersion, ConfigJSONData oldJson, File configFile) throws IOException {
         ServerLogger.log(ServerLogger.Level.ERROR, MessageServer.TAG, "Your config is outdated! Resetting config. Please restart your weServer.");
 
         ConfigJSONData newJson = new ConfigJSONData();
         newJson.setConfigVersion(newVersion);
 
-        if (oldVersion == 1){
+        if (oldVersion >= 1){
             newJson.setPort(oldJson.getPort());
             newJson.setCreateLogFiles(oldJson.getCreateLogFiles());
             newJson.setFfmpegLocation(oldJson.getFfmpegLocation());
             newJson.setAccountInfo(oldJson.getAccountInfo());
 
-            //Note: Add defaults of new version
+            newJson.setTranscodeVideos(weMessage.TRANSCODE_VIDEO);
         }
 
-        if (oldVersion == 2){
-            //Note: Add previous values
+        if (oldVersion >= 2){
+            newJson.setTranscodeVideos(oldJson.getTranscodeVideos());
         }
 
         configFile.delete();
@@ -184,21 +184,21 @@ public final class ServerConfiguration {
         messageServer.shutdown(-1, false);
     }
 
-    private void onDowngrade(int newVersion, int oldVersion, ConfigJSONData oldJson) throws IOException {
+    private void onDowngrade(int newVersion, int oldVersion, ConfigJSONData oldJson, File configFile) throws IOException {
         ServerLogger.log(ServerLogger.Level.ERROR, MessageServer.TAG, "The config version and the server version do not match! Resetting config. Please restart your weServer.");
 
         ConfigJSONData newJson = new ConfigJSONData();
         newJson.setConfigVersion(newVersion);
 
-        if (newVersion == 1){
+        if (newVersion >= 1){
             newJson.setPort(oldJson.getPort());
             newJson.setCreateLogFiles(oldJson.getCreateLogFiles());
             newJson.setFfmpegLocation(oldJson.getFfmpegLocation());
             newJson.setAccountInfo(oldJson.getAccountInfo());
         }
 
-        if (newVersion == 2){
-            //Note: Add previous values
+        if (newVersion >= 2){
+            newJson.setTranscodeVideos(oldJson.getTranscodeVideos());
         }
 
         configFile.delete();

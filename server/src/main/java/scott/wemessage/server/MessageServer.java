@@ -306,12 +306,12 @@ public final class MessageServer {
         isRunning.set(false);
         try {
             if (isInitialized.get()) {
-                databaseManager.stopService();
-                messagesDatabase.stopService();
-                commandManager.stopService();
-                deviceManager.stopService();
-                appleScriptExecutor.stopService();
-                eventManager.stopService();
+                if (databaseManager != null) databaseManager.stopService();
+                if (messagesDatabase != null) messagesDatabase.stopService();
+                if (commandManager != null) commandManager.stopService();
+                if (deviceManager != null) deviceManager.stopService();
+                if (appleScriptExecutor != null) appleScriptExecutor.stopService();
+                if (eventManager != null) eventManager.stopService();
                 isInitialized.set(false);
             }
             ServerLogger.emptyLine();
