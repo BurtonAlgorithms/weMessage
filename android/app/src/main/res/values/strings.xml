@@ -157,5 +157,6 @@
     <string name="word_delivered">Delivered</string>
     <string name="word_read">Read</string>
     <string name="offline_mode">Offline Mode</string>
+    <string name="notification_channel_name">New Messages</string>
 
 </resources>

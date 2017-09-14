@@ -35,6 +35,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 
 import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
@@ -56,6 +57,7 @@ import scott.wemessage.commons.utils.StringUtils;
 public class BlockedContactsActivity extends AppCompatActivity implements MessageCallbacks {
 
     private boolean isBoundToConnectionService = false;
+    private String callbackUuid;
 
     private EditText searchContactEditText;
     private RecyclerView contactsRecyclerView;
@@ -129,6 +131,8 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
 
+        callbackUuid = UUID.randomUUID().toString();
+        weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
         LocalBroadcastManager.getInstance(this).registerReceiver(blockedContactsBroadcastReceiver, broadcastIntentFilter);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.blockedContactsToolbar);
@@ -203,6 +207,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
     @Override
     public void onDestroy() {
+        weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(blockedContactsBroadcastReceiver);
 
         if (isBoundToConnectionService){
@@ -428,7 +433,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                 }
             });
 
-            swipeLayout.addDrag(SwipeLayout.DragEdge.Right, itemView.findViewById(R.id.chatContactRemoveButtonLayout));
+            swipeLayout.addDrag(SwipeLayout.DragEdge.Right, itemView.findViewById(R.id.contactUnblockButton));
             swipeLayout.addSwipeListener(new SwipeLayout.SwipeListener() {
                 @Override
                 public void onStartOpen(SwipeLayout layout) {

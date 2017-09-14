@@ -41,6 +41,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 
 import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
@@ -68,6 +69,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
     private int oldEditTextColor;
     private boolean isBoundToConnectionService = false;
 
+    private String callbackUuid;
     private String chatUuid;
 
     private EditText searchContactEditText;
@@ -148,6 +150,8 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
 
+        callbackUuid = UUID.randomUUID().toString();
+        weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
         LocalBroadcastManager.getInstance(this).registerReceiver(addContactBroadcastReceiver, broadcastIntentFilter);
 
         searchContactEditText = (EditText) findViewById(R.id.searchContactEditText);
@@ -275,6 +279,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
 
     @Override
     public void onDestroy() {
+        weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(addContactBroadcastReceiver);
 
         if (isBoundToConnectionService){

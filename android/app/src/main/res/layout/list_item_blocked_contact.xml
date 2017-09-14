@@ -32,7 +32,10 @@
 
         <com.github.siyamed.shapeimageview.CircularImageView
             android:id="@+id/blockedContactPictureView"
-            android:layout_margin="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
             android:layout_width="52dp"
             android:layout_height="52dp"/>
 

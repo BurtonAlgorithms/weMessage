@@ -1,13 +1,17 @@
 package scott.wemessage.app.messages.firebase;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.media.AudioAttributes;
 import android.media.RingtoneManager;
+import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -34,7 +38,26 @@ public class NotificationService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         //TODO: trim message, check if notification email matches, jsonnotification
+
+        initChannel();
         showNotification(remoteMessage);
+    }
+
+    private void initChannel(){
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && notificationManager.getNotificationChannel(weMessage.NOTIFICATION_CHANNEL_NAME) == null) {
+            NotificationChannel channel = new NotificationChannel(weMessage.NOTIFICATION_CHANNEL_NAME, getString(R.string.notification_channel_name), NotificationManager.IMPORTANCE_HIGH);
+            AudioAttributes audioAttributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT).build();
+
+            channel.enableLights(true);
+            channel.enableVibration(true);
+            channel.setLightColor(Color.BLUE);
+            channel.setVibrationPattern(new long[]{1000, 1000});
+            channel.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), audioAttributes);
+
+            notificationManager.createNotificationChannel(channel);
+        }
     }
 
     private void showNotification(RemoteMessage remoteMessage){
@@ -114,13 +137,20 @@ public class NotificationService extends FirebaseMessagingService {
 
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
-                    .setSmallIcon(R.drawable.ic_app_notification_white_small)
+            NotificationCompat.Builder builder;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+                builder = new NotificationCompat.Builder(this, weMessage.NOTIFICATION_CHANNEL_NAME);
+            } else {
+                builder = new NotificationCompat.Builder(this);
+                builder.setVibrate(new long[]{1000, 1000})
+                        .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+            }
+
+            builder.setSmallIcon(R.drawable.ic_app_notification_white_small)
                     .setContentTitle(displayName)
                     .setContentText(StringUtils.trimORC(message))
                     .setContentIntent(pendingIntent)
-                    .setVibrate(new long[]{1000, 1000})
-                    .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
                     .setWhen(remoteMessage.getSentTime());
 
             if (largeIcon != null) {

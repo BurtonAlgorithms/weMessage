@@ -22,6 +22,7 @@ public final class weMessage extends Application implements Constants {
     public static final String APP_IDENTIFIER = "scott.wemessage.app";
     public static final String IDENTIFIER_PREFIX = "scott.wemessage.app.";
     public static final String ATTACHMENT_FOLDER_NAME = "attachments";
+    public static final String NOTIFICATION_CHANNEL_NAME = "weMessage-Notifications";
     public static final String NOTIFICATION_TAG = "weMessage-Notification-";
 
     public static final int REQUEST_PERMISSION_READ_STORAGE = 5000;
@@ -164,6 +165,8 @@ public final class weMessage extends Application implements Constants {
 
         editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
         editor.apply();
+
+        //TODO: Set current Account here, move up / out of connection handler
     }
 
     public synchronized void signOut(){
