@@ -8,7 +8,7 @@ public final class weMessage implements Constants {
 
     public static final int WEMESSAGE_CONFIG_VERSION = 2;
     public static final int WEMESSAGE_DATABASE_VERSION = 1;
-    public static final int MIN_OS_VERSION = 12;
+    public static final int MIN_OS_VERSION = 10;
     public static final boolean CREATE_LOG_FILES = true;
     public static final boolean TRANSCODE_VIDEO = true;
 

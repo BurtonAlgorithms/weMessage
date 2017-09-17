@@ -13,6 +13,7 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 
 import scott.wemessage.commons.crypto.AESCrypto;
 import scott.wemessage.commons.json.message.JSONNotification;
@@ -144,7 +145,8 @@ public final class DeviceManager extends Thread {
                         RequestBody body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), new Gson().toJson(notification));
                         Request request = new Request.Builder().url(weMessage.NOTIFICATION_FUNCTION_URL).post(body).build();
 
-                        client.newCall(request).execute();
+                        Response response = client.newCall(request).execute();
+                        response.close();
                     } catch (Exception ex) {
                         ServerLogger.error(TAG, "An error occurred while trying to send a notification to Device with Token: " + registrationToken, ex);
                     }
