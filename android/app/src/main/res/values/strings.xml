@@ -26,12 +26,13 @@
     <string name="connection_error_server_side_message">A server-side error caused the connection to be lost.</string>
     <string name="connection_error_authentication_message">An error occurred while authenticating the login information. \n\nPlease restart your app or weServer instance.</string>
     <string name="connection_error_unknown_message">An unknown error occurred and has caused the connection to be dropped.</string>
-    <string name="connection_error_already_connected_message">This device is appears to be already connected to this weServer. \n\nIf it is not, try restarting your weServer to fix this message.</string>
+    <string name="connection_error_already_connected_message">This device appears to be already connected to this weServer. \n\nIf it is not, try restarting your weServer to fix this message.</string>
     <string name="connection_error_invalid_login_message">The username or password entered is not correct. Please try again.</string>
     <string name="connection_error_server_closed_message">The weServer has shut down and closed the connection.</string>
     <string name="connection_error_force_disconnect_message">This device has been forcefully disconnected by the weServer.</string>
     <string name="connection_error_client_disconnect_message">You have disconnected from the weServer.</string>
     <string name="connection_error_incorrect_version_message">weMessage could not connect because the server is running on a different version.</string>
+    <string name="connection_error_socket_closed">The connection to the weServer has unexpectedly been closed.</string>
     <string name="action_rename_group">Rename Group</string>
     <string name="action_add_participant">Add Participant</string>
     <string name="action_remove_participant">Remove Participant</string>

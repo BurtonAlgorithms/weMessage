@@ -748,7 +748,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                             Message message = (Message) messageBase;
 
                             if (isChatThis(message.getChat())) {
-                                if (isMessageBlocked(message)) return;
+                                if (isMessageBlocked(message)) continue;
 
                                 if (!messageMapIntegrity.containsKey(message.getUuid().toString())) {
                                     MessageView messageView = new MessageView(message);

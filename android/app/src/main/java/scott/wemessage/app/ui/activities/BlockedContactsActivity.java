@@ -475,11 +475,16 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
         }
 
         public void closeUnderlyingView(){
-            if (isDeleteButtonShowing) {
-                isDeleteButtonShowing = false;
-                swipeLayout.close();
-            }
-            contactAdapter.showingDeletePosition = null;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (isDeleteButtonShowing) {
+                        isDeleteButtonShowing = false;
+                        swipeLayout.close();
+                    }
+                    contactAdapter.showingDeletePosition = null;
+                }
+            });
         }
 
         private void init(){

@@ -20,6 +20,7 @@ import java.io.ObjectOutputStream;
 import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -167,8 +168,6 @@ public final class ConnectionHandler extends Thread {
 
         connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
     }
-
-    //TODO: If not registered with imessage, use sms factory to send message see if that works if not add message failure etc.
 
     public void sendOutgoingMessage(final Message message, final boolean performMessageManagerAdd){
         new Thread(new Runnable() {
@@ -774,6 +773,35 @@ public final class ConnectionHandler extends Thread {
             }catch(EOFException ex){
                 sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED, null);
                 getParentService().endService();
+            }catch (SocketException ex){
+                if (getConnectionSocket().isClosed()){
+                    if (isConnected.get()){
+                        Bundle extras = new Bundle();
+                        extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_socket_closed));
+                        sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
+                        getParentService().endService();
+                    }
+                }else {
+                    boolean socketOpenCheck = false;
+
+                    try {
+                        if (getInputStream().read() == -1){
+                            Bundle extras = new Bundle();
+                            extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_socket_closed));
+                            sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
+                            getParentService().endService();
+                            socketOpenCheck = true;
+                        }
+                    }catch (Exception exc){ }
+
+                    if (!socketOpenCheck) {
+                        Bundle extras = new Bundle();
+                        extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));
+                        sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
+                        AppLogger.error(TAG, "An unknown error occurred. Dropping connection to weServer", ex);
+                        getParentService().endService();
+                    }
+                }
             }catch (Exception ex){
                 Bundle extras = new Bundle();
                 extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));
@@ -782,6 +810,11 @@ public final class ConnectionHandler extends Thread {
                 getParentService().endService();
             }
         }
+    }
+
+    public void disconnect(){
+        sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED, null);
+        getParentService().endService();
     }
 
     protected void endConnection(){
@@ -1126,8 +1159,6 @@ public final class ConnectionHandler extends Thread {
                 messageManager.alertMessageSendFailure(jsonMessage, ReturnType.INVALID_NUMBER);
                 return false;
             case NUMBER_NOT_IMESSAGE:
-                //TODO: Add SMS Implementation Later
-
                 messageManager.alertMessageSendFailure(jsonMessage, ReturnType.NUMBER_NOT_IMESSAGE);
                 return false;
             case GROUP_CHAT_NOT_FOUND:

@@ -127,7 +127,7 @@ public class SettingsActivity extends AppCompatActivity {
         settingsSignInOut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                serviceConnection.getConnectionService().endService();
+                serviceConnection.getConnectionService().getConnectionHandler().disconnect();
                 weMessage.get().signOut();
 
                 //TODO: Go home, end service if is connected, move to signOut()?
