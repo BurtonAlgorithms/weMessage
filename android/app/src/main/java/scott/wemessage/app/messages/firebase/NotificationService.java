@@ -1,6 +1,5 @@
 package scott.wemessage.app.messages.firebase;
 
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -151,14 +150,12 @@ public class NotificationService extends FirebaseMessagingService {
                     .setContentTitle(displayName)
                     .setContentText(StringUtils.trimORC(message))
                     .setContentIntent(pendingIntent)
-                    .setWhen(remoteMessage.getSentTime());
+                    .setWhen(remoteMessage.getSentTime())
+                    .setAutoCancel(true);
 
             if (largeIcon != null) {
                 builder.setLargeIcon(largeIcon);
             }
-
-            Notification notification = builder.build();
-            notification.flags |= Notification.FLAG_AUTO_CANCEL;
 
             int id = (int) ((new Date().getTime() / 1000L) % Integer.MAX_VALUE);
             String tag = weMessage.NOTIFICATION_TAG;
@@ -167,7 +164,7 @@ public class NotificationService extends FirebaseMessagingService {
                 tag += chat.getUuid().toString();
             }
 
-            notificationManager.notify(tag, id, notification);
+            notificationManager.notify(tag, id, builder.build());
         }
     }
 }

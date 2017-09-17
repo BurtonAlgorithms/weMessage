@@ -48,6 +48,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -83,8 +84,8 @@ import scott.wemessage.app.ui.view.messages.IncomingMessageViewHolder;
 import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.ui.view.messages.MessageViewHolder;
 import scott.wemessage.app.ui.view.messages.OutgoingMessageViewHolder;
-import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.media.AudioAttachmentMediaPlayer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.json.action.JSONAction;
@@ -104,10 +105,10 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     private final byte CONTENT_TYPE_ACTION = 22;
 
     private String callbackUuid;
+    private String lastMessageId = null;
     private boolean isBoundToConnectionService = false;
     private boolean isPopupFragmentOpen = false;
     private boolean isSelectionMode = false;
-    private int lastMessageAdapterPosition = -1;
 
     private String cameraAttachmentInput;
     private String voiceMessageInput;
@@ -385,62 +386,6 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             }
         });
 
-        messageListAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
-            @Override
-            public void onChanged() {
-                showDeliveryStatus(messageList.getAdapter().getItemCount());
-                super.onChanged();
-            }
-
-            @Override
-            public void onItemRangeChanged(int positionStart, int itemCount) {
-                showDeliveryStatus(itemCount);
-                super.onItemRangeChanged(positionStart, itemCount);
-            }
-
-            @Override
-            public void onItemRangeChanged(int positionStart, int itemCount, Object payload) {
-                showDeliveryStatus(itemCount);
-                super.onItemRangeChanged(positionStart, itemCount, payload);
-            }
-
-            @Override
-            public void onItemRangeInserted(int positionStart, int itemCount) {
-                showDeliveryStatus(itemCount);
-                super.onItemRangeInserted(positionStart, itemCount);
-            }
-
-            @Override
-            public void onItemRangeRemoved(int positionStart, int itemCount) {
-                showDeliveryStatus(itemCount);
-                super.onItemRangeRemoved(positionStart, itemCount);
-            }
-
-            @Override
-            public void onItemRangeMoved(int fromPosition, int toPosition, int itemCount) {
-                showDeliveryStatus(itemCount);
-                super.onItemRangeMoved(fromPosition, toPosition, itemCount);
-            }
-
-            private void showDeliveryStatus(int position){
-                if (lastMessageAdapterPosition != -1){
-                    RecyclerView.ViewHolder previousViewHolder = messageList.findViewHolderForAdapterPosition(lastMessageAdapterPosition);
-
-                    if (previousViewHolder != null && previousViewHolder instanceof OutgoingMessageViewHolder){
-                        ((OutgoingMessageViewHolder) previousViewHolder).toggleDeliveryVisibility(false);
-                    }
-                }
-
-                RecyclerView.ViewHolder viewHolder = messageList.findViewHolderForAdapterPosition(position);
-
-                if (viewHolder != null && viewHolder instanceof OutgoingMessageViewHolder){
-                    ((OutgoingMessageViewHolder) viewHolder).toggleDeliveryVisibility(true);
-                }
-
-                lastMessageAdapterPosition = position;
-            }
-        });
-
         chatTitleView.setChat(getChat());
         messageList.setAdapter(messageListAdapter);
         this.messageListAdapter = messageListAdapter;
@@ -529,16 +474,16 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         NotificationManager notificationManager = (NotificationManager) getActivity().getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-            List<Integer> toCancel = new ArrayList<>();
+            HashMap<Integer, String> toCancel = new HashMap<>();
 
             for (StatusBarNotification notification : notificationManager.getActiveNotifications()){
                 if (notification.getTag().equals(weMessage.NOTIFICATION_TAG + chat.getUuid().toString()) || notification.getTag().equals(weMessage.NOTIFICATION_TAG)){
-                    toCancel.add(notification.getId());
+                    toCancel.put(notification.getId(), notification.getTag());
                 }
             }
 
-            for (Integer i : toCancel){
-                notificationManager.cancel(i);
+            for (Integer i : toCancel.keySet()){
+                notificationManager.cancel(toCancel.get(i), i);
             }
         }else {
             notificationManager.cancelAll();
@@ -742,6 +687,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     messageListAdapter.addToStart(messageView, true);
                     messageMapIntegrity.put(message.getUuid().toString(), message);
                     weMessage.get().getMessageManager().setHasUnreadMessages(getChat(), false, true);
+                    showDeliveryStatusOnLastMessage();
                 }
             }
         });
@@ -772,6 +718,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
                     messageListAdapter.deleteById(message.getUuid().toString());
                     messageMapIntegrity.remove(message.getUuid().toString());
+                    showDeliveryStatusOnLastMessage();
                 }
             }
         });
@@ -816,6 +763,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     if (messageViews.size() > 0) {
                         messageListAdapter.addToEnd(messageViews, false);
                     }
+                    showDeliveryStatusOnLastMessage();
                 }
             }
         });
@@ -995,6 +943,10 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         return isSelectionMode;
     }
 
+    public String getLastMessageId(){
+        return lastMessageId;
+    }
+
     private AttachmentPopupFragment getAttachmentPopupFragment(){
         if (getChildFragmentManager().findFragmentById(R.id.galleryFragmentContainer) == null) return null;
 
@@ -1143,6 +1095,27 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         cameraAttachmentInput = null;
         voiceMessageInput = null;
         return true;
+    }
+
+    private void showDeliveryStatusOnLastMessage(){
+        String oldLastMessageId = lastMessageId;
+        lastMessageId = weMessage.get().getMessageDatabase().getLastMessageFromChat(getChat()).getUuid().toString();
+
+        for (int childCount = messageList.getChildCount(), i = 0; i < childCount; ++i) {
+            RecyclerView.ViewHolder holder = messageList.getChildViewHolder(messageList.getChildAt(i));
+
+            if (holder instanceof OutgoingMessageViewHolder){
+                OutgoingMessageViewHolder messageHolder = (OutgoingMessageViewHolder) holder;
+
+                if (!StringUtils.isEmpty(oldLastMessageId) && messageHolder.getMessageId().equals(oldLastMessageId)){
+                    messageHolder.toggleDeliveryVisibility(false);
+                }
+
+                if (messageHolder.getMessageId().equals(lastMessageId)){
+                    messageHolder.toggleDeliveryVisibility(true);
+                }
+            }
+        }
     }
 
     private void showMessageOptionsSheetView(final MessageView message){

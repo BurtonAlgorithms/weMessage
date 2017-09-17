@@ -536,7 +536,7 @@ public class LaunchFragment extends Fragment {
         if (!StringUtils.isEmpty(chatId)) {
             Intent launcherIntent = new Intent(weMessage.get(), ConversationActivity.class);
 
-            launcherIntent.putExtra(weMessage.BUNDLE_RETURN_POINT, ChatListActivity.class);
+            launcherIntent.putExtra(weMessage.BUNDLE_RETURN_POINT, ChatListActivity.class.getName());
             launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chatId);
 
             startActivity(launcherIntent);

@@ -223,6 +223,7 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
             deliveryMessageTimeView.setVisibility(View.VISIBLE);
         }
 
+        toggleDeliveryVisibility(!StringUtils.isEmpty(getParentFragment().getLastMessageId()) && getParentFragment().getLastMessageId().equals(getMessageId()));
         toggleSelectionMode(getParentFragment().isInSelectionMode());
         setSelected(getParentFragment().getSelectedMessages().containsKey(message.getId()));
     }
