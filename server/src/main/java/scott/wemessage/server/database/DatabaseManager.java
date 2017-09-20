@@ -689,13 +689,49 @@ public final class DatabaseManager extends Thread {
         }
     }
 
-    //TODO: Here
-
-    private void onUpgrade(Connection serverDatabaseConnection, int newVersion, int oldVersion) throws SQLException {
+    private void onUpgrade(Connection serverDatabaseConnection, int newVersion, int oldVersion) throws IOException, SQLException {
         refreshProperties(serverDatabaseConnection, newVersion);
 
         if (oldVersion >= 1){
+            String renameDevicesStatement = "ALTER TABLE " + TABLE_DEVICES + "RENAME TO TempOldDevicesTable;";
+            String deleteDevicesStatement = "DROP TABLE TempOldDevicesTable;";
 
+            String createDevicesStatement = "CREATE TABLE " + TABLE_DEVICES
+                    + " (" + COLUMN_DEVICE_ROWID + " integer PRIMARY KEY,  "
+                    + COLUMN_DEVICE_ID + " text, "
+                    + COLUMN_DEVICE_ADDRESS + " text, "
+                    + COLUMN_DEVICE_LAST_EMAIL + " text DEFAULT " + messageServer.getConfiguration().getAccountEmail() + ", "
+                    + COLUMN_DEVICE_NAME + " text );";
+
+            String insertDevicesStatement = "INSERT INTO " + TABLE_DEVICES +
+                    " (" + COLUMN_DEVICE_ROWID + ", "
+                    + COLUMN_DEVICE_ID + ", "
+                    + COLUMN_DEVICE_ADDRESS + ", "
+                    + COLUMN_DEVICE_NAME + ") SELECT "
+                    + COLUMN_DEVICE_ROWID + ", "
+                    + COLUMN_DEVICE_ID  + ", "
+                    + COLUMN_DEVICE_ADDRESS + ", "
+                    + COLUMN_DEVICE_NAME + " FROM TempOldDevicesTable;";
+
+            String renameActionQueueStatement = "ALTER TABLE " + TABLE_ACTION_QUEUE + "RENAME TO TempOldActionQueueTable;";
+            String deleteActionQueueStatement = "DROP TABLE TempOldActionQueueTable;";
+
+            String createActionQueueStatement = "CREATE TABLE " + TABLE_ACTION_QUEUE
+                    + " (" + COLUMN_QUEUE_ACTION_ROWID + " integer PRIMARY KEY,  "
+                    + COLUMN_QUEUE_ACTION_JSON + " text, "
+                    + COLUMN_QUEUE_ACTION_ACCOUNT + " text DEFAULT " + messageServer.getConfiguration().getAccountEmail() + ", "
+                    + COLUMN_QUEUE_ACTION_DEVICES_WAITING + " text );";
+
+            String insertActionQueueStatement = "INSERT INTO " + TABLE_ACTION_QUEUE +
+                    " (" + COLUMN_QUEUE_ACTION_ROWID + ", "
+                    + COLUMN_QUEUE_ACTION_JSON + ", "
+                    + COLUMN_QUEUE_ACTION_DEVICES_WAITING + ") SELECT "
+                    + COLUMN_QUEUE_ACTION_ROWID + ", "
+                    + COLUMN_QUEUE_ACTION_JSON  + ", "
+                    + COLUMN_QUEUE_ACTION_DEVICES_WAITING + " FROM TempOldActionQueueTable;";
+
+            modifyTable(serverDatabaseConnection, renameDevicesStatement, createDevicesStatement, insertDevicesStatement, deleteDevicesStatement);
+            modifyTable(serverDatabaseConnection, renameActionQueueStatement, createActionQueueStatement, insertActionQueueStatement, deleteActionQueueStatement);
         }
 
         if (oldVersion >= 2){
@@ -707,7 +743,43 @@ public final class DatabaseManager extends Thread {
         refreshProperties(serverDatabaseConnection, newVersion);
 
         if (newVersion >= 1){
+            String renameDevicesStatement = "ALTER TABLE " + TABLE_DEVICES + "RENAME TO TempOldDevicesTable;";
+            String deleteDevicesStatement = "DROP TABLE TempOldDevicesTable;";
 
+            String createDevicesStatement = "CREATE TABLE " + TABLE_DEVICES
+                    + " (" + COLUMN_DEVICE_ROWID + " integer PRIMARY KEY,  "
+                    + COLUMN_DEVICE_ID + " text, "
+                    + COLUMN_DEVICE_ADDRESS + " text, "
+                    + COLUMN_DEVICE_NAME + " text );";
+
+            String insertDevicesStatement = "INSERT INTO " + TABLE_DEVICES +
+                    " (" + COLUMN_DEVICE_ROWID + ", "
+                    + COLUMN_DEVICE_ID + ", "
+                    + COLUMN_DEVICE_ADDRESS + ", "
+                    + COLUMN_DEVICE_NAME + ") SELECT "
+                    + COLUMN_DEVICE_ROWID + ", "
+                    + COLUMN_DEVICE_ID  + ", "
+                    + COLUMN_DEVICE_ADDRESS + ", "
+                    + COLUMN_DEVICE_NAME + " FROM TempOldDevicesTable;";
+
+            String renameActionQueueStatement = "ALTER TABLE " + TABLE_ACTION_QUEUE + "RENAME TO TempOldActionQueueTable;";
+            String deleteActionQueueStatement = "DROP TABLE TempOldActionQueueTable;";
+
+            String createActionQueueStatement = "CREATE TABLE " + TABLE_ACTION_QUEUE
+                    + " (" + COLUMN_QUEUE_ACTION_ROWID + " integer PRIMARY KEY,  "
+                    + COLUMN_QUEUE_ACTION_JSON + " text, "
+                    + COLUMN_QUEUE_ACTION_DEVICES_WAITING + " text );";
+
+            String insertActionQueueStatement = "INSERT INTO " + TABLE_ACTION_QUEUE +
+                    " (" + COLUMN_QUEUE_ACTION_ROWID + ", "
+                    + COLUMN_QUEUE_ACTION_JSON + ", "
+                    + COLUMN_QUEUE_ACTION_DEVICES_WAITING + ") SELECT "
+                    + COLUMN_QUEUE_ACTION_ROWID + ", "
+                    + COLUMN_QUEUE_ACTION_JSON  + ", "
+                    + COLUMN_QUEUE_ACTION_DEVICES_WAITING + " FROM TempOldActionQueueTable;";
+
+            modifyTable(serverDatabaseConnection, renameDevicesStatement, createDevicesStatement, insertDevicesStatement, deleteDevicesStatement);
+            modifyTable(serverDatabaseConnection, renameActionQueueStatement, createActionQueueStatement, insertActionQueueStatement, deleteActionQueueStatement);
         }
 
         if (newVersion >= 2){
@@ -735,5 +807,23 @@ public final class DatabaseManager extends Thread {
 
         insertStatement.executeUpdate();
         insertStatement.close();
+    }
+
+    private void modifyTable(Connection serverDatabaseConnection, String renameStatement, String createStatement, String insertStatement, String dropStatement) throws SQLException {
+        Statement renameTableStatement = serverDatabaseConnection.createStatement();
+        renameTableStatement.executeUpdate(renameStatement);
+        renameTableStatement.close();
+
+        Statement createNewTableStatement = serverDatabaseConnection.createStatement();
+        createNewTableStatement.execute(createStatement);
+        createNewTableStatement.close();
+
+        Statement insertValuesStatement = serverDatabaseConnection.createStatement();
+        insertValuesStatement.executeUpdate(insertStatement);
+        insertValuesStatement.close();
+
+        Statement dropOldTableStatement = serverDatabaseConnection.createStatement();
+        dropOldTableStatement.executeUpdate(dropStatement);
+        dropOldTableStatement.close();
     }
 }
