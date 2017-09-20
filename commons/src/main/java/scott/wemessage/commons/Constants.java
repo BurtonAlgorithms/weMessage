@@ -7,6 +7,7 @@ public interface Constants {
      int DEFAULT_PORT = 22222;
      int MINIMUM_PASSWORD_LENGTH = 8;
      int MAX_FILE_SIZE = 262144000;
+     int NOTIFICATION_MAX_CHAR_SIZE = 100;
      String DEFAULT_PASSWORD = "password";
 
      String JSON_INIT_CONNECT = "INIT CONNECT - ";
