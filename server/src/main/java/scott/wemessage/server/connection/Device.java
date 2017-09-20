@@ -157,42 +157,66 @@ public class Device extends Thread {
     }
 
     public void sendOutgoingMessage(final Message message){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
+        if (message.getAttachments() != null && message.getAttachments().size() > 0){
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
 
-                    sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, jsonMessage, JSONMessage.class);
-                }catch (Exception ex){
-                    ServerLogger.error(TAG, "An error occurred while trying to parse a message to JSON", ex);
+                        sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, jsonMessage, JSONMessage.class);
+                    }catch (Exception ex){
+                        ServerLogger.error(TAG, "An error occurred while trying to parse a message to JSON", ex);
+                    }
                 }
+            }).start();
+        }else {
+            try {
+                JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
+
+                sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, jsonMessage, JSONMessage.class);
+            }catch (Exception ex){
+                ServerLogger.error(TAG, "An error occurred while trying to parse a message to JSON", ex);
             }
-        }).start();
+        }
     }
 
     public void sendOutgoingMessage(final JSONMessage message) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, message, JSONMessage.class);
-            }
-        }).start();
+        if (message.getAttachments() != null && message.getAttachments().size() > 0) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, message, JSONMessage.class);
+                }
+            }).start();
+        }else {
+            sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, message, JSONMessage.class);
+        }
     }
 
     public void updateOutgoingMessage(final Message message){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
+        if (message.getAttachments() != null && message.getAttachments().size() > 0) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
 
-                    sendOutgoingMessage(weMessage.JSON_MESSAGE_UPDATED, jsonMessage, JSONMessage.class);
-                }catch (Exception ex){
-                    ServerLogger.error(TAG, "An error occurred while trying to parse a message to JSON", ex);
+                        sendOutgoingMessage(weMessage.JSON_MESSAGE_UPDATED, jsonMessage, JSONMessage.class);
+                    } catch (Exception ex) {
+                        ServerLogger.error(TAG, "An error occurred while trying to parse a message to JSON", ex);
+                    }
                 }
+            }).start();
+        }else {
+            try {
+                JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
+
+                sendOutgoingMessage(weMessage.JSON_MESSAGE_UPDATED, jsonMessage, JSONMessage.class);
+            } catch (Exception ex) {
+                ServerLogger.error(TAG, "An error occurred while trying to parse a message to JSON", ex);
             }
-        }).start();
+        }
     }
 
     public List<Integer> relayIncomingMessage(JSONMessage message){

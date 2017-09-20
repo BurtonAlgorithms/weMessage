@@ -30,21 +30,23 @@ public class DeviceJoinListener extends Listener {
 
             if (!resultSet.isBeforeFirst()){
                 String insertStatementString = "INSERT INTO " + db.TABLE_DEVICES + "(" + db.COLUMN_DEVICE_ID + ", "
-                        + db.COLUMN_DEVICE_ADDRESS + ", " + db.COLUMN_DEVICE_NAME + ") VALUES (?, ?, ?)";
+                        + db.COLUMN_DEVICE_ADDRESS + ", " + db.COLUMN_DEVICE_LAST_EMAIL + ", " + db.COLUMN_DEVICE_NAME + ") VALUES (?, ?, ?, ?)";
                 PreparedStatement insertStatement = db.getServerDatabaseConnection().prepareStatement(insertStatementString);
                 insertStatement.setString(1, event.getDevice().getDeviceId());
                 insertStatement.setString(2, event.getDevice().getAddress());
-                insertStatement.setString(3, event.getDevice().getDeviceName());
+                insertStatement.setString(3, event.getMessageServer().getConfiguration().getAccountEmail());
+                insertStatement.setString(4, event.getDevice().getDeviceName());
 
                 insertStatement.executeUpdate();
                 insertStatement.close();
             }else {
-                String insertStatementString = "UPDATE " + db.TABLE_DEVICES + " SET " + db.COLUMN_DEVICE_ADDRESS + " = ?, "
+                String insertStatementString = "UPDATE " + db.TABLE_DEVICES + " SET " + db.COLUMN_DEVICE_ADDRESS + " = ?, " + db.COLUMN_DEVICE_LAST_EMAIL + " = ?, "
                         + db.COLUMN_DEVICE_NAME + " = ? WHERE " + db.COLUMN_DEVICE_ID + " = ?";
                 PreparedStatement insertStatement = db.getServerDatabaseConnection().prepareStatement(insertStatementString);
                 insertStatement.setString(1, event.getDevice().getAddress());
-                insertStatement.setString(2, event.getDevice().getName());
-                insertStatement.setString(3, event.getDevice().getDeviceId());
+                insertStatement.setString(2, event.getMessageServer().getConfiguration().getAccountEmail());
+                insertStatement.setString(3, event.getDevice().getName());
+                insertStatement.setString(4, event.getDevice().getDeviceId());
 
                 insertStatement.executeUpdate();
                 insertStatement.close();
@@ -56,12 +58,14 @@ public class DeviceJoinListener extends Listener {
             for (String guid : queuedMessages.keySet()){
                 Message message = event.getMessageServer().getMessagesDatabase().getMessageByGuid(guid);
 
-                if (!queuedMessages.get(guid)) {
-                    event.getDevice().sendOutgoingMessage(message);
-                }else {
-                    event.getDevice().updateOutgoingMessage(message);
+                if (message != null) {
+                    if (!queuedMessages.get(guid)) {
+                        event.getDevice().sendOutgoingMessage(message);
+                    } else {
+                        event.getDevice().updateOutgoingMessage(message);
+                    }
+                    db.unQueueMessage(guid, event.getDevice().getDeviceId());
                 }
-                db.unQueueMessage(guid, event.getDevice().getDeviceId());
             }
 
             for (JSONAction jsonAction : db.getQueuedActions(event.getDevice().getDeviceId())){

@@ -48,7 +48,9 @@ public class MessagesDatabaseListener extends Listener {
                         databaseManager.queueMessage(message.getGuid(), false);
 
                         for (String token : databaseManager.getAllRegistrationTokens()){
-                            deviceManager.sendNotification(token, message);
+                            if (databaseManager.getLastEmailByDeviceId(databaseManager.getDeviceIdByRegistrationToken(token)).equals(event.getMessageServer().getConfiguration().getAccountEmail())) {
+                                deviceManager.sendNotification(token, message);
+                            }
                         }
 
                         for (Device device : deviceManager.getDevices().values()){

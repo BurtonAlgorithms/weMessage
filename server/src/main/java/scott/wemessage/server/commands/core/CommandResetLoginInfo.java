@@ -3,11 +3,14 @@ package scott.wemessage.server.commands.core;
 import java.util.Scanner;
 
 import scott.wemessage.commons.crypto.BCrypt;
+import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.configuration.json.ConfigJSON;
+import scott.wemessage.server.connection.Device;
+import scott.wemessage.server.connection.DeviceManager;
 import scott.wemessage.server.security.Authenticator;
 import scott.wemessage.server.weMessage;
 
@@ -49,9 +52,23 @@ public class CommandResetLoginInfo extends CoreCommand {
 
         if(pastPasscodeWrong) return;
 
-        Scanner emailScanner = new Scanner(System.in);
+        DeviceManager deviceManager = getCommandManager().getMessageServer().getDeviceManager();
 
         ServerLogger.emptyLine();
+
+        if (deviceManager.getDevices().size() > 0) {
+            ServerLogger.log("Entering Edit Config Mode. Disconnecting all connected devices...");
+
+            for (Device device : getCommandManager().getMessageServer().getDeviceManager().getDevices().values()) {
+                deviceManager.removeDevice(device, DisconnectReason.FORCED, null);
+            }
+        }else {
+            ServerLogger.log("Entering Edit Config Mode.");
+            ServerLogger.emptyLine();
+        }
+
+        Scanner emailScanner = new Scanner(System.in);
+
         ServerLogger.log("Please enter a new email for devices to connect with!");
         ServerLogger.log("Your email must be the same as the one you are using iMessage with.");
         ServerLogger.emptyLine();

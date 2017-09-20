@@ -121,9 +121,18 @@ public final class DeviceManager extends Thread {
                 @Override
                 public void run() {
                     try {
+                        if (!getMessageServer().getConfiguration().getConfigJSON().getConfig().getSendNotifications()) return;
+
+                        String plainText;
+
+                        if (message.getText().length() > weMessage.NOTIFICATION_MAX_CHAR_SIZE + 1){
+                            plainText = message.getText().substring(0, weMessage.NOTIFICATION_MAX_CHAR_SIZE) + "...";
+                        }else {
+                            plainText = message.getText();
+                        }
 
                         String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
-                        String encryptedText = AESCrypto.encryptString(message.getText(), keys);
+                        String encryptedText = AESCrypto.encryptString(plainText, keys);
                         String chatName = "";
 
                         if (message.getChat() instanceof GroupChat) {
