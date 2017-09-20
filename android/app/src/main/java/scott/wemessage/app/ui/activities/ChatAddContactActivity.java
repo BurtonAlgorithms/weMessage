@@ -64,8 +64,6 @@ import scott.wemessage.commons.utils.StringUtils;
 
 public class ChatAddContactActivity extends AppCompatActivity implements MessageCallbacks {
 
-    //TODO: Fix broken applescripts
-
     private int oldEditTextColor;
     private boolean isBoundToConnectionService = false;
 
@@ -473,7 +471,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                     snackbar.dismiss();
                 }
             });
-            snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+            snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             snackbar.show();
         }

@@ -1,5 +1,6 @@
 package scott.wemessage.app.ui.view.chat;
 
+import android.support.text.emoji.EmojiCompat;
 import android.view.View;
 
 import com.daimajia.swipe.SwipeLayout;
@@ -25,7 +26,14 @@ public class ChatDialogViewHolder extends DialogsListAdapter.DialogViewHolder<Ch
         final String dialogId = dialog.getId();
         swipeLayout = (SwipeLayout) root;
 
-        tvBubble.setVisibility(isDialogUnreadButtonEnabled && dialog.getUnreadCount() > 0 ? View.VISIBLE : View.INVISIBLE);
+        if (tvBubble != null) {
+            tvBubble.setVisibility(isDialogUnreadButtonEnabled && dialog.getUnreadCount() > 0 ? View.VISIBLE : View.INVISIBLE);
+        }
+
+        if (tvLastMessage != null && weMessage.get().isEmojiCompatInitialized()){
+            tvLastMessage.setText(EmojiCompat.get().process(dialog.getLastMessage().getText()));
+        }
+
         swipeLayout.addDrag(SwipeLayout.DragEdge.Right, itemView.findViewById(R.id.chatDeleteButtonLayout));
         swipeLayout.addSwipeListener(new SwipeLayout.SwipeListener() {
             @Override

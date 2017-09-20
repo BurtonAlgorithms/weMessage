@@ -573,7 +573,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                 snackbar.dismiss();
             }
         });
-        snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+        snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
         return snackbar;
     }

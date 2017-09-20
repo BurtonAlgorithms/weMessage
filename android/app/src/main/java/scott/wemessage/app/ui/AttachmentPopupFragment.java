@@ -455,7 +455,7 @@ public class AttachmentPopupFragment extends MessagingFragment {
                     snackbar.dismiss();
                 }
             });
-            snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+            snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             snackbar.show();
         }

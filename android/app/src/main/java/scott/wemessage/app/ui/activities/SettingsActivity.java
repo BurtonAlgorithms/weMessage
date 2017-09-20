@@ -187,7 +187,7 @@ public class SettingsActivity extends AppCompatActivity {
                     snackbar.dismiss();
                 }
             });
-            snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+            snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             snackbar.show();
         }

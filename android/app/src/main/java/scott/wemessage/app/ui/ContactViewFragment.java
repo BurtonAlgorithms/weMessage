@@ -778,7 +778,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                     snackbar.dismiss();
                 }
             });
-            snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+            snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             snackbar.show();
         }

@@ -4,6 +4,8 @@ import scott.wemessage.app.messages.objects.Attachment;
 
 public interface MessageViewHolder {
 
+    int EMOJI_VIEW_TEXT_SIZE = 36;
+
     void notifyAudioPlaybackStart(Attachment a);
 
     void notifyAudioPlaybackStop(String attachmentUuid);

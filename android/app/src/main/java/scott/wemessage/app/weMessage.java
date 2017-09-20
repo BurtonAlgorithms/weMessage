@@ -4,14 +4,22 @@ import android.app.Application;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.support.text.emoji.EmojiCompat;
+import android.support.text.emoji.FontRequestEmojiCompatConfig;
+import android.support.v4.provider.FontRequest;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import scott.wemessage.R;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.firebase.NotificationCallbacks;
 import scott.wemessage.app.messages.objects.Account;
+import scott.wemessage.app.security.util.AesPrngHelper;
+import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.commons.Constants;
+import scott.wemessage.commons.crypto.AESCrypto;
 
 public final class weMessage extends Application implements Constants {
 
@@ -105,6 +113,8 @@ public final class weMessage extends Application implements Constants {
     private File attachmentFolder;
     private NotificationCallbacks notificationCallbacks;
 
+    private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
+
     public static weMessage get(){
         return instance;
     }
@@ -113,11 +123,23 @@ public final class weMessage extends Application implements Constants {
     public void onCreate() {
         super.onCreate();
 
+        EmojiCompat.Config emojiConfig = new FontRequestEmojiCompatConfig(this,
+                new FontRequest("com.google.android.gms.fonts", "com.google.android.gms", "Noto Color Emoji Compat", R.array.com_google_android_gms_fonts_certs))
+                .registerInitCallback(new EmojiCompat.InitCallback() {
+                    @Override
+                    public void onInitialized() {
+                        isEmojiInitialized.set(true);
+                    }
+                });
+
+        AESCrypto.setBase64Wrapper(new AndroidBase64Wrapper());
+        AESCrypto.setPrngHelper(new AesPrngHelper());
+        EmojiCompat.init(emojiConfig);
+
         File attachmentFolder = new File(getFilesDir(), weMessage.ATTACHMENT_FOLDER_NAME);
-
         attachmentFolder.mkdir();
-        this.attachmentFolder = attachmentFolder;
 
+        this.attachmentFolder = attachmentFolder;
         this.messageDatabase = new MessageDatabase(this);
 
         instance = this;
@@ -154,6 +176,10 @@ public final class weMessage extends Application implements Constants {
         if (notificationCallbacks == null) return true;
 
         return notificationCallbacks.onNotification(macGuid);
+    }
+
+    public boolean isEmojiCompatInitialized(){
+        return isEmojiInitialized.get();
     }
 
     public synchronized void setCurrentAccount(Account account){

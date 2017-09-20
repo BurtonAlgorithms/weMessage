@@ -682,7 +682,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     snackbar.dismiss();
                 }
             });
-            snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+            snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             snackbar.show();
         }

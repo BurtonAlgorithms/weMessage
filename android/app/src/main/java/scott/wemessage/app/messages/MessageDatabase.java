@@ -122,7 +122,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        //Note: Alter Tables
+
     }
 
     @Override

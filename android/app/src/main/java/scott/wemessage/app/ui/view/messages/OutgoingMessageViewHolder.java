@@ -4,8 +4,12 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
+import android.support.text.emoji.EmojiCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -15,6 +19,7 @@ import android.widget.TextView;
 
 import com.stfalcon.chatkit.messages.MessageHolders;
 import com.stfalcon.chatkit.utils.DateFormatter;
+import com.vdurmont.emoji.EmojiParser;
 
 import java.io.File;
 import java.util.Date;
@@ -39,6 +44,12 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
     private boolean isSelectionMode = false;
     private boolean isSelected = false;
 
+    private boolean areDefaultsSet = false;
+    private int defaultTimeColor;
+    private int defaultPaddingTop, defaultPaddingLeft, defaultPaddingRight, defaultPaddingBottom;
+    private float defaultTextSizePx;
+    private Drawable defaultBackgroundDrawable;
+
     private LinearLayout attachmentsContainer;
     private ImageView errorBubble;
     private TextView errorMessageView;
@@ -61,9 +72,35 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
     public void onBind(MessageView message) {
         super.onBind(message);
 
+        if (!areDefaultsSet){
+            areDefaultsSet = true;
+
+            if (bubble != null) {
+                defaultBackgroundDrawable = bubble.getBackground();
+                defaultPaddingTop = bubble.getPaddingTop();
+                defaultPaddingLeft = bubble.getPaddingLeft();
+                defaultPaddingRight = bubble.getPaddingRight();
+                defaultPaddingBottom = bubble.getPaddingBottom();
+            }
+
+            if (text != null) {
+                defaultTextSizePx = text.getTextSize();
+            }
+
+            if (time != null){
+                defaultTimeColor = time.getCurrentTextColor();
+            }
+        }
+
         messageId = message.getId();
 
-        time.setText(DateFormatter.format(message.getCreatedAt(), "h:mm a"));
+        if (text != null && weMessage.get().isEmojiCompatInitialized()){
+            text.setText(EmojiCompat.get().process(message.getText()));
+        }
+
+        if (time != null) {
+            time.setText(DateFormatter.format(message.getCreatedAt(), "h:mm a"));
+        }
 
         for (int i = 0; i < attachmentsContainer.getChildCount(); i++) {
             View v = attachmentsContainer.getChildAt(i);
@@ -223,6 +260,7 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
             deliveryMessageTimeView.setVisibility(View.VISIBLE);
         }
 
+        toggleEmojiView(isStringEmojis(message.getText()));
         toggleDeliveryVisibility(!StringUtils.isEmpty(getParentFragment().getLastMessageId()) && getParentFragment().getLastMessageId().equals(getMessageId()));
         toggleSelectionMode(getParentFragment().isInSelectionMode());
         setSelected(getParentFragment().getSelectedMessages().containsKey(message.getId()));
@@ -297,6 +335,42 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
         }else {
             itemView.findViewById(R.id.deliveryMessageContainer).setVisibility(View.GONE);
         }
+    }
+
+    private void toggleEmojiView(boolean value){
+        if (value){
+            if (bubble != null) {
+                ViewCompat.setBackground(bubble, null);
+
+                bubble.setPadding(0, 0, 0, 0);
+            }
+
+            if (text != null){
+                text.setTextSize(EMOJI_VIEW_TEXT_SIZE);
+            }
+
+            if (time != null){
+                time.setTextColor(getActivity().getResources().getColor(R.color.warm_grey_four));
+            }
+        }else {
+            if (bubble != null) {
+                ViewCompat.setBackground(bubble, defaultBackgroundDrawable);
+
+                bubble.setPadding(defaultPaddingLeft, defaultPaddingTop, defaultPaddingRight, defaultPaddingBottom);
+            }
+
+            if (text != null){
+                text.setTextSize(TypedValue.COMPLEX_UNIT_PX, defaultTextSizePx);
+            }
+
+            if (time != null){
+                time.setTextColor(defaultTimeColor);
+            }
+        }
+    }
+
+    private boolean isStringEmojis(String text){
+        return !StringUtils.isEmpty(text) && StringUtils.isEmpty(EmojiParser.removeAllEmojis(text).trim());
     }
 
     private ConversationFragment getParentFragment(){

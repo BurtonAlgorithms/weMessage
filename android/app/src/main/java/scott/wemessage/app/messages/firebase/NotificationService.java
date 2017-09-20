@@ -11,6 +11,7 @@ import android.graphics.Color;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.os.Build;
+import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -36,7 +37,14 @@ public class NotificationService extends FirebaseMessagingService {
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-        //TODO: trim message, check if notification email matches, jsonnotification
+        //TODO: Stylize
+
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+
+        if(!powerManager.isInteractive()) {
+            PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "WeMessageNotificationWakeLock");
+            wakeLock.acquire(5 * 1000);
+        }
 
         initChannel();
         showNotification(remoteMessage);

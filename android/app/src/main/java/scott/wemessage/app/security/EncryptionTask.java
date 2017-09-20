@@ -2,8 +2,6 @@ package scott.wemessage.app.security;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import scott.wemessage.app.security.util.AesPrngHelper;
-import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.security.util.CryptoException;
 import scott.wemessage.commons.crypto.AESCrypto;
 import scott.wemessage.commons.crypto.BCrypt;
@@ -22,11 +20,6 @@ public class EncryptionTask extends Thread {
         this.cryptoType = type;
         this.plainText = plainText;
         this.key = key;
-
-        if (cryptoType == CryptoType.AES){
-            AESCrypto.setBase64Wrapper(new AndroidBase64Wrapper());
-            AESCrypto.setPrngHelper(new AesPrngHelper());
-        }
     }
 
     @Override

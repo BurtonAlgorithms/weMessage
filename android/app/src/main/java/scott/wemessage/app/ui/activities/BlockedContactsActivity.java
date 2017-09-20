@@ -355,7 +355,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                     snackbar.dismiss();
                 }
             });
-            snackbar.setActionTextColor(getResources().getColor(R.color.lightRed));
+            snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             snackbar.show();
         }
