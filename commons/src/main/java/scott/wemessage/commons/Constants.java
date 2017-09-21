@@ -2,8 +2,8 @@ package scott.wemessage.commons;
 
 public interface Constants {
 
-     String WEMESSAGE_VERSION = "Alpha 0.1";
-     int WEMESSAGE_BUILD_VERSION = 1;
+     String WEMESSAGE_VERSION = "Alpha 1.0";
+     int WEMESSAGE_BUILD_VERSION = 2;
      int DEFAULT_PORT = 22222;
      int MINIMUM_PASSWORD_LENGTH = 8;
      int MAX_FILE_SIZE = 262144000;

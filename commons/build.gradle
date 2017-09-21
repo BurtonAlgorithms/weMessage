@@ -1,5 +1,8 @@
 group 'scott.wemessage'
-version 'Alpha 0.1'
+
+apply from: 'version.gradle'
+
+version weMessageVersion.versionName
 
 apply plugin: 'java'
 

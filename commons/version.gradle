@@ -1,5 +1,5 @@
 ext.weMessageVersion = [
-        versionName : 'Alpha 0.1',
-        versionBuild: 1,
-        versionAndroidBuild: 1
+        versionName : 'Alpha 1.0',
+        versionBuild: 2,
+        versionAndroidBuild: 2
 ]
