@@ -47,6 +47,16 @@ public class MessageImageActivity extends AppCompatActivity {
         doneButton = (TextView) findViewById(R.id.doneButton);
         imageView = (ImageView) findViewById(R.id.messageFullScreenImageView);
 
+        if (isCollapsed){
+            View doneBar = findViewById(R.id.doneBar);
+            int doneBarHeight = doneBar.getHeight();
+
+            doneBar.setY(-doneBarHeight);
+            doneBar.setVisibility(View.GONE);
+
+            findViewById(R.id.messageImageParentView).setBackgroundColor(getResources().getColor(R.color.black));
+        }
+
         doneButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
