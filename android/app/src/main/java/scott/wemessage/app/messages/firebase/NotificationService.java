@@ -1,5 +1,6 @@
 package scott.wemessage.app.messages.firebase;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -7,7 +8,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.os.Build;
@@ -37,8 +44,6 @@ public class NotificationService extends FirebaseMessagingService {
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-        //TODO: Stylize
-
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
 
         if(!powerManager.isInteractive()) {
@@ -123,13 +128,17 @@ public class NotificationService extends FirebaseMessagingService {
 
             if (chat != null && chat instanceof GroupChat) {
                 if (chat.getChatPictureFileLocation() != null && !StringUtils.isEmpty(chat.getChatPictureFileLocation().getFileLocation())) {
-                    largeIcon = BitmapFactory.decodeFile(chat.getChatPictureFileLocation().getFileLocation());
+                    largeIcon = createCircleBitmap(BitmapFactory.decodeFile(chat.getChatPictureFileLocation().getFileLocation()));
+                }else {
+                    largeIcon = createCircleBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_default_group_chat));
                 }
             } else {
                 if (handle != null) {
                     Contact c = database.getContactByHandle(handle);
                     if (c.getContactPictureFileLocation() != null && !StringUtils.isEmpty(c.getContactPictureFileLocation().getFileLocation())) {
-                        largeIcon = BitmapFactory.decodeFile(c.getContactPictureFileLocation().getFileLocation());
+                        largeIcon = createCircleBitmap(BitmapFactory.decodeFile(c.getContactPictureFileLocation().getFileLocation()));
+                    }else {
+                        largeIcon = createCircleBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_default_contact));
                     }
                 }
             }
@@ -154,17 +163,6 @@ public class NotificationService extends FirebaseMessagingService {
                         .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
             }
 
-            builder.setSmallIcon(R.drawable.ic_app_notification_white_small)
-                    .setContentTitle(displayName)
-                    .setContentText(StringUtils.trimORC(message))
-                    .setContentIntent(pendingIntent)
-                    .setWhen(remoteMessage.getSentTime())
-                    .setAutoCancel(true);
-
-            if (largeIcon != null) {
-                builder.setLargeIcon(largeIcon);
-            }
-
             int id = (int) ((new Date().getTime() / 1000L) % Integer.MAX_VALUE);
             String tag = weMessage.NOTIFICATION_TAG;
 
@@ -172,7 +170,39 @@ public class NotificationService extends FirebaseMessagingService {
                 tag += chat.getUuid().toString();
             }
 
-            notificationManager.notify(tag, id, builder.build());
+            Notification notification = builder
+                    .setContentTitle(displayName)
+                    .setContentText(StringUtils.trimORC(message))
+                    .setSmallIcon(R.drawable.ic_app_notification_white_small)
+                    .setLargeIcon(largeIcon)
+                    .setContentIntent(pendingIntent)
+                    .setWhen(remoteMessage.getSentTime())
+                    .setAutoCancel(true)
+                    .build();
+
+            notificationManager.notify(tag, id, notification);
         }
+    }
+
+    private Bitmap createCircleBitmap(Bitmap bitmap) {
+        final Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        final Canvas canvas = new Canvas(output);
+
+        final int color = Color.RED;
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        final RectF rectF = new RectF(rect);
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        canvas.drawOval(rectF, paint);
+
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+
+        bitmap.recycle();
+
+        return output;
     }
 }
