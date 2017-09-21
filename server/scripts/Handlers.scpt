@@ -1,6 +1,6 @@
 
-property WEMESSAGE_VERSION : "Alpha 0.1"
-property WEMESSAGE_NUMERIC_VERSION : 1
+property WEMESSAGE_VERSION : "Alpha 1.0"
+property WEMESSAGE_NUMERIC_VERSION : 2
 property UNKNOWN_ERROR : 999
 property SENT : 1000
 property INVALID_NUMBER : 1004
