@@ -414,6 +414,7 @@ public class Device extends Thread {
                     sendOutgoingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, encryptedText, JSONEncryptedText.class);
                 }catch(Exception ex){
                     ServerLogger.error(TAG, "An error occurred while encrypting the secret key", ex);
+                    ServerLogger.emptyLine();
                     killDevice(DisconnectReason.ERROR);
                     return;
                 }
@@ -427,12 +428,14 @@ public class Device extends Thread {
                     if (initConnect.getBuildVersion() != configuration.getBuildVersion()){
                         ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because it's version does not match the server's.");
                         ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device Version: " + initConnect.getBuildVersion() + "   Server Version: " + configuration.getBuildVersion());
+                        ServerLogger.emptyLine();
                         killDevice(DisconnectReason.INCORRECT_VERSION);
                         return;
                     }
 
                     if (!email.equals(configuration.getConfigJSON().getConfig().getAccountInfo().getEmail())){
                         ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because the wrong email address was provided.");
+                        ServerLogger.emptyLine();
                         hasTriedVerifying.set(true);
                         killDevice(DisconnectReason.INVALID_LOGIN);
                         return;
@@ -440,6 +443,7 @@ public class Device extends Thread {
 
                     if (!password.equals(configuration.getConfigJSON().getConfig().getAccountInfo().getPassword())) {
                         ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because the wrong password was provided.");
+                        ServerLogger.emptyLine();
                         hasTriedVerifying.set(true);
                         killDevice(DisconnectReason.INVALID_LOGIN);
                         return;
@@ -451,6 +455,7 @@ public class Device extends Thread {
 
                     if (result) {
                         ServerLogger.error(TAG, "Device with IP Address: " + getAddress() + " could not join because it already connected!", new Exception());
+                        ServerLogger.emptyLine();
                         killDevice(DisconnectReason.ALREADY_CONNECTED);
                         return;
                     }
@@ -459,6 +464,7 @@ public class Device extends Thread {
 
                     if (deviceType == DeviceType.UNSUPPORTED) {
                         ServerLogger.log(ServerLogger.Level.ERROR, TAG, "Disconnecting device with IP Address: " + getAddress() + " due to an unsupported type format.");
+                        ServerLogger.emptyLine();
                         killDevice(DisconnectReason.ERROR);
                         return;
                     }
