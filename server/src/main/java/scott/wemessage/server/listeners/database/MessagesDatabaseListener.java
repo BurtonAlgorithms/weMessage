@@ -42,7 +42,7 @@ public class MessagesDatabaseListener extends Listener {
                         databaseManager.queueMessage(message.getGuid(), true);
 
                         for (Device device : deviceManager.getDevices().values()){
-                            device.updateOutgoingMessage(message);
+                            device.updateOutgoingMessage(message, true);
                         }
                     }else {
                         databaseManager.queueMessage(message.getGuid(), false);
@@ -63,7 +63,7 @@ public class MessagesDatabaseListener extends Listener {
 
                     if (!comparison){
                         for (Device device : deviceManager.getDevices().values()){
-                            device.updateOutgoingMessage(message);
+                            device.updateOutgoingMessage(message, false);
                         }
                     }
                 }

@@ -17,10 +17,12 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.commons.crypto.AESCrypto;
 import scott.wemessage.commons.crypto.AESCrypto.CipherByteArrayIvMac;
+import scott.wemessage.commons.crypto.EncryptedFile;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.action.JSONResult;
 import scott.wemessage.commons.json.connection.ClientMessage;
@@ -44,6 +46,7 @@ import scott.wemessage.server.database.MessagesDatabase;
 import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.events.connection.ClientMessageReceivedEvent;
 import scott.wemessage.server.events.connection.DeviceUpdateEvent;
+import scott.wemessage.server.events.connection.FileReceivedEvent;
 import scott.wemessage.server.messages.Handle;
 import scott.wemessage.server.messages.Message;
 import scott.wemessage.server.messages.chat.ChatBase;
@@ -75,6 +78,8 @@ public class Device extends Thread {
     private String deviceId;
     private String deviceName;
     private String registrationToken;
+
+    private ConcurrentHashMap<String, String> fileUuidMap = new ConcurrentHashMap<>();
 
     public Device(DeviceManager deviceManager, Socket socket){
         synchronized (deviceManagerLock) {
@@ -162,7 +167,7 @@ public class Device extends Thread {
                 @Override
                 public void run() {
                     try {
-                        JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
+                        JSONMessage jsonMessage = message.toJson(Device.this, getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor(), true);
 
                         sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, jsonMessage, JSONMessage.class);
                     }catch (Exception ex){
@@ -172,7 +177,7 @@ public class Device extends Thread {
             }).start();
         }else {
             try {
-                JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
+                JSONMessage jsonMessage = message.toJson(Device.this, getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor(), true);
 
                 sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, jsonMessage, JSONMessage.class);
             }catch (Exception ex){
@@ -194,13 +199,22 @@ public class Device extends Thread {
         }
     }
 
-    public void updateOutgoingMessage(final Message message){
+    public void sendOutgoingFile(EncryptedFile encryptedFile){
+        try {
+            getOutputStream().writeObject(encryptedFile);
+            getOutputStream().flush();
+        }catch (Exception ex){
+            ServerLogger.error(TAG, "An error occurred while sending attachment " + encryptedFile.getTransferName(), ex);
+        }
+    }
+
+    public void updateOutgoingMessage(final Message message, final boolean sendAttachments){
         if (message.getAttachments() != null && message.getAttachments().size() > 0) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
+                        JSONMessage jsonMessage = message.toJson(Device.this, getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor(), sendAttachments);
 
                         sendOutgoingMessage(weMessage.JSON_MESSAGE_UPDATED, jsonMessage, JSONMessage.class);
                     } catch (Exception ex) {
@@ -210,7 +224,7 @@ public class Device extends Thread {
             }).start();
         }else {
             try {
-                JSONMessage jsonMessage = message.toJson(getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor());
+                JSONMessage jsonMessage = message.toJson(Device.this, getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor(), sendAttachments);
 
                 sendOutgoingMessage(weMessage.JSON_MESSAGE_UPDATED, jsonMessage, JSONMessage.class);
             } catch (Exception ex) {
@@ -229,18 +243,7 @@ public class Device extends Thread {
             List<File> attachments = new ArrayList<>();
 
             for (JSONAttachment a : message.getAttachments()){
-                byte[] bytes = a.getFileData().getEncryptedData();
-                String key = a.getFileData().getKey();
-                String ivParam = a.getFileData().getIvParams();
-
-                byte[] decryptedBytes = AESCrypto.decryptBytes(new CipherByteArrayIvMac(bytes, ivParam), key);
-                File file = new File(executor.getTempFolder().toString(), a.getTransferName());
-
-                if (!file.exists()){
-                    file.createNewFile();
-                }
-                FileUtils.writeBytesToFile(file, decryptedBytes);
-                attachments.add(file);
+                attachments.add(new File(fileUuidMap.get(a.getUuid())));
             }
 
             ChatBase chat = messagesDb.getChatByGuid(message.getChat().getMacGuid());
@@ -362,6 +365,7 @@ public class Device extends Thread {
     public void killDevice(DisconnectReason reason){
         try {
             isRunning.set(false);
+            fileUuidMap.clear();
             sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, reason.getCode(), Integer.class);
 
             getInputStream().close();
@@ -500,40 +504,62 @@ public class Device extends Thread {
 
             while (isRunning.get()){
                 try {
-                    String input = (String) getInputStream().readObject();
                     EventManager eventManager = getDeviceManager().getMessageServer().getEventManager();
+                    Object object = getInputStream().readObject();
 
-                    if (input.startsWith(weMessage.JSON_CONNECTION_TERMINATED)){
-                        getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);
-                        return;
-                    }
-                    if (input.startsWith(weMessage.JSON_REGISTRATION_TOKEN)){
-                        ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_REGISTRATION_TOKEN, input);
-                        String token = (String) clientMessage.getIncoming(String.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
+                    if (object instanceof EncryptedFile){
+                        EncryptedFile encryptedFile = (EncryptedFile) object;
+                        String key = encryptedFile.getKey();
+                        String ivParam = encryptedFile.getIvParams();
+                        byte[] bytes = encryptedFile.getEncryptedData();
+                        byte[] decryptedBytes = AESCrypto.decryptBytes(new CipherByteArrayIvMac(bytes, ivParam), key);
+                        File file = new File(getDeviceManager().getMessageServer().getScriptExecutor().getTempFolder().toString(), encryptedFile.getTransferName());
 
-                        synchronized (registrationTokenLock){
-                            this.registrationToken = token;
+                        if (!file.exists()){
+                            file.createNewFile();
                         }
-                        eventManager.callEvent(new DeviceUpdateEvent(eventManager, getDeviceManager(), this));
-                        return;
-                    }
-                    if (input.startsWith(weMessage.JSON_NEW_MESSAGE)){
-                        ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_NEW_MESSAGE, input);
-                        JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
-                        List<Integer> returnedResult = relayIncomingMessage(jsonMessage);
 
-                        sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
-                        eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, null));
+                        FileUtils.writeBytesToFile(file, decryptedBytes);
+                        fileUuidMap.put(encryptedFile.getUuid(), file.getAbsolutePath());
+                        eventManager.callEvent(new FileReceivedEvent(eventManager, getDeviceManager(), this, encryptedFile));
 
-                    }else if (input.startsWith(weMessage.JSON_ACTION)){
-                        ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_ACTION, input);
-                        JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
-                        List<Integer> returnedResult =  performIncomingAction(jsonAction);
-                        JSONResult jsonResult = new JSONResult(clientMessage.getMessageUuid(), returnedResult);
-                        boolean wasRight = jsonResult.getResult().get(0).equals(ReturnType.ACTION_PERFORMED.getCode());
+                        bytes = null;
+                        decryptedBytes = null;
+                    } else {
+                        String input = (String) object;
 
-                        sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, jsonResult, JSONResult.class);
-                        eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, wasRight));
+                        if (input.startsWith(weMessage.JSON_CONNECTION_TERMINATED)) {
+                            getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);
+                            return;
+                        }
+                        if (input.startsWith(weMessage.JSON_REGISTRATION_TOKEN)) {
+                            ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_REGISTRATION_TOKEN, input);
+                            String token = (String) clientMessage.getIncoming(String.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
+
+                            synchronized (registrationTokenLock) {
+                                this.registrationToken = token;
+                            }
+                            eventManager.callEvent(new DeviceUpdateEvent(eventManager, getDeviceManager(), this));
+                            return;
+                        }
+                        if (input.startsWith(weMessage.JSON_NEW_MESSAGE)) {
+                            ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_NEW_MESSAGE, input);
+                            JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
+                            List<Integer> returnedResult = relayIncomingMessage(jsonMessage);
+
+                            sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
+                            eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, null));
+
+                        } else if (input.startsWith(weMessage.JSON_ACTION)) {
+                            ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_ACTION, input);
+                            JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
+                            List<Integer> returnedResult = performIncomingAction(jsonAction);
+                            JSONResult jsonResult = new JSONResult(clientMessage.getMessageUuid(), returnedResult);
+                            boolean wasRight = jsonResult.getResult().get(0).equals(ReturnType.ACTION_PERFORMED.getCode());
+
+                            sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, jsonResult, JSONResult.class);
+                            eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, wasRight));
+                        }
                     }
                 }catch(EOFException ex){
                     getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);

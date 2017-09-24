@@ -23,6 +23,7 @@ import scott.wemessage.server.listeners.connection.ClientMessageReceivedListener
 import scott.wemessage.server.listeners.connection.DeviceJoinListener;
 import scott.wemessage.server.listeners.connection.DeviceQuitListener;
 import scott.wemessage.server.listeners.connection.DeviceUpdateListener;
+import scott.wemessage.server.listeners.connection.FileReceivedListener;
 import scott.wemessage.server.listeners.database.ErrorWatcher;
 import scott.wemessage.server.listeners.database.MessagesDatabaseListener;
 import scott.wemessage.server.security.Authenticator;
@@ -224,6 +225,7 @@ public final class MessageServer {
                 eventManager.registerListener(new DeviceQuitListener());
                 eventManager.registerListener(new DeviceUpdateListener());
                 eventManager.registerListener(new ClientMessageReceivedListener());
+                eventManager.registerListener(new FileReceivedListener());
             }
             commandManager.startService();
 

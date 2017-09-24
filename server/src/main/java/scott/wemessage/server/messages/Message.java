@@ -12,12 +12,13 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import scott.wemessage.commons.crypto.AESCrypto;
+import scott.wemessage.commons.crypto.EncryptedFile;
 import scott.wemessage.commons.json.message.JSONAttachment;
 import scott.wemessage.commons.json.message.JSONChat;
 import scott.wemessage.commons.json.message.JSONMessage;
-import scott.wemessage.commons.json.message.security.JSONEncryptedFile;
 import scott.wemessage.commons.json.message.security.JSONEncryptedText;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.utils.DateUtils;
@@ -25,6 +26,7 @@ import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.AppleScriptExecutor;
 import scott.wemessage.server.configuration.ServerConfiguration;
+import scott.wemessage.server.connection.Device;
 import scott.wemessage.server.messages.chat.ChatBase;
 import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.messages.chat.PeerChat;
@@ -221,7 +223,7 @@ public class Message {
         return this;
     }
 
-    public JSONMessage toJson(ServerConfiguration serverConfiguration, AppleScriptExecutor appleScriptExecutor) throws IOException, GeneralSecurityException {
+    public JSONMessage toJson(Device device, ServerConfiguration serverConfiguration, AppleScriptExecutor appleScriptExecutor, boolean sendAttachments) throws IOException, GeneralSecurityException {
         ChatBase chat = getChat();
         List<String> participants = new ArrayList<>();
         List<JSONAttachment> attachments = new ArrayList<>();
@@ -254,6 +256,8 @@ public class Message {
                 ServerLogger.log(ServerLogger.Level.WARNING, "Could not send attachment: " + attachment.getTransferName()
                         + " because it exceeds the maximum file size of " + FileUtils.getFileSizeString(weMessage.MAX_FILE_SIZE));
             } else {
+                String attachmentUuid = UUID.randomUUID().toString();
+
                 if (MimeType.MimeExtension.getExtensionFromString(attachment.getFileType()) == MimeType.MimeExtension.MOV) {
                     if (!serverConfiguration.getConfigJSON().getConfig().getTranscodeVideos()) continue;
 
@@ -291,39 +295,65 @@ public class Message {
                     ServerLogger.log(ServerLogger.Level.INFO, "Finished encoding process. Time: " + (((finishTime - startTime) / 1000000L) / 1000L) + " seconds.");
 
                     File encodedFile = new File(appleScriptExecutor.getTempFolder().toString(), outputName);
-                    byte[] fileBytes = FileUtils.readBytesFromFile(encodedFile);
-                    String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
-                    AESCrypto.CipherByteArrayIvMac byteArrayIvMac = AESCrypto.encryptBytes(fileBytes, keys);
+
+                    if (sendAttachments) {
+                        byte[] fileBytes = FileUtils.readBytesFromFile(encodedFile);
+                        String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
+                        AESCrypto.CipherByteArrayIvMac byteArrayIvMac = AESCrypto.encryptBytes(fileBytes, keys);
+
+                        EncryptedFile encryptedFile = new EncryptedFile(
+                                attachmentUuid,
+                                outputName,
+                                byteArrayIvMac.getCipherBytes(),
+                                keys,
+                                byteArrayIvMac.joinedIvAndMac()
+                        );
+                        device.sendOutgoingFile(encryptedFile);
+
+                        fileBytes = null;
+                        byteArrayIvMac = null;
+                        encryptedFile = null;
+                    }
 
                     JSONAttachment jsonAttachment = new JSONAttachment(
+                            attachmentUuid,
                             attachment.getGuid(),
                             outputName,
                             MimeType.MimeExtension.WEBM.getTypeString(),
-                            new JSONEncryptedFile(
-                                    byteArrayIvMac.getCipherBytes(),
-                                    keys,
-                                    byteArrayIvMac.joinedIvAndMac()
-                            ),
                             Math.round(encodedFile.length())
                     );
+
                     attachments.add(jsonAttachment);
                 } else {
-                    byte[] fileBytes = FileUtils.readBytesFromFile(new File(filePath));
+                    if (sendAttachments) {
+                        byte[] fileBytes = FileUtils.readBytesFromFile(new File(filePath));
 
-                    String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
-                    AESCrypto.CipherByteArrayIvMac byteArrayIvMac = AESCrypto.encryptBytes(fileBytes, keys);
+                        String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
+                        AESCrypto.CipherByteArrayIvMac byteArrayIvMac = AESCrypto.encryptBytes(fileBytes, keys);
+
+                        EncryptedFile encryptedFile = new EncryptedFile(
+                                attachmentUuid,
+                                attachment.getTransferName(),
+                                byteArrayIvMac.getCipherBytes(),
+                                keys,
+                                byteArrayIvMac.joinedIvAndMac()
+                        );
+
+                        device.sendOutgoingFile(encryptedFile);
+
+                        fileBytes = null;
+                        byteArrayIvMac = null;
+                        encryptedFile = null;
+                    }
 
                     JSONAttachment jsonAttachment = new JSONAttachment(
+                            attachmentUuid,
                             attachment.getGuid(),
                             attachment.getTransferName(),
                             attachment.getFileType(),
-                            new JSONEncryptedFile(
-                                    byteArrayIvMac.getCipherBytes(),
-                                    keys,
-                                    byteArrayIvMac.joinedIvAndMac()
-                            ),
                             attachment.getTotalBytes()
                     );
+
                     attachments.add(jsonAttachment);
                 }
             }

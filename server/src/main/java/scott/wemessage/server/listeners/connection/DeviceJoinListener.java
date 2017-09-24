@@ -62,7 +62,7 @@ public class DeviceJoinListener extends Listener {
                     if (!queuedMessages.get(guid)) {
                         event.getDevice().sendOutgoingMessage(message);
                     } else {
-                        event.getDevice().updateOutgoingMessage(message);
+                        event.getDevice().updateOutgoingMessage(message, false);
                     }
                     db.unQueueMessage(guid, event.getDevice().getDeviceId());
                 }
