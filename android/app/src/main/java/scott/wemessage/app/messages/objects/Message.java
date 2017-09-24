@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import scott.wemessage.app.connection.ConnectionHandler;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
@@ -16,6 +17,7 @@ import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.EncryptionTask;
 import scott.wemessage.app.security.FileEncryptionTask;
 import scott.wemessage.app.security.KeyTextPair;
+import scott.wemessage.commons.crypto.EncryptedFile;
 import scott.wemessage.commons.json.message.JSONAttachment;
 import scott.wemessage.commons.json.message.JSONChat;
 import scott.wemessage.commons.json.message.JSONMessage;
@@ -214,7 +216,7 @@ public class Message extends MessageBase {
         return this;
     }
 
-    public JSONMessage toJson() throws IOException, GeneralSecurityException {
+    public JSONMessage toJson(ConnectionHandler connectionHandler) throws IOException, GeneralSecurityException {
         Chat chat = getChat();
         List<String> participants = new ArrayList<>();
         List<JSONAttachment> attachments = new ArrayList<>();
@@ -246,11 +248,28 @@ public class Message extends MessageBase {
             FileEncryptionTask fileEncryptionTask = new FileEncryptionTask(fileBytes, null, CryptoType.AES);
             fileEncryptionTask.runEncryptTask();
 
+            CryptoFile cryptoFile = fileEncryptionTask.getEncryptedFile();
+
+            EncryptedFile encryptedFile = new EncryptedFile(
+                    attachment.getUuid().toString(),
+                    attachment.getTransferName(),
+                    cryptoFile.getEncryptedBytes(),
+                    cryptoFile.getKey(),
+                    cryptoFile.getIvMac()
+            );
+
+            connectionHandler.sendOutgoingFile(encryptedFile);
+
+            fileBytes = null;
+            fileEncryptionTask = null;
+            cryptoFile = null;
+            encryptedFile = null;
+
             JSONAttachment jsonAttachment = new JSONAttachment(
+                    attachment.getUuid().toString(),
                     attachment.getMacGuid(),
                     attachment.getTransferName(),
                     attachment.getFileType(),
-                    CryptoFile.toEncryptedJSON(fileEncryptionTask.getEncryptedFile()),
                     attachment.getTotalBytes()
             );
             attachments.add(jsonAttachment);

@@ -1,7 +1,5 @@
 package scott.wemessage.app.security;
 
-import scott.wemessage.commons.json.message.security.JSONEncryptedFile;
-
 public class CryptoFile {
 
     private final String key;
@@ -26,7 +24,4 @@ public class CryptoFile {
         return ivMac;
     }
 
-    public static JSONEncryptedFile toEncryptedJSON(CryptoFile cryptoFile){
-        return new JSONEncryptedFile(cryptoFile.getEncryptedBytes(), cryptoFile.getKey(), cryptoFile.getIvMac());
-    }
 }

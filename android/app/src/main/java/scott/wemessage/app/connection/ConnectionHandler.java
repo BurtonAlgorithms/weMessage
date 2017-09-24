@@ -55,6 +55,7 @@ import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
+import scott.wemessage.commons.crypto.EncryptedFile;
 import scott.wemessage.commons.json.action.JSONAction;
 import scott.wemessage.commons.json.action.JSONResult;
 import scott.wemessage.commons.json.connection.ClientMessage;
@@ -64,7 +65,6 @@ import scott.wemessage.commons.json.connection.ServerMessage;
 import scott.wemessage.commons.json.message.JSONAttachment;
 import scott.wemessage.commons.json.message.JSONChat;
 import scott.wemessage.commons.json.message.JSONMessage;
-import scott.wemessage.commons.json.message.security.JSONEncryptedFile;
 import scott.wemessage.commons.json.message.security.JSONEncryptedText;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.DeviceType;
@@ -91,6 +91,7 @@ public final class ConnectionHandler extends Thread {
 
     private ConcurrentHashMap<String, ConnectionMessage>connectionMessagesMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, String>messageAndConnectionMessageMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Attachment> fileAttachmentsMap = new ConcurrentHashMap<>();
 
     private ConnectionService service;
     private Socket connectionSocket;
@@ -174,18 +175,19 @@ public final class ConnectionHandler extends Thread {
             @Override
             public void run() {
                 try {
+                    if (performMessageManagerAdd) {
+                        weMessage.get().getMessageManager().addMessage(message, false);
+                    }
+
                     Type type = TypeToken.get(JSONMessage.class).getType();
                     String clientMessageUuid = UUID.randomUUID().toString();
-                    String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().toJson(message.toJson(), type);
+                    String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create()
+                            .toJson(message.toJson(ConnectionHandler.this), type);
                     ClientMessage clientMessage = new ClientMessage(clientMessageUuid, outgoingDataJson);
                     String outgoingJson = new Gson().toJson(clientMessage);
 
                     connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
                     messageAndConnectionMessageMap.put(clientMessageUuid, message.getUuid().toString());
-
-                    if (performMessageManagerAdd) {
-                        weMessage.get().getMessageManager().addMessage(message, false);
-                    }
 
                     getOutputStream().writeObject(weMessage.JSON_NEW_MESSAGE + outgoingJson);
                     getOutputStream().flush();
@@ -195,6 +197,11 @@ public final class ConnectionHandler extends Thread {
                 }
             }
         }).start();
+    }
+
+    public void sendOutgoingFile(EncryptedFile encryptedFile) throws IOException {
+        getOutputStream().writeObject(encryptedFile);
+        getOutputStream().flush();
     }
 
     private void sendOutgoingGenericAction(final ActionType actionType, final String... args){
@@ -503,13 +510,44 @@ public final class ConnectionHandler extends Thread {
         while (isRunning.get()){
             try {
                 MessageDatabase database = weMessage.get().getMessageDatabase();
-                final String incoming = (String) getInputStream().readObject();
 
-                if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)){
+                final Object incomingObject = getInputStream().readObject();
+
+                if (incomingObject instanceof EncryptedFile){
+                    String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
+                    EncryptedFile encryptedFile = (EncryptedFile) incomingObject;
+
+                    Attachment attachment = new Attachment(UUID.fromString(encryptedFile.getUuid()), null, encryptedFile.getTransferName(),
+                            new FileLocationContainer(
+                                    new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + encryptedFile.getTransferName())),
+                            null, -1);
+
+                    if (fileAttachmentsMap.get(encryptedFile.getUuid()) == null) {
+                        CryptoFile cryptoFile = new CryptoFile(encryptedFile.getEncryptedData(), encryptedFile.getKey(), encryptedFile.getIvParams());
+
+                        FileDecryptionTask fileDecryptionTask = new FileDecryptionTask(cryptoFile, CryptoType.AES);
+                        fileDecryptionTask.runDecryptTask();
+
+                        byte[] decryptedBytes = fileDecryptionTask.getDecryptedBytes();
+                        attachment.getFileLocation().writeBytesToFile(decryptedBytes);
+
+                        cryptoFile = null;
+                        fileDecryptionTask = null;
+                        decryptedBytes = null;
+                    }
+
+                    fileAttachmentsMap.put(encryptedFile.getUuid(), attachment);
+                    encryptedFile = null;
+                    continue;
+                }
+
+                final String incoming = (String) incomingObject;
+
+                if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)) {
                     isConnected.set(true);
                     Account currentAccount = new Account().setEmail(emailPlainText).setEncryptedPassword(passwordHashedText);
 
-                    if (database.getAccountByEmail(emailPlainText) == null){
+                    if (database.getAccountByEmail(emailPlainText) == null) {
                         currentAccount.setUuid(UUID.randomUUID());
 
                         weMessage.get().setCurrentAccount(currentAccount);
@@ -520,7 +558,7 @@ public final class ConnectionHandler extends Thread {
                         if (database.getContactByHandle(meHandle) == null) {
                             weMessage.get().getMessageManager().addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null, false, false), false);
                         }
-                    }else {
+                    } else {
                         UUID oldUUID = database.getAccountByEmail(emailPlainText).getUuid();
                         currentAccount.setUuid(oldUUID);
 
@@ -530,9 +568,9 @@ public final class ConnectionHandler extends Thread {
 
                     String hostToSave;
 
-                    if (port == weMessage.DEFAULT_PORT){
+                    if (port == weMessage.DEFAULT_PORT) {
                         hostToSave = ipAddress;
-                    }else {
+                    } else {
                         hostToSave = ipAddress + ":" + port;
                     }
 
@@ -592,7 +630,7 @@ public final class ConnectionHandler extends Thread {
                                 break;
                         }
                     }
-                }else if (incoming.startsWith(weMessage.JSON_NEW_MESSAGE)){
+                } else if (incoming.startsWith(weMessage.JSON_NEW_MESSAGE)) {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -634,26 +672,19 @@ public final class ConnectionHandler extends Thread {
                                 }
 
                                 Chat chat = messageDatabase.getChatByMacGuid(jsonChat.getMacGuid());
-                                if (!chat.isInChat()){
+                                if (!chat.isInChat()) {
                                     messageManager.updateChat(chat.getUuid().toString(), chat.setIsInChat(true), false);
                                 }
 
-
-                                String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
                                 ArrayList<Attachment> attachments = new ArrayList<>();
 
                                 for (JSONAttachment jsonAttachment : jsonMessage.getAttachments()) {
-                                    Attachment attachment = new Attachment(UUID.randomUUID(), jsonAttachment.getMacGuid(), jsonAttachment.getTransferName(),
-                                            new FileLocationContainer(
-                                                    new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + jsonAttachment.getTransferName())),
-                                            jsonAttachment.getFileType(), jsonAttachment.getTotalBytes());
+                                    Attachment attachment = fileAttachmentsMap.get(jsonAttachment.getUuid());
 
-                                    JSONEncryptedFile jsonEncryptedFile = jsonAttachment.getFileData();
-                                    FileDecryptionTask fileDecryptionTask = new FileDecryptionTask(new CryptoFile(jsonEncryptedFile.getEncryptedData(), jsonEncryptedFile.getKey(),
-                                            jsonEncryptedFile.getIvParams()), CryptoType.AES);
-                                    fileDecryptionTask.runDecryptTask();
+                                    attachment.setMacGuid(jsonAttachment.getMacGuid());
+                                    attachment.setFileType(jsonAttachment.getFileType());
+                                    attachment.setTotalBytes(jsonAttachment.getTotalBytes());
 
-                                    attachment.getFileLocation().writeBytesToFile(fileDecryptionTask.getDecryptedBytes());
                                     attachments.add(attachment);
                                 }
 
@@ -662,13 +693,13 @@ public final class ConnectionHandler extends Thread {
                                         jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe());
 
                                 messageManager.addMessage(message, false);
-                            }catch(Exception ex){
+                            } catch (Exception ex) {
                                 sendLocalBroadcast(weMessage.BROADCAST_NEW_MESSAGE_ERROR, null);
                                 AppLogger.error(TAG, "An error occurred while fetching a new message from the server", ex);
                             }
                         }
                     }).start();
-                }else if (incoming.startsWith(weMessage.JSON_MESSAGE_UPDATED)){
+                } else if (incoming.startsWith(weMessage.JSON_MESSAGE_UPDATED)) {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -692,7 +723,7 @@ public final class ConnectionHandler extends Thread {
                                 JSONChat jsonChat = jsonMessage.getChat();
                                 runChatCheck(messageManager, jsonChat, DateUtils.getDateUsing2001(jsonMessage.getDateSent() - 1));
 
-                                if (messageDatabase.getMessageByMacGuid(jsonMessage.getMacGuid()) == null){
+                                if (messageDatabase.getMessageByMacGuid(jsonMessage.getMacGuid()) == null) {
 
                                     JSONEncryptedText encryptedText = jsonMessage.getEncryptedText();
                                     DecryptionTask textDecryptionTask = new DecryptionTask(new KeyTextPair(encryptedText.getEncryptedText(), encryptedText.getKey()), CryptoType.AES);
@@ -704,8 +735,8 @@ public final class ConnectionHandler extends Thread {
 
                                     boolean updated = false;
 
-                                    for (Message candidate : messageCandidates){
-                                        if (candidate.getMacGuid() == null){
+                                    for (Message candidate : messageCandidates) {
+                                        if (candidate.getMacGuid() == null) {
                                             updateMessage(messageManager, candidate, jsonMessage, true);
                                             updated = true;
                                             break;
@@ -730,16 +761,16 @@ public final class ConnectionHandler extends Thread {
                                             }
                                         }
                                     }
-                                }else {
+                                } else {
                                     updateMessage(messageManager, messageDatabase.getMessageByMacGuid(jsonMessage.getMacGuid()), jsonMessage, false);
                                 }
-                            }catch(Exception ex){
+                            } catch (Exception ex) {
                                 sendLocalBroadcast(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR, null);
                                 AppLogger.error("An error occurred while updating the message", ex);
                             }
                         }
                     }).start();
-                }else if (incoming.startsWith(weMessage.JSON_ACTION)){
+                } else if (incoming.startsWith(weMessage.JSON_ACTION)) {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -748,13 +779,13 @@ public final class ConnectionHandler extends Thread {
                                 JSONAction jsonAction = (JSONAction) getIncomingMessage(weMessage.JSON_ACTION, incoming).getOutgoing(JSONAction.class, byteArrayAdapter);
 
                                 performAction(messageManager, jsonAction);
-                            }catch(Exception ex){
+                            } catch (Exception ex) {
                                 sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
                                 AppLogger.error("An error occurred while performing a JSONAction", ex);
                             }
                         }
                     }).start();
-                }else if (incoming.startsWith(weMessage.JSON_RETURN_RESULT)){
+                } else if (incoming.startsWith(weMessage.JSON_RETURN_RESULT)) {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -763,7 +794,7 @@ public final class ConnectionHandler extends Thread {
                                 JSONResult jsonResult = (JSONResult) getIncomingMessage(weMessage.JSON_RETURN_RESULT, incoming).getOutgoing(JSONResult.class, byteArrayAdapter);
 
                                 processResults(messageManager, jsonResult);
-                            }catch(Exception ex){
+                            } catch (Exception ex) {
                                 sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
                                 AppLogger.error(TAG, "An error occurred while trying to process a return result", ex);
                             }
@@ -834,6 +865,7 @@ public final class ConnectionHandler extends Thread {
                         getConnectionSocket().close();
                         connectionMessagesMap.clear();
                         messageAndConnectionMessageMap.clear();
+                        fileAttachmentsMap.clear();
 
                         ConnectionHandler.this.interrupt();
                     } catch (Exception ex) {
