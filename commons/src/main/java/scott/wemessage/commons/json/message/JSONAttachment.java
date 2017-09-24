@@ -1,21 +1,23 @@
 package scott.wemessage.commons.json.message;
 
-import scott.wemessage.commons.json.message.security.JSONEncryptedFile;
-
 public class JSONAttachment {
 
+    private String uuid;
     private String macGuid;
     private String transferName;
     private String fileType;
-    private JSONEncryptedFile fileData;
     private int totalBytes;
 
-    public JSONAttachment(String macGuid, String transferName, String fileType, JSONEncryptedFile fileData, int totalBytes){
+    public JSONAttachment(String uuid, String macGuid, String transferName, String fileType, int totalBytes){
+        this.uuid = uuid;
         this.macGuid = macGuid;
         this.transferName = transferName;
         this.fileType = fileType;
-        this.fileData = fileData;
         this.totalBytes = totalBytes;
+    }
+
+    public String getUuid(){
+        return uuid;
     }
 
     public String getMacGuid() {
@@ -30,12 +32,12 @@ public class JSONAttachment {
         return fileType;
     }
 
-    public JSONEncryptedFile getFileData() {
-        return fileData;
-    }
-
     public int getTotalBytes() {
         return totalBytes;
+    }
+
+    public void setUuid(String uuid){
+        this.uuid = uuid;
     }
 
     public void setMacGuid(String macGuid) {
@@ -48,10 +50,6 @@ public class JSONAttachment {
 
     public void setFileType(String fileType) {
         this.fileType = fileType;
-    }
-
-    public void setFileData(JSONEncryptedFile fileData) {
-        this.fileData = fileData;
     }
 
     public void setTotalBytes(int totalBytes) {
