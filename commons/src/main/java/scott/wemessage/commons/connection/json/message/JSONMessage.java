@@ -1,20 +1,20 @@
-package scott.wemessage.commons.json.message;
+package scott.wemessage.commons.connection.json.message;
 
 import java.util.List;
 
-import scott.wemessage.commons.json.message.security.JSONEncryptedText;
+import scott.wemessage.commons.connection.security.EncryptedText;
 
 public class JSONMessage {
 
     private String macGuid;
     private JSONChat chat;
     private String handle;
-    private List<JSONAttachment> attachments;
-    private JSONEncryptedText encryptedText;
+    private List<scott.wemessage.commons.connection.json.message.JSONAttachment> attachments;
+    private EncryptedText encryptedText;
     private Integer dateSent, dateDelivered, dateRead;
     private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe;
 
-    public JSONMessage(String macGuid, JSONChat chat, String handle, List<JSONAttachment> attachments, JSONEncryptedText encryptedText, Integer dateSent, Integer dateDelivered, Integer dateRead,
+    public JSONMessage(String macGuid, JSONChat chat, String handle, List<scott.wemessage.commons.connection.json.message.JSONAttachment> attachments, EncryptedText encryptedText, Integer dateSent, Integer dateDelivered, Integer dateRead,
                        Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe){
         this.macGuid = macGuid;
         this.chat = chat;
@@ -45,11 +45,11 @@ public class JSONMessage {
         return handle;
     }
 
-    public List<JSONAttachment> getAttachments() {
+    public List<scott.wemessage.commons.connection.json.message.JSONAttachment> getAttachments() {
         return attachments;
     }
 
-    public JSONEncryptedText getEncryptedText() {
+    public EncryptedText getEncryptedText() {
         return encryptedText;
     }
 
@@ -101,11 +101,11 @@ public class JSONMessage {
         this.handle = handle;
     }
 
-    public void setAttachments(List<JSONAttachment> attachments) {
+    public void setAttachments(List<scott.wemessage.commons.connection.json.message.JSONAttachment> attachments) {
         this.attachments = attachments;
     }
 
-    public void setEncryptedText(JSONEncryptedText encryptedText) {
+    public void setEncryptedText(EncryptedText encryptedText) {
         this.encryptedText = encryptedText;
     }
 

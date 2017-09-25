@@ -1,4 +1,4 @@
-package scott.wemessage.commons.json.action;
+package scott.wemessage.commons.connection.json.action;
 
 public class JSONAction {
 

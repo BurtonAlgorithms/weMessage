@@ -1,11 +1,11 @@
-package scott.wemessage.commons.json.message.security;
+package scott.wemessage.commons.connection.security;
 
-public class JSONEncryptedText {
+public class EncryptedText {
 
     private String encryptedText;
     private String key;
 
-    public JSONEncryptedText(String encryptedText, String key){
+    public EncryptedText(String encryptedText, String key){
         this.encryptedText = encryptedText;
         this.key = key;
     }

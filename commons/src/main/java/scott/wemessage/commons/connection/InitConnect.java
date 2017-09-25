@@ -1,18 +1,18 @@
-package scott.wemessage.commons.json.connection;
+package scott.wemessage.commons.connection;
 
-import scott.wemessage.commons.json.message.security.JSONEncryptedText;
+import scott.wemessage.commons.connection.security.EncryptedText;
 
 public class InitConnect {
 
     private int buildVersion;
     private String deviceId;
-    private JSONEncryptedText email;
-    private JSONEncryptedText password;
+    private EncryptedText email;
+    private EncryptedText password;
     private String deviceType;
     private String deviceName;
     private String registrationToken;
 
-    public InitConnect(int buildVersion, String deviceId, JSONEncryptedText email, JSONEncryptedText password, String deviceType, String deviceName, String registrationToken){
+    public InitConnect(int buildVersion, String deviceId, EncryptedText email, EncryptedText password, String deviceType, String deviceName, String registrationToken){
         this.buildVersion = buildVersion;
         this.deviceId = deviceId;
         this.email = email;
@@ -30,11 +30,11 @@ public class InitConnect {
         return deviceId;
     }
 
-    public JSONEncryptedText getEmail() {
+    public EncryptedText getEmail() {
         return email;
     }
 
-    public JSONEncryptedText getPassword() {
+    public EncryptedText getPassword() {
         return password;
     }
 
@@ -58,11 +58,11 @@ public class InitConnect {
         this.deviceId = deviceId;
     }
 
-    public void setEmail(JSONEncryptedText email) {
+    public void setEmail(EncryptedText email) {
         this.email = email;
     }
 
-    public void setPassword(JSONEncryptedText password) {
+    public void setPassword(EncryptedText password) {
         this.password = password;
     }
 

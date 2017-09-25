@@ -1,4 +1,4 @@
-package scott.wemessage.commons.json.message;
+package scott.wemessage.commons.connection.json.message;
 
 import java.util.List;
 

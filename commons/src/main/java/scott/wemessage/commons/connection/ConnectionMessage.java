@@ -1,4 +1,4 @@
-package scott.wemessage.commons.json.connection;
+package scott.wemessage.commons.connection;
 
 public abstract class ConnectionMessage {
 

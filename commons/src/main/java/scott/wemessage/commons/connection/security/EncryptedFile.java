@@ -1,4 +1,4 @@
-package scott.wemessage.commons.crypto;
+package scott.wemessage.commons.connection.security;
 
 import java.io.Serializable;
 
@@ -13,6 +13,7 @@ public class EncryptedFile implements Serializable {
     public EncryptedFile(String uuid, String transferName, byte[] encryptedData, String key, String ivParams){
         this.uuid = uuid;
         this.transferName = transferName;
+        this.encryptedData = encryptedData;
         this.key = key;
         this.ivParams = ivParams;
     }

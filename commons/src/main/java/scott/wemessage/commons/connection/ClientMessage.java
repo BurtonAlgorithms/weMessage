@@ -1,4 +1,4 @@
-package scott.wemessage.commons.json.connection;
+package scott.wemessage.commons.connection;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
