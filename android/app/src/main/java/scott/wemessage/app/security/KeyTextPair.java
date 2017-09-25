@@ -1,6 +1,6 @@
 package scott.wemessage.app.security;
 
-import scott.wemessage.commons.json.message.security.JSONEncryptedText;
+import scott.wemessage.commons.connection.security.EncryptedText;
 
 public class KeyTextPair {
 
@@ -20,7 +20,7 @@ public class KeyTextPair {
         return key;
     }
 
-    public static JSONEncryptedText toEncryptedJSON(KeyTextPair keyTextPair){
-        return new JSONEncryptedText(keyTextPair.getEncryptedText(), keyTextPair.getKey());
+    public static EncryptedText toEncryptedText(KeyTextPair keyTextPair){
+        return new EncryptedText(keyTextPair.getEncryptedText(), keyTextPair.getKey());
     }
 }

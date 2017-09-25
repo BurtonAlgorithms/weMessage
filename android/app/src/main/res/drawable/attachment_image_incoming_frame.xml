@@ -7,5 +7,5 @@
              android:bottomLeftRadius="0dp"
              android:bottomRightRadius="@dimen/message_bubble_corners_radius"/>
 
-    <stroke android:width="6dp" android:color="#ffffffff" />
+    <stroke android:width="6dp" android:color="?android:colorBackground" />
 </shape>

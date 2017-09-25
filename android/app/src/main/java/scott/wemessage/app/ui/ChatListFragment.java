@@ -50,8 +50,8 @@ import scott.wemessage.app.ui.view.chat.ChatDialogViewHolder;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.weMessage;
-import scott.wemessage.commons.json.action.JSONAction;
-import scott.wemessage.commons.json.message.JSONMessage;
+import scott.wemessage.commons.connection.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 
 public class ChatListFragment extends MessagingFragment implements MessageCallbacks {

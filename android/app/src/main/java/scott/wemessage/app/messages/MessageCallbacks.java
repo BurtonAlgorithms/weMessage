@@ -7,8 +7,8 @@ import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.commons.json.action.JSONAction;
-import scott.wemessage.commons.json.message.JSONMessage;
+import scott.wemessage.commons.connection.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 
 public interface MessageCallbacks {

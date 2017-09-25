@@ -33,6 +33,7 @@
     <string name="connection_error_client_disconnect_message">You have disconnected from the weServer.</string>
     <string name="connection_error_incorrect_version_message">weMessage could not connect because the server is running on a different version.</string>
     <string name="connection_error_socket_closed">The connection to the weServer has unexpectedly been closed.</string>
+    <string name="connection_error_unknown_loss">The connection to the weServer has been lost.</string>
     <string name="action_rename_group">Rename Group</string>
     <string name="action_add_participant">Add Participant</string>
     <string name="action_remove_participant">Remove Participant</string>

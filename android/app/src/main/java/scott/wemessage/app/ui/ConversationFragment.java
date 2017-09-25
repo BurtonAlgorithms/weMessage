@@ -1,6 +1,5 @@
 package scott.wemessage.app.ui;
 
-import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -8,10 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.service.notification.StatusBarNotification;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
@@ -48,7 +45,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -88,8 +84,8 @@ import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.media.AudioAttachmentMediaPlayer;
 import scott.wemessage.app.weMessage;
-import scott.wemessage.commons.json.action.JSONAction;
-import scott.wemessage.commons.json.message.JSONMessage;
+import scott.wemessage.commons.connection.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
@@ -470,24 +466,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
 
         toggleIsInChat(chat.isInChat());
-
-        NotificationManager notificationManager = (NotificationManager) getActivity().getSystemService(Context.NOTIFICATION_SERVICE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-            HashMap<Integer, String> toCancel = new HashMap<>();
-
-            for (StatusBarNotification notification : notificationManager.getActiveNotifications()){
-                if (notification.getTag().equals(weMessage.NOTIFICATION_TAG + chat.getUuid().toString()) || notification.getTag().equals(weMessage.NOTIFICATION_TAG)){
-                    toCancel.put(notification.getId(), notification.getTag());
-                }
-            }
-
-            for (Integer i : toCancel.keySet()){
-                notificationManager.cancel(toCancel.get(i), i);
-            }
-        }else {
-            notificationManager.cancelAll();
-        }
+        weMessage.get().clearNotifications(chat.getUuid().toString());
 
         return view;
     }

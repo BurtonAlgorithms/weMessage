@@ -55,17 +55,18 @@ import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
-import scott.wemessage.commons.crypto.EncryptedFile;
-import scott.wemessage.commons.json.action.JSONAction;
-import scott.wemessage.commons.json.action.JSONResult;
-import scott.wemessage.commons.json.connection.ClientMessage;
-import scott.wemessage.commons.json.connection.ConnectionMessage;
-import scott.wemessage.commons.json.connection.InitConnect;
-import scott.wemessage.commons.json.connection.ServerMessage;
-import scott.wemessage.commons.json.message.JSONAttachment;
-import scott.wemessage.commons.json.message.JSONChat;
-import scott.wemessage.commons.json.message.JSONMessage;
-import scott.wemessage.commons.json.message.security.JSONEncryptedText;
+import scott.wemessage.commons.connection.security.EncryptedFile;
+import scott.wemessage.commons.connection.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.action.JSONResult;
+import scott.wemessage.commons.connection.ClientMessage;
+import scott.wemessage.commons.connection.ConnectionMessage;
+import scott.wemessage.commons.connection.Heartbeat;
+import scott.wemessage.commons.connection.InitConnect;
+import scott.wemessage.commons.connection.ServerMessage;
+import scott.wemessage.commons.connection.json.message.JSONAttachment;
+import scott.wemessage.commons.connection.json.message.JSONChat;
+import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.connection.security.EncryptedText;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.DeviceType;
 import scott.wemessage.commons.types.DisconnectReason;
@@ -84,6 +85,7 @@ public final class ConnectionHandler extends Thread {
     private final Object socketLock = new Object();
     private final Object inputStreamLock = new Object();
     private final Object outputStreamLock = new Object();
+    private final Object heartbeatThreadLock = new Object();
 
     private AtomicBoolean isRunning = new AtomicBoolean(false);
     private AtomicBoolean hasTriedAuthenticating = new AtomicBoolean(false);
@@ -97,6 +99,7 @@ public final class ConnectionHandler extends Thread {
     private Socket connectionSocket;
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;
+    private HeartbeatThread heartbeatThread;
 
     private final String ipAddress;
     private final int port;
@@ -150,12 +153,23 @@ public final class ConnectionHandler extends Thread {
         }
     }
 
+    private HeartbeatThread getHeartbeatThread(){
+        synchronized (heartbeatThreadLock){
+            return heartbeatThread;
+        }
+    }
+
     private ServerMessage getIncomingMessage(String prefix, Object incomingStream){
         String data = ((String) incomingStream).split(prefix)[1];
         ServerMessage serverMessage = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().fromJson(data, ServerMessage.class);
 
         connectionMessagesMap.put(serverMessage.getMessageUuid(), serverMessage);
         return serverMessage;
+    }
+
+    private void sendHeartbeat() throws IOException {
+        getOutputStream().writeObject(new Heartbeat(Heartbeat.Type.CLIENT));
+        getOutputStream().flush();
     }
 
     private void sendOutgoingMessage(String prefix, Object outgoingData, Class<?> dataClass) throws IOException {
@@ -168,40 +182,6 @@ public final class ConnectionHandler extends Thread {
         getOutputStream().flush();
 
         connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
-    }
-
-    public void sendOutgoingMessage(final Message message, final boolean performMessageManagerAdd){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    if (performMessageManagerAdd) {
-                        weMessage.get().getMessageManager().addMessage(message, false);
-                    }
-
-                    Type type = TypeToken.get(JSONMessage.class).getType();
-                    String clientMessageUuid = UUID.randomUUID().toString();
-                    String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create()
-                            .toJson(message.toJson(ConnectionHandler.this), type);
-                    ClientMessage clientMessage = new ClientMessage(clientMessageUuid, outgoingDataJson);
-                    String outgoingJson = new Gson().toJson(clientMessage);
-
-                    connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
-                    messageAndConnectionMessageMap.put(clientMessageUuid, message.getUuid().toString());
-
-                    getOutputStream().writeObject(weMessage.JSON_NEW_MESSAGE + outgoingJson);
-                    getOutputStream().flush();
-                }catch(Exception ex){
-                    sendLocalBroadcast(weMessage.BROADCAST_SEND_MESSAGE_ERROR, null);
-                    AppLogger.error(TAG, "An error occurred while trying to send a new message", ex);
-                }
-            }
-        }).start();
-    }
-
-    public void sendOutgoingFile(EncryptedFile encryptedFile) throws IOException {
-        getOutputStream().writeObject(encryptedFile);
-        getOutputStream().flush();
     }
 
     private void sendOutgoingGenericAction(final ActionType actionType, final String... args){
@@ -240,6 +220,41 @@ public final class ConnectionHandler extends Thread {
                 }
             }
         }).start();
+    }
+
+    public void sendOutgoingMessage(final Message message, final boolean performMessageManagerAdd){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (performMessageManagerAdd) {
+                        weMessage.get().getMessageManager().addMessage(message, false);
+                    }
+
+                    Type type = TypeToken.get(JSONMessage.class).getType();
+                    String clientMessageUuid = UUID.randomUUID().toString();
+                    String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create()
+                            .toJson(message.toJson(ConnectionHandler.this), type);
+                    ClientMessage clientMessage = new ClientMessage(clientMessageUuid, outgoingDataJson);
+                    String outgoingJson = new Gson().toJson(clientMessage);
+
+                    connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
+                    messageAndConnectionMessageMap.put(clientMessageUuid, message.getUuid().toString());
+
+                    getOutputStream().writeObject(weMessage.JSON_NEW_MESSAGE + outgoingJson);
+                    getOutputStream().flush();
+                }catch(Exception ex){
+                    sendLocalBroadcast(weMessage.BROADCAST_SEND_MESSAGE_ERROR, null);
+                    AppLogger.error(TAG, "An error occurred while trying to send a new message", ex);
+                }
+            }
+        }).start();
+    }
+
+    public void sendOutgoingFile(EncryptedFile encryptedFile, Attachment attachment) throws IOException {
+        getOutputStream().writeObject(encryptedFile);
+        getOutputStream().flush();
+        fileAttachmentsMap.put(encryptedFile.getUuid(), attachment);
     }
 
     public void sendOutgoingAddParticipantAction(final GroupChat chat, final String participant){
@@ -455,7 +470,7 @@ public final class ConnectionHandler extends Thread {
                 String incoming = (String) getInputStream().readObject();
                 if (incoming.startsWith(weMessage.JSON_VERIFY_PASSWORD_SECRET)){
                     ServerMessage message = getIncomingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, incoming);
-                    JSONEncryptedText secretEncrypted = (JSONEncryptedText) message.getOutgoing(JSONEncryptedText.class, byteArrayAdapter);
+                    EncryptedText secretEncrypted = (EncryptedText) message.getOutgoing(EncryptedText.class, byteArrayAdapter);
 
                     DecryptionTask secretDecryptionTask = new DecryptionTask(new KeyTextPair(secretEncrypted.getEncryptedText(), secretEncrypted.getKey()), CryptoType.AES);
                     EncryptionTask emailEncryptionTask = new EncryptionTask(emailPlainText, null, CryptoType.AES);
@@ -486,8 +501,8 @@ public final class ConnectionHandler extends Thread {
                     InitConnect initConnect = new InitConnect(
                             weMessage.WEMESSAGE_BUILD_VERSION,
                             Settings.Secure.getString(getParentService().getContentResolver(), Settings.Secure.ANDROID_ID),
-                            KeyTextPair.toEncryptedJSON(encryptedEmail),
-                            KeyTextPair.toEncryptedJSON(encryptedHashedPassword),
+                            KeyTextPair.toEncryptedText(encryptedEmail),
+                            KeyTextPair.toEncryptedText(encryptedHashedPassword),
                             DeviceType.ANDROID.getTypeName(),
                             AndroidUtils.getDeviceName(),
                             FirebaseInstanceId.getInstance().getToken()
@@ -513,6 +528,8 @@ public final class ConnectionHandler extends Thread {
 
                 final Object incomingObject = getInputStream().readObject();
 
+                if (incomingObject instanceof Heartbeat) continue;
+
                 if (incomingObject instanceof EncryptedFile){
                     String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
                     EncryptedFile encryptedFile = (EncryptedFile) incomingObject;
@@ -522,7 +539,7 @@ public final class ConnectionHandler extends Thread {
                                     new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + encryptedFile.getTransferName())),
                             null, -1);
 
-                    if (fileAttachmentsMap.get(encryptedFile.getUuid()) == null) {
+                    if (fileAttachmentsMap.get(encryptedFile.getUuid()) == null && database.getAttachmentByUuid(encryptedFile.getUuid()) == null) {
                         CryptoFile cryptoFile = new CryptoFile(encryptedFile.getEncryptedData(), encryptedFile.getKey(), encryptedFile.getIvParams());
 
                         FileDecryptionTask fileDecryptionTask = new FileDecryptionTask(cryptoFile, CryptoType.AES);
@@ -586,6 +603,12 @@ public final class ConnectionHandler extends Thread {
 
                     weMessage.get().signIn();
                     sendLocalBroadcast(weMessage.BROADCAST_LOGIN_SUCCESSFUL, successExtras);
+
+                    synchronized (heartbeatThreadLock){
+                        heartbeatThread = new HeartbeatThread();
+                        heartbeatThread.start();
+                    }
+
                 } else if (incoming.startsWith(weMessage.JSON_CONNECTION_TERMINATED)) {
                     ServerMessage serverMessage = getIncomingMessage(weMessage.JSON_CONNECTION_TERMINATED, incoming);
                     DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer) serverMessage.getOutgoing(Integer.class, byteArrayAdapter)));
@@ -637,7 +660,7 @@ public final class ConnectionHandler extends Thread {
                             try {
                                 JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_NEW_MESSAGE, incoming).getOutgoing(JSONMessage.class, byteArrayAdapter);
 
-                                JSONEncryptedText encryptedText = jsonMessage.getEncryptedText();
+                                EncryptedText encryptedText = jsonMessage.getEncryptedText();
                                 DecryptionTask textDecryptionTask = new DecryptionTask(new KeyTextPair(encryptedText.getEncryptedText(), encryptedText.getKey()), CryptoType.AES);
                                 textDecryptionTask.runDecryptTask();
 
@@ -725,7 +748,7 @@ public final class ConnectionHandler extends Thread {
 
                                 if (messageDatabase.getMessageByMacGuid(jsonMessage.getMacGuid()) == null) {
 
-                                    JSONEncryptedText encryptedText = jsonMessage.getEncryptedText();
+                                    EncryptedText encryptedText = jsonMessage.getEncryptedText();
                                     DecryptionTask textDecryptionTask = new DecryptionTask(new KeyTextPair(encryptedText.getEncryptedText(), encryptedText.getKey()), CryptoType.AES);
                                     textDecryptionTask.runDecryptTask();
                                     String decryptedText = textDecryptionTask.getDecryptedText();
@@ -856,7 +879,9 @@ public final class ConnectionHandler extends Thread {
                     isRunning.set(false);
                     try {
                         if (isConnected.get()) {
-                            sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, DisconnectReason.CLIENT_DISCONNECTED.getCode(), Integer.class);
+                            try {
+                                sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, DisconnectReason.CLIENT_DISCONNECTED.getCode(), Integer.class);
+                            }catch (Exception ex) { }
 
                             isConnected.set(false);
                             getInputStream().close();
@@ -867,6 +892,9 @@ public final class ConnectionHandler extends Thread {
                         messageAndConnectionMessageMap.clear();
                         fileAttachmentsMap.clear();
 
+                        if (getHeartbeatThread() != null) {
+                            getHeartbeatThread().interrupt();
+                        }
                         ConnectionHandler.this.interrupt();
                     } catch (Exception ex) {
                         AppLogger.error(TAG, "An error occurred while terminating the connection to the weServer.", ex);
@@ -1310,5 +1338,27 @@ public final class ConnectionHandler extends Thread {
         }
 
         return returnList;
+    }
+
+    private class HeartbeatThread extends Thread {
+        @Override
+        public void run() {
+            while (isConnected.get()){
+                try {
+                    sendHeartbeat();
+
+                    Thread.sleep(5000);
+                }catch (InterruptedException ex){
+                    this.interrupt();
+                }catch (Exception ex){
+                    if (isConnected.get()){
+                        Bundle extras = new Bundle();
+                        extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_loss));
+                        sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
+                        getParentService().endService();
+                    }
+                }
+            }
+        }
     }
 }

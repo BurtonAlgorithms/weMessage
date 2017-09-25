@@ -21,8 +21,8 @@ import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.weMessage;
-import scott.wemessage.commons.json.action.JSONAction;
-import scott.wemessage.commons.json.message.JSONMessage;
+import scott.wemessage.commons.connection.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.StringUtils;
@@ -448,6 +448,7 @@ public final class MessageManager {
 
     private void deleteChatTask(Chat chat){
         chats.remove(chat.getUuid().toString());
+        weMessage.get().clearNotifications(chat.getUuid().toString());
         weMessage.get().getMessageDatabase().deleteChatByUuid(chat.getUuid().toString());
 
         for (MessageCallbacks callbacks : callbacksMap.values()){

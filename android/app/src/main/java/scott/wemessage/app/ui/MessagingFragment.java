@@ -7,7 +7,7 @@ import android.support.v4.app.Fragment;
 import android.view.View;
 
 import scott.wemessage.R;
-import scott.wemessage.commons.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.ReturnType;
 

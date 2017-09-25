@@ -4,11 +4,14 @@ import android.app.Application;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
+import android.service.notification.StatusBarNotification;
 import android.support.text.emoji.EmojiCompat;
 import android.support.text.emoji.FontRequestEmojiCompatConfig;
 import android.support.v4.provider.FontRequest;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
@@ -176,6 +179,26 @@ public final class weMessage extends Application implements Constants {
         if (notificationCallbacks == null) return true;
 
         return notificationCallbacks.onNotification(macGuid);
+    }
+
+    public synchronized void clearNotifications(String uuid){
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+            HashMap<Integer, String> toCancel = new HashMap<>();
+
+            for (StatusBarNotification notification : notificationManager.getActiveNotifications()){
+                if (notification.getTag().equals(weMessage.NOTIFICATION_TAG + uuid) || notification.getTag().equals(weMessage.NOTIFICATION_TAG)){
+                    toCancel.put(notification.getId(), notification.getTag());
+                }
+            }
+
+            for (Integer i : toCancel.keySet()){
+                notificationManager.cancel(toCancel.get(i), i);
+            }
+        }else {
+            notificationManager.cancelAll();
+        }
     }
 
     public boolean isEmojiCompatInitialized(){

@@ -37,7 +37,7 @@ import scott.wemessage.app.security.DecryptionTask;
 import scott.wemessage.app.security.KeyTextPair;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.weMessage;
-import scott.wemessage.commons.json.message.JSONNotification;
+import scott.wemessage.commons.connection.json.message.JSONNotification;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class NotificationService extends FirebaseMessagingService {

@@ -17,10 +17,10 @@ import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.EncryptionTask;
 import scott.wemessage.app.security.FileEncryptionTask;
 import scott.wemessage.app.security.KeyTextPair;
-import scott.wemessage.commons.crypto.EncryptedFile;
-import scott.wemessage.commons.json.message.JSONAttachment;
-import scott.wemessage.commons.json.message.JSONChat;
-import scott.wemessage.commons.json.message.JSONMessage;
+import scott.wemessage.commons.connection.security.EncryptedFile;
+import scott.wemessage.commons.connection.json.message.JSONAttachment;
+import scott.wemessage.commons.connection.json.message.JSONChat;
+import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
 
@@ -258,13 +258,6 @@ public class Message extends MessageBase {
                     cryptoFile.getIvMac()
             );
 
-            connectionHandler.sendOutgoingFile(encryptedFile);
-
-            fileBytes = null;
-            fileEncryptionTask = null;
-            cryptoFile = null;
-            encryptedFile = null;
-
             JSONAttachment jsonAttachment = new JSONAttachment(
                     attachment.getUuid().toString(),
                     attachment.getMacGuid(),
@@ -272,7 +265,15 @@ public class Message extends MessageBase {
                     attachment.getFileType(),
                     attachment.getTotalBytes()
             );
+
+            connectionHandler.sendOutgoingFile(encryptedFile, attachment);
             attachments.add(jsonAttachment);
+
+            fileBytes = null;
+            fileEncryptionTask = null;
+            cryptoFile = null;
+            encryptedFile = null;
+
         }
 
         EncryptionTask encryptionTask = new EncryptionTask(getText(), null, CryptoType.AES);
@@ -289,7 +290,7 @@ public class Message extends MessageBase {
                 ),
                 handle,
                 attachments,
-                KeyTextPair.toEncryptedJSON(encryptionTask.getEncryptedText()),
+                KeyTextPair.toEncryptedText(encryptionTask.getEncryptedText()),
                 getDateSent(),
                 getDateDelivered(),
                 getDateRead(),
