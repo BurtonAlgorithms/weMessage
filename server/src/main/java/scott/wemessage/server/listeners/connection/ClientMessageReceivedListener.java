@@ -1,7 +1,7 @@
 package scott.wemessage.server.listeners.connection;
 
-import scott.wemessage.commons.json.action.JSONAction;
-import scott.wemessage.commons.json.message.JSONMessage;
+import scott.wemessage.commons.connection.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.connection.Device;

@@ -1,6 +1,6 @@
 package scott.wemessage.server.events.connection;
 
-import scott.wemessage.commons.json.connection.ClientMessage;
+import scott.wemessage.commons.connection.ClientMessage;
 import scott.wemessage.server.connection.Device;
 import scott.wemessage.server.connection.DeviceManager;
 import scott.wemessage.server.events.Event;

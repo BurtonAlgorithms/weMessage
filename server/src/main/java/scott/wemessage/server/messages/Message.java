@@ -14,12 +14,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import scott.wemessage.commons.connection.json.message.JSONAttachment;
+import scott.wemessage.commons.connection.json.message.JSONChat;
+import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.connection.security.EncryptedFile;
+import scott.wemessage.commons.connection.security.EncryptedText;
 import scott.wemessage.commons.crypto.AESCrypto;
-import scott.wemessage.commons.crypto.EncryptedFile;
-import scott.wemessage.commons.json.message.JSONAttachment;
-import scott.wemessage.commons.json.message.JSONChat;
-import scott.wemessage.commons.json.message.JSONMessage;
-import scott.wemessage.commons.json.message.security.JSONEncryptedText;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
@@ -373,7 +373,7 @@ public class Message {
                 ),
                 handle,
                 attachments,
-                new JSONEncryptedText(
+                new EncryptedText(
                         encryptedText,
                         keys
                 ),

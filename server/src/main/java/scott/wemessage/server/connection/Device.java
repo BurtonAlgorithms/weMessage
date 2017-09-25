@@ -20,17 +20,18 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import scott.wemessage.commons.connection.ClientMessage;
+import scott.wemessage.commons.connection.Heartbeat;
+import scott.wemessage.commons.connection.InitConnect;
+import scott.wemessage.commons.connection.ServerMessage;
+import scott.wemessage.commons.connection.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.action.JSONResult;
+import scott.wemessage.commons.connection.json.message.JSONAttachment;
+import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.connection.security.EncryptedFile;
+import scott.wemessage.commons.connection.security.EncryptedText;
 import scott.wemessage.commons.crypto.AESCrypto;
 import scott.wemessage.commons.crypto.AESCrypto.CipherByteArrayIvMac;
-import scott.wemessage.commons.crypto.EncryptedFile;
-import scott.wemessage.commons.json.action.JSONAction;
-import scott.wemessage.commons.json.action.JSONResult;
-import scott.wemessage.commons.json.connection.ClientMessage;
-import scott.wemessage.commons.json.connection.InitConnect;
-import scott.wemessage.commons.json.connection.ServerMessage;
-import scott.wemessage.commons.json.message.JSONAttachment;
-import scott.wemessage.commons.json.message.JSONMessage;
-import scott.wemessage.commons.json.message.security.JSONEncryptedText;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.DeviceType;
 import scott.wemessage.commons.types.DisconnectReason;
@@ -66,18 +67,21 @@ public class Device extends Thread {
     private final Object inputStreamLock = new Object();
     private final Object outputStreamLock = new Object();
     private final Object registrationTokenLock = new Object();
+    private final Object heartbeatThreadLock = new Object();
 
     private AtomicBoolean isRunning = new AtomicBoolean(false);
     private AtomicBoolean hasTriedVerifying = new AtomicBoolean(false);
 
     private DeviceManager deviceManager;
     private DeviceType deviceType;
-    private Socket socket;
-    private ObjectInputStream inputStream;
-    private ObjectOutputStream outputStream;
     private String deviceId;
     private String deviceName;
     private String registrationToken;
+
+    private Socket socket;
+    private ObjectInputStream inputStream;
+    private ObjectOutputStream outputStream;
+    private HeartbeatThread heartbeatThread;
 
     private ConcurrentHashMap<String, String> fileUuidMap = new ConcurrentHashMap<>();
 
@@ -147,6 +151,17 @@ public class Device extends Thread {
         return new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().fromJson(data, ClientMessage.class);
     }
 
+    private HeartbeatThread getHeartbeatThread(){
+        synchronized (heartbeatThreadLock){
+            return heartbeatThread;
+        }
+    }
+
+    private void sendHeartbeat() throws IOException {
+        getOutputStream().writeObject(new Heartbeat(Heartbeat.Type.SERVER));
+        getOutputStream().flush();
+    }
+
     public void sendOutgoingMessage(String prefix, Object outgoingData, Class<?> outgoingDataClass){
         try {
             Type type = TypeToken.get(outgoingDataClass).getType();
@@ -164,7 +179,6 @@ public class Device extends Thread {
     public void sendOutgoingMessage(final Message message){
         if (message.getAttachments() != null && message.getAttachments().size() > 0){
             new Thread(new Runnable() {
-                @Override
                 public void run() {
                     try {
                         JSONMessage jsonMessage = message.toJson(Device.this, getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor(), true);
@@ -189,7 +203,6 @@ public class Device extends Thread {
     public void sendOutgoingMessage(final JSONMessage message) {
         if (message.getAttachments() != null && message.getAttachments().size() > 0) {
             new Thread(new Runnable() {
-                @Override
                 public void run() {
                     sendOutgoingMessage(weMessage.JSON_NEW_MESSAGE, message, JSONMessage.class);
                 }
@@ -211,7 +224,6 @@ public class Device extends Thread {
     public void updateOutgoingMessage(final Message message, final boolean sendAttachments){
         if (message.getAttachments() != null && message.getAttachments().size() > 0) {
             new Thread(new Runnable() {
-                @Override
                 public void run() {
                     try {
                         JSONMessage jsonMessage = message.toJson(Device.this, getDeviceManager().getMessageServer().getConfiguration(), getDeviceManager().getMessageServer().getScriptExecutor(), sendAttachments);
@@ -366,11 +378,18 @@ public class Device extends Thread {
         try {
             isRunning.set(false);
             fileUuidMap.clear();
-            sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, reason.getCode(), Integer.class);
+
+            try {
+                sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, reason.getCode(), Integer.class);
+            }catch (Exception ex) { }
 
             getInputStream().close();
             getOutputStream().close();
             getSocket().close();
+
+            if (getHeartbeatThread() != null){
+                getHeartbeatThread().interrupt();
+            }
 
             interrupt();
         }catch(Exception ex){
@@ -386,6 +405,10 @@ public class Device extends Thread {
             getInputStream().close();
             getOutputStream().close();
             getSocket().close();
+
+            if (getHeartbeatThread() != null){
+                getHeartbeatThread().interrupt();
+            }
 
             interrupt();
         }catch(Exception ex){
@@ -411,11 +434,11 @@ public class Device extends Thread {
                     String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
                     String secret = getDeviceManager().getMessageServer().getConfiguration().getConfigJSON().getConfig().getAccountInfo().getSecret();
 
-                    JSONEncryptedText encryptedText = new JSONEncryptedText(
+                    EncryptedText encryptedText = new EncryptedText(
                             AESCrypto.encryptString(secret, keys),
                             keys
                     );
-                    sendOutgoingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, encryptedText, JSONEncryptedText.class);
+                    sendOutgoingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, encryptedText, EncryptedText.class);
                 }catch(Exception ex){
                     ServerLogger.error(TAG, "An error occurred while encrypting the secret key", ex);
                     ServerLogger.emptyLine();
@@ -490,6 +513,11 @@ public class Device extends Thread {
                     }
 
                     getDeviceManager().addDevice(this);
+
+                    synchronized (heartbeatThreadLock){
+                        heartbeatThread = new HeartbeatThread();
+                        heartbeatThread.start();
+                    }
                 }catch(Exception ex){
                     if (isRunning.get()) {
                         ServerLogger.error(TAG, "Device with IP Address: " + getAddress() + " could not join because an error occurred.", ex);
@@ -506,6 +534,8 @@ public class Device extends Thread {
                 try {
                     EventManager eventManager = getDeviceManager().getMessageServer().getEventManager();
                     Object object = getInputStream().readObject();
+
+                    if (object instanceof Heartbeat) continue;
 
                     if (object instanceof EncryptedFile){
                         EncryptedFile encryptedFile = (EncryptedFile) object;
@@ -566,7 +596,7 @@ public class Device extends Thread {
                 }catch (Exception ex) {
                     if (isRunning.get()) {
                         ServerLogger.error(TAG, "An error occurred while fetching a message from Device: " + getAddress(), ex);
-                        getDeviceManager().removeDevice(this, DisconnectReason.ERROR, "Removing device in order to prevent error spam.");
+                        getDeviceManager().removeDevice(this, DisconnectReason.ERROR, "Disconnecting device to prevent more errors.");
                     }
                 }
             }
@@ -590,5 +620,26 @@ public class Device extends Thread {
             throw new ClassCastException("The result returned from running the script is not a valid return type");
         }
         return intResults;
+    }
+
+    private class HeartbeatThread extends Thread {
+        public void run() {
+            while (isRunning.get()){
+                try {
+                    sendHeartbeat();
+
+                    Thread.sleep(5000);
+                }catch (InterruptedException ex){
+                    this.interrupt();
+                }catch (Exception ex){
+                    if (isRunning.get()){
+                        if (getDeviceManager().getDeviceById(getDeviceId()) != null){
+                            Device device = getDeviceManager().getDeviceById(getDeviceId());
+                            getDeviceManager().removeDevice(device, DisconnectReason.ERROR, "Disconnecting Device " + getAddress() + " because the connection has been lost.");
+                        }
+                    }
+                }
+            }
+        }
     }
 }

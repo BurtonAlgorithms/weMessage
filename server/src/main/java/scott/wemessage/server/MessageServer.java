@@ -318,7 +318,6 @@ public final class MessageServer {
             }
             ServerLogger.emptyLine();
             new Timer().schedule(new TimerTask() {
-                @Override
                 public void run() {
                     System.exit(returnCode);
                 }

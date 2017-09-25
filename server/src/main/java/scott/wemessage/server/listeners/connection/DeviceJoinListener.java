@@ -4,7 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.HashMap;
 
-import scott.wemessage.commons.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.database.DatabaseManager;
 import scott.wemessage.server.events.Event;
@@ -45,7 +45,7 @@ public class DeviceJoinListener extends Listener {
                 PreparedStatement insertStatement = db.getServerDatabaseConnection().prepareStatement(insertStatementString);
                 insertStatement.setString(1, event.getDevice().getAddress());
                 insertStatement.setString(2, event.getMessageServer().getConfiguration().getAccountEmail());
-                insertStatement.setString(3, event.getDevice().getName());
+                insertStatement.setString(3, event.getDevice().getDeviceName());
                 insertStatement.setString(4, event.getDevice().getDeviceId());
 
                 insertStatement.executeUpdate();

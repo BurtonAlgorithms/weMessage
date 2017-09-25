@@ -16,7 +16,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import scott.wemessage.commons.crypto.AESCrypto;
-import scott.wemessage.commons.json.message.JSONNotification;
+import scott.wemessage.commons.connection.json.message.JSONNotification;
 import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.MessageServer;
@@ -118,7 +118,6 @@ public final class DeviceManager extends Thread {
     public void sendNotification(final String registrationToken, final Message message){
         if (!StringUtils.isEmpty(registrationToken)) {
             new Thread(new Runnable() {
-                @Override
                 public void run() {
                     try {
                         if (!getMessageServer().getConfiguration().getConfigJSON().getConfig().getSendNotifications()) return;

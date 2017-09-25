@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import scott.wemessage.commons.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.MessageServer;
