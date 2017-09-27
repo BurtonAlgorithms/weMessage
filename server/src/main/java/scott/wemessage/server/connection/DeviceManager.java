@@ -133,11 +133,16 @@ public final class DeviceManager extends Thread {
                         String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
                         String encryptedText = AESCrypto.encryptString(plainText, keys);
                         String chatName = "";
+                        int attachmentNumber = 0;
 
                         if (message.getChat() instanceof GroupChat) {
                             if (!StringUtils.isEmpty(((GroupChat) message.getChat()).getDisplayName())) {
                                 chatName = ((GroupChat) message.getChat()).getDisplayName();
                             }
+                        }
+
+                        if (message.getAttachments() != null){
+                            attachmentNumber = message.getAttachments().size();
                         }
 
                         JSONNotification notification = new JSONNotification(
@@ -146,7 +151,8 @@ public final class DeviceManager extends Thread {
                                 keys,
                                 message.getHandle().getHandleID(),
                                 message.getChat().getGuid(),
-                                chatName
+                                chatName,
+                                String.valueOf(attachmentNumber)
                         );
 
                         OkHttpClient client = new OkHttpClient();

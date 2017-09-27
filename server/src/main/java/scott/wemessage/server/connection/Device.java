@@ -157,23 +157,30 @@ public class Device extends Thread {
         }
     }
 
-    private void sendHeartbeat() throws IOException {
-        getOutputStream().writeObject(new Heartbeat(Heartbeat.Type.SERVER));
+    private synchronized void sendOutgoingObject(Object object) throws IOException {
+        getOutputStream().writeObject(object);
         getOutputStream().flush();
+    }
+
+    private void sendHeartbeat() throws IOException {
+        sendOutgoingObject(new Heartbeat(Heartbeat.Type.SERVER));
     }
 
     public void sendOutgoingMessage(String prefix, Object outgoingData, Class<?> outgoingDataClass){
         try {
-            Type type = TypeToken.get(outgoingDataClass).getType();
-            String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().toJson(outgoingData, type);
-            ServerMessage serverMessage = new ServerMessage(UUID.randomUUID().toString(), outgoingDataJson);
-            String outgoingJson = new Gson().toJson(serverMessage);
-
-            getOutputStream().writeObject(prefix + outgoingJson);
-            getOutputStream().flush();
+            sendOutgoingMessageWithThrow(prefix, outgoingData, outgoingDataClass);
         }catch(Exception ex){
             ServerLogger.error(TAG, "An error occurred while sending a message to Device: " + getAddress(), ex);
         }
+    }
+
+    public void sendOutgoingMessageWithThrow(String prefix, Object outgoingData, Class<?> outgoingDataClass) throws IOException {
+        Type type = TypeToken.get(outgoingDataClass).getType();
+        String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().toJson(outgoingData, type);
+        ServerMessage serverMessage = new ServerMessage(UUID.randomUUID().toString(), outgoingDataJson);
+        String outgoingJson = new Gson().toJson(serverMessage);
+
+        sendOutgoingObject(prefix + outgoingJson);
     }
 
     public void sendOutgoingMessage(final Message message){
@@ -213,9 +220,10 @@ public class Device extends Thread {
     }
 
     public void sendOutgoingFile(EncryptedFile encryptedFile){
+        if (fileUuidMap.get(encryptedFile.getUuid()) != null) return;
+
         try {
-            getOutputStream().writeObject(encryptedFile);
-            getOutputStream().flush();
+            sendOutgoingObject(encryptedFile);
         }catch (Exception ex){
             ServerLogger.error(TAG, "An error occurred while sending attachment " + encryptedFile.getTransferName(), ex);
         }
@@ -380,12 +388,20 @@ public class Device extends Thread {
             fileUuidMap.clear();
 
             try {
-                sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, reason.getCode(), Integer.class);
+                sendOutgoingMessageWithThrow(weMessage.JSON_CONNECTION_TERMINATED, reason.getCode(), Integer.class);
             }catch (Exception ex) { }
 
-            getInputStream().close();
-            getOutputStream().close();
-            getSocket().close();
+            try {
+                getInputStream().close();
+            }catch (IOException ex){ }
+
+            try {
+                getOutputStream().close();
+            }catch (Exception ex){ }
+
+            try {
+                getSocket().close();
+            }catch (Exception ex){ }
 
             if (getHeartbeatThread() != null){
                 getHeartbeatThread().interrupt();
@@ -402,9 +418,17 @@ public class Device extends Thread {
         try {
             isRunning.set(false);
 
-            getInputStream().close();
-            getOutputStream().close();
-            getSocket().close();
+            try {
+                getInputStream().close();
+            }catch (IOException ex){ }
+
+            try {
+                getOutputStream().close();
+            }catch (IOException ex){ }
+
+            try {
+                getSocket().close();
+            }catch (IOException ex){ }
 
             if (getHeartbeatThread() != null){
                 getHeartbeatThread().interrupt();
