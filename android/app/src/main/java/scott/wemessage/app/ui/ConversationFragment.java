@@ -255,6 +255,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_conversation, container, false);
 
+        if (getChat() == null) return view;
+
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.conversationToolbar);
         ImageButton backButton = (ImageButton) toolbar.findViewById(R.id.conversationBackButton);
         ImageButton infoButton = (ImageButton) toolbar.findViewById(R.id.conversationInfoButton);
@@ -527,7 +529,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         messageMapIntegrity.clear();
         actionMessageMapIntegrity.clear();
-        messageListAdapter.clear();
+
+        if (messageListAdapter != null) {
+            messageListAdapter.clear();
+        }
+
         messageManager.unhookCallbacks(callbackUuid);
         weMessage.get().setNotificationCallbacks(null);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(messageListBroadcastReceiver);

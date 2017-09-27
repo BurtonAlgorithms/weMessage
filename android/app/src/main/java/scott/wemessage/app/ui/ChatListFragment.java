@@ -264,7 +264,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         }
 
         if (getActivity().getIntent() != null && getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON) != null){
-            DialogDisplayer.generateAlertDialog("", getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON)).show(getFragmentManager(), GO_BACK_REASON_ALERT_TAG);
+            DialogDisplayer.generateAlertDialog(getString(R.string.word_error), getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON)).show(getFragmentManager(), GO_BACK_REASON_ALERT_TAG);
         }
 
         return view;

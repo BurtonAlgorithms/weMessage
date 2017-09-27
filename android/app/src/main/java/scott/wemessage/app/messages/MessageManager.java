@@ -494,9 +494,6 @@ public final class MessageManager {
     }
 
     private void removeMessageTask(Message message){
-        for (Attachment a : message.getAttachments()){
-            a.getFileLocation().getFile().delete();
-        }
         messages.remove(message.getUuid().toString());
         weMessage.get().getMessageDatabase().deleteMessageByUuid(message.getUuid().toString());
 

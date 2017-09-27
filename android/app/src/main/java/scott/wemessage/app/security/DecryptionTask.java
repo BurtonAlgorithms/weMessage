@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import scott.wemessage.app.security.util.CryptoException;
 import scott.wemessage.commons.crypto.AESCrypto;
 
-public class DecryptionTask extends Thread {
+public class DecryptionTask extends CryptoTask {
 
     private AtomicBoolean hasTaskStarted = new AtomicBoolean(false);
     private AtomicBoolean hasTaskFinished = new AtomicBoolean(false);
@@ -55,6 +55,7 @@ public class DecryptionTask extends Thread {
             if (hasTaskFinished.get()){
                 loop = false;
             }
+            getSleep();
         }
         synchronized (decryptedTextLock) {
             return decryptedText;

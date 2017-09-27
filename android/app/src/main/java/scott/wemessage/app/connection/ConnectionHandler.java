@@ -79,7 +79,7 @@ public final class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
     private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
-    private final int TIME_TO_CONNECT = 2;
+    private final int TIME_TO_CONNECT = 1;
 
     private final Object serviceLock = new Object();
     private final Object socketLock = new Object();
@@ -167,9 +167,13 @@ public final class ConnectionHandler extends Thread {
         return serverMessage;
     }
 
-    private void sendHeartbeat() throws IOException {
-        getOutputStream().writeObject(new Heartbeat(Heartbeat.Type.CLIENT));
+    private synchronized void sendOutgoingObject(Object object) throws IOException {
+        getOutputStream().writeObject(object);
         getOutputStream().flush();
+    }
+
+    private void sendHeartbeat() throws IOException {
+        sendOutgoingObject(new Heartbeat(Heartbeat.Type.CLIENT));
     }
 
     private void sendOutgoingMessage(String prefix, Object outgoingData, Class<?> dataClass) throws IOException {
@@ -178,48 +182,41 @@ public final class ConnectionHandler extends Thread {
         ClientMessage clientMessage = new ClientMessage(UUID.randomUUID().toString(), outgoingDataJson);
         String outgoingJson = new Gson().toJson(clientMessage);
 
-        getOutputStream().writeObject(prefix + outgoingJson);
-        getOutputStream().flush();
-
+        sendOutgoingObject(prefix + outgoingJson);
         connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
     }
 
     private void sendOutgoingGenericAction(final ActionType actionType, final String... args){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    JSONAction jsonAction;
+        try {
+            JSONAction jsonAction;
 
-                    switch (actionType) {
-                        case ADD_PARTICIPANT:
-                            jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
-                            break;
-                        case CREATE_GROUP:
-                            jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2]});
-                            break;
-                        case LEAVE_GROUP:
-                            jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2]});
-                            break;
-                        case REMOVE_PARTICIPANT:
-                            jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
-                            break;
-                        case RENAME_GROUP:
-                            jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
-                            break;
-                        default:
-                            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
-                            AppLogger.error(TAG, "Could not perform action due to an unknown Action Type", new NullPointerException());
-                            return;
-                    }
-
-                    sendOutgoingMessage(weMessage.JSON_ACTION, jsonAction, JSONAction.class);
-                }catch(Exception ex){
+            switch (actionType) {
+                case ADD_PARTICIPANT:
+                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
+                    break;
+                case CREATE_GROUP:
+                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2]});
+                    break;
+                case LEAVE_GROUP:
+                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2]});
+                    break;
+                case REMOVE_PARTICIPANT:
+                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
+                    break;
+                case RENAME_GROUP:
+                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
+                    break;
+                default:
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
-                    AppLogger.error(TAG, "An error occurred while trying to send an action to be performed", ex);
-                }
+                    AppLogger.error(TAG, "Could not perform action due to an unknown Action Type", new NullPointerException());
+                    return;
             }
-        }).start();
+
+            sendOutgoingMessage(weMessage.JSON_ACTION, jsonAction, JSONAction.class);
+        }catch(Exception ex){
+            sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
+            AppLogger.error(TAG, "An error occurred while trying to send an action to be performed", ex);
+        }
     }
 
     public void sendOutgoingMessage(final Message message, final boolean performMessageManagerAdd){
@@ -241,8 +238,7 @@ public final class ConnectionHandler extends Thread {
                     connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
                     messageAndConnectionMessageMap.put(clientMessageUuid, message.getUuid().toString());
 
-                    getOutputStream().writeObject(weMessage.JSON_NEW_MESSAGE + outgoingJson);
-                    getOutputStream().flush();
+                    sendOutgoingObject(weMessage.JSON_NEW_MESSAGE + outgoingJson);
                 }catch(Exception ex){
                     sendLocalBroadcast(weMessage.BROADCAST_SEND_MESSAGE_ERROR, null);
                     AppLogger.error(TAG, "An error occurred while trying to send a new message", ex);
@@ -252,8 +248,7 @@ public final class ConnectionHandler extends Thread {
     }
 
     public void sendOutgoingFile(EncryptedFile encryptedFile, Attachment attachment) throws IOException {
-        getOutputStream().writeObject(encryptedFile);
-        getOutputStream().flush();
+        sendOutgoingObject(encryptedFile);
         fileAttachmentsMap.put(encryptedFile.getUuid(), attachment);
     }
 
@@ -881,13 +876,23 @@ public final class ConnectionHandler extends Thread {
                         if (isConnected.get()) {
                             try {
                                 sendOutgoingMessage(weMessage.JSON_CONNECTION_TERMINATED, DisconnectReason.CLIENT_DISCONNECTED.getCode(), Integer.class);
-                            }catch (Exception ex) { }
+                            }catch (IOException ex) { }
 
                             isConnected.set(false);
-                            getInputStream().close();
-                            getOutputStream().close();
+
+                            try {
+                                getInputStream().close();
+                            }catch (IOException ex){ }
+
+                            try {
+                                getOutputStream().close();
+                            }catch (IOException ex){ }
                         }
-                        getConnectionSocket().close();
+
+                        try {
+                            getConnectionSocket().close();
+                        }catch (IOException ex){ }
+
                         connectionMessagesMap.clear();
                         messageAndConnectionMessageMap.clear();
                         fileAttachmentsMap.clear();

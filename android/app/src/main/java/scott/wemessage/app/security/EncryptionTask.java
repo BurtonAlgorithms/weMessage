@@ -6,7 +6,7 @@ import scott.wemessage.app.security.util.CryptoException;
 import scott.wemessage.commons.crypto.AESCrypto;
 import scott.wemessage.commons.crypto.BCrypt;
 
-public class EncryptionTask extends Thread {
+public class EncryptionTask extends CryptoTask {
 
     private AtomicBoolean hasTaskStarted = new AtomicBoolean(false);
     private AtomicBoolean hasTaskFinished = new AtomicBoolean(false);
@@ -68,6 +68,7 @@ public class EncryptionTask extends Thread {
             if (hasTaskFinished.get()){
                 loop = false;
             }
+            getSleep();
         }
         synchronized (keyTextPairLock) {
             return keyTextPair;

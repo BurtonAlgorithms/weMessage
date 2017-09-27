@@ -207,6 +207,7 @@ public class LaunchFragment extends Fragment {
         if (savedInstanceState != null) {
             String ipUnformatted = savedInstanceState.getString(weMessage.BUNDLE_HOST);
 
+            lastHashedPass = savedInstanceState.getString(weMessage.BUNDLE_LAUNCHER_LAST_HASHED_PASS);
             ipEditText.setText(ipUnformatted);
             emailEditText.setText(savedInstanceState.getString(weMessage.BUNDLE_EMAIL));
             passwordEditText.setText(savedInstanceState.getString(weMessage.BUNDLE_PASSWORD));
@@ -474,6 +475,7 @@ public class LaunchFragment extends Fragment {
         outState.putString(weMessage.BUNDLE_HOST, ipEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_EMAIL, emailEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_PASSWORD, passwordEditText.getText().toString());
+        outState.putString(weMessage.BUNDLE_LAUNCHER_LAST_HASHED_PASS, lastHashedPass);
         outState.putString(weMessage.BUNDLE_LAUNCHER_GO_TO_CONVERSATION_UUID, goToConversationHolder);
         outState.putBoolean(weMessage.BUNDLE_IS_LAUNCHER_STILL_CONNECTING, loginProgressDialog != null);
 

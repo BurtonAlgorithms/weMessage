@@ -81,7 +81,8 @@ public class NotificationService extends FirebaseMessagingService {
                     remoteMessage.getData().get("key"),
                     remoteMessage.getData().get("handleId"),
                     remoteMessage.getData().get("chatId"),
-                    remoteMessage.getData().get("chatName")
+                    remoteMessage.getData().get("chatName"),
+                    remoteMessage.getData().get("attachmentNumber")
             );
 
             MessageDatabase database = weMessage.get().getMessageDatabase();
@@ -142,7 +143,15 @@ public class NotificationService extends FirebaseMessagingService {
                     }
                 }
             }
-            message += decryptionTask.getDecryptedText();
+            String decryptedText = decryptionTask.getDecryptedText();
+
+            if (StringUtils.isEmpty(decryptedText)){
+                if (Integer.valueOf(jsonNotification.getAttachmentNumber()) > 0){
+                    message += getString(R.string.notification_attachments, jsonNotification.getAttachmentNumber());
+                }
+            }else {
+                message += decryptionTask.getDecryptedText();
+            }
 
             Intent intent = new Intent(this, LaunchActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

@@ -1185,6 +1185,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         for (Attachment a : attachments){
             if (a != null) {
+                a.getFileLocation().getFile().delete();
                 deleteAttachmentByUuid(a.getUuid().toString());
             }
         }
@@ -1196,6 +1197,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         for (Attachment a : getMessageByMacGuid(macGuid).getAttachments()){
             if (a != null) {
+                a.getFileLocation().getFile().delete();
                 deleteAttachmentByUuid(a.getUuid().toString());
             }
         }

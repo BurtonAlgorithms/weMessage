@@ -60,6 +60,7 @@
     <string name="word_done">Done</string>
     <string name="word_copy">Copy</string>
     <string name="word_more">More&#8230;</string>
+    <string name="word_error">Error</string>
     <string name="chat_delete_message_go_back">The chat you were viewing was deleted.</string>
     <string name="load_attachment_error">An unknown error occurred while trying to load an attachment.</string>
     <string name="send_attachment_error">An unknown error occurred while trying to send an attachment.</string>
@@ -160,5 +161,6 @@
     <string name="word_read">Read</string>
     <string name="offline_mode">Offline Mode</string>
     <string name="notification_channel_name">New Messages</string>
+    <string name="notification_attachments">%1$s Attachments</string>
 
 </resources>
