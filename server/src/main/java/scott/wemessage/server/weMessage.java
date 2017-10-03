@@ -11,6 +11,7 @@ public final class weMessage implements Constants {
     public static final int MIN_OS_VERSION = 10;
 
     public static final boolean DEFAULT_CREATE_LOG_FILES = true;
+    public static final boolean DEFAULT_CHECK_FOR_UPDATES = true;
     public static final boolean DEFAULT_SEND_NOTIFICATIONS = true;
     public static final boolean DEFAULT_TRANSCODE_VIDEO = true;
 
@@ -20,5 +21,7 @@ public final class weMessage implements Constants {
     public static final String DEFAULT_FFMPEG_LOCATION = "bin/ffmpeg/ffmpeg";
     public static final String DEFAULT_EMAIL = "email@icloud.com";
     public static final String DEFAULT_SECRET = "secret";
+
+    public static final String GET_VERSION_FUNCTION_URL = "https://us-central1-wemessage-app.cloudfunctions.net/getVersion";
     public static final String NOTIFICATION_FUNCTION_URL = "https://us-central1-wemessage-app.cloudfunctions.net/sendNotification";
 }

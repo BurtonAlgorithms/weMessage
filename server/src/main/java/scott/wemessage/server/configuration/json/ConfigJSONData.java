@@ -5,6 +5,7 @@ public class ConfigJSONData {
     private Integer configVersion;
     private Integer port;
     private Boolean createLogFiles;
+    private Boolean checkForUpdates;
     private Boolean sendNotifications;
     private Boolean transcodeVideos;
     private String ffmpegLocation;
@@ -14,10 +15,13 @@ public class ConfigJSONData {
 
     }
 
-    public ConfigJSONData(Integer configVersion, Integer port, Boolean createLogFiles, Boolean sendNotifications, Boolean transcodeVideos, String ffmpegLocation, ConfigAccountJSON accountInfo){
+    public ConfigJSONData(Integer configVersion, Integer port, Boolean createLogFiles,
+                          Boolean checkForUpdates, Boolean sendNotifications, Boolean transcodeVideos,
+                          String ffmpegLocation, ConfigAccountJSON accountInfo){
         this.configVersion = configVersion;
         this.port = port;
         this.createLogFiles = createLogFiles;
+        this.checkForUpdates = checkForUpdates;
         this.sendNotifications = sendNotifications;
         this.transcodeVideos = transcodeVideos;
         this.ffmpegLocation = ffmpegLocation;
@@ -34,6 +38,10 @@ public class ConfigJSONData {
 
     public Boolean getCreateLogFiles() {
         return createLogFiles;
+    }
+
+    public Boolean getCheckForUpdates() {
+        return checkForUpdates;
     }
 
     public Boolean getSendNotifications() {
@@ -62,6 +70,10 @@ public class ConfigJSONData {
 
     public void setCreateLogFiles(Boolean createLogFiles) {
         this.createLogFiles = createLogFiles;
+    }
+
+    public void setCheckForUpdates(Boolean checkForUpdates) {
+        this.checkForUpdates = checkForUpdates;
     }
 
     public void setSendNotifications(Boolean sendNotifications) {

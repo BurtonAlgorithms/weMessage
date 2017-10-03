@@ -16,6 +16,8 @@ import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.configuration.json.ConfigJSON;
 import scott.wemessage.server.connection.DeviceManager;
+import scott.wemessage.server.connection.http.NotificationManager;
+import scott.wemessage.server.connection.http.VersionChecker;
 import scott.wemessage.server.database.DatabaseManager;
 import scott.wemessage.server.database.MessagesDatabase;
 import scott.wemessage.server.events.EventManager;
@@ -37,12 +39,13 @@ public final class MessageServer {
     private AtomicBoolean isRunning = new AtomicBoolean(false);
     private ServerConfiguration serverConfiguration;
     private Authenticator authenticator;
+    private AppleScriptExecutor appleScriptExecutor;
     private DatabaseManager databaseManager;
     private MessagesDatabase messagesDatabase;
     private CommandManager commandManager;
     private DeviceManager deviceManager;
     private EventManager eventManager;
-    private AppleScriptExecutor appleScriptExecutor;
+    private NotificationManager notificationManager;
 
     private final Object databaseManagerLock = new Object();
     private final Object messageDatabaseLock = new Object();
@@ -50,6 +53,7 @@ public final class MessageServer {
     private final Object eventManagerLock = new Object();
     private final Object serverConfigurationLock = new Object();
     private final Object scriptExecutorLock = new Object();
+    private final Object notificationManagerLock = new Object();
 
     protected MessageServer() {
         if (init()) {
@@ -65,6 +69,7 @@ public final class MessageServer {
                 this.commandManager = new CommandManager(this);
                 this.deviceManager = new DeviceManager(this);
                 this.eventManager = new EventManager(this);
+                this.notificationManager = new NotificationManager(this);
 
                 isRunning.set(true);
             } catch (Exception e) {
@@ -109,6 +114,12 @@ public final class MessageServer {
     public AppleScriptExecutor getScriptExecutor(){
         synchronized (scriptExecutorLock) {
             return appleScriptExecutor;
+        }
+    }
+
+    public NotificationManager getNotificationManager(){
+        synchronized (notificationManagerLock){
+            return notificationManager;
         }
     }
 
@@ -191,6 +202,7 @@ public final class MessageServer {
                             } catch (Exception ex) {
                                 ServerLogger.error("An error occurred while trying to set a password. Shutting down!", ex);
                                 shutdown(-1, false);
+                                return;
                             }
                         }
                     }
@@ -234,6 +246,8 @@ public final class MessageServer {
             ServerLogger.log("weServer Started!");
             ServerLogger.log("Version: " + getConfiguration().getVersion());
             ServerLogger.emptyLine();
+
+            new VersionChecker(this).start();
         } catch(Exception e){
             ServerLogger.error(TAG, "There was an error starting the server. Shutting down!", e);
             shutdown(-1, false);

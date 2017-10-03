@@ -140,7 +140,9 @@ public final class ServerConfiguration {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         ConfigJSON configJSON = new ConfigJSON(
                 new ConfigJSONData(weMessage.WEMESSAGE_CONFIG_VERSION, weMessage.DEFAULT_PORT,
-                        weMessage.DEFAULT_CREATE_LOG_FILES, weMessage.DEFAULT_SEND_NOTIFICATIONS, weMessage.DEFAULT_TRANSCODE_VIDEO, weMessage.DEFAULT_FFMPEG_LOCATION,
+                        weMessage.DEFAULT_CREATE_LOG_FILES, weMessage.DEFAULT_CHECK_FOR_UPDATES,
+                        weMessage.DEFAULT_SEND_NOTIFICATIONS, weMessage.DEFAULT_TRANSCODE_VIDEO,
+                        weMessage.DEFAULT_FFMPEG_LOCATION,
                         new ConfigAccountJSON(
                                 weMessage.DEFAULT_EMAIL,
                                 weMessage.DEFAULT_PASSWORD,
@@ -174,11 +176,13 @@ public final class ServerConfiguration {
             newJson.setFfmpegLocation(oldJson.getFfmpegLocation());
             newJson.setAccountInfo(oldJson.getAccountInfo());
 
+            newJson.setCheckForUpdates(weMessage.DEFAULT_CHECK_FOR_UPDATES);
             newJson.setSendNotifications(weMessage.DEFAULT_SEND_NOTIFICATIONS);
             newJson.setTranscodeVideos(weMessage.DEFAULT_TRANSCODE_VIDEO);
         }
 
         if (oldVersion >= 2){
+            newJson.setCheckForUpdates(oldJson.getCheckForUpdates());
             newJson.setSendNotifications(oldJson.getSendNotifications());
             newJson.setTranscodeVideos(oldJson.getTranscodeVideos());
         }
@@ -199,6 +203,7 @@ public final class ServerConfiguration {
         }
 
         if (newVersion >= 2){
+            newJson.setCheckForUpdates(oldJson.getCheckForUpdates());
             newJson.setSendNotifications(oldJson.getSendNotifications());
             newJson.setTranscodeVideos(oldJson.getTranscodeVideos());
         }

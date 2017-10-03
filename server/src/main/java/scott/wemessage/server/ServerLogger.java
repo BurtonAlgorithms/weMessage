@@ -22,103 +22,67 @@ public final class ServerLogger {
         log(null, null, message);
     }
 
-    public static void log(String prefix, String message){
-        log(null, prefix, message);
+    public static void log(Level level, String message){
+        log(level, null, message);
     }
 
-    public static void log(Level level, String message){
-        switch(level){
-            case INFO:
-                System.out.println("[INFO] " + message);
-                logToFile("[INFO] " + message);
-                break;
-            case WARNING:
-                System.out.println("[WARNING!] " + message);
-                logToFile("[WARNING!] " + message);
-                break;
-            case SEVERE:
-                System.out.println("[!! SEVERE !!] " + message);
-                logToFile("[!! SEVERE !!] " + message);
-                break;
-            case ERROR:
-                System.out.println("[!!! ERROR !!!] " + message);
-                logToFile("[!!! ERROR !!!] " + message);
-                break;
-            default:
-                System.out.println(message);
-                logToFile(message);
-        }
+    public static void log(String prefix, String message){
+        log(null, prefix, message);
     }
     
     public static void log(Level level, String prefix, String message){
         if (level == null){
-            if(prefix == null) {
-                System.out.println(message);
-                logToFile(message);
+            if (prefix == null){
+                performLog(message);
             }else {
-                System.out.println("[" + prefix + "] " + message);
-                logToFile("[" + prefix + "] " + message);
+                performLog("[" + prefix + "] " + message);
             }
             return;
         }
 
-        switch(level){
-            case INFO:
-                System.out.println("[INFO] [" + prefix + "] " + message);
-                logToFile("[INFO] [" + prefix + "] " + message);
-                break;
-            case WARNING:
-                System.out.println("[WARNING!] [" + prefix + "] " + message);
-                logToFile("[WARNING!] [" + prefix + "] " + message);
-                break;
-            case SEVERE:
-                System.out.println("[!! SEVERE !!] [" + prefix + "] " + message);
-                logToFile("[!! SEVERE !!] [" + prefix + "] " + message);
-                break;
-            case ERROR:
-                System.out.println("[!!! ERROR !!!] [" + prefix + "] " + message);
-                logToFile("[!!! ERROR !!!] [" + prefix + "] " + message);
-                break;
-            default:
-                if(prefix == null) {
-                    System.out.println(message);
-                    logToFile(message);
-                }else {
-                    System.out.println("[LOG] [" + prefix + "] " + message);
-                    logToFile("[LOG] [" + prefix + "] " + message);
-                }
+        if (prefix == null){
+            logToFile(level.getPrefix() + " " + message);
+            return;
         }
-    }
 
-    public static void error(String prefix, String message, Exception ex){
-        if(prefix == null) {
-            System.out.println("[!!! ERROR !!!] " + message);
-            System.out.println(" ");
-            ex.printStackTrace();
-            System.out.println(" ");
-
-            logToFile("[!!! ERROR !!!] " + message);
-            logToFile(" ");
-            logToFile(getStackTrace(ex));
-        }else {
-            System.out.println("[!!! ERROR !!!] [" + prefix + "] " + message);
-            System.out.println(" ");
-            ex.printStackTrace();
-            System.out.println(" ");
-
-            logToFile("[!!! ERROR !!!] [" + prefix + "] " + message);
-            logToFile(" ");
-            logToFile(getStackTrace(ex));
-        }
+        logToFile(level.getPrefix() + " [" + prefix + "] " + message);
     }
 
     public static void error(String message, Exception ex){
         error(null, message, ex);
     }
 
+    public static void error(String prefix, String message, Exception ex){
+        if(prefix == null) {
+            System.out.println(Level.ERROR.getPrefix() + " " + message);
+            System.out.println(" ");
+            ex.printStackTrace();
+            System.out.println(" ");
+
+            logToFile(Level.ERROR.getPrefix() + " " + message);
+            logToFile(" ");
+            logToFile(getStackTrace(ex));
+            logToFile(" ");
+        }else {
+            System.out.println(Level.ERROR.getPrefix() + " [" + prefix + "] " + message);
+            System.out.println(" ");
+            ex.printStackTrace();
+            System.out.println(" ");
+
+            logToFile(Level.ERROR.getPrefix() + " [" + prefix + "] " + message);
+            logToFile(" ");
+            logToFile(getStackTrace(ex));
+            logToFile(" ");
+        }
+    }
+
     public static void emptyLine(){
-        System.out.println(" ");
-        logToFile(" ");
+        performLog(" ");
+    }
+
+    private static void performLog(String text){
+        System.out.println(text);
+        logToFile(text);
     }
 
     private static void logToFile(String text){
@@ -153,9 +117,30 @@ public final class ServerLogger {
     }
 
     public enum Level {
-        INFO,
-        WARNING,
-        SEVERE,
-        ERROR
+        INFO(0),
+        WARNING(1),
+        SEVERE(2),
+        ERROR(3);
+
+        int value;
+
+        Level(int value){
+            this.value = value;
+        }
+
+        public String getPrefix() {
+            switch (value){
+                case 0:
+                    return "[INFO]";
+                case 1:
+                    return "[! WARNING !]";
+                case 2:
+                    return "[!! SEVERE !!]";
+                case 3:
+                    return "[!!! ERROR !!!]";
+                default:
+                    return "[LOG]";
+            }
+        }
     }
 }

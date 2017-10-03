@@ -557,7 +557,18 @@ public class Device extends Thread {
             while (isRunning.get()){
                 try {
                     EventManager eventManager = getDeviceManager().getMessageServer().getEventManager();
-                    Object object = getInputStream().readObject();
+                    Object object;
+
+                    try {
+                        object = getInputStream().readObject();
+                    }catch (Exception ex){
+                        if (getInputStream().read() == -1){
+                            getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);
+                            return;
+                        }else {
+                            throw ex;
+                        }
+                    }
 
                     if (object instanceof Heartbeat) continue;
 
@@ -594,7 +605,7 @@ public class Device extends Thread {
                                 this.registrationToken = token;
                             }
                             eventManager.callEvent(new DeviceUpdateEvent(eventManager, getDeviceManager(), this));
-                            return;
+                            continue;
                         }
                         if (input.startsWith(weMessage.JSON_NEW_MESSAGE)) {
                             ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_NEW_MESSAGE, input);

@@ -49,7 +49,7 @@ public class MessagesDatabaseListener extends Listener {
 
                         for (String token : databaseManager.getAllRegistrationTokens()){
                             if (databaseManager.getLastEmailByDeviceId(databaseManager.getDeviceIdByRegistrationToken(token)).equals(event.getMessageServer().getConfiguration().getAccountEmail())) {
-                                deviceManager.sendNotification(token, message);
+                                event.getMessageServer().getNotificationManager().sendNotification(token, message);
                             }
                         }
 
