@@ -54,6 +54,10 @@ public class StringUtils {
         return finalString;
     }
 
+    public static String toFixedString(String string, int length) {
+        return String.format("%1$" + length + "s", string);
+    }
+
     public static String uppercaseFirst(String string){
         return string.substring(0, 1).toUpperCase() + string.substring(1);
     }

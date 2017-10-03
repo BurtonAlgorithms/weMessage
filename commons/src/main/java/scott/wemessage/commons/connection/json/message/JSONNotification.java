@@ -2,6 +2,7 @@ package scott.wemessage.commons.connection.json.message;
 
 public class JSONNotification {
 
+    private String notificationVersion;
     private String registrationToken;
     private String encryptedText;
     private String key;
@@ -10,7 +11,8 @@ public class JSONNotification {
     private String chatName;
     private String attachmentNumber;
 
-    public JSONNotification(String registrationToken, String encryptedText, String key, String handleId, String chatId, String chatName, String attachmentNumber) {
+    public JSONNotification(String notificationVersion, String registrationToken, String encryptedText, String key, String handleId, String chatId, String chatName, String attachmentNumber) {
+        this.notificationVersion = notificationVersion;
         this.registrationToken = registrationToken;
         this.encryptedText = encryptedText;
         this.key = key;
@@ -18,6 +20,10 @@ public class JSONNotification {
         this.chatId = chatId;
         this.chatName = chatName;
         this.attachmentNumber = attachmentNumber;
+    }
+
+    public String getNotificationVersion() {
+        return notificationVersion;
     }
 
     public String getRegistrationToken() {
@@ -46,6 +52,10 @@ public class JSONNotification {
 
     public String getAttachmentNumber() {
         return attachmentNumber;
+    }
+
+    public void setNotificationVersion(String notificationVersion) {
+        this.notificationVersion = notificationVersion;
     }
 
     public void setRegistrationToken(String registrationToken) {
