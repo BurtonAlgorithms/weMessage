@@ -11,6 +11,10 @@ public class JSONNotification {
     private String chatName;
     private String attachmentNumber;
 
+    public JSONNotification(){
+
+    }
+
     public JSONNotification(String notificationVersion, String registrationToken, String encryptedText, String key, String handleId, String chatId, String chatName, String attachmentNumber) {
         this.notificationVersion = notificationVersion;
         this.registrationToken = registrationToken;
