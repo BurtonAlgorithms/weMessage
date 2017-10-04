@@ -41,11 +41,11 @@ public final class ServerLogger {
         }
 
         if (prefix == null){
-            logToFile(level.getPrefix() + " " + message);
+            performLog(level.getPrefix() + " " + message);
             return;
         }
 
-        logToFile(level.getPrefix() + " [" + prefix + "] " + message);
+        performLog(level.getPrefix() + " [" + prefix + "] " + message);
     }
 
     public static void error(String message, Exception ex){
