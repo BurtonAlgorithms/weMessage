@@ -23,6 +23,7 @@ import scott.wemessage.app.security.util.AesPrngHelper;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.commons.Constants;
 import scott.wemessage.commons.crypto.AESCrypto;
+import scott.wemessage.commons.utils.StringUtils;
 
 public final class weMessage extends Application implements Constants {
 
@@ -165,7 +166,11 @@ public final class weMessage extends Application implements Constants {
     }
 
     public synchronized Account getCurrentAccount(){
-        if (currentAccount == null) throw new MessageDatabase.AccountNotLoggedInException();
+        if (currentAccount == null){
+            if (!isSignedIn()) throw new MessageDatabase.AccountNotLoggedInException();
+
+            return getMessageDatabase().getAccountByEmail(getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, null));
+        }
 
         return currentAccount;
     }
@@ -189,6 +194,7 @@ public final class weMessage extends Application implements Constants {
             HashMap<Integer, String> toCancel = new HashMap<>();
 
             for (StatusBarNotification notification : notificationManager.getActiveNotifications()){
+                if (StringUtils.isEmpty(notification.getTag())) continue;
                 if (notification.getTag().equals(weMessage.NOTIFICATION_TAG + uuid) || notification.getTag().equals(weMessage.NOTIFICATION_TAG)){
                     toCancel.put(notification.getId(), notification.getTag());
                 }

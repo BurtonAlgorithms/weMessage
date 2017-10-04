@@ -223,6 +223,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             voiceMessageInput = savedInstanceState.getString(weMessage.BUNDLE_VOICE_MESSAGE_INPUT_FILE);
         }
 
+        if (getChat() == null){
+            super.onCreate(savedInstanceState);
+            return;
+        }
+
         IntentFilter broadcastIntentFilter = new IntentFilter();
 
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED);
@@ -525,6 +530,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onDestroy() {
+        if (getChat() == null){
+            super.onDestroy();
+            return;
+        }
+
         MessageManager messageManager = weMessage.get().getMessageManager();
 
         messageMapIntegrity.clear();

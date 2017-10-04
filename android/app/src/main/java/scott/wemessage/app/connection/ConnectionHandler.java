@@ -19,6 +19,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
+import java.net.NoRouteToHostException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -445,7 +446,13 @@ public final class ConnectionHandler extends Thread {
             synchronized (inputStreamLock) {
                 inputStream = new ObjectInputStream(getConnectionSocket().getInputStream());
             }
-        }catch(SocketTimeoutException ex){
+        }catch (NoRouteToHostException ex){
+            if (isRunning.get()) {
+                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_ERROR, null);
+                getParentService().endService();
+            }
+            return;
+        }catch (SocketTimeoutException ex){
             if (isRunning.get()) {
                 sendLocalBroadcast(weMessage.BROADCAST_LOGIN_TIMEOUT, null);
                 getParentService().endService();

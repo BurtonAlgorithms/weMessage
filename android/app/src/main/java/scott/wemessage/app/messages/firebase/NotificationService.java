@@ -27,6 +27,7 @@ import com.google.firebase.messaging.RemoteMessage;
 import java.util.Date;
 
 import scott.wemessage.R;
+import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.Handle;
@@ -41,6 +42,8 @@ import scott.wemessage.commons.connection.json.message.JSONNotification;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class NotificationService extends FirebaseMessagingService {
+
+    private final int ERRORED_NOTIFICATION_TAG = 1000;
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
@@ -73,124 +76,164 @@ public class NotificationService extends FirebaseMessagingService {
     }
 
     private void showNotification(RemoteMessage remoteMessage){
-        if (weMessage.get().isSignedIn() && weMessage.get().performNotification(remoteMessage.getData().get("chatId"))) {
+        if (weMessage.get().isSignedIn()) {
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            JSONNotification jsonNotification = new JSONNotification(
-                    null,
-                    remoteMessage.getData().get("encryptedText"),
-                    remoteMessage.getData().get("key"),
-                    remoteMessage.getData().get("handleId"),
-                    remoteMessage.getData().get("chatId"),
-                    remoteMessage.getData().get("chatName"),
-                    remoteMessage.getData().get("attachmentNumber")
-            );
-
             MessageDatabase database = weMessage.get().getMessageDatabase();
-            Chat chat = database.getChatByMacGuid(jsonNotification.getChatId());
-            Handle handle = database.getHandleByHandleID(jsonNotification.getHandleId());
 
-            if (chat != null && chat instanceof GroupChat){
-                if (((GroupChat) chat).isDoNotDisturb()) return;
-            }
+            try {
+                int notificationVersion = Integer.parseInt(remoteMessage.getData().get("notificationVersion"));
 
-            if (handle != null){
-                Contact c = weMessage.get().getMessageDatabase().getContactByHandle(handle);
-                if (c.isDoNotDisturb() || c.isBlocked()) return;
-            }
+                if (notificationVersion == 1) {
 
-            DecryptionTask decryptionTask = new DecryptionTask(new KeyTextPair(jsonNotification.getEncryptedText(), jsonNotification.getKey()), CryptoType.AES);
-            decryptionTask.runDecryptTask();
+                    if (weMessage.get().performNotification(remoteMessage.getData().get("chatId"))) {
+                        JSONNotification jsonNotification = new JSONNotification();
 
-            String displayName = null;
-            String message = "";
-            Bitmap largeIcon = null;
+                        jsonNotification.setEncryptedText(remoteMessage.getData().get("encryptedText"));
+                        jsonNotification.setKey(remoteMessage.getData().get("key"));
+                        jsonNotification.setHandleId(remoteMessage.getData().get("handleId"));
+                        jsonNotification.setChatId(remoteMessage.getData().get("chatId"));
+                        jsonNotification.setChatName(remoteMessage.getData().get("chatName"));
+                        jsonNotification.setAttachmentNumber(remoteMessage.getData().get("attachmentNumber"));
 
-            if (!StringUtils.isEmpty(jsonNotification.getChatId())) {
-                if (chat != null && chat instanceof GroupChat) {
-                    displayName = ((GroupChat) chat).getUIDisplayName(false);
-                }
-            } else if (!StringUtils.isEmpty(jsonNotification.getChatName())) {
-                displayName = jsonNotification.getChatName();
-            }
+                        Chat chat = database.getChatByMacGuid(jsonNotification.getChatId());
+                        Handle handle = database.getHandleByHandleID(jsonNotification.getHandleId());
 
-            if (!StringUtils.isEmpty(displayName)) {
-                if (handle != null) {
-                    message = database.getContactByHandle(handle).getUIDisplayName() + ": ";
-                } else {
-                    message = jsonNotification.getHandleId() + ": ";
-                }
-            } else {
-                if (handle != null) {
-                    displayName = database.getContactByHandle(handle).getUIDisplayName();
-                } else {
-                    displayName = jsonNotification.getHandleId();
-                }
-            }
+                        if (chat != null && chat instanceof GroupChat) {
+                            if (((GroupChat) chat).isDoNotDisturb()) return;
+                        }
 
-            if (chat != null && chat instanceof GroupChat) {
-                if (chat.getChatPictureFileLocation() != null && !StringUtils.isEmpty(chat.getChatPictureFileLocation().getFileLocation())) {
-                    largeIcon = createCircleBitmap(BitmapFactory.decodeFile(chat.getChatPictureFileLocation().getFileLocation()));
-                }else {
-                    largeIcon = createCircleBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_default_group_chat));
-                }
-            } else {
-                if (handle != null) {
-                    Contact c = database.getContactByHandle(handle);
-                    if (c.getContactPictureFileLocation() != null && !StringUtils.isEmpty(c.getContactPictureFileLocation().getFileLocation())) {
-                        largeIcon = createCircleBitmap(BitmapFactory.decodeFile(c.getContactPictureFileLocation().getFileLocation()));
-                    }else {
-                        largeIcon = createCircleBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_default_contact));
+                        if (handle != null) {
+                            Contact c = weMessage.get().getMessageDatabase().getContactByHandle(handle);
+                            if (c.isDoNotDisturb() || c.isBlocked()) return;
+                        }
+
+                        DecryptionTask decryptionTask = new DecryptionTask(new KeyTextPair(jsonNotification.getEncryptedText(), jsonNotification.getKey()), CryptoType.AES);
+                        decryptionTask.runDecryptTask();
+
+                        String displayName = null;
+                        String message = "";
+                        Bitmap largeIcon = null;
+
+                        if (!StringUtils.isEmpty(jsonNotification.getChatId())) {
+                            if (chat != null && chat instanceof GroupChat) {
+                                displayName = ((GroupChat) chat).getUIDisplayName(false);
+                            }
+                        } else if (!StringUtils.isEmpty(jsonNotification.getChatName())) {
+                            displayName = jsonNotification.getChatName();
+                        }
+
+                        if (!StringUtils.isEmpty(displayName)) {
+                            if (handle != null) {
+                                message = database.getContactByHandle(handle).getUIDisplayName() + ": ";
+                            } else {
+                                message = jsonNotification.getHandleId() + ": ";
+                            }
+                        } else {
+                            if (handle != null) {
+                                displayName = database.getContactByHandle(handle).getUIDisplayName();
+                            } else {
+                                displayName = jsonNotification.getHandleId();
+                            }
+                        }
+
+                        if (chat != null && chat instanceof GroupChat) {
+                            if (chat.getChatPictureFileLocation() != null && !StringUtils.isEmpty(chat.getChatPictureFileLocation().getFileLocation())) {
+                                largeIcon = createCircleBitmap(BitmapFactory.decodeFile(chat.getChatPictureFileLocation().getFileLocation()));
+                            } else {
+                                largeIcon = createCircleBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_default_group_chat));
+                            }
+                        } else {
+                            if (handle != null) {
+                                Contact c = database.getContactByHandle(handle);
+                                if (c.getContactPictureFileLocation() != null && !StringUtils.isEmpty(c.getContactPictureFileLocation().getFileLocation())) {
+                                    largeIcon = createCircleBitmap(BitmapFactory.decodeFile(c.getContactPictureFileLocation().getFileLocation()));
+                                } else {
+                                    largeIcon = createCircleBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_default_contact));
+                                }
+                            }
+                        }
+                        String decryptedText = decryptionTask.getDecryptedText();
+
+                        if (StringUtils.isEmpty(decryptedText)) {
+                            if (Integer.valueOf(jsonNotification.getAttachmentNumber()) > 0) {
+                                message += getString(R.string.notification_attachments, jsonNotification.getAttachmentNumber());
+                            }
+                        } else {
+                            message += decryptionTask.getDecryptedText();
+                        }
+
+                        Intent intent = new Intent(this, LaunchActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+                        if (chat != null) {
+                            intent.putExtra(weMessage.BUNDLE_LAUNCHER_GO_TO_CONVERSATION_UUID, chat.getUuid().toString());
+                        }
+
+                        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+                        NotificationCompat.Builder builder;
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            builder = new NotificationCompat.Builder(this, weMessage.NOTIFICATION_CHANNEL_NAME);
+                        } else {
+                            builder = new NotificationCompat.Builder(this);
+                            builder.setVibrate(new long[]{1000, 1000})
+                                    .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+                        }
+
+                        int id = (int) ((new Date().getTime() / 1000L) % Integer.MAX_VALUE);
+                        String tag = weMessage.NOTIFICATION_TAG;
+
+                        if (chat != null) {
+                            tag += chat.getUuid().toString();
+                        }
+
+                        Notification notification = builder
+                                .setContentTitle(displayName)
+                                .setContentText(StringUtils.trimORC(message))
+                                .setSmallIcon(R.drawable.ic_app_notification_white_small)
+                                .setLargeIcon(largeIcon)
+                                .setContentIntent(pendingIntent)
+                                .setWhen(remoteMessage.getSentTime())
+                                .setAutoCancel(true)
+                                .build();
+
+                        notificationManager.notify(tag, id, notification);
                     }
+                }else if (notificationVersion == 2){
+
+                    performErroredNotification(notificationManager, remoteMessage);
+
+                }else {
+                    performErroredNotification(notificationManager, remoteMessage);
                 }
+            } catch (Exception ex){
+                performErroredNotification(notificationManager, remoteMessage);
+                AppLogger.error("An error occurred while trying to show a notification!", ex);
             }
-            String decryptedText = decryptionTask.getDecryptedText();
-
-            if (StringUtils.isEmpty(decryptedText)){
-                if (Integer.valueOf(jsonNotification.getAttachmentNumber()) > 0){
-                    message += getString(R.string.notification_attachments, jsonNotification.getAttachmentNumber());
-                }
-            }else {
-                message += decryptionTask.getDecryptedText();
-            }
-
-            Intent intent = new Intent(this, LaunchActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
-            if (chat != null){
-                intent.putExtra(weMessage.BUNDLE_LAUNCHER_GO_TO_CONVERSATION_UUID, chat.getUuid().toString());
-            }
-
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-
-            NotificationCompat.Builder builder;
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-                builder = new NotificationCompat.Builder(this, weMessage.NOTIFICATION_CHANNEL_NAME);
-            } else {
-                builder = new NotificationCompat.Builder(this);
-                builder.setVibrate(new long[]{1000, 1000})
-                        .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-            }
-
-            int id = (int) ((new Date().getTime() / 1000L) % Integer.MAX_VALUE);
-            String tag = weMessage.NOTIFICATION_TAG;
-
-            if (chat != null){
-                tag += chat.getUuid().toString();
-            }
-
-            Notification notification = builder
-                    .setContentTitle(displayName)
-                    .setContentText(StringUtils.trimORC(message))
-                    .setSmallIcon(R.drawable.ic_app_notification_white_small)
-                    .setLargeIcon(largeIcon)
-                    .setContentIntent(pendingIntent)
-                    .setWhen(remoteMessage.getSentTime())
-                    .setAutoCancel(true)
-                    .build();
-
-            notificationManager.notify(tag, id, notification);
         }
+    }
+
+    private void performErroredNotification(NotificationManager notificationManager, RemoteMessage remoteMessage){
+        NotificationCompat.Builder builder;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder = new NotificationCompat.Builder(this, weMessage.NOTIFICATION_CHANNEL_NAME);
+        } else {
+            builder = new NotificationCompat.Builder(this);
+            builder.setVibrate(new long[]{1000, 1000})
+                    .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+        }
+
+        Notification notification = builder
+                .setContentTitle(getString(R.string.notification_error))
+                .setContentText(getString(R.string.notification_error_body))
+                .setSmallIcon(R.drawable.ic_app_notification_white_small)
+                .setWhen(remoteMessage.getSentTime())
+                .setAutoCancel(true)
+                .build();
+
+        notificationManager.cancel(ERRORED_NOTIFICATION_TAG);
+        notificationManager.notify(ERRORED_NOTIFICATION_TAG, notification);
     }
 
     private Bitmap createCircleBitmap(Bitmap bitmap) {

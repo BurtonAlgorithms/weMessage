@@ -162,5 +162,7 @@
     <string name="offline_mode">Offline Mode</string>
     <string name="notification_channel_name">New Messages</string>
     <string name="notification_attachments">%1$s Attachments</string>
+    <string name="notification_error">Notification Error</string>
+    <string name="notification_error_body">An error occurred while receiving a notification.</string>
 
 </resources>
