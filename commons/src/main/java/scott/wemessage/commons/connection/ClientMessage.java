@@ -9,6 +9,8 @@ import scott.wemessage.commons.utils.ByteArrayAdapter;
 
 public class ClientMessage extends ConnectionMessage {
 
+    private static ByteArrayAdapter byteArrayAdapter;
+
     private String incomingJson;
 
     public ClientMessage(String messageUuid, String incomingJson){
@@ -16,14 +18,18 @@ public class ClientMessage extends ConnectionMessage {
         this.incomingJson = incomingJson;
     }
 
-    public Object getIncoming(Class<?> objectClass, ByteArrayAdapter byteArrayAdapter) {
+    public static void setByteArrayAdapter(ByteArrayAdapter adapter){
+        byteArrayAdapter = adapter;
+    }
+
+    public Object getIncoming(Class<?> objectClass) {
         Type type = TypeToken.get(objectClass).getType();
         return new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().fromJson(incomingJson, type);
     }
 
-    public boolean isJsonOfType(Class<?> type, ByteArrayAdapter byteArrayAdapter){
+    public boolean isJsonOfType(Class<?> type){
         try {
-            return !(new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().toJson(getIncoming(type, byteArrayAdapter), type).equals("{}"));
+            return !(new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().toJson(getIncoming(type), type).equals("{}"));
         }catch(Exception ex){
             return false;
         }
