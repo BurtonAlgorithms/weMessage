@@ -72,6 +72,8 @@ public class Device extends Thread {
     private AtomicBoolean isRunning = new AtomicBoolean(false);
     private AtomicBoolean hasTriedVerifying = new AtomicBoolean(false);
 
+    private ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new ServerBase64Wrapper());
+
     private DeviceManager deviceManager;
     private DeviceType deviceType;
     private String deviceId;
@@ -148,7 +150,7 @@ public class Device extends Thread {
 
     public ClientMessage getIncomingMessage(String prefix, Object incoming) throws IOException, ClassNotFoundException {
         String data = ((String) incoming).split(prefix)[1];
-        return new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().fromJson(data, ClientMessage.class);
+        return new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().fromJson(data, ClientMessage.class);
     }
 
     private HeartbeatThread getHeartbeatThread(){
@@ -176,7 +178,7 @@ public class Device extends Thread {
 
     public void sendOutgoingMessageWithThrow(String prefix, Object outgoingData, Class<?> outgoingDataClass) throws IOException {
         Type type = TypeToken.get(outgoingDataClass).getType();
-        String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().toJson(outgoingData, type);
+        String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().toJson(outgoingData, type);
         ServerMessage serverMessage = new ServerMessage(UUID.randomUUID().toString(), outgoingDataJson);
         String outgoingJson = new Gson().toJson(serverMessage);
 
@@ -472,7 +474,7 @@ public class Device extends Thread {
 
                 try {
                     ServerConfiguration configuration = getDeviceManager().getMessageServer().getConfiguration();
-                    InitConnect initConnect = (InitConnect) getIncomingMessage(weMessage.JSON_INIT_CONNECT, getInputStream().readObject()).getIncoming(InitConnect.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
+                    InitConnect initConnect = (InitConnect) getIncomingMessage(weMessage.JSON_INIT_CONNECT, getInputStream().readObject()).getIncoming(InitConnect.class);
                     String email = AESCrypto.decryptString(initConnect.getEmail().getEncryptedText(), initConnect.getEmail().getKey());
                     String password = AESCrypto.decryptString(initConnect.getPassword().getEncryptedText(), initConnect.getPassword().getKey());
 
@@ -599,7 +601,7 @@ public class Device extends Thread {
                         }
                         if (input.startsWith(weMessage.JSON_REGISTRATION_TOKEN)) {
                             ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_REGISTRATION_TOKEN, input);
-                            String token = (String) clientMessage.getIncoming(String.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
+                            String token = (String) clientMessage.getIncoming(String.class);
 
                             synchronized (registrationTokenLock) {
                                 this.registrationToken = token;
@@ -609,7 +611,7 @@ public class Device extends Thread {
                         }
                         if (input.startsWith(weMessage.JSON_NEW_MESSAGE)) {
                             ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_NEW_MESSAGE, input);
-                            JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
+                            JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class);
                             List<Integer> returnedResult = relayIncomingMessage(jsonMessage);
 
                             sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
@@ -617,7 +619,7 @@ public class Device extends Thread {
 
                         } else if (input.startsWith(weMessage.JSON_ACTION)) {
                             ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_ACTION, input);
-                            JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class, new ByteArrayAdapter(new ServerBase64Wrapper()));
+                            JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class);
                             List<Integer> returnedResult = performIncomingAction(jsonAction);
                             JSONResult jsonResult = new JSONResult(clientMessage.getMessageUuid(), returnedResult);
                             boolean wasRight = jsonResult.getResult().get(0).equals(ReturnType.ACTION_PERFORMED.getCode());

@@ -80,6 +80,8 @@ public final class DatabaseManager extends Thread {
 
     private AtomicBoolean isRunning = new AtomicBoolean(false);
     private AtomicBoolean isChatDbConnectionOpen = new AtomicBoolean(false);
+    private ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new ServerBase64Wrapper());
+
     private MessageServer messageServer;
     private ServerConfiguration serverConfiguration;
     private Connection serverDatabaseConnection;
@@ -407,7 +409,7 @@ public final class DatabaseManager extends Thread {
                 while(resultSet.next()) {
                     if (resultSet.getString(COLUMN_QUEUE_ACTION_ACCOUNT).equals(messageServer.getConfiguration().getAccountEmail())) {
                         String actionJSON = resultSet.getString(COLUMN_QUEUE_ACTION_JSON);
-                        JSONAction jsonAction = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().fromJson(actionJSON, JSONAction.class);
+                        JSONAction jsonAction = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().fromJson(actionJSON, JSONAction.class);
                         actionQueue.add(jsonAction);
                     }
                 }
@@ -429,7 +431,7 @@ public final class DatabaseManager extends Thread {
 
         String insertStatementString = "INSERT INTO " + TABLE_ACTION_QUEUE + "(" + COLUMN_QUEUE_ACTION_JSON + ", " + COLUMN_QUEUE_ACTION_ACCOUNT + ", " + COLUMN_QUEUE_ACTION_DEVICES_WAITING + ") VALUES (?, ?, ?)";
         PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
-        insertStatement.setString(1, new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().toJson(jsonAction));
+        insertStatement.setString(1, new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().toJson(jsonAction));
         insertStatement.setString(2, messageServer.getConfiguration().getAccountEmail());
         insertStatement.setString(3, StringUtils.join(getDisconnectedDevices(), ", ", 2));
 
@@ -439,7 +441,7 @@ public final class DatabaseManager extends Thread {
 
     public void unQueueAction(JSONAction jsonAction, String deviceId) throws SQLException {
         String selectQuery = "SELECT * FROM " + TABLE_ACTION_QUEUE + " WHERE " + COLUMN_QUEUE_ACTION_JSON + " = ?";
-        String actionJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new ServerBase64Wrapper())).create().toJson(jsonAction);
+        String actionJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().toJson(jsonAction);
         PreparedStatement findStatement = getServerDatabaseConnection().prepareStatement(selectQuery);
         findStatement.setString(1, actionJson);
         ResultSet resultSet = findStatement.executeQuery();

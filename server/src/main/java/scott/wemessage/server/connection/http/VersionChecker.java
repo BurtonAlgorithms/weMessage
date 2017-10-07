@@ -31,6 +31,7 @@ public class VersionChecker extends Thread {
 
             if (versionMessage.getLatestBuildVersion() != weMessage.WEMESSAGE_BUILD_VERSION) {
                 ServerLogger.log(ServerLogger.Level.WARNING, "A new weServer version has been found! Download the latest one off of the website.");
+                ServerLogger.emptyLine();
                 ServerLogger.log(StringUtils.toFixedString("", ServerLogger.Level.WARNING.getPrefix().length()) + " Current Version: " + weMessage.WEMESSAGE_VERSION + " \t Latest Version: " + versionMessage.getLatestVersion());
                 ServerLogger.emptyLine();
             }

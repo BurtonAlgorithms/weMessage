@@ -6,9 +6,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import scott.wemessage.commons.connection.ClientMessage;
+import scott.wemessage.commons.connection.ServerMessage;
 import scott.wemessage.commons.crypto.AESCrypto;
 import scott.wemessage.commons.crypto.BCrypt;
 import scott.wemessage.commons.utils.AuthenticationUtils;
+import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.commands.AppleScriptExecutor;
 import scott.wemessage.server.commands.Command;
@@ -58,8 +61,13 @@ public final class MessageServer {
     protected MessageServer() {
         if (init()) {
             try {
+                ServerBase64Wrapper base64Wrapper = new ServerBase64Wrapper();
+                ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(base64Wrapper);
+
                 ServerLogger.setServerHook(this);
-                AESCrypto.setBase64Wrapper(new ServerBase64Wrapper());
+                AESCrypto.setBase64Wrapper(base64Wrapper);
+                ClientMessage.setByteArrayAdapter(byteArrayAdapter);
+                ServerMessage.setByteArrayAdapter(byteArrayAdapter);
 
                 this.serverConfiguration = new ServerConfiguration(this);
                 this.authenticator = new Authenticator(this, serverConfiguration);
