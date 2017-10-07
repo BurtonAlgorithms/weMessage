@@ -11,6 +11,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Type;
 import java.net.Socket;
+import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -553,7 +554,7 @@ public class Device extends Thread {
                 }
             }
 
-            ServerLogger.log(ServerLogger.Level.INFO, TAG, "A device with an IP of " + getAddress() + " connected.");
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device " + getDeviceName() + " with an IP of " + getAddress() + " connected.");
             ServerLogger.emptyLine();
 
             while (isRunning.get()){
@@ -563,13 +564,9 @@ public class Device extends Thread {
 
                     try {
                         object = getInputStream().readObject();
-                    }catch (Exception ex){
-                        if (getInputStream().read() == -1){
-                            getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);
-                            return;
-                        }else {
-                            throw ex;
-                        }
+                    }catch (SocketException ex){
+                        getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);
+                        return;
                     }
 
                     if (object instanceof Heartbeat) continue;

@@ -82,7 +82,7 @@ public final class DeviceManager extends Thread {
             EventManager eventManager = getMessageServer().getEventManager();
 
             if (reasonMessage == null) {
-                ServerLogger.log(ServerLogger.Level.INFO, TAG, "Disconnecting device with IP Address: " + device.getAddress());
+                ServerLogger.log(ServerLogger.Level.INFO, TAG, "Disconnecting device " + device.getDeviceName() + " with IP Address: " + device.getAddress());
                 ServerLogger.emptyLine();
             }else {
                 ServerLogger.log(ServerLogger.Level.INFO, TAG, reasonMessage);
