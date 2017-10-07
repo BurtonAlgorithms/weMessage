@@ -20,7 +20,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.MimeTypeMap;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -80,6 +79,7 @@ import scott.wemessage.app.ui.view.messages.IncomingMessageViewHolder;
 import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.ui.view.messages.MessageViewHolder;
 import scott.wemessage.app.ui.view.messages.OutgoingMessageViewHolder;
+import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.media.AudioAttachmentMediaPlayer;
@@ -984,7 +984,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                                 null,
                                 transferName,
                                 new FileLocationContainer(copiedFile),
-                                MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(s)),
+                                AndroidUtils.getMimeTypeStringFromPath(s),
                                 totalBytes
                         );
                         attachments.add(a);
@@ -1014,7 +1014,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                             null,
                             transferName,
                             new FileLocationContainer(copiedFile),
-                            MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(s)),
+                            AndroidUtils.getMimeTypeStringFromPath(s),
                             totalBytes
                     );
                     attachments.add(a);
@@ -1037,7 +1037,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                         null,
                         Uri.parse(cameraAttachmentInput).getLastPathSegment(),
                         new FileLocationContainer(cameraAttachmentInput),
-                        MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(cameraAttachmentInput)),
+                        AndroidUtils.getMimeTypeStringFromPath(cameraAttachmentInput),
                         totalBytes
                 );
                 attachments.add(a);
@@ -1054,7 +1054,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                         null,
                         Uri.parse(voiceMessageInput).getLastPathSegment(),
                         new FileLocationContainer(voiceMessageInput),
-                        MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(voiceMessageInput)),
+                        AndroidUtils.getMimeTypeStringFromPath(voiceMessageInput),
                         totalBytes
                 );
                 attachments.add(a);

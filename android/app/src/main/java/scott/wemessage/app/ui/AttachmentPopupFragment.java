@@ -25,7 +25,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -44,6 +43,7 @@ import java.util.Locale;
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
+import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
 
@@ -516,7 +516,7 @@ public class AttachmentPopupFragment extends MessagingFragment {
             videoIndicatorView.setVisibility(View.INVISIBLE);
             galleryFileName.setVisibility(View.INVISIBLE);
 
-            MimeType mimeType = MimeType.getTypeFromString(MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(path)));
+            MimeType mimeType = AndroidUtils.getMimeTypeFromPath(path);
 
             if (mimeType == MimeType.IMAGE) {
                 Glide.with(itemView.getContext()).load(path).transition(DrawableTransitionOptions.withCrossFade()).into(galleryImageView);

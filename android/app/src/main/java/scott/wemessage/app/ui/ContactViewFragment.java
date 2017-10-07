@@ -36,7 +36,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -77,8 +76,9 @@ import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.activities.MessageImageActivity;
 import scott.wemessage.app.ui.activities.MessageVideoActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
-import scott.wemessage.app.utils.IOUtils;
+import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
@@ -560,7 +560,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                         String fileLoc = a.getFileLocation().getFileLocation();
 
                         if (!StringUtils.isEmpty(fileLoc) && !allUris.contains(fileLoc)) {
-                            MimeType mimeType = MimeType.getTypeFromString(MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(fileLoc)));
+                            MimeType mimeType = AndroidUtils.getMimeTypeFromPath(fileLoc);
 
                             if (mimeType == MimeType.IMAGE || mimeType == MimeType.VIDEO) {
                                 allUris.add(fileLoc);
@@ -912,7 +912,9 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                 String attachmentUri = getItem(position);
 
                 ((GalleryHolder) holder).bind(attachmentUri);
-            } else if (holder instanceof ContactViewHeader) {
+            }else if (holder instanceof GalleryMediaErrorHolder) {
+                ((GalleryMediaErrorHolder) holder).bind(attachmentUris.isEmpty());
+            }else if (holder instanceof ContactViewHeader) {
                 ((ContactViewHeader) holder).bind(weMessage.get().getMessageDatabase().getContactByUuid(contactUuid));
             }
         }
@@ -1170,6 +1172,11 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             super(inflater.inflate(R.layout.list_item_no_media_text_view, parent, false));
         }
 
+        public void bind(boolean show){
+            if (show) show();
+            else hide();
+        }
+
         public void show(){
             itemView.findViewById(R.id.mediaErrorTextView).setVisibility(View.VISIBLE);
         }
@@ -1209,7 +1216,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             galleryViewLayout.setLayoutParams(layoutParams);
             videoIndicatorView.setVisibility(View.INVISIBLE);
 
-            MimeType mimeType = MimeType.getTypeFromString(MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(path)));
+            MimeType mimeType = AndroidUtils.getMimeTypeFromPath(path);
 
             if (mimeType == MimeType.IMAGE) {
                 Glide.with(itemView.getContext()).load(path).transition(DrawableTransitionOptions.withCrossFade()).into(galleryImageView);
@@ -1242,7 +1249,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
         @Override
         public void onClick(View v) {
-            MimeType mimeType = MimeType.getTypeFromString(MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(path)));
+            MimeType mimeType = AndroidUtils.getMimeTypeFromPath(path);
 
             if (mimeType == MimeType.IMAGE){
                 launchFullScreenImageActivity(path);

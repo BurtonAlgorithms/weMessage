@@ -35,7 +35,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -79,8 +78,9 @@ import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.activities.MessageImageActivity;
 import scott.wemessage.app.ui.activities.MessageVideoActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
-import scott.wemessage.app.utils.IOUtils;
+import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
@@ -1063,7 +1063,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                             String fileLoc = a.getFileLocation().getFileLocation();
 
                             if (!StringUtils.isEmpty(fileLoc) && !allUris.contains(fileLoc)) {
-                                MimeType mimeType = MimeType.getTypeFromString(MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(fileLoc)));
+                                MimeType mimeType = AndroidUtils.getMimeTypeFromPath(fileLoc);
 
                                 if (mimeType == MimeType.IMAGE || mimeType == MimeType.VIDEO) {
                                     allUris.add(fileLoc);
@@ -1392,7 +1392,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             galleryViewLayout.setLayoutParams(layoutParams);
             videoIndicatorView.setVisibility(View.INVISIBLE);
 
-            MimeType mimeType = MimeType.getTypeFromString(MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(path)));
+            MimeType mimeType = AndroidUtils.getMimeTypeFromPath(path);
 
             if (mimeType == MimeType.IMAGE) {
                 Glide.with(itemView.getContext()).load(path).transition(DrawableTransitionOptions.withCrossFade()).into(galleryImageView);
@@ -1425,7 +1425,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
         @Override
         public void onClick(View v) {
-            MimeType mimeType = MimeType.getTypeFromString(MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(path)));
+            MimeType mimeType = AndroidUtils.getMimeTypeFromPath(path);
 
             if (mimeType == MimeType.IMAGE){
                 launchFullScreenImageActivity(path);

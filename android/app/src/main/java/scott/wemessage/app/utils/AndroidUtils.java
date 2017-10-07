@@ -2,6 +2,9 @@ package scott.wemessage.app.utils;
 
 import android.bluetooth.BluetoothAdapter;
 import android.os.Build;
+import android.webkit.MimeTypeMap;
+
+import scott.wemessage.commons.types.MimeType;
 
 public class AndroidUtils {
 
@@ -15,6 +18,14 @@ public class AndroidUtils {
             deviceName = getInternalDeviceName();
         }
         return deviceName;
+    }
+
+    public static MimeType getMimeTypeFromPath(String path){
+        return MimeType.getTypeFromString(MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(path).toLowerCase()));
+    }
+
+    public static String getMimeTypeStringFromPath(String path){
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(path).toLowerCase());
     }
 
     private static String getInternalDeviceName() {
