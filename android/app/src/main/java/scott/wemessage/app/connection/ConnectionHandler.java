@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Type;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.NoRouteToHostException;
 import java.net.Socket;
@@ -96,6 +97,7 @@ public final class ConnectionHandler extends Thread {
     private ConcurrentHashMap<String, String>messageAndConnectionMessageMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Attachment> fileAttachmentsMap = new ConcurrentHashMap<>();
 
+    private ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new AndroidBase64Wrapper());
     private ConnectionService service;
     private Socket connectionSocket;
     private ObjectInputStream inputStream;
@@ -162,7 +164,7 @@ public final class ConnectionHandler extends Thread {
 
     private ServerMessage getIncomingMessage(String prefix, Object incomingStream){
         String data = ((String) incomingStream).split(prefix)[1];
-        ServerMessage serverMessage = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().fromJson(data, ServerMessage.class);
+        ServerMessage serverMessage = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().fromJson(data, ServerMessage.class);
 
         connectionMessagesMap.put(serverMessage.getMessageUuid(), serverMessage);
         return serverMessage;
@@ -179,7 +181,7 @@ public final class ConnectionHandler extends Thread {
 
     private void sendOutgoingMessage(String prefix, Object outgoingData, Class<?> dataClass) throws IOException {
         Type type = TypeToken.get(dataClass).getType();
-        String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create().toJson(outgoingData, type);
+        String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().toJson(outgoingData, type);
         ClientMessage clientMessage = new ClientMessage(UUID.randomUUID().toString(), outgoingDataJson);
         String outgoingJson = new Gson().toJson(clientMessage);
 
@@ -231,7 +233,7 @@ public final class ConnectionHandler extends Thread {
 
                     Type type = TypeToken.get(JSONMessage.class).getType();
                     String clientMessageUuid = UUID.randomUUID().toString();
-                    String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, new ByteArrayAdapter(new AndroidBase64Wrapper())).create()
+                    String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create()
                             .toJson(message.toJson(ConnectionHandler.this), type);
                     ClientMessage clientMessage = new ClientMessage(clientMessageUuid, outgoingDataJson);
                     String outgoingJson = new Gson().toJson(clientMessage);
@@ -420,8 +422,6 @@ public final class ConnectionHandler extends Thread {
     }
 
     public void run(){
-        final ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new AndroidBase64Wrapper());
-
         isRunning.set(true);
 
         synchronized (socketLock) {
@@ -445,6 +445,11 @@ public final class ConnectionHandler extends Thread {
 
             synchronized (inputStreamLock) {
                 inputStream = new ObjectInputStream(getConnectionSocket().getInputStream());
+            }
+        }catch (ConnectException ex){
+            if (isRunning.get()){
+                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR, null);
+                getParentService().endService();
             }
         }catch (NoRouteToHostException ex){
             if (isRunning.get()) {
@@ -472,7 +477,7 @@ public final class ConnectionHandler extends Thread {
                 String incoming = (String) getInputStream().readObject();
                 if (incoming.startsWith(weMessage.JSON_VERIFY_PASSWORD_SECRET)){
                     ServerMessage message = getIncomingMessage(weMessage.JSON_VERIFY_PASSWORD_SECRET, incoming);
-                    EncryptedText secretEncrypted = (EncryptedText) message.getOutgoing(EncryptedText.class, byteArrayAdapter);
+                    EncryptedText secretEncrypted = (EncryptedText) message.getOutgoing(EncryptedText.class);
 
                     DecryptionTask secretDecryptionTask = new DecryptionTask(new KeyTextPair(secretEncrypted.getEncryptedText(), secretEncrypted.getKey()), CryptoType.AES);
                     EncryptionTask emailEncryptionTask = new EncryptionTask(emailPlainText, null, CryptoType.AES);
@@ -613,7 +618,7 @@ public final class ConnectionHandler extends Thread {
 
                 } else if (incoming.startsWith(weMessage.JSON_CONNECTION_TERMINATED)) {
                     ServerMessage serverMessage = getIncomingMessage(weMessage.JSON_CONNECTION_TERMINATED, incoming);
-                    DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer) serverMessage.getOutgoing(Integer.class, byteArrayAdapter)));
+                    DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer) serverMessage.getOutgoing(Integer.class)));
 
                     if (disconnectReason == null) {
                         AppLogger.error(TAG, "A null disconnect reason has caused the connection to be dropped", new NullPointerException());
@@ -660,7 +665,7 @@ public final class ConnectionHandler extends Thread {
                         @Override
                         public void run() {
                             try {
-                                JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_NEW_MESSAGE, incoming).getOutgoing(JSONMessage.class, byteArrayAdapter);
+                                JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_NEW_MESSAGE, incoming).getOutgoing(JSONMessage.class);
 
                                 EncryptedText encryptedText = jsonMessage.getEncryptedText();
                                 DecryptionTask textDecryptionTask = new DecryptionTask(new KeyTextPair(encryptedText.getEncryptedText(), encryptedText.getKey()), CryptoType.AES);
@@ -729,7 +734,7 @@ public final class ConnectionHandler extends Thread {
                         @Override
                         public void run() {
                             try {
-                                JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_MESSAGE_UPDATED, incoming).getOutgoing(JSONMessage.class, byteArrayAdapter);
+                                JSONMessage jsonMessage = (JSONMessage) getIncomingMessage(weMessage.JSON_MESSAGE_UPDATED, incoming).getOutgoing(JSONMessage.class);
                                 MessageManager messageManager = weMessage.get().getMessageManager();
                                 MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
 
@@ -801,7 +806,7 @@ public final class ConnectionHandler extends Thread {
                         public void run() {
                             try {
                                 MessageManager messageManager = weMessage.get().getMessageManager();
-                                JSONAction jsonAction = (JSONAction) getIncomingMessage(weMessage.JSON_ACTION, incoming).getOutgoing(JSONAction.class, byteArrayAdapter);
+                                JSONAction jsonAction = (JSONAction) getIncomingMessage(weMessage.JSON_ACTION, incoming).getOutgoing(JSONAction.class);
 
                                 performAction(messageManager, jsonAction);
                             } catch (Exception ex) {
@@ -816,7 +821,7 @@ public final class ConnectionHandler extends Thread {
                         public void run() {
                             try {
                                 MessageManager messageManager = weMessage.get().getMessageManager();
-                                JSONResult jsonResult = (JSONResult) getIncomingMessage(weMessage.JSON_RETURN_RESULT, incoming).getOutgoing(JSONResult.class, byteArrayAdapter);
+                                JSONResult jsonResult = (JSONResult) getIncomingMessage(weMessage.JSON_RETURN_RESULT, incoming).getOutgoing(JSONResult.class);
 
                                 processResults(messageManager, jsonResult);
                             } catch (Exception ex) {
@@ -1028,7 +1033,6 @@ public final class ConnectionHandler extends Thread {
     }
 
     private void processResults(MessageManager messageManager, JSONResult jsonResult){
-        ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new AndroidBase64Wrapper());
         List<ReturnType> returnTypes = parseResults(jsonResult.getResult());
         ConnectionMessage connectionMessage = connectionMessagesMap.get(jsonResult.getCorrespondingUUID());
 
@@ -1040,10 +1044,10 @@ public final class ConnectionHandler extends Thread {
 
         if (connectionMessage instanceof ServerMessage){
             ServerMessage serverMessage = (ServerMessage) connectionMessage;
-            boolean isAMessage = serverMessage.isJsonOfType(JSONMessage.class, byteArrayAdapter);
+            boolean isAMessage = serverMessage.isJsonOfType(JSONMessage.class);
 
             if (isAMessage){
-                JSONMessage jsonMessage = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class, byteArrayAdapter);
+                JSONMessage jsonMessage = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class);
                 boolean isValid = (validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(0)) && validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(1)));
 
                 if (!isValid){
@@ -1055,7 +1059,7 @@ public final class ConnectionHandler extends Thread {
                 }
 
             } else {
-                JSONAction jsonAction = (JSONAction) serverMessage.getOutgoing(JSONAction.class, byteArrayAdapter);
+                JSONAction jsonAction = (JSONAction) serverMessage.getOutgoing(JSONAction.class);
                 boolean isValid = validateActionReturnType(messageManager, jsonAction, returnTypes.get(0));
 
                 if (isValid) {
@@ -1065,10 +1069,10 @@ public final class ConnectionHandler extends Thread {
 
         }else if (connectionMessage instanceof ClientMessage){
             ClientMessage clientMessage = (ClientMessage) connectionMessage;
-            boolean isAMessage = clientMessage.isJsonOfType(JSONMessage.class, byteArrayAdapter);
+            boolean isAMessage = clientMessage.isJsonOfType(JSONMessage.class);
 
             if (isAMessage){
-                JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class, byteArrayAdapter);
+                JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class);
                 boolean isValid;
 
                 if (returnTypes.size() == 1){
@@ -1086,7 +1090,7 @@ public final class ConnectionHandler extends Thread {
                 }
 
             } else {
-                JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class, byteArrayAdapter);
+                JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class);
                 boolean isValid = validateActionReturnType(messageManager, jsonAction, returnTypes.get(0));
 
                 if (isValid) {

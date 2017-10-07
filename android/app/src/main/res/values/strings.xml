@@ -22,6 +22,7 @@
         \n\nIf you set a custom port, insert a colon after the IP Address followed by the port (ip:port). If not, don\'t worry about this step.</string>
     <string name="login_error_alert_title">Connection Error</string>
     <string name="login_error_alert_content">An error occurred while connecting to the weServer.</string>
+    <string name="login_connection_error_alert_content">Could not establish a connection to the weServer. Make sure it is running!</string>
     <string name="connection_cancelled">Connection cancelled.</string>
     <string name="connection_error_server_side_message">A server-side error caused the connection to be lost.</string>
     <string name="connection_error_authentication_message">An error occurred while authenticating the login information. \n\nPlease restart your app or weServer instance.</string>

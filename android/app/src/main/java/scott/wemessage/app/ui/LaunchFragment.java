@@ -83,6 +83,13 @@ public class LaunchFragment extends Fragment {
                     loginProgressDialog = null;
                 }
                 goToConversationHolder = null;
+            }else if(intent.getAction().equals(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR)){
+                if (loginProgressDialog != null) {
+                    loginProgressDialog.dismiss();
+                    generateAlertDialog(getString(R.string.login_error_alert_title), getString(R.string.login_connection_error_alert_content)).show(getFragmentManager(), LAUNCH_ALERT_DIALOG_TAG);
+                    loginProgressDialog = null;
+                }
+                goToConversationHolder = null;
             }else if(intent.getAction().equals(weMessage.BROADCAST_LOGIN_ERROR)){
                 if (loginProgressDialog != null) {
                     loginProgressDialog.dismiss();
@@ -175,6 +182,7 @@ public class LaunchFragment extends Fragment {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(weMessage.BROADCAST_LOGIN_TIMEOUT);
         intentFilter.addAction(weMessage.BROADCAST_LOGIN_ERROR);
+        intentFilter.addAction(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR);
         intentFilter.addAction(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED);
 
         intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_ALREADY_CONNECTED);

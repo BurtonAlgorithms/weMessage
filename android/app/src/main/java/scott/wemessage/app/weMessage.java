@@ -22,7 +22,10 @@ import scott.wemessage.app.messages.objects.Account;
 import scott.wemessage.app.security.util.AesPrngHelper;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.commons.Constants;
+import scott.wemessage.commons.connection.ClientMessage;
+import scott.wemessage.commons.connection.ServerMessage;
 import scott.wemessage.commons.crypto.AESCrypto;
+import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.StringUtils;
 
 public final class weMessage extends Application implements Constants {
@@ -84,6 +87,7 @@ public final class weMessage extends Application implements Constants {
 
     public static final String BROADCAST_LOGIN_TIMEOUT = IDENTIFIER_PREFIX + "LoginTimeout";
     public static final String BROADCAST_LOGIN_ERROR = IDENTIFIER_PREFIX + "LoginError";
+    public static final String BROADCAST_LOGIN_CONNECTION_ERROR = IDENTIFIER_PREFIX + "LoginEstablishConnectionError";
     public static final String BROADCAST_CONNECTION_SERVICE_STOPPED = IDENTIFIER_PREFIX + "ConnectionServiceStopped";
 
     public static final String BROADCAST_LOGIN_SUCCESSFUL = IDENTIFIER_PREFIX + "LoginSuccessful";
@@ -128,6 +132,8 @@ public final class weMessage extends Application implements Constants {
     public void onCreate() {
         super.onCreate();
 
+        AndroidBase64Wrapper base64Wrapper = new AndroidBase64Wrapper();
+        ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(base64Wrapper);
         EmojiCompat.Config emojiConfig = new FontRequestEmojiCompatConfig(this,
                 new FontRequest("com.google.android.gms.fonts", "com.google.android.gms", "Noto Color Emoji Compat", R.array.com_google_android_gms_fonts_certs))
                 .registerInitCallback(new EmojiCompat.InitCallback() {
@@ -139,6 +145,8 @@ public final class weMessage extends Application implements Constants {
 
         AESCrypto.setBase64Wrapper(new AndroidBase64Wrapper());
         AESCrypto.setPrngHelper(new AesPrngHelper());
+        ClientMessage.setByteArrayAdapter(byteArrayAdapter);
+        ServerMessage.setByteArrayAdapter(byteArrayAdapter);
         EmojiCompat.init(emojiConfig);
 
         File attachmentFolder = new File(getFilesDir(), weMessage.ATTACHMENT_FOLDER_NAME);
