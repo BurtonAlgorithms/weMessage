@@ -25,6 +25,7 @@ import javax.script.ScriptException;
 
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.configuration.ServerConfiguration;
@@ -180,6 +181,16 @@ public final class AppleScriptExecutor extends Thread {
                 returnCode = line;
             }
             bufferedReader.close();
+
+            if (StringUtils.isEmpty(returnCode)){
+                result = ReturnType.UNKNOWN_ERROR;
+
+                ServerLogger.log(ServerLogger.Level.SEVERE, TAG, "An unknown error occurred while running script " + actionType.getScriptName() + ".scpt");
+                ServerLogger.log(ServerLogger.Level.ERROR, TAG, "In order to prevent further errors from occurring, weServer will force close and relaunch Messages.");
+                killMessagesApp(true);
+
+                return result;
+            }
 
             ArrayList<String> resultReturns = new ArrayList<>(Arrays.asList(returnCode.split(", ")));
             List<ReturnType> resultReturnsList = new ArrayList<>();
