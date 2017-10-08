@@ -85,7 +85,6 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/chatViewInfoLayout"
         android:layout_marginTop="8dp"
-        app:cardElevation="2dp"
         app:contentPadding="8dp"
         app:cardCornerRadius="4dp">
 
