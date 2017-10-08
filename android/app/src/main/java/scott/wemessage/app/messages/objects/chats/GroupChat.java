@@ -91,6 +91,7 @@ public class GroupChat extends Chat {
         for (Contact c : participants){
             if (c.getUuid().toString().equals(contact.getUuid().toString())){
                 participants.remove(c);
+                return this;
             }
         }
         return this;

@@ -959,7 +959,7 @@ public final class ConnectionHandler extends Thread {
         }
 
         for (String s : jsonChat.getParticipants()){
-            if (!existingChatParticipantList.contains(s)){
+            if (!existingChatParticipantList.contains(s) && !s.equals(weMessage.get().getCurrentAccount().getEmail())){
                 messageManager.addParticipantToGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), executionTime, false);
             }
         }

@@ -154,12 +154,12 @@ public class NotificationService extends FirebaseMessagingService {
                         }
                         String decryptedText = decryptionTask.getDecryptedText();
 
-                        if (StringUtils.isEmpty(decryptedText)) {
+                        if (StringUtils.isEmpty(StringUtils.trimORC(decryptedText))) {
                             if (Integer.valueOf(jsonNotification.getAttachmentNumber()) > 0) {
                                 message += getString(R.string.notification_attachments, jsonNotification.getAttachmentNumber());
                             }
                         } else {
-                            message += decryptionTask.getDecryptedText();
+                            message += decryptedText;
                         }
 
                         Intent intent = new Intent(this, LaunchActivity.class);

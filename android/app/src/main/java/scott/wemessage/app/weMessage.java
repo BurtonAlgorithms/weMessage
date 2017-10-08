@@ -229,8 +229,6 @@ public final class weMessage extends Application implements Constants {
 
         editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
         editor.apply();
-
-        //TODO: Set current Account here, move up / out of connection handler
     }
 
     public synchronized void signOut(){
@@ -240,8 +238,6 @@ public final class weMessage extends Application implements Constants {
         notificationManager.cancelAll();
         editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
         editor.apply();
-
-        //TODO: Dump all goes here
     }
 
     public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){

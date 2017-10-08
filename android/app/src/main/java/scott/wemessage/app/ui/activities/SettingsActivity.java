@@ -129,8 +129,6 @@ public class SettingsActivity extends AppCompatActivity {
             public void onClick(View view) {
                 serviceConnection.getConnectionService().getConnectionHandler().disconnect();
                 weMessage.get().signOut();
-
-                //TODO: Go home, end service if is connected, move to signOut()?
             }
         });
     }

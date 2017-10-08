@@ -628,7 +628,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 weMessage.get().getMessageManager().updateChat(chatUuid, oldVal, true);
             }
 
-            editedName = null;
+            editedName = ((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid)).getDisplayName();
             editedChatPicture = null;
         }
     }
@@ -1139,6 +1139,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 if (chatViewNameSwitcher.getNextView().getId() == R.id.chatViewEditName) {
                     chatViewNameSwitcher.showNext();
                 }
+                chatViewEditName.setText(editedName);
                 chatViewEditPictureTextView.setVisibility(View.VISIBLE);
                 chatViewEditPictureTextView.setOnClickListener(new View.OnClickListener() {
                     @Override
