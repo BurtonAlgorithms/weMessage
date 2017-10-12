@@ -4,6 +4,7 @@ import scott.wemessage.commons.Constants;
 
 public enum ReturnType {
 
+    VERSION_MISMATCH(Constants.VERSION_MISMATCH, "Version Mismatch"),
     UNKNOWN_ERROR(Constants.UNKNOWN_ERROR, "Unknown Error"),
     SENT(Constants.SENT, "Sent"),
     INVALID_NUMBER(Constants.INVALID_NUMBER, "Invalid Number"),
@@ -35,6 +36,8 @@ public enum ReturnType {
 
     public static ReturnType fromCode(Integer value){
         switch (value){
+            case Constants.VERSION_MISMATCH:
+                return ReturnType.VERSION_MISMATCH;
             case Constants.UNKNOWN_ERROR:
                 return ReturnType.UNKNOWN_ERROR;
             case Constants.SENT:

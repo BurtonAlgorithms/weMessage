@@ -41,6 +41,7 @@ public interface Constants {
     int ACTION_LEAVE_GROUP = 4005;
     int ACTION_CREATE_GROUP = 4006;
 
+    int VERSION_MISMATCH = 998;
     int UNKNOWN_ERROR = 999;
     int SENT = 1000;
     int INVALID_NUMBER = 1004;
