@@ -29,6 +29,7 @@ import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.configuration.ServerConfiguration;
+import scott.wemessage.server.weMessage;
 
 public final class AppleScriptExecutor extends Thread {
 
@@ -245,7 +246,7 @@ public final class AppleScriptExecutor extends Thread {
         }
 
         try {
-            Process process = new ProcessBuilder("osascript", setupScriptFile.getAbsolutePath()).start();
+            Process process = new ProcessBuilder("osascript", setupScriptFile.getAbsolutePath(), String.valueOf(weMessage.WEMESSAGE_APPLESCRIPT_VERSION)).start();
 
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
@@ -258,7 +259,14 @@ public final class AppleScriptExecutor extends Thread {
 
             if(returnCode == ReturnType.ACTION_PERFORMED.getCode()){
                 return true;
+            }else if (returnCode == ReturnType.VERSION_MISMATCH.getCode()){
+                ServerLogger.log(ServerLogger.Level.ERROR, TAG, "The weServer version and the scripts version do not match!");
+                ServerLogger.log(ServerLogger.Level.ERROR, TAG, "Make sure you are using the correct scripts for your version.");
+                ServerLogger.log(ServerLogger.Level.ERROR, TAG, "You may have to re-download your weServer package in order to get the right ones.");
+                return false;
             }else {
+                ServerLogger.log(ServerLogger.Level.ERROR, TAG, "weServer is not configured to run yet.");
+                ServerLogger.log(ServerLogger.Level.ERROR, TAG, "Make sure that assistive access is enabled!");
                 return false;
             }
         }catch(Exception ex){

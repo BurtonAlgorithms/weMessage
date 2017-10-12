@@ -17,6 +17,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
@@ -168,6 +169,159 @@ public final class MessagesDatabase extends Thread {
         synchronized (lastDatabaseSnapshotLock){
             lastDatabaseSnapshot = databaseSnapshot;
         }
+    }
+
+    public Integer getChatRowPositionByRowId(int rowId) throws SQLException {
+        Integer rowIdReturn = null;
+
+        String selectChatStatementString = "SELECT " + COLUMN_CHAT_MESSAGE_CHAT_ID + ", MAX(" + COLUMN_CHAT_MESSAGE_MESSAGE_ID + ") FROM " + CHAT_MESSAGE_JOIN_TABLE
+                + " INNER JOIN " + MESSAGE_TABLE + " ON " + CHAT_MESSAGE_JOIN_TABLE + "." + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " = " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_ROWID
+                + " WHERE " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_TEXT + " IS NOT NULL "
+                + " GROUP BY " + COLUMN_CHAT_MESSAGE_CHAT_ID
+                + " ORDER BY " + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " DESC";
+
+        PreparedStatement selectChatStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatStatementString);
+
+        boolean isResultSet = selectChatStatement.execute();
+        int i = 0;
+
+        while(true) {
+            if(isResultSet) {
+                ResultSet resultSet = selectChatStatement.getResultSet();
+                while(resultSet.next()) {
+                    int resultInt = resultSet.getInt(COLUMN_CHAT_MESSAGE_CHAT_ID);
+
+                    if (rowId == resultInt){
+                        rowIdReturn = i;
+                        break;
+                    }
+                    i++;
+                }
+                resultSet.close();
+            } else {
+                if(selectChatStatement.getUpdateCount() == -1) {
+                    break;
+                }
+            }
+            isResultSet = selectChatStatement.getMoreResults();
+        }
+        selectChatStatement.close();
+
+        return rowIdReturn;
+    }
+
+
+    public Integer getChatRowPositionByGuid(String guid) throws SQLException {
+        Integer rowIdReturn = null;
+
+        String selectChatStatementString = "SELECT " + CHAT_TABLE + "." + COLUMN_CHAT_GUID + ", " + COLUMN_CHAT_MESSAGE_CHAT_ID + ", MAX(" + COLUMN_CHAT_MESSAGE_MESSAGE_ID + ")"
+                + " FROM " + CHAT_MESSAGE_JOIN_TABLE
+                + " INNER JOIN " + CHAT_TABLE + " ON " + CHAT_MESSAGE_JOIN_TABLE + "." + COLUMN_CHAT_MESSAGE_CHAT_ID + " = " + CHAT_TABLE + "." + COLUMN_CHAT_ROWID
+                + " INNER JOIN " + MESSAGE_TABLE + " ON " + CHAT_MESSAGE_JOIN_TABLE + "." + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " = " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_ROWID
+                + " WHERE " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_TEXT + " IS NOT NULL "
+                + " GROUP BY " + COLUMN_CHAT_MESSAGE_CHAT_ID
+                + " ORDER BY " + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " DESC";
+
+        PreparedStatement selectChatStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatStatementString);
+
+        boolean isResultSet = selectChatStatement.execute();
+        int i = 0;
+
+        while(true) {
+            if(isResultSet) {
+                ResultSet resultSet = selectChatStatement.getResultSet();
+                while(resultSet.next()) {
+                    String resultString = resultSet.getString(COLUMN_CHAT_GUID);
+
+                    if (resultString.equals(guid)){
+                        rowIdReturn = i;
+                        break;
+                    }
+                    i++;
+                }
+                resultSet.close();
+            } else {
+                if(selectChatStatement.getUpdateCount() == -1) {
+                    break;
+                }
+            }
+            isResultSet = selectChatStatement.getMoreResults();
+        }
+        selectChatStatement.close();
+
+        return rowIdReturn;
+    }
+
+    public HashMap<Integer, Integer> getSortedChatsWithRow() throws SQLException {
+        HashMap<Integer, Integer> positionRowIdPair = new HashMap<>();
+
+        String selectChatStatementString = "SELECT " + COLUMN_CHAT_MESSAGE_CHAT_ID + ", MAX(" + COLUMN_CHAT_MESSAGE_MESSAGE_ID + ") FROM " + CHAT_MESSAGE_JOIN_TABLE
+                + " INNER JOIN " + MESSAGE_TABLE + " ON " + CHAT_MESSAGE_JOIN_TABLE + "." + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " = " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_ROWID
+                + " WHERE " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_TEXT + " IS NOT NULL "
+                + " GROUP BY " + COLUMN_CHAT_MESSAGE_CHAT_ID
+                + " ORDER BY " + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " DESC";
+
+        PreparedStatement selectChatStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatStatementString);
+
+        boolean isResultSet = selectChatStatement.execute();
+        int i = 0;
+
+        while(true) {
+            if(isResultSet) {
+                ResultSet resultSet = selectChatStatement.getResultSet();
+                while(resultSet.next()) {
+                    int resultInt = resultSet.getInt(COLUMN_CHAT_MESSAGE_CHAT_ID);
+                    positionRowIdPair.put(i, resultInt);
+                    i++;
+                }
+                resultSet.close();
+            } else {
+                if(selectChatStatement.getUpdateCount() == -1) {
+                    break;
+                }
+            }
+            isResultSet = selectChatStatement.getMoreResults();
+        }
+        selectChatStatement.close();
+
+        return positionRowIdPair;
+    }
+
+    public HashMap<Integer, String> getSortedChatsWithGuid() throws SQLException {
+        HashMap<Integer, String> chatRowGuidPair = new HashMap<>();
+
+        String selectChatStatementString = "SELECT " + CHAT_TABLE + "." + COLUMN_CHAT_GUID + ", " + COLUMN_CHAT_MESSAGE_CHAT_ID + ", MAX(" + COLUMN_CHAT_MESSAGE_MESSAGE_ID + ")"
+                + " FROM " + CHAT_MESSAGE_JOIN_TABLE
+                + " INNER JOIN " + CHAT_TABLE + " ON " + CHAT_MESSAGE_JOIN_TABLE + "." + COLUMN_CHAT_MESSAGE_CHAT_ID + " = " + CHAT_TABLE + "." + COLUMN_CHAT_ROWID
+                + " INNER JOIN " + MESSAGE_TABLE + " ON " + CHAT_MESSAGE_JOIN_TABLE + "." + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " = " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_ROWID
+                + " WHERE " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_TEXT + " IS NOT NULL "
+                + " GROUP BY " + COLUMN_CHAT_MESSAGE_CHAT_ID
+                + " ORDER BY " + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " DESC";
+
+        PreparedStatement selectChatStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatStatementString);
+
+        boolean isResultSet = selectChatStatement.execute();
+        int i = 0;
+
+        while(true) {
+            if(isResultSet) {
+                ResultSet resultSet = selectChatStatement.getResultSet();
+                while(resultSet.next()) {
+                    String resultString = resultSet.getString(COLUMN_CHAT_GUID);
+                    chatRowGuidPair.put(i, resultString);
+                    i++;
+                }
+                resultSet.close();
+            } else {
+                if(selectChatStatement.getUpdateCount() == -1) {
+                    break;
+                }
+            }
+            isResultSet = selectChatStatement.getMoreResults();
+        }
+        selectChatStatement.close();
+
+        return chatRowGuidPair;
     }
 
     public Message getLastMessageSent() throws SQLException {

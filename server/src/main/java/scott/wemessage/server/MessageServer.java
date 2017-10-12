@@ -133,8 +133,6 @@ public final class MessageServer {
 
     void launch() {
         if (!getScriptExecutor().isSetup()){
-            ServerLogger.log(ServerLogger.Level.ERROR, TAG, "weServer is not configured to run yet.");
-            ServerLogger.log(ServerLogger.Level.ERROR, TAG, "Make sure that assistive access is enabled!");
             shutdown(-1, true);
             return;
         }
