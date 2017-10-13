@@ -1,4 +1,4 @@
-on run {groupName, lastUpdated, lastMessage}
+on run {algorithmRow, groupNameCheck, noNameFlag}
 	set parentFolder to missing value
 
 	tell application "Finder"
@@ -6,15 +6,14 @@ on run {groupName, lastUpdated, lastMessage}
 	end tell
 
 	set handlerLib to load script file (parentFolder & "Handlers.scpt")
-	set isServerRunning to handlerLib's isServerRunning()
 
-	if isServerRunning is equal to false then
-		display dialog "This script cannot run without the weMessage Server. Please turn on the server before running message scripts." with icon file (handlerLib's getProjectRoot() & "assets:AppLogo.png") buttons {"Okay"} giving up after 20
+	if handlerLib's isServerRunning() is equal to false then
+		handlerLib's showServerNotRunningDialog()
 		return
 	end if
 
 	tell handlerLib to foregroundApp("Messages", "Messages", true)
-	set returnSet to handlerLib's leaveGroup(groupName, lastUpdated, lastMessage)
+	set returnSet to handlerLib's leaveGroup(algorithmRow, groupNameCheck, noNameFlag)
 
 	return returnSet
 end run

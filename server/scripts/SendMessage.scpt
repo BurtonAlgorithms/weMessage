@@ -6,13 +6,13 @@ on run {phoneNumber, fileLocation, message}
 	end tell
 
 	set handlerLib to load script file (parentFolder & "Handlers.scpt")
-	set isServerRunning to handlerLib's isServerRunning()
 
-	if isServerRunning is equal to false then
-		display dialog "This script cannot run without the weMessage Server. Please turn on the server before running message scripts." with icon file (handlerLib's getProjectRoot() & "assets:AppLogo.png") buttons {"Okay"} giving up after 20
+	if handlerLib's isServerRunning() is equal to false then
+		handlerLib's showServerNotRunningDialog()
 		return
 	end if
 
+	tell handlerLib to activateApp("Messages")
 	set returnSet to handlerLib's sendMessage(phoneNumber, fileLocation, message)
 
 	return returnSet

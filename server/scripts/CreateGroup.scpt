@@ -6,10 +6,9 @@ on run {groupName, participants, message}
 	end tell
 
 	set handlerLib to load script file (parentFolder & "Handlers.scpt")
-	set isServerRunning to handlerLib's isServerRunning()
 
-	if isServerRunning is equal to false then
-		display dialog "This script cannot run without the weMessage Server. Please turn on the server before running message scripts." with icon file (handlerLib's getProjectRoot() & "assets:AppLogo.png") buttons {"Okay"} giving up after 20
+	if handlerLib's isServerRunning() is equal to false then
+		handlerLib's showServerNotRunningDialog()
 		return
 	end if
 
