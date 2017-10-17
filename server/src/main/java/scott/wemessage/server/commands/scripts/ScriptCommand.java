@@ -6,11 +6,11 @@ import java.util.List;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.commands.Command;
+import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.database.MessagesDatabase;
 import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.scripts.AppleScriptExecutor;
-import scott.wemessage.server.commands.Command;
-import scott.wemessage.server.commands.CommandManager;
 
 public abstract class ScriptCommand extends Command {
 

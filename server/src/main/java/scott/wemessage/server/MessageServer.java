@@ -13,7 +13,6 @@ import scott.wemessage.commons.crypto.BCrypt;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.StringUtils;
-import scott.wemessage.server.scripts.AppleScriptExecutor;
 import scott.wemessage.server.commands.Command;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.configuration.ServerConfiguration;
@@ -31,6 +30,7 @@ import scott.wemessage.server.listeners.connection.DeviceUpdateListener;
 import scott.wemessage.server.listeners.connection.FileReceivedListener;
 import scott.wemessage.server.listeners.database.ErrorWatcher;
 import scott.wemessage.server.listeners.database.MessagesDatabaseListener;
+import scott.wemessage.server.scripts.AppleScriptExecutor;
 import scott.wemessage.server.security.Authenticator;
 import scott.wemessage.server.security.ServerBase64Wrapper;
 
