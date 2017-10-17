@@ -10,9 +10,9 @@ import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
-import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.ui.view.messages.ContactView;
 import scott.wemessage.app.ui.view.messages.MessageView;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;
 
 public class ChatDialogView implements IDialog {

@@ -78,7 +78,6 @@ public final class weMessage extends Application implements Constants {
     public static final String ARG_EMAIL = IDENTIFIER_PREFIX + "emailArg";
     public static final String ARG_PASSWORD = IDENTIFIER_PREFIX + "passwordArg";
     public static final String ARG_PASSWORD_ALREADY_HASHED = IDENTIFIER_PREFIX + "passwordAlreadyHashed";
-    public static final String ARG_FAST_CONNECT = IDENTIFIER_PREFIX + "fastConnectArg";
     public static final String ARG_ATTACHMENT_GALLERY_CACHE = IDENTIFIER_PREFIX + "attachmentGalleryCacheArg";
     public static final String ARG_CAMERA_ATTACHMENT_FILE = IDENTIFIER_PREFIX + "argCameraAttachmentFile";
     public static final String ARG_ATTACHMENT_POPUP_CAMERA_RESULT_CODE = IDENTIFIER_PREFIX + "argAttachmentPopupCameraResultCode";

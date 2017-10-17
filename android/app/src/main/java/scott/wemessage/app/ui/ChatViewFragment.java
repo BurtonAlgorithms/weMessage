@@ -81,6 +81,7 @@ import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.utils.IOUtils;
+import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
@@ -235,18 +236,18 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             }
         });
 
-        toolbarCancelButton.setOnClickListener(new View.OnClickListener() {
+        toolbarCancelButton.setOnClickListener(new OnClickWaitListener(500L) {
             @Override
-            public void onClick(View view) {
+            public void onWaitClick(View view) {
                 if (isInEditMode){
                     toggleEditMode(false, false);
                 }
             }
         });
 
-        toolbarEditButton.setOnClickListener(new View.OnClickListener() {
+        toolbarEditButton.setOnClickListener(new OnClickWaitListener(500L) {
             @Override
-            public void onClick(View view) {
+            public void onWaitClick(View view) {
                 toggleEditMode(!isInEditMode, true);
             }
         });

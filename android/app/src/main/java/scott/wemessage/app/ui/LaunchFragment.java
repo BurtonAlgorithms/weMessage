@@ -38,15 +38,15 @@ import android.widget.TextView;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ConversationActivity;
-import scott.wemessage.app.utils.view.DisplayUtils;
-import scott.wemessage.app.ui.view.font.FontButton;
 import scott.wemessage.app.ui.view.dialog.AnimationDialogLayout;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.dialog.ProgressDialogLayout;
+import scott.wemessage.app.ui.view.font.FontButton;
+import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.StringUtils;
@@ -262,12 +262,12 @@ public class LaunchFragment extends Fragment {
             if (weMessage.get().isSignedIn()) {
                 if (!(getActivity().getIntent().getExtras() != null && getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false))) {
                     if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
-                        startConnectionService(view, ipAddress, port, email, hashedPass, true, true);
+                        startConnectionService(view, ipAddress, port, email, hashedPass, true);
                     }
                 }
 
                 if (canStartConversationActivity()) {
-                    startConnectionService(view, ipAddress, port, email, hashedPass, true, true);
+                    startConnectionService(view, ipAddress, port, email, hashedPass, true);
                 }
             }
         }
@@ -439,9 +439,9 @@ public class LaunchFragment extends Fragment {
                 startTextColorAnimation(signInButton, 150L, 150L, finalTextColor, currentTextColor);
 
                 if (StringUtils.isEmpty(lastHashedPass)) {
-                    startConnectionService(view, ipAddress, port, email, password, false, false);
+                    startConnectionService(view, ipAddress, port, email, password, false);
                 }else {
-                    startConnectionService(view, ipAddress, port, email, lastHashedPass, true, false);
+                    startConnectionService(view, ipAddress, port, email, lastHashedPass, true);
                 }
             }
         });
@@ -515,7 +515,7 @@ public class LaunchFragment extends Fragment {
         }
     }
 
-    private void startConnectionService(View view, String ipAddress, int port, String email, String password, boolean alreadyHashed, boolean fastConnect){
+    private void startConnectionService(View view, String ipAddress, int port, String email, String password, boolean alreadyHashed){
         if (isServiceRunning(ConnectionService.class)){
             AppLogger.log(AppLogger.Level.ERROR, TAG, "The connection service is already running");
             return;
@@ -527,7 +527,6 @@ public class LaunchFragment extends Fragment {
         startServiceIntent.putExtra(weMessage.ARG_EMAIL, email);
         startServiceIntent.putExtra(weMessage.ARG_PASSWORD, password);
         startServiceIntent.putExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, alreadyHashed);
-        startServiceIntent.putExtra(weMessage.ARG_FAST_CONNECT, fastConnect);
 
         getActivity().startService(startServiceIntent);
         bindService();

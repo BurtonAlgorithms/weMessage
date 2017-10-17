@@ -57,17 +57,17 @@ import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
-import scott.wemessage.commons.connection.security.EncryptedFile;
-import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.action.JSONResult;
 import scott.wemessage.commons.connection.ClientMessage;
 import scott.wemessage.commons.connection.ConnectionMessage;
 import scott.wemessage.commons.connection.Heartbeat;
 import scott.wemessage.commons.connection.InitConnect;
 import scott.wemessage.commons.connection.ServerMessage;
+import scott.wemessage.commons.connection.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.action.JSONResult;
 import scott.wemessage.commons.connection.json.message.JSONAttachment;
 import scott.wemessage.commons.connection.json.message.JSONChat;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.connection.security.EncryptedFile;
 import scott.wemessage.commons.connection.security.EncryptedText;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.DeviceType;
@@ -96,6 +96,7 @@ public final class ConnectionHandler extends Thread {
     private ConcurrentHashMap<String, ConnectionMessage>connectionMessagesMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, String>messageAndConnectionMessageMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Attachment> fileAttachmentsMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, JSONAction> currentOutgoingActionsMap = new ConcurrentHashMap<>();
 
     private ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(new AndroidBase64Wrapper());
     private ConnectionService service;
@@ -106,16 +107,15 @@ public final class ConnectionHandler extends Thread {
 
     private final String ipAddress;
     private final int port;
-    private final boolean fastConnect;
+    private boolean fastConnect = false;
     private String emailPlainText;
     private String passwordPlainText, passwordHashedText;
 
-    protected ConnectionHandler(ConnectionService service, String ipAddress, int port, String emailPlainText, String password, boolean alreadyHashed, boolean fastConnect){
+    protected ConnectionHandler(ConnectionService service, String ipAddress, int port, String emailPlainText, String password, boolean alreadyHashed){
         this.service = service;
         this.ipAddress = ipAddress;
         this.port = port;
         this.emailPlainText = emailPlainText;
-        this.fastConnect = fastConnect;
 
         if (alreadyHashed){
             this.passwordHashedText = password;
@@ -185,6 +185,10 @@ public final class ConnectionHandler extends Thread {
         ClientMessage clientMessage = new ClientMessage(UUID.randomUUID().toString(), outgoingDataJson);
         String outgoingJson = new Gson().toJson(clientMessage);
 
+        if (dataClass == JSONAction.class){
+            currentOutgoingActionsMap.put(clientMessage.getMessageUuid(), (JSONAction) outgoingData);
+        }
+
         sendOutgoingObject(prefix + outgoingJson);
         connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
     }
@@ -215,7 +219,22 @@ public final class ConnectionHandler extends Thread {
                     return;
             }
 
-            sendOutgoingMessage(weMessage.JSON_ACTION, jsonAction, JSONAction.class);
+            boolean isActionQueued = false;
+
+            for (JSONAction action : currentOutgoingActionsMap.values()){
+               if (action.getActionType() == actionType.getCode()){
+                   if (actionType != ActionType.CREATE_GROUP){
+                       if (Arrays.equals(jsonAction.getArgs(), action.getArgs())){
+                           isActionQueued = true;
+                           break;
+                       }
+                   }
+               }
+           }
+
+           if (!isActionQueued) {
+               sendOutgoingMessage(weMessage.JSON_ACTION, jsonAction, JSONAction.class);
+           }
         }catch(Exception ex){
             sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
             AppLogger.error(TAG, "An error occurred while trying to send an action to be performed", ex);
@@ -347,6 +366,17 @@ public final class ConnectionHandler extends Thread {
         synchronized (socketLock) {
             connectionSocket = new Socket();
         }
+
+        String hostToCheck;
+
+        if (port == weMessage.DEFAULT_PORT) {
+            hostToCheck = ipAddress;
+        } else {
+            hostToCheck = ipAddress + ":" + port;
+        }
+
+        SharedPreferences sharedPref = getParentService().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
+        fastConnect = (sharedPref.getString(weMessage.SHARED_PREFERENCES_LAST_HOST, "").equals(hostToCheck) && sharedPref.getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, "").equals(emailPlainText));
 
         if (!fastConnect) {
             try {
@@ -828,6 +858,7 @@ public final class ConnectionHandler extends Thread {
                         connectionMessagesMap.clear();
                         messageAndConnectionMessageMap.clear();
                         fileAttachmentsMap.clear();
+                        currentOutgoingActionsMap.clear();
 
                         if (getHeartbeatThread() != null) {
                             getHeartbeatThread().interrupt();
@@ -979,6 +1010,8 @@ public final class ConnectionHandler extends Thread {
                 }
 
             } else {
+                currentOutgoingActionsMap.remove(jsonResult.getCorrespondingUUID());
+
                 JSONAction jsonAction = (JSONAction) serverMessage.getOutgoing(JSONAction.class);
                 boolean isValid = validateActionReturnType(messageManager, jsonAction, returnTypes.get(0));
 
@@ -1010,6 +1043,8 @@ public final class ConnectionHandler extends Thread {
                 }
 
             } else {
+                currentOutgoingActionsMap.remove(jsonResult.getCorrespondingUUID());
+
                 JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class);
                 boolean isValid = validateActionReturnType(messageManager, jsonAction, returnTypes.get(0));
 

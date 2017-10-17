@@ -79,6 +79,7 @@ import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.utils.IOUtils;
+import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
@@ -241,9 +242,9 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             }
         });
 
-        cancelButton.setOnClickListener(new View.OnClickListener() {
+        cancelButton.setOnClickListener(new OnClickWaitListener(500L) {
             @Override
-            public void onClick(View view) {
+            public void onWaitClick(View view) {
                 if (isInEditMode){
                     isInEditMode = false;
 
@@ -260,9 +261,9 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             }
         });
 
-        editButton.setOnClickListener(new View.OnClickListener() {
+        editButton.setOnClickListener(new OnClickWaitListener(500L) {
             @Override
-            public void onClick(View view) {
+            public void onWaitClick(View view) {
                 if (!isInEditMode){
                     if (contactViewRecyclerAdapter != null){
                         isInEditMode = true;

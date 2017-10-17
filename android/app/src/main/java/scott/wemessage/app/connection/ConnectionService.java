@@ -52,8 +52,7 @@ public class ConnectionService extends Service {
                     intent.getIntExtra(weMessage.ARG_PORT, -1),
                     intent.getStringExtra(weMessage.ARG_EMAIL),
                     intent.getStringExtra(weMessage.ARG_PASSWORD),
-                    intent.getBooleanExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, false),
-                    intent.getBooleanExtra(weMessage.ARG_FAST_CONNECT, false));
+                    intent.getBooleanExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, false));
 
             connectionHandler.start();
             this.connectionHandler = connectionHandler;

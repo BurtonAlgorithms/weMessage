@@ -17,10 +17,10 @@ import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.EncryptionTask;
 import scott.wemessage.app.security.FileEncryptionTask;
 import scott.wemessage.app.security.KeyTextPair;
-import scott.wemessage.commons.connection.security.EncryptedFile;
 import scott.wemessage.commons.connection.json.message.JSONAttachment;
 import scott.wemessage.commons.connection.json.message.JSONChat;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.connection.security.EncryptedFile;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
 
