@@ -357,6 +357,32 @@ public final class MessagesDatabase extends Thread {
         return message;
     }
 
+    public Message getLastNotNullMessageFromChat(ChatBase chat) throws SQLException {
+        String selectStatementString = "SELECT * FROM " + CHAT_MESSAGE_JOIN_TABLE
+                + " INNER JOIN " + MESSAGE_TABLE + " ON " + CHAT_MESSAGE_JOIN_TABLE + "." + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " = " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_ROWID
+                + " WHERE " + COLUMN_CHAT_MESSAGE_CHAT_ID + " = ? "
+                + " AND " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_TEXT + " IS NOT NULL "
+                + " ORDER BY " + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " DESC LIMIT 1";
+
+        PreparedStatement selectStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectStatementString);
+        selectStatement.setInt(1, chat.getRowID());
+
+        ResultSet resultSet = selectStatement.executeQuery();
+
+        if (!resultSet.isBeforeFirst()){
+            resultSet.close();
+            selectStatement.close();
+            return null;
+        }
+        int rowID = resultSet.getInt(COLUMN_CHAT_MESSAGE_MESSAGE_ID);
+        Message message = getMessageByRow(rowID);
+
+        resultSet.close();
+        selectStatement.close();
+
+        return message;
+    }
+
     public List<Message> getMessagesByAmount(int amount) throws SQLException {
         List<Message> messages = new ArrayList<>();
 
@@ -567,8 +593,8 @@ public final class MessagesDatabase extends Thread {
         return (PeerChat) chatBase;
     }
 
-    public GroupChat getGroupChatByName(String groupName, String lastMessage) throws SQLException {
-        List<ChatBase> chats = new ArrayList<>();
+    public List<GroupChat> getGroupChatsByName(String groupName) throws SQLException {
+        List<GroupChat> chats = new ArrayList<>();
         String selectChatStatementString = "SELECT * FROM " + CHAT_TABLE + " WHERE " + COLUMN_CHAT_DISPLAY_NAME + " = ?";
         PreparedStatement selectChatStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatStatementString);
         selectChatStatement.setString(1, groupName);
@@ -582,8 +608,8 @@ public final class MessagesDatabase extends Thread {
                     String resultString = resultSet.getString(COLUMN_CHAT_GUID);
                     ChatBase chat = getChatByGuid(resultString);
 
-                    if (chat != null) {
-                        chats.add(chat);
+                    if (chat != null && chat instanceof GroupChat) {
+                        chats.add((GroupChat) chat);
                     }
                 }
                 resultSet.close();
@@ -596,26 +622,7 @@ public final class MessagesDatabase extends Thread {
         }
         selectChatStatement.close();
 
-        if(chats.isEmpty()) return null;
-
-        if(chats.size() == 1){
-            return (GroupChat)chats.get(0);
-        }else {
-            if (lastMessage == null){
-                return null;
-            }
-            for (ChatBase chat : chats){
-                Message chatLastMessage = getLastMessageFromChat(chat);
-
-                if (chatLastMessage == null){
-                    return null;
-                }
-                if (lastMessage.equals(chatLastMessage.getText())){
-                    return (GroupChat) chat;
-                }
-            }
-        }
-        return null;
+        return chats;
     }
 
     public List<ChatBase> getChatsByAmount(int amount) throws SQLException {

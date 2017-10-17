@@ -12,10 +12,8 @@ import java.io.ObjectOutputStream;
 import java.lang.reflect.Type;
 import java.net.Socket;
 import java.net.SocketException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,22 +36,19 @@ import scott.wemessage.commons.types.DeviceType;
 import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
-import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
-import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.ServerLogger;
-import scott.wemessage.server.commands.AppleScriptExecutor;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.database.MessagesDatabase;
 import scott.wemessage.server.events.EventManager;
 import scott.wemessage.server.events.connection.ClientMessageReceivedEvent;
 import scott.wemessage.server.events.connection.DeviceUpdateEvent;
 import scott.wemessage.server.events.connection.FileReceivedEvent;
-import scott.wemessage.server.messages.Handle;
 import scott.wemessage.server.messages.Message;
 import scott.wemessage.server.messages.chat.ChatBase;
 import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.messages.chat.PeerChat;
+import scott.wemessage.server.scripts.AppleScriptExecutor;
 import scott.wemessage.server.security.ServerBase64Wrapper;
 import scott.wemessage.server.weMessage;
 
@@ -274,17 +269,17 @@ public class Device extends Thread {
              if (chat == null) {
                 if (message.getChat().getParticipants().size() < 2) {
                     Object result;
-                    String firstArg = message.getChat().getParticipants().get(0);
+                    String handleTo = message.getChat().getParticipants().get(0);
 
                     if (attachments.isEmpty()) {
-                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, "", decryptedMessage});
+                        result = executor.runSendMessageScript(handleTo, "", decryptedMessage);
                     } else if (attachments.size() == 1) {
-                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, attachments.get(0).getAbsolutePath(), decryptedMessage});
+                        result = executor.runSendMessageScript(handleTo, attachments.get(0).getAbsolutePath(), decryptedMessage);
                     } else {
                         for (File file : attachments) {
-                            executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, file.getAbsolutePath(), ""});
+                            executor.runSendMessageScript(handleTo, file.getAbsolutePath(), "");
                         }
-                        result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{firstArg, "", decryptedMessage});
+                        result = executor.runSendMessageScript(handleTo, "", decryptedMessage);
                     }
 
                     return parseResult(result);
@@ -299,71 +294,30 @@ public class Device extends Thread {
 
             Object result;
             if (chat instanceof PeerChat){
-                String firstArg = ((PeerChat) chat).getPeer().getHandleID();
+                String handle = ((PeerChat) chat).getPeer().getHandleID();
 
                 if (attachments.isEmpty()){
-                    result = executor.runScript(ActionType.SEND_MESSAGE, new String[]{ firstArg, "", decryptedMessage});
+                    result = executor.runSendMessageScript(handle, "", decryptedMessage);
                 }else if (attachments.size() == 1){
-                    result = executor.runScript(ActionType.SEND_MESSAGE, new String[] { firstArg, attachments.get(0).getAbsolutePath(), decryptedMessage });
+                    result = executor.runSendMessageScript(handle, attachments.get(0).getAbsolutePath(), decryptedMessage);
                 }else {
                     for (File file : attachments){
-                        executor.runScript(ActionType.SEND_MESSAGE, new String[] { firstArg, file.getAbsolutePath(), "" });
+                        executor.runSendMessageScript( handle, file.getAbsolutePath(), "");
                     }
-                    result = executor.runScript(ActionType.SEND_MESSAGE, new String[] { firstArg, "", decryptedMessage });
+                    result = executor.runSendMessageScript(handle, "", decryptedMessage);
                 }
             }else {
                 GroupChat groupChat = (GroupChat) chat;
 
-                List<String>participantDummyList = new ArrayList<>();
-                Message lastMessage = messagesDb.getLastMessageFromChat(chat);
-                String firstArg;
-                String timeArgument;
-                String lastMessageText;
-
-                if (lastMessage == null) {
-                    timeArgument = "";
-                    lastMessageText = "";
-                } else {
-                    Date lastMessageDate = lastMessage.getModernDateSent();
-
-                    if (lastMessage.getText() == null){
-                        lastMessageText = "";
-                    }else {
-                        lastMessageText = lastMessage.getText();
-                    }
-
-                    if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)){
-                        timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
-                    } else {
-                        if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())){
-                            timeArgument = "Yesterday";
-                        }else {
-                            timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
-                        }
-                    }
-                }
-
-                for (Handle h : groupChat.getParticipants()){
-                    participantDummyList.add(h.getHandleID());
-                }
-
-                participantDummyList.remove(participantDummyList.size() - 1);
-
-                if(groupChat.getDisplayName() == null || groupChat.getDisplayName().equals("")){
-                    firstArg = StringUtils.join(participantDummyList, ", ", 2) + " & " + groupChat.getParticipants().get(groupChat.getParticipants().size() - 1).getHandleID();
-                }else {
-                    firstArg = groupChat.getDisplayName();
-                }
-
                 if (attachments.isEmpty()){
-                    result = executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[]{ firstArg, timeArgument, lastMessageText, "", decryptedMessage});
+                    result = executor.runSendGroupMessageScript(groupChat, "", decryptedMessage);
                 }else if (attachments.size() == 1){
-                    result = executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { firstArg, timeArgument, lastMessageText, attachments.get(0).getAbsolutePath(), decryptedMessage });
+                    result = executor.runSendGroupMessageScript(groupChat, attachments.get(0).getAbsolutePath(), decryptedMessage);
                 }else {
                     for (File file : attachments){
-                        executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { firstArg, timeArgument, lastMessageText, file.getAbsolutePath(), "" });
+                        executor.runSendGroupMessageScript(groupChat, file.getAbsolutePath(), "");
                     }
-                    result = executor.runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { firstArg, timeArgument, lastMessageText, "", decryptedMessage });
+                    result = executor.runSendGroupMessageScript(groupChat, "", decryptedMessage);
                 }
             }
 
@@ -375,10 +329,41 @@ public class Device extends Thread {
     }
 
     public List<Integer> performIncomingAction(JSONAction jsonAction){
-        AppleScriptExecutor executor = getDeviceManager().getMessageServer().getScriptExecutor();
-        Object result = executor.runScript(ActionType.fromCode(jsonAction.getActionType()), jsonAction.getArgs());
+        try {
+            AppleScriptExecutor executor = getDeviceManager().getMessageServer().getScriptExecutor();
+            MessagesDatabase messagesDatabase = getDeviceManager().getMessageServer().getMessagesDatabase();
+            ActionType actionType = ActionType.fromCode(jsonAction.getActionType());
+            String[] args = jsonAction.getArgs();
+            Object result;
 
-        return parseResult(result);
+            if (actionType == null)
+                throw new UnsupportedOperationException("An error occurred while parsing an unknown action type with code: " + jsonAction.getActionType());
+
+            switch (actionType) {
+                case ADD_PARTICIPANT:
+                    result = executor.runAddParticipantScript((GroupChat) messagesDatabase.getChatByGuid(args[0]), args[1]);
+                    break;
+                case CREATE_GROUP:
+                    result = executor.runCreateGroupScript(args[0], new ArrayList<>(Arrays.asList(args[1].split("\\s*,\\s*"))), args[2]);
+                    break;
+                case LEAVE_GROUP:
+                    result = executor.runLeaveGroupScript((GroupChat) messagesDatabase.getChatByGuid(args[0]));
+                    break;
+                case RENAME_GROUP:
+                    result = executor.runRenameGroupScript((GroupChat) messagesDatabase.getChatByGuid(args[0]), args[1]);
+                    break;
+                case REMOVE_PARTICIPANT:
+                    result = executor.runRemoveParticipantScript((GroupChat) messagesDatabase.getChatByGuid(args[0]), args[1]);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("An error occurred while parsing an unknown action type with code: " + jsonAction.getActionType());
+            }
+
+            return parseResult(result);
+        }catch (Exception ex){
+            ServerLogger.error(TAG, "An error occurred while trying to perform an action", ex);
+            return parseResult(ReturnType.UNKNOWN_ERROR);
+        }
     }
 
     public void sendOutgoingAction(JSONAction action){

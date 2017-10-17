@@ -5,7 +5,10 @@ import java.util.List;
 
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.StringUtils;
-import scott.wemessage.server.commands.AppleScriptExecutor;
+import scott.wemessage.server.ServerLogger;
+import scott.wemessage.server.database.MessagesDatabase;
+import scott.wemessage.server.messages.chat.GroupChat;
+import scott.wemessage.server.scripts.AppleScriptExecutor;
 import scott.wemessage.server.commands.Command;
 import scott.wemessage.server.commands.CommandManager;
 
@@ -19,7 +22,11 @@ public abstract class ScriptCommand extends Command {
         return getCommandManager().getMessageServer().getScriptExecutor();
     }
 
-    public String processResult(Object result){
+    public MessagesDatabase getMessagesDatabase(){
+        return getCommandManager().getMessageServer().getMessagesDatabase();
+    }
+
+    String processResult(Object result){
         String stringResult;
         if (result instanceof List) {
             List<String> returnTypeList = new ArrayList<>();
@@ -35,5 +42,21 @@ public abstract class ScriptCommand extends Command {
             throw new ClassCastException("The result returned from running the script is not a valid return type");
         }
         return stringResult;
+    }
+
+    void printChatOptions(List<GroupChat> groupChats){
+        int i = 1;
+
+        try {
+            ServerLogger.log("Chat Option List");
+            ServerLogger.emptyLine();
+
+            for (GroupChat chat : groupChats) {
+                ServerLogger.log(i + ". " + chat.getDisplayName() + " - Last Message: " + getMessagesDatabase().getLastNotNullMessageFromChat(chat));
+                i++;
+            }
+        }catch (Exception ex){
+            ServerLogger.error("An error occurred while fetching chat data from the database", ex);
+        }
     }
 }

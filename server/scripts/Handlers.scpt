@@ -33,14 +33,27 @@ end init
 on sendMessage(phoneNumber, fileLocation, targetMessage)
 	set returnSet to {}
 
+	set handle to missing value
+
+	try
+		set getHandleJs to "Application('Messages').buddies.whose({ name: '" & phoneNumber & "' })[0].handle()"
+		set handle to do shell script "osascript -l JavaScript -e \"" & getHandleJs & "\""
+
+		if my isNull(handle) is equal to true then
+			set handle to phoneNumber
+		end if
+	on error
+		set handle to phoneNumber
+	end try
+
 	if my isNull(fileLocation) is equal to false then
-		set end of returnSet to sendMessageFile(phoneNumber, fileLocation)
+		set end of returnSet to sendMessageFile(handle, fileLocation)
 	else
 		set end of returnSet to NULL_MESSAGE
 	end if
 
 	if my isNull(targetMessage) is equal to false then
-		set end of returnSet to sendTextMessage(phoneNumber, targetMessage)
+		set end of returnSet to sendTextMessage(handle, targetMessage)
 	else
 		set end of returnSet to NULL_MESSAGE
 	end if

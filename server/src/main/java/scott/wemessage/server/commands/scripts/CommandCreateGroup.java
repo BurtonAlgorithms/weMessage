@@ -1,6 +1,7 @@
 package scott.wemessage.server.commands.scripts;
 
-import scott.wemessage.commons.types.ActionType;
+import java.util.List;
+
 import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.CommandManager;
@@ -20,23 +21,22 @@ public class CommandCreateGroup extends ScriptCommand {
             return;
         }
 
-        String[] arguments = {};
-        String participants = StringUtils.join(StringUtils.getStringListFromString(args[1]), ",", 1);
+        List<String> participants = StringUtils.getStringListFromString(args[1]);
+        Object result;
 
         if(args.length == 2){
-            arguments = new String[]{args[0], participants, "Group Created by weMessage"};
+            result = getScriptExecutor().runCreateGroupScript(args[0], participants, "Group Created by weMessage");
+
+            ServerLogger.log("Script CreateGroup returned a result of: " + processResult(result));
         }else if(args.length == 3){
-            arguments = new String[]{args[0], participants, args[2]};
+            result = getScriptExecutor().runCreateGroupScript(args[0], participants, args[2]);
+
+            ServerLogger.log("Script CreateGroup returned a result of: " + processResult(result));
         }else if(args.length > 3){
             ServerLogger.log("There were too many arguments provided. Make sure your arguments are surrounded in \"quotation marks.\"");
             ServerLogger.emptyLine();
             ServerLogger.log("Example Usage: creategroup \"New Group\" \"bob@icloud.com joe@gmail.com mike@aol.com\" \"Initial message\"");
             ServerLogger.log("Make sure each of the participants names are separated by spaces, or you will get errors.");
-            return;
         }
-
-        Object result = getScriptExecutor().runScript(ActionType.CREATE_GROUP, arguments);
-
-        ServerLogger.log("Script CreateGroup returned a result of: " + processResult(result));
     }
 }

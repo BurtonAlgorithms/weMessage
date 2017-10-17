@@ -24,7 +24,7 @@ import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.server.ServerLogger;
-import scott.wemessage.server.commands.AppleScriptExecutor;
+import scott.wemessage.server.scripts.AppleScriptExecutor;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.connection.Device;
 import scott.wemessage.server.messages.chat.ChatBase;

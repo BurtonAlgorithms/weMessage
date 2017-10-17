@@ -13,7 +13,7 @@ import scott.wemessage.commons.crypto.BCrypt;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.StringUtils;
-import scott.wemessage.server.commands.AppleScriptExecutor;
+import scott.wemessage.server.scripts.AppleScriptExecutor;
 import scott.wemessage.server.commands.Command;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.configuration.ServerConfiguration;

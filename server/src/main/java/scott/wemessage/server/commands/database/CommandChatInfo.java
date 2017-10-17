@@ -1,6 +1,7 @@
 package scott.wemessage.server.commands.database;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.ServerLogger;
@@ -19,17 +20,15 @@ public class CommandChatInfo extends DatabaseCommand {
     public void execute(String[] args){
         if(args.length == 0){
             ServerLogger.log("Please enter the phone number, email address, or group chat name you want to look up information for.");
-            ServerLogger.emptyLine();
-            ServerLogger.log("If you are trying to find a group chat and you have multiple groups with the same name");
-            ServerLogger.log("Provide the last message sent to the group chat as well to eliminate conflicts.");
             return;
         }
+
         try {
             if(args.length == 1) {
                 PeerChat peerChat = getMessagesDatabase().getChatByAccount(args[0]);
 
                 if (peerChat != null) {
-                    Message lastMessage = getMessagesDatabase().getLastMessageFromChat(peerChat);
+                    Message lastMessage = getMessagesDatabase().getLastNotNullMessageFromChat(peerChat);
                     ServerLogger.log("Member: " + peerChat.getPeer().getHandleID());
 
                     if (lastMessage == null){
@@ -44,40 +43,84 @@ public class CommandChatInfo extends DatabaseCommand {
                     return;
                 }
 
-                GroupChat groupChat = getMessagesDatabase().getGroupChatByName(args[0], null);
+                List<GroupChat> groupChats = getMessagesDatabase().getGroupChatsByName(args[0]);
 
-                if (groupChat != null){
-                    Message lastMessage = getMessagesDatabase().getLastMessageFromChat(groupChat);
+                if (groupChats.size() == 0){
+                    ServerLogger.log("Could not find chat: " + args[0]);
+                    return;
+                }
+
+                if (groupChats.size() == 1){
+                    GroupChat groupChat = groupChats.get(0);
+
+                    Message lastMessage = getMessagesDatabase().getLastNotNullMessageFromChat(groupChat);
                     ArrayList<String> participants = new ArrayList<>();
 
-                    for (Handle handle : groupChat.getParticipants()){
+                    for (Handle handle : groupChat.getParticipants()) {
                         participants.add(handle.getHandleID());
                     }
 
                     ServerLogger.log("Group Chat Name: " + groupChat.getDisplayName());
                     ServerLogger.log("Participants: " + StringUtils.join(participants, ", ", 2));
 
-                    if (lastMessage == null){
+                    if (lastMessage == null) {
                         ServerLogger.log("Last Message from Chat: Null Message");
-                    }else {
+                    } else {
                         ServerLogger.log("Last Message from Chat: " + lastMessage.getText());
                     }
 
                     ServerLogger.log("GUID: " + groupChat.getGuid());
                     ServerLogger.log("Chat ID: " + groupChat.getGroupID());
                     ServerLogger.log("Database Row ID: " + groupChat.getRowID());
-                }else {
-                    ServerLogger.log("Could not find chat: " + args[0]);
+                    return;
+                }
+
+                if (groupChats.size() > 1) {
+                    ServerLogger.log("Multiple group chats have the name: " + args[0] + "!");
+                    ServerLogger.log("Please choose which group chat you want to look up information on!");
+                    ServerLogger.log("Example Usage: chatinfo \"Group Name\" 2");
+
+                    ServerLogger.emptyLine();
+                    printChatOptions(groupChats);
                 }
             }else if(args.length == 2){
-                GroupChat groupChat = getMessagesDatabase().getGroupChatByName(args[0], args[1]);
-                Message lastMessage = getMessagesDatabase().getLastMessageFromChat(groupChat);
-                ArrayList<String> participants = new ArrayList<>();
+                List<GroupChat> groupChats = getMessagesDatabase().getGroupChatsByName(args[0]);
 
-                if (groupChat == null){
+                if (groupChats.size() == 0){
                     ServerLogger.log("Could not find group chat: " + args[0]);
                     return;
                 }
+
+                if (groupChats.size() == 1){
+                    ServerLogger.log("There were too many arguments provided. Make sure your arguments are surrounded in \"quotation marks.\"");
+                    ServerLogger.log("Example Usage: chatinfo \"Group Name\" 2");
+                    return;
+                }
+
+                Integer i;
+
+                try {
+                    i = Integer.parseInt(args[1]);
+                }catch (Exception ex){
+                    ServerLogger.log(args[1] + " is not a number! Make sure you choose a valid option based off the list below.");
+                    ServerLogger.emptyLine();
+                    printChatOptions(groupChats);
+                    return;
+                }
+
+                GroupChat groupChat;
+
+                try {
+                    groupChat = groupChats.get(i - 1);
+                }catch (Exception ex){
+                    ServerLogger.log(args[1] + " is not a valid number for your chat list options!");
+                    ServerLogger.emptyLine();
+                    printChatOptions(groupChats);
+                    return;
+                }
+
+                Message lastMessage = getMessagesDatabase().getLastNotNullMessageFromChat(groupChat);
+                ArrayList<String> participants = new ArrayList<>();
 
                 for (Handle handle : groupChat.getParticipants()){
                     participants.add(handle.getHandleID());
@@ -97,9 +140,26 @@ public class CommandChatInfo extends DatabaseCommand {
                 ServerLogger.log("Database Row ID: " + groupChat.getRowID());
             }else if (args.length > 2){
                 ServerLogger.log("There were too many arguments provided. Make sure your arguments are surrounded in \"quotation marks.\"");
+                ServerLogger.log("Example Usage: chatinfo \" (123) 456-7890 \"");
             }
         }catch(Exception ex){
             ServerLogger.error("An error occurred while fetching the Messages database", ex);
+        }
+    }
+
+    private void printChatOptions(List<GroupChat> groupChats){
+        int i = 1;
+
+        try {
+            ServerLogger.log("Chat Option List");
+            ServerLogger.emptyLine();
+
+            for (GroupChat chat : groupChats) {
+                ServerLogger.log(i + ". " + chat.getDisplayName() + " - Last Message: " + getMessagesDatabase().getLastNotNullMessageFromChat(chat));
+                i++;
+            }
+        }catch (Exception ex){
+            ServerLogger.error("An error occurred while fetching chat data from the database", ex);
         }
     }
 }

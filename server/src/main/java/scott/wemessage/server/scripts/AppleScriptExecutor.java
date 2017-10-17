@@ -1,4 +1,4 @@
-package scott.wemessage.server.commands;
+package scott.wemessage.server.scripts;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -29,6 +29,7 @@ import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.configuration.ServerConfiguration;
+import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.weMessage;
 
 public final class AppleScriptExecutor extends Thread {
@@ -117,6 +118,51 @@ public final class AppleScriptExecutor extends Thread {
         }
     }
 
+    public Object runSendMessageScript(String handle, String fileLocation, String message){
+        return runScript(ActionType.SEND_MESSAGE, new String[] { handle, fileLocation, message });
+    }
+
+    public Object runSendGroupMessageScript(GroupChat chat, String fileLocation, String message){
+        ScriptChatMetadata metadata = new ScriptChatMetadata(chat);
+
+        return runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { String.valueOf(metadata.getAlgorithmicRow(messageServer.getMessagesDatabase())),
+                metadata.getGuid(), metadata.getNameCheck(), String.valueOf(metadata.getNoNameFlag()), fileLocation, message });
+    }
+
+    public Object runAddParticipantScript(GroupChat chat, String account){
+        ScriptChatMetadata metadata = new ScriptChatMetadata(chat);
+
+        return runScript(ActionType.ADD_PARTICIPANT, new String[] { String.valueOf(metadata.getAlgorithmicRow(messageServer.getMessagesDatabase())),
+                metadata.getNameCheck(), String.valueOf(metadata.getNoNameFlag()), account });
+    }
+
+    public Object runCreateGroupScript(String groupName, List<String> participants, String message){
+        String participantsArg = StringUtils.join(participants, ",", 1);
+
+        return runScript(ActionType.CREATE_GROUP, new String[] { groupName, participantsArg, message } );
+    }
+
+    public Object runLeaveGroupScript(GroupChat chat){
+        ScriptChatMetadata metadata = new ScriptChatMetadata(chat);
+
+        return runScript(ActionType.LEAVE_GROUP, new String[] { String.valueOf(metadata.getAlgorithmicRow(messageServer.getMessagesDatabase())),
+                metadata.getNameCheck(), String.valueOf(metadata.getNoNameFlag()) });
+    }
+
+    public Object runRemoveParticipantScript(GroupChat chat, String account){
+        ScriptChatMetadata metadata = new ScriptChatMetadata(chat);
+
+        return runScript(ActionType.REMOVE_PARTICIPANT, new String[] { String.valueOf(metadata.getAlgorithmicRow(messageServer.getMessagesDatabase())),
+                metadata.getNameCheck(), String.valueOf(metadata.getNoNameFlag()), account });
+    }
+
+    public Object runRenameGroupScript(GroupChat chat, String newTitle){
+        ScriptChatMetadata metadata = new ScriptChatMetadata(chat);
+
+        return runScript(ActionType.RENAME_GROUP, new String[] { String.valueOf(metadata.getAlgorithmicRow(messageServer.getMessagesDatabase())),
+                metadata.getNameCheck(), String.valueOf(metadata.getNoNameFlag()), newTitle });
+    }
+
     public Object runScript(final ActionType actionType, String[] args){
         File scriptFile;
         try {
@@ -153,7 +199,7 @@ public final class AppleScriptExecutor extends Thread {
                     process = new ProcessBuilder("osascript", scriptFile.getAbsolutePath(), args[0], args[1], args[2]).start();
                     break;
                 case SEND_GROUP_MESSAGE:
-                    process = new ProcessBuilder("osascript", scriptFile.getAbsolutePath(), args[0], args[1], args[2], args[3], args[4]).start();
+                    process = new ProcessBuilder("osascript", scriptFile.getAbsolutePath(), args[0], args[1], args[2], args[3], args[4], args[5]).start();
                     break;
                 case RENAME_GROUP:
                     process = new ProcessBuilder("osascript", scriptFile.getAbsolutePath(), args[0], args[1], args[2], args[3]).start();
