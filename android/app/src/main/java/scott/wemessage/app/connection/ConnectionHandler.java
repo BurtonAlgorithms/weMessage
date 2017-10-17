@@ -195,19 +195,19 @@ public final class ConnectionHandler extends Thread {
 
             switch (actionType) {
                 case ADD_PARTICIPANT:
-                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
+                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1]});
                     break;
                 case CREATE_GROUP:
                     jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2]});
                     break;
                 case LEAVE_GROUP:
-                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2]});
+                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0]});
                     break;
                 case REMOVE_PARTICIPANT:
-                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
+                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1]});
                     break;
                 case RENAME_GROUP:
-                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1], args[2], args[3]});
+                    jsonAction = new JSONAction(actionType.getCode(), new String[]{args[0], args[1]});
                     break;
                 default:
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
@@ -260,27 +260,7 @@ public final class ConnectionHandler extends Thread {
             @Override
             public void run() {
                 try {
-                    Message lastMessage = weMessage.get().getMessageDatabase().getLastMessageFromChat(chat);
-                    Date lastMessageDate = lastMessage.getModernDateSent();
-                    String timeArgument;
-                    String lastMessageText;
-
-                    if (lastMessage.getText() == null){
-                        lastMessageText = "";
-                    }else {
-                        lastMessageText = lastMessage.getText();
-                    }
-
-                    if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)) {
-                        timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
-                    } else {
-                        if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
-                            timeArgument = getParentService().getString(R.string.word_yesterday);
-                        } else {
-                            timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
-                        }
-                    }
-                    sendOutgoingGenericAction(ActionType.ADD_PARTICIPANT, chat.getUIDisplayName(true), timeArgument, lastMessageText, participant);
+                    sendOutgoingGenericAction(ActionType.ADD_PARTICIPANT, chat.getMacGuid(), participant);
                 }catch(Exception ex){
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
                     AppLogger.error(TAG, "An error occurred while trying to perform the AddParticipant action", ex);
@@ -294,27 +274,7 @@ public final class ConnectionHandler extends Thread {
             @Override
             public void run() {
                 try {
-                    Message lastMessage = weMessage.get().getMessageDatabase().getLastMessageFromChat(chat);
-                    Date lastMessageDate = lastMessage.getModernDateSent();
-                    String timeArgument;
-                    String lastMessageText;
-
-                    if (lastMessage.getText() == null){
-                        lastMessageText = "";
-                    }else {
-                        lastMessageText = lastMessage.getText();
-                    }
-
-                    if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)) {
-                        timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
-                    } else {
-                        if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
-                            timeArgument = getParentService().getString(R.string.word_yesterday);
-                        } else {
-                            timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
-                        }
-                    }
-                    sendOutgoingGenericAction(ActionType.REMOVE_PARTICIPANT, chat.getUIDisplayName(true), timeArgument, lastMessageText, participant);
+                    sendOutgoingGenericAction(ActionType.REMOVE_PARTICIPANT, chat.getMacGuid(), participant);
                 }catch(Exception ex){
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
                     AppLogger.error(TAG, "An error occurred while trying to perform the RemoveParticipant action", ex);
@@ -328,27 +288,7 @@ public final class ConnectionHandler extends Thread {
             @Override
             public void run() {
                 try {
-                    Message lastMessage = weMessage.get().getMessageDatabase().getLastMessageFromChat(chat);
-                    Date lastMessageDate = lastMessage.getModernDateSent();
-                    String timeArgument;
-                    String lastMessageText;
-
-                    if (lastMessage.getText() == null){
-                        lastMessageText = "";
-                    }else {
-                        lastMessageText = lastMessage.getText();
-                    }
-
-                    if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)) {
-                        timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
-                    } else {
-                        if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
-                            timeArgument = getParentService().getString(R.string.word_yesterday);
-                        } else {
-                            timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
-                        }
-                    }
-                    sendOutgoingGenericAction(ActionType.RENAME_GROUP, chat.getUIDisplayName(true), timeArgument, lastMessageText, newTitle);
+                    sendOutgoingGenericAction(ActionType.RENAME_GROUP, chat.getMacGuid(), newTitle);
                 }catch(Exception ex){
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
                     AppLogger.error(TAG, "An error occurred while trying to perform the RenameGroup action", ex);
@@ -377,27 +317,7 @@ public final class ConnectionHandler extends Thread {
             @Override
             public void run() {
                 try {
-                    Message lastMessage = weMessage.get().getMessageDatabase().getLastMessageFromChat(chat);
-                    Date lastMessageDate = lastMessage.getModernDateSent();
-                    String timeArgument;
-                    String lastMessageText;
-
-                    if (lastMessage.getText() == null){
-                        lastMessageText = "";
-                    }else {
-                        lastMessageText = lastMessage.getText();
-                    }
-
-                    if (DateUtils.isSameDay(Calendar.getInstance().getTime(), lastMessageDate)) {
-                        timeArgument = new SimpleDateFormat("hh:mm a").format(lastMessageDate);
-                    } else {
-                        if (DateUtils.wasDateYesterday(lastMessageDate, Calendar.getInstance().getTime())) {
-                            timeArgument = getParentService().getString(R.string.word_yesterday);
-                        } else {
-                            timeArgument = new SimpleDateFormat("M/d/yy").format(lastMessageDate);
-                        }
-                    }
-                    sendOutgoingGenericAction(ActionType.LEAVE_GROUP, chat.getUIDisplayName(true), timeArgument, lastMessageText);
+                    sendOutgoingGenericAction(ActionType.LEAVE_GROUP, chat.getMacGuid());
                 }catch(Exception ex){
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
                     AppLogger.error(TAG, "An error occurred while trying to perform the LeaveGroup action", ex);
@@ -1113,41 +1033,40 @@ public final class ConnectionHandler extends Thread {
 
         switch (actionType) {
             case ADD_PARTICIPANT:
-                GroupChat apGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
-                Contact apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
+                Chat apGroupChat = messageDatabase.getChatByMacGuid(args[0]);
 
-                if (messageDatabase.getHandleByHandleID(args[3]) == null) {
-                    messageDatabase.addHandle(new Handle(UUID.randomUUID(), args[3], Handle.HandleType.IMESSAGE));
+                if (messageDatabase.getHandleByHandleID(args[1]) == null) {
+                    messageDatabase.addHandle(new Handle(UUID.randomUUID(), args[1], Handle.HandleType.IMESSAGE));
                 }
+
+                Contact apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[1]));
 
                 if (apContact == null) {
-                    messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(args[3]), null, false, false), false);
-                    apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
+                    messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(args[1]), null, false, false), false);
+                    apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[1]));
                 }
 
-                if (apGroupChat == null) {
+                if (apGroupChat == null || !(apGroupChat instanceof GroupChat)) {
                     Bundle extras = new Bundle();
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
                             getParentService().getString(R.string.action_add_participant)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Add Participant because group chat was not found with name: " + args[0] + " and last message: " + args[2],
-                            new NullPointerException());
+                    AppLogger.error("Could not perform JSONAction Add Participant because group chat was not found with guid: " + args[0], new NullPointerException());
                     return;
                 }
-                messageManager.addParticipantToGroup(apGroupChat, apContact, Calendar.getInstance().getTime(), false);
+                messageManager.addParticipantToGroup((GroupChat) apGroupChat, apContact, Calendar.getInstance().getTime(), false);
                 break;
 
             case REMOVE_PARTICIPANT:
-                GroupChat rpGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
-                Contact rpContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[3]));
+                Chat rpGroupChat = messageDatabase.getChatByMacGuid(args[0]);
+                Contact rpContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[1]));
 
-                if (rpGroupChat == null) {
+                if (rpGroupChat == null || !(rpGroupChat instanceof GroupChat)) {
                     Bundle extras = new Bundle();
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
                             getParentService().getString(R.string.action_remove_participant)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Remove Participant because group chat was not found with name: " + args[0] + " and last message: " + args[2],
-                            new NullPointerException());
+                    AppLogger.error("Could not perform JSONAction Remove Participant because group chat was not found with guid: " + args[0], new NullPointerException());
                     return;
                 }
 
@@ -1156,25 +1075,24 @@ public final class ConnectionHandler extends Thread {
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_contact_not_found,
                             getParentService().getString(R.string.action_remove_participant)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Remove Participant because contact with Handle ID: " + args[3] + " was not found.", new NullPointerException());
+                    AppLogger.error("Could not perform JSONAction Remove Participant because contact with Handle ID: " + args[1] + " was not found.", new NullPointerException());
                     return;
                 }
-                messageManager.removeParticipantFromGroup(rpGroupChat, rpContact, Calendar.getInstance().getTime(), false);
+                messageManager.removeParticipantFromGroup((GroupChat) rpGroupChat, rpContact, Calendar.getInstance().getTime(), false);
                 break;
 
             case RENAME_GROUP:
-                GroupChat rnGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
+                Chat rnGroupChat = messageDatabase.getChatByMacGuid(args[0]);
 
-                if (rnGroupChat == null) {
+                if (rnGroupChat == null || !(rnGroupChat instanceof GroupChat)) {
                     Bundle extras = new Bundle();
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
                             getParentService().getString(R.string.action_rename_group)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with name: " + args[0] + " and last message: " + args[2],
-                            new NullPointerException());
+                    AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with guid: " + args[0], new NullPointerException());
                     return;
                 }
-                messageManager.renameGroupChat(rnGroupChat, args[3], Calendar.getInstance().getTime(), false);
+                messageManager.renameGroupChat((GroupChat) rnGroupChat, args[1], Calendar.getInstance().getTime(), false);
                 break;
 
             case CREATE_GROUP:
@@ -1197,18 +1115,17 @@ public final class ConnectionHandler extends Thread {
                 break;
 
             case LEAVE_GROUP:
-                GroupChat lvGroupChat = messageDatabase.getGroupChatByName(args[0], args[2]);
+                Chat lvGroupChat = messageDatabase.getChatByMacGuid(args[0]);
 
-                if (lvGroupChat == null) {
+                if (lvGroupChat == null || !(lvGroupChat instanceof GroupChat)) {
                     Bundle extras = new Bundle();
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
                             getParentService().getString(R.string.action_leave_group)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with name: " + args[0] + " and last message: " + args[2],
-                            new NullPointerException());
+                    AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with guid: " + args[0], new NullPointerException());
                     return;
                 }
-                messageManager.leaveGroup(lvGroupChat, Calendar.getInstance().getTime(), false);
+                messageManager.leaveGroup((GroupChat) lvGroupChat, Calendar.getInstance().getTime(), false);
                 break;
 
             default:
