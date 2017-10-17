@@ -2,8 +2,8 @@ package scott.wemessage.commons;
 
 public interface Constants {
 
-    String WEMESSAGE_VERSION = "Alpha 1.0";
-    int WEMESSAGE_BUILD_VERSION = 2;
+    String WEMESSAGE_VERSION = "Beta 1.0";
+    int WEMESSAGE_BUILD_VERSION = 3;
     int FIREBASE_NOTIFICATION_VERSION = 1;
 
     int DEFAULT_PORT = 22222;
