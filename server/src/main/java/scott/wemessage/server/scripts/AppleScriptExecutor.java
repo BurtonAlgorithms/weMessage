@@ -234,6 +234,7 @@ public final class AppleScriptExecutor extends Thread {
 
                 ServerLogger.log(ServerLogger.Level.SEVERE, TAG, "An unknown error occurred while running script " + actionType.getScriptName() + ".scpt");
                 ServerLogger.log(ServerLogger.Level.ERROR, TAG, "In order to prevent further errors from occurring, weServer will force close and relaunch Messages.");
+                ServerLogger.emptyLine();
                 killMessagesApp(true);
 
                 return result;
@@ -255,6 +256,7 @@ public final class AppleScriptExecutor extends Thread {
                 if (returnType == ReturnType.UI_ERROR){
                     ServerLogger.log(ServerLogger.Level.ERROR, TAG, "A UI error occurred within the Messages App.");
                     ServerLogger.log(ServerLogger.Level.ERROR, TAG, "In order to prevent further errors from occurring, weServer will force close and relaunch it.");
+                    ServerLogger.emptyLine();
                     killMessagesApp(true);
                 }
             }else {
@@ -264,6 +266,7 @@ public final class AppleScriptExecutor extends Thread {
                     if (returnType == ReturnType.UI_ERROR) {
                         ServerLogger.log(ServerLogger.Level.ERROR, TAG, "A UI error occurred within the Messages App.");
                         ServerLogger.log(ServerLogger.Level.ERROR, TAG, "In order to prevent further errors from occurring, weServer will force close and relaunch it.");
+                        ServerLogger.emptyLine();
                         killMessagesApp(true);
                         break;
                     }

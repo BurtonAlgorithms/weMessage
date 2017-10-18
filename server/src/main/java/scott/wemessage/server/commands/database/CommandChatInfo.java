@@ -36,10 +36,6 @@ public class CommandChatInfo extends DatabaseCommand {
                     }else {
                         ServerLogger.log("Last Message from Chat: " + lastMessage.getText());
                     }
-
-                    ServerLogger.log("GUID: " + peerChat.getGuid());
-                    ServerLogger.log("Chat ID: " + peerChat.getGroupID());
-                    ServerLogger.log("Database Row ID: " + peerChat.getRowID());
                     return;
                 }
 
@@ -68,10 +64,6 @@ public class CommandChatInfo extends DatabaseCommand {
                     } else {
                         ServerLogger.log("Last Message from Chat: " + lastMessage.getText());
                     }
-
-                    ServerLogger.log("GUID: " + groupChat.getGuid());
-                    ServerLogger.log("Chat ID: " + groupChat.getGroupID());
-                    ServerLogger.log("Database Row ID: " + groupChat.getRowID());
                     return;
                 }
 
@@ -134,13 +126,9 @@ public class CommandChatInfo extends DatabaseCommand {
                 }else {
                     ServerLogger.log("Last Message from Chat: " + lastMessage.getText());
                 }
-
-                ServerLogger.log("GUID: " + groupChat.getGuid());
-                ServerLogger.log("Chat ID: " + groupChat.getGroupID());
-                ServerLogger.log("Database Row ID: " + groupChat.getRowID());
             }else if (args.length > 2){
                 ServerLogger.log("There were too many arguments provided. Make sure your arguments are surrounded in \"quotation marks.\"");
-                ServerLogger.log("Example Usage: chatinfo \" (123) 456-7890 \"");
+                ServerLogger.log("Example Usage: chatinfo \"(123) 456-7890 \"");
             }
         }catch(Exception ex){
             ServerLogger.error("An error occurred while fetching the Messages database", ex);
@@ -155,7 +143,16 @@ public class CommandChatInfo extends DatabaseCommand {
             ServerLogger.emptyLine();
 
             for (GroupChat chat : groupChats) {
-                ServerLogger.log(i + ". " + chat.getDisplayName() + " - Last Message: " + getMessagesDatabase().getLastNotNullMessageFromChat(chat));
+                Message lastMessage = getMessagesDatabase().getLastNotNullMessageFromChat(chat);
+                String lastMessageText;
+
+                if (lastMessage == null){
+                    lastMessageText = "Null Message";
+                }else {
+                    lastMessageText = lastMessage.getText();
+                }
+
+                ServerLogger.log(i + ". " + chat.getDisplayName() + " - Last Message: " + lastMessageText);
                 i++;
             }
         }catch (Exception ex){

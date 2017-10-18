@@ -9,6 +9,7 @@ import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.commands.Command;
 import scott.wemessage.server.commands.CommandManager;
 import scott.wemessage.server.database.MessagesDatabase;
+import scott.wemessage.server.messages.Message;
 import scott.wemessage.server.messages.chat.GroupChat;
 import scott.wemessage.server.scripts.AppleScriptExecutor;
 
@@ -52,7 +53,16 @@ public abstract class ScriptCommand extends Command {
             ServerLogger.emptyLine();
 
             for (GroupChat chat : groupChats) {
-                ServerLogger.log(i + ". " + chat.getDisplayName() + " - Last Message: " + getMessagesDatabase().getLastNotNullMessageFromChat(chat));
+                Message lastMessage = getMessagesDatabase().getLastNotNullMessageFromChat(chat);
+                String lastMessageText;
+
+                if (lastMessage == null){
+                    lastMessageText = "Null Message";
+                }else {
+                    lastMessageText = lastMessage.getText();
+                }
+
+                ServerLogger.log(i + ". " + chat.getDisplayName() + " - Last Message: " + lastMessageText);
                 i++;
             }
         }catch (Exception ex){

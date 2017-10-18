@@ -75,16 +75,19 @@ public class MessagesDatabaseListener extends Listener {
     }
 
     private boolean isMessageSame(Message one, Message two){
-        try {
-            if (!one.getDateSent().equals(two.getDateSent())) return false;
-            if (!one.getDateDelivered().equals(two.getDateDelivered())) return false;
-            if (!one.getDateRead().equals(two.getDateRead())) return false;
-            if (one.hasErrored() != two.hasErrored()) return false;
-            if (one.isFinished() != two.isFinished()) return false;
+        if (one.getDateSent() == null && two.getDateSent() != null) return false;
+        if (one.getDateDelivered() == null && two.getDateDelivered() != null) return false;
+        if (one.getDateRead() == null && two.getDateRead() != null) return false;
+        if (one.getDateSent() != null && two.getDateSent() == null) return false;
+        if (one.getDateDelivered() != null && two.getDateDelivered() == null) return false;
+        if (one.getDateRead() != null && two.getDateRead() == null) return false;
 
-            return true;
-        }catch(NullPointerException ex){
-            return true;
-        }
+        if ((one.getDateSent() != null && two.getDateSent() != null) && !one.getDateSent().equals(two.getDateSent())) return false;
+        if ((one.getDateDelivered() != null && two.getDateDelivered() != null) && !one.getDateDelivered().equals(two.getDateDelivered())) return false;
+        if ((one.getDateRead() != null && two.getDateRead() != null) && !one.getDateRead().equals(two.getDateRead())) return false;
+        if (one.hasErrored() != two.hasErrored()) return false;
+        if (one.isFinished() != two.isFinished()) return false;
+
+        return true;
     }
 }

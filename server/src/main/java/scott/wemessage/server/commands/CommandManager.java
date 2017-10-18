@@ -17,7 +17,6 @@ import scott.wemessage.server.commands.core.CommandInfo;
 import scott.wemessage.server.commands.core.CommandResetLoginInfo;
 import scott.wemessage.server.commands.core.CommandStop;
 import scott.wemessage.server.commands.database.CommandChatInfo;
-import scott.wemessage.server.commands.database.CommandHandleInfo;
 import scott.wemessage.server.commands.database.CommandLastMessage;
 import scott.wemessage.server.commands.scripts.CommandAddParticipant;
 import scott.wemessage.server.commands.scripts.CommandCreateGroup;
@@ -81,7 +80,6 @@ public final class CommandManager {
         addCommand(new CommandLeaveGroup(this));
 
         addCommand(new CommandChatInfo(this));
-        addCommand(new CommandHandleInfo(this));
         addCommand(new CommandLastMessage(this));
 
         ServerLogger.log(ServerLogger.Level.INFO, TAG, "Commands Service has started");

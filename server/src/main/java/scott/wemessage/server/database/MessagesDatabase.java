@@ -1011,7 +1011,7 @@ public final class MessagesDatabase extends Thread {
 
         message.setChat(chat).setHandle(handle).setAttachments(attachments);
 
-        boolean isErrored = resultSet.getInt(COLUMN_MESSAGE_ERROR) == 1;
+        boolean isErrored = resultSet.getInt(COLUMN_MESSAGE_ERROR) != 0;
         boolean isSent = resultSet.getInt(COLUMN_MESSAGE_IS_SENT) == 1;
         boolean isDelivered = resultSet.getInt(COLUMN_MESSAGE_IS_DELIVERED) == 1;
         boolean isRead = resultSet.getInt(COLUMN_MESSAGE_IS_READ) == 1;

@@ -34,8 +34,6 @@ public class CommandLastMessage extends DatabaseCommand {
                 ServerLogger.log("Text: " + message.getText());
             }
 
-            ServerLogger.log("GUID: " + message.getGuid());
-            ServerLogger.log("Database Row ID: " + message.getRowID());
             ServerLogger.log("Date Sent: " + DateUtils.getSimpleStringFromDate(message.getModernDateSent()));
             ServerLogger.log("Date Delivered: " + DateUtils.getSimpleStringFromDate(message.getModernDateDelivered()));
             ServerLogger.log("Date Read: " + DateUtils.getSimpleStringFromDate(message.getModernDateRead()));
@@ -51,9 +49,6 @@ public class CommandLastMessage extends DatabaseCommand {
                 ServerLogger.emptyLine();
                 ServerLogger.log("Handle Info: ");
                 ServerLogger.log("Handle Account: " + message.getHandle().getHandleID());
-                ServerLogger.log("Country: " + message.getHandle().getCountry());
-                ServerLogger.log("Database Row ID: " + message.getHandle().getRowID());
-                ServerLogger.log("Handle: " + message.getHandle().getHandleID());
             }
             if (!message.getAttachments().isEmpty()) {
                 ServerLogger.emptyLine();

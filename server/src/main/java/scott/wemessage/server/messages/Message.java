@@ -293,6 +293,7 @@ public class Message {
                     long finishTime = System.nanoTime();
 
                     ServerLogger.log(ServerLogger.Level.INFO, "Finished encoding process. Time: " + (((finishTime - startTime) / 1000000L) / 1000L) + " seconds.");
+                    ServerLogger.emptyLine();
 
                     File encodedFile = new File(appleScriptExecutor.getTempFolder().toString(), outputName);
 
