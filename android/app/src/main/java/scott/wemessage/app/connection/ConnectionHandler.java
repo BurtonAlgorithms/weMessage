@@ -1005,8 +1005,10 @@ public final class ConnectionHandler extends Thread {
                     String correspondingMessageUUID = messageAndConnectionMessageMap.get(jsonResult.getCorrespondingUUID());
                     Message message = weMessage.get().getMessageDatabase().getMessageByUuid(correspondingMessageUUID);
 
-                    message.setHasErrored(true);
-                    messageManager.updateMessage(correspondingMessageUUID, message, false);
+                    if (message != null && message.getChat() != null) {
+                        message.setHasErrored(true);
+                        messageManager.updateMessage(correspondingMessageUUID, message, false);
+                    }
                 }
 
             } else {
@@ -1038,8 +1040,10 @@ public final class ConnectionHandler extends Thread {
                     String correspondingMessageUUID = messageAndConnectionMessageMap.get(jsonResult.getCorrespondingUUID());
                     Message message = weMessage.get().getMessageDatabase().getMessageByUuid(correspondingMessageUUID);
 
-                    message.setHasErrored(true);
-                    messageManager.updateMessage(correspondingMessageUUID, message, false);
+                    if (message != null && message.getChat() != null) {
+                        message.setHasErrored(true);
+                        messageManager.updateMessage(correspondingMessageUUID, message, false);
+                    }
                 }
 
             } else {
@@ -1131,22 +1135,6 @@ public final class ConnectionHandler extends Thread {
                 break;
 
             case CREATE_GROUP:
-                List<String> participants = new ArrayList<>(Arrays.asList(args[1].split(",")));
-                List<Contact> contacts = new ArrayList<>();
-
-                for (String s : participants) {
-                    if (messageDatabase.getHandleByHandleID(s) == null) {
-                        messageDatabase.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE));
-                    }
-                }
-
-                for (String s : participants) {
-                    if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
-                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null, false, false), false);
-                        contacts.add(messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)));
-                    }
-                }
-                messageManager.addChat(new GroupChat(UUID.randomUUID(), null, null, null, null, true, true, false, args[0], contacts), false);
                 break;
 
             case LEAVE_GROUP:

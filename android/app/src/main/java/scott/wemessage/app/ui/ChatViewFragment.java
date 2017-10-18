@@ -594,6 +594,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     private void toggleEditMode(boolean value, boolean saveChanges){
         if (value){
             isInEditMode = true;
+            editedName = ((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid)).getDisplayName();
 
             chatViewAdapter.toggleEditMode(true, false);
             toolbarBackButton.setVisibility(View.GONE);
@@ -629,7 +630,6 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 weMessage.get().getMessageManager().updateChat(chatUuid, oldVal, true);
             }
 
-            editedName = ((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid)).getDisplayName();
             editedChatPicture = null;
         }
     }
