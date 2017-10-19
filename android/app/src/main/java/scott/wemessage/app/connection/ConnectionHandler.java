@@ -401,6 +401,7 @@ public final class ConnectionHandler extends Thread {
                 sendLocalBroadcast(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR, null);
                 getParentService().endService();
             }
+            return;
         }catch (NoRouteToHostException ex){
             if (isRunning.get()) {
                 sendLocalBroadcast(weMessage.BROADCAST_LOGIN_ERROR, null);
@@ -639,7 +640,9 @@ public final class ConnectionHandler extends Thread {
                                 JSONChat jsonChat = jsonMessage.getChat();
                                 runChatCheck(messageManager, jsonChat, DateUtils.getDateUsing2001(jsonMessage.getDateSent() - 1));
 
-                                messageManager.setHasUnreadMessages(messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), true, false);
+                                if (!jsonMessage.isFromMe()) {
+                                    messageManager.setHasUnreadMessages(messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), true, false);
+                                }
 
                                 Contact sender;
 

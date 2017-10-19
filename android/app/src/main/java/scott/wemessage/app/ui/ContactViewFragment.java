@@ -52,6 +52,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.flipboard.bottomsheet.BottomSheetLayout;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -781,6 +782,10 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             });
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
+            View snackbarView = snackbar.getView();
+            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setMaxLines(5);
+
             snackbar.show();
         }
     }
@@ -1029,21 +1034,32 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             init();
 
             String handleID = contact.getHandle().getHandleID();
+            String handleText;
 
             contactName.setText(contact.getUIDisplayName());
 
             if (AuthenticationUtils.isValidEmailFormat(handleID)) {
                 contactHandleHeader.setText(getString(R.string.word_email));
+                handleText = handleID;
             }else {
                 PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
 
                 if (phoneNumberUtil.isPossibleNumber(handleID, Resources.getSystem().getConfiguration().locale.getCountry())){
                     contactHandleHeader.setText(getString(R.string.word_phone));
+
+                    try {
+                        Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(handleID, Resources.getSystem().getConfiguration().locale.getCountry());
+                        handleText = phoneNumberUtil.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.NATIONAL);
+                    }catch (Exception ex){
+                        handleText = handleID;
+                    }
+
                 } else {
                     contactHandleHeader.setText(getString(R.string.word_mobile));
+                    handleText = handleID;
                 }
             }
-            contactHandleTextView.setText(handleID);
+            contactHandleTextView.setText(handleText);
 
             if (StringUtils.isEmpty(editedContactPicture)) {
                 Glide.with(ContactViewFragment.this).load(IOUtils.getContactIconUri(contact, IOUtils.IconSize.LARGE)).into(contactPicture);

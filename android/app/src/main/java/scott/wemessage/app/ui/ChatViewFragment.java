@@ -922,6 +922,10 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             });
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
+            View snackbarView = snackbar.getView();
+            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setMaxLines(5);
+
             snackbar.show();
         }
     }

@@ -25,6 +25,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
@@ -1446,6 +1447,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                 }
             });
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
+
+            View snackbarView = snackbar.getView();
+            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setMaxLines(5);
+
             snackbar.show();
         }
     }

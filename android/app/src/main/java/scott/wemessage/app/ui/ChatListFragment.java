@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.stfalcon.chatkit.commons.ImageLoader;
@@ -104,27 +105,27 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_NEW_MESSAGE_ERROR)){
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.new_message_error)).show();
+                    showErroredSnackbar(getString(R.string.new_message_error));
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_SEND_MESSAGE_ERROR)){
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.send_message_error)).show();
+                    showErroredSnackbar(getString(R.string.send_message_error));
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR)) {
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.message_update_error)).show();
+                    showErroredSnackbar(getString(R.string.message_update_error));
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_ACTION_PERFORM_ERROR)){
                 if (getView() != null) {
                     if (intent.getExtras() != null){
-                        generateErroredSnackBar(getView(), intent.getStringExtra(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE)).show();
+                        showErroredSnackbar(intent.getStringExtra(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE));
                     }else {
-                        generateErroredSnackBar(getView(), getString(R.string.action_perform_error_default)).show();
+                        showErroredSnackbar(getString(R.string.action_perform_error_default));
                     }
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
                 if (getView() != null) {
-                    generateErroredSnackBar(getView(), getString(R.string.result_process_error)).show();
+                    showErroredSnackbar(getString(R.string.result_process_error));
                 }
             }
         }
@@ -564,18 +565,24 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         }
     }
 
-    private Snackbar generateErroredSnackBar(View view, String message){
-        final Snackbar snackbar = Snackbar.make(view, message, ERROR_SNACKBAR_DURATION);
+    private void showErroredSnackbar(String message){
+        if (getView() != null) {
+            final Snackbar snackbar = Snackbar.make(getView(), message, ERROR_SNACKBAR_DURATION * 1000);
 
-        snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                snackbar.dismiss();
-            }
-        });
-        snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
+            snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackbar.dismiss();
+                }
+            });
+            snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
-        return snackbar;
+            View snackbarView = snackbar.getView();
+            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setMaxLines(5);
+
+            snackbar.show();
+        }
     }
 
     private boolean isChatBlocked(Chat chat){
