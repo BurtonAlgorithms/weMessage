@@ -275,12 +275,13 @@ public final class MessageServer {
             } catch(Exception ex){
                 command = commandManager.getCommand(commandString);
             }
+
             if(command != null) {
                 try {
                     ServerLogger.emptyLine();
                     command.execute(commandArgs);
 
-                    if (!command.getName().equals("stop")) {
+                    if (!command.getName().equals("stop") && !command.getName().equals("disconnect") && !command.getName().equals("disconnectall")) {
                         ServerLogger.emptyLine();
                     }
                 }catch(Exception ex){
