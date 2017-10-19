@@ -269,7 +269,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
     @Override
     public void onResume() {
         if (!isServiceRunning(ConnectionService.class)){
-            goToLauncher();
+            goToLauncherReconnect();
         }
 
         super.onResume();
@@ -486,6 +486,15 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
 
             launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
+
+            startActivity(launcherIntent);
+            finish();
+        }
+    }
+
+    private void goToLauncherReconnect(){
+        if (!isFinishing() && !isDestroyed()) {
+            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
 
             startActivity(launcherIntent);
             finish();

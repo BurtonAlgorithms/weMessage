@@ -199,7 +199,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
     @Override
     public void onResume() {
         if (!isServiceRunning(ConnectionService.class)){
-            goToLauncher();
+            goToLauncherReconnect();
         }
 
         super.onResume();
@@ -376,6 +376,15 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
         }
     }
 
+    private void goToLauncherReconnect(){
+        if (!isFinishing() && !isDestroyed()) {
+            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
+
+            startActivity(launcherIntent);
+            finish();
+        }
+    }
+
     private void goToSettings(){
         Intent launcherIntent = new Intent(weMessage.get(), SettingsActivity.class);
 
@@ -410,7 +419,6 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
     private class ContactHolder extends RecyclerView.ViewHolder {
 
         private boolean isInit = false;
-        private boolean isDeleteButtonShowing = false;
 
         private SwipeLayout swipeLayout;
         private LinearLayout unblockContactButton;
@@ -441,7 +449,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             swipeLayout.addSwipeListener(new SwipeLayout.SwipeListener() {
                 @Override
                 public void onStartOpen(SwipeLayout layout) {
-                    if (contactAdapter.showingDeletePosition != null){
+                    if (contactAdapter.showingDeletePosition != null && contactAdapter.showingDeletePosition != getAdapterPosition()){
                         RecyclerView.ViewHolder viewHolder = contactsRecyclerView.findViewHolderForAdapterPosition(contactAdapter.showingDeletePosition);
 
                         if (viewHolder != null && viewHolder instanceof ContactHolder){
@@ -452,7 +460,6 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
                 @Override
                 public void onOpen(SwipeLayout layout) {
-                    isDeleteButtonShowing = true;
                     contactAdapter.showingDeletePosition = getAdapterPosition();
                 }
 
@@ -463,7 +470,9 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
                 @Override
                 public void onClose(SwipeLayout layout) {
-                    isDeleteButtonShowing = false;
+                    if (contactAdapter.showingDeletePosition != null && contactAdapter.showingDeletePosition == getAdapterPosition()) {
+                        contactAdapter.showingDeletePosition = null;
+                    }
                 }
 
                 @Override
@@ -482,11 +491,9 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (isDeleteButtonShowing) {
-                        isDeleteButtonShowing = false;
+                    if (swipeLayout.getOpenStatus() != SwipeLayout.Status.Close) {
                         swipeLayout.close();
                     }
-                    contactAdapter.showingDeletePosition = null;
                 }
             });
         }

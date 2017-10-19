@@ -373,7 +373,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     @Override
     public void onResume() {
         if (!isServiceRunning(ConnectionService.class)){
-            goToLauncher();
+            goToLauncherReconnect();
         }
 
         super.onResume();
@@ -885,6 +885,15 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         }
     }
 
+    private void goToLauncherReconnect(){
+        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
+            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
+
+            startActivity(launcherIntent);
+            getActivity().finish();
+        }
+    }
+
     private boolean hasPermission(final String permission, String rationaleString, String alertTagId, final int requestCode){
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(getActivity(), permission) != PackageManager.PERMISSION_GRANTED) {
             if (shouldShowRequestPermissionRationale(permission)){
@@ -1017,7 +1026,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
         public void toggleEditMode(boolean value, boolean saveChanges){
             if (getHeaderHolder() != null) {
-                getHeaderHolder().toggleEditMode(value, saveChanges);
+                getHeaderHolder().toggleEditMode(groupChat, value, saveChanges);
             }
             notifyItemChanged(0);
             chatViewRecyclerView.scrollBy(0, 0);
@@ -1128,7 +1137,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 Glide.with(ChatViewFragment.this).load(editedChatPicture).into(chatViewPicture);
             }
 
-            toggleEditMode(isInEditMode, false);
+            toggleEditMode(chat, isInEditMode, false);
 
             if (chat.isInChat()){
                 itemView.findViewById(R.id.chatViewDividerOne).setVisibility(View.VISIBLE);
@@ -1139,7 +1148,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             }
         }
 
-        public void toggleEditMode(boolean value, boolean saveChanges){
+        public void toggleEditMode(GroupChat chat, boolean value, boolean saveChanges){
             if (value) {
                 if (chatViewNameSwitcher.getNextView().getId() == R.id.chatViewEditName) {
                     chatViewNameSwitcher.showNext();
@@ -1160,6 +1169,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 if (saveChanges){
                     editedName = chatViewEditName.getText().toString();
                     clearEditText(chatViewEditName, true);
+                }else {
+                    Glide.with(ChatViewFragment.this).load(IOUtils.getChatIconUri(chat, IOUtils.IconSize.LARGE)).into(chatViewPicture);
                 }
 
                 if (chatViewNameSwitcher.getNextView().getId() == R.id.chatViewName) {
@@ -1235,7 +1246,6 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     private class ContactViewHolder extends RecyclerView.ViewHolder {
 
-        private boolean isDeleteButtonShowing = false;
         private boolean isInit = false;
 
         private SwipeLayout swipeLayout;
@@ -1283,7 +1293,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             swipeLayout.addSwipeListener(new SwipeLayout.SwipeListener() {
                 @Override
                 public void onStartOpen(SwipeLayout layout) {
-                    if (chatViewAdapter.showingDeletePosition != null){
+                    if (chatViewAdapter.showingDeletePosition != null && chatViewAdapter.showingDeletePosition != getAdapterPosition()){
                         RecyclerView.ViewHolder viewHolder = chatViewRecyclerView.findViewHolderForAdapterPosition(chatViewAdapter.showingDeletePosition);
 
                         if (viewHolder != null && viewHolder instanceof ContactViewHolder){
@@ -1294,7 +1304,6 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
                 @Override
                 public void onOpen(SwipeLayout layout) {
-                    isDeleteButtonShowing = true;
                     chatViewAdapter.showingDeletePosition = getAdapterPosition();
                 }
 
@@ -1305,7 +1314,9 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
                 @Override
                 public void onClose(SwipeLayout layout) {
-                    isDeleteButtonShowing = false;
+                    if (chatViewAdapter.showingDeletePosition != null && chatViewAdapter.showingDeletePosition == getAdapterPosition()) {
+                        chatViewAdapter.showingDeletePosition = null;
+                    }
                 }
 
                 @Override
@@ -1321,11 +1332,9 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         }
 
         public void closeUnderlyingView(){
-            if (isDeleteButtonShowing) {
-                isDeleteButtonShowing = false;
+            if (swipeLayout.getOpenStatus() != SwipeLayout.Status.Close) {
                 swipeLayout.close();
             }
-            chatViewAdapter.showingDeletePosition = null;
         }
 
         private void init(){

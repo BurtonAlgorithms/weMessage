@@ -342,7 +342,7 @@ public class AttachmentPopupFragment extends MessagingFragment {
 
             @Override
             protected void onPostExecute(ArrayList<String> strings) {
-                if (getContext() instanceof Activity && ((Activity) getContext()).isDestroyed()) return;
+                if (getContext() == null || getContext() instanceof Activity && ((Activity) getContext()).isDestroyed()) return;
 
                 onLoadGalleryItems(strings);
 

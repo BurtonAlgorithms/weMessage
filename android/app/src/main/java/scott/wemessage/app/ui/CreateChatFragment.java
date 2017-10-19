@@ -357,7 +357,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     @Override
     public void onResume() {
         if (!isServiceRunning(ConnectionService.class)){
-            goToLauncher();
+            goToLauncherReconnect();
         }
 
         super.onResume();
@@ -697,6 +697,15 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
 
             launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
+
+            startActivity(launcherIntent);
+            getActivity().finish();
+        }
+    }
+
+    private void goToLauncherReconnect(){
+        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
+            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
 
             startActivity(launcherIntent);
             getActivity().finish();

@@ -279,7 +279,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     @Override
     public void onResume() {
         if (!isServiceRunning(ConnectionService.class)){
-            goToLauncher();
+            goToLauncherReconnect();
         }
 
         toggleNoConversations(dialogsListAdapter.isEmpty());
@@ -537,6 +537,15 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
 
             launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
+
+            startActivity(launcherIntent);
+            getActivity().finish();
+        }
+    }
+
+    private void goToLauncherReconnect(){
+        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
+            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
 
             startActivity(launcherIntent);
             getActivity().finish();
