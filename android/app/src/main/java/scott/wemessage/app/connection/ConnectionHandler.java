@@ -24,6 +24,7 @@ import java.net.NoRouteToHostException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -215,7 +216,7 @@ public final class ConnectionHandler extends Thread {
                     break;
                 default:
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
-                    AppLogger.error(TAG, "Could not perform action due to an unknown Action Type", new NullPointerException());
+                    AppLogger.error(TAG, "Could not perform action due to an unknown Action Type", new NullPointerException("Could not perform action due to an unknown Action Type"));
                     return;
             }
 
@@ -408,6 +409,12 @@ public final class ConnectionHandler extends Thread {
                 getParentService().endService();
             }
             return;
+        }catch (UnknownHostException ex){
+            if (isRunning.get()){
+                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR, null);
+                getParentService().endService();
+            }
+            return;
         }catch (SocketTimeoutException ex){
             if (isRunning.get()) {
                 sendLocalBroadcast(weMessage.BROADCAST_LOGIN_TIMEOUT, null);
@@ -572,7 +579,7 @@ public final class ConnectionHandler extends Thread {
                     DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer) serverMessage.getOutgoing(Integer.class)));
 
                     if (disconnectReason == null) {
-                        AppLogger.error(TAG, "A null disconnect reason has caused the connection to be dropped", new NullPointerException());
+                        AppLogger.error(TAG, "A null disconnect reason has caused the connection to be dropped", new NullPointerException("A null disconnect reason has caused the connection to be dropped"));
                         Bundle extras = new Bundle();
                         extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_unknown_message));
                         sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
@@ -611,6 +618,7 @@ public final class ConnectionHandler extends Thread {
                                 break;
                         }
                     }
+                    return;
                 } else if (incoming.startsWith(weMessage.JSON_NEW_MESSAGE)) {
                     new Thread(new Runnable() {
                         @Override
@@ -787,6 +795,7 @@ public final class ConnectionHandler extends Thread {
             }catch(EOFException ex){
                 sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED, null);
                 getParentService().endService();
+                return;
             }catch (SocketException ex){
                 if (getConnectionSocket().isClosed()){
                     if (isConnected.get()){
@@ -794,6 +803,7 @@ public final class ConnectionHandler extends Thread {
                         extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_socket_closed));
                         sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
                         getParentService().endService();
+                        return;
                     }
                 }else {
                     boolean socketOpenCheck = false;
@@ -815,6 +825,7 @@ public final class ConnectionHandler extends Thread {
                         AppLogger.error(TAG, "An unknown error occurred. Dropping connection to weServer", ex);
                         getParentService().endService();
                     }
+                    return;
                 }
             }catch (Exception ex){
                 Bundle extras = new Bundle();
@@ -822,6 +833,7 @@ public final class ConnectionHandler extends Thread {
                 sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
                 AppLogger.error(TAG, "An unknown error occurred. Dropping connection to weServer", ex);
                 getParentService().endService();
+                return;
             }
         }
     }
@@ -987,12 +999,18 @@ public final class ConnectionHandler extends Thread {
     }
 
     private void processResults(MessageManager messageManager, JSONResult jsonResult){
+        if (jsonResult == null){
+            sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
+            AppLogger.error("Could not process result because the JSON Result is null", new NullPointerException("Could not process result because the JSON Result was null"));
+            return;
+        }
+
         List<ReturnType> returnTypes = parseResults(jsonResult.getResult());
         ConnectionMessage connectionMessage = connectionMessagesMap.get(jsonResult.getCorrespondingUUID());
 
         if (connectionMessage == null){
             sendLocalBroadcast(weMessage.BROADCAST_RESULT_PROCESS_ERROR, null);
-            AppLogger.error("Could not process result because the connection message was null", new NullPointerException());
+            AppLogger.error("Could not process result because the connection message was null", new NullPointerException("Could not process result because the connection message was null"));
             return;
         }
 
@@ -1069,7 +1087,7 @@ public final class ConnectionHandler extends Thread {
 
         if (actionType == null){
             sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
-            AppLogger.error("The JSONAction could not be performed because ActionType was null", new NullPointerException());
+            AppLogger.error("The JSONAction could not be performed because ActionType was null", new NullPointerException("The JSONAction could not be performed because ActionType was null"));
             return;
         }
 
@@ -1093,7 +1111,8 @@ public final class ConnectionHandler extends Thread {
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
                             getParentService().getString(R.string.action_add_participant)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Add Participant because group chat was not found with guid: " + args[0], new NullPointerException());
+                    AppLogger.error("Could not perform JSONAction Add Participant because group chat was not found by GUID lookup",
+                            new NullPointerException("Could not perform JSONAction Add Participant because group chat was not found by GUID lookup"));
                     return;
                 }
                 messageManager.addParticipantToGroup((GroupChat) apGroupChat, apContact, Calendar.getInstance().getTime(), false);
@@ -1108,7 +1127,8 @@ public final class ConnectionHandler extends Thread {
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
                             getParentService().getString(R.string.action_remove_participant)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Remove Participant because group chat was not found with guid: " + args[0], new NullPointerException());
+                    AppLogger.error("Could not perform JSONAction Remove Participant because group chat was not found by GUID lookup",
+                            new NullPointerException("Could not perform JSONAction Remove Participant because group chat was not found by GUID lookup"));
                     return;
                 }
 
@@ -1117,7 +1137,8 @@ public final class ConnectionHandler extends Thread {
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_contact_not_found,
                             getParentService().getString(R.string.action_remove_participant)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Remove Participant because contact with Handle ID: " + args[1] + " was not found.", new NullPointerException());
+                    AppLogger.error("Could not perform JSONAction Remove Participant because contact with the provided Handle ID was not found.",
+                            new NullPointerException("Could not perform JSONAction Remove Participant because contact with the provided Handle ID was not found."));
                     return;
                 }
                 messageManager.removeParticipantFromGroup((GroupChat) rpGroupChat, rpContact, Calendar.getInstance().getTime(), false);
@@ -1131,7 +1152,8 @@ public final class ConnectionHandler extends Thread {
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
                             getParentService().getString(R.string.action_rename_group)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with guid: " + args[0], new NullPointerException());
+                    AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found by GUID lookup",
+                            new NullPointerException("Could not perform JSONAction Rename Group because group chat was not found by GUID lookup"));
                     return;
                 }
                 messageManager.renameGroupChat((GroupChat) rnGroupChat, args[1], Calendar.getInstance().getTime(), false);
@@ -1148,7 +1170,8 @@ public final class ConnectionHandler extends Thread {
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_group_not_found,
                             getParentService().getString(R.string.action_leave_group)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found with guid: " + args[0], new NullPointerException());
+                    AppLogger.error("Could not perform JSONAction Rename Group because group chat was not found by GUID lookup",
+                            new NullPointerException("Could not perform JSONAction Rename Group because group chat was not found by GUID lookup"));
                     return;
                 }
                 messageManager.leaveGroup((GroupChat) lvGroupChat, Calendar.getInstance().getTime(), false);
@@ -1156,7 +1179,8 @@ public final class ConnectionHandler extends Thread {
 
             default:
                 sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
-                AppLogger.error("Could not perform JSONAction because an unsupported action type was received", new NullPointerException());
+                AppLogger.error("Could not perform JSONAction because an unsupported action type was received",
+                        new NullPointerException("Could not perform JSONAction because an unsupported action type was received"));
                 break;
         }
     }
@@ -1164,7 +1188,7 @@ public final class ConnectionHandler extends Thread {
     private boolean validateMessageReturnType(MessageManager messageManager, JSONMessage jsonMessage, ReturnType returnType){
         if (returnType == null){
             messageManager.alertMessageSendFailure(jsonMessage, ReturnType.UNKNOWN_ERROR);
-            AppLogger.error(TAG, "No return type was found", new Exception());
+            AppLogger.error(TAG, "No return type was found", new NullPointerException("No return type was found"));
             return false;
         }
 
@@ -1204,7 +1228,7 @@ public final class ConnectionHandler extends Thread {
                 break;
             default:
                 messageManager.alertMessageSendFailure(jsonMessage, ReturnType.UNKNOWN_ERROR);
-                AppLogger.error(TAG, "An unsupported ReturnType enum was found", new Exception());
+                AppLogger.error(TAG, "An unsupported ReturnType enum was found", new UnsupportedOperationException("An unsupported ReturnType enum was found"));
                 return false;
         }
         return true;
@@ -1213,7 +1237,7 @@ public final class ConnectionHandler extends Thread {
     private boolean validateActionReturnType(MessageManager messageManager, JSONAction jsonAction, ReturnType returnType){
         if (returnType == null){
             messageManager.alertActionPerformFailure(jsonAction, ReturnType.UNKNOWN_ERROR);
-            AppLogger.error(TAG, "No return type was found", new Exception());
+            AppLogger.error(TAG, "No return type was found", new NullPointerException("No return type was found"));
             return false;
         }
 
@@ -1246,7 +1270,7 @@ public final class ConnectionHandler extends Thread {
                 break;
             default:
                 messageManager.alertActionPerformFailure(jsonAction, ReturnType.UNKNOWN_ERROR);
-                AppLogger.error(TAG, "An unsupported ReturnType enum was found", new Exception());
+                AppLogger.error(TAG, "An unsupported ReturnType enum was found", new UnsupportedOperationException("An unsupported ReturnType enum was found."));
                 return false;
         }
         return true;
