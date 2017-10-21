@@ -1,6 +1,7 @@
 package scott.wemessage.server;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -85,7 +86,9 @@ public final class MessageServer {
                 shutdown(-1, false);
             }
         }else {
-            System.exit(-1);
+            if (isRunning.get()) {
+                System.exit(-1);
+            }
         }
     }
 
@@ -304,6 +307,13 @@ public final class MessageServer {
             return false;
         }
 
+        if(!Locale.getDefault().getDisplayLanguage().equals("English")){
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "Currently, weServer only works if English is your default language.");
+            ServerLogger.log(ServerLogger.Level.INFO, TAG, "Please set your system language to English in order to use your weServer.");
+            shutdown(-1, false);
+            return false;
+        }
+
         try {
             Integer osNumber = Integer.parseInt(System.getProperty("os.version").split("\\.")[1]);
 
@@ -314,6 +324,7 @@ public final class MessageServer {
             }
         }catch (Exception ex){
             ServerLogger.error("A severe error occurred while detecting the OS version. Please report this problem if you are seeing this.", ex);
+            shutdown(-1, false);
             return false;
         }
 
@@ -342,7 +353,7 @@ public final class MessageServer {
                 public void run() {
                     System.exit(returnCode);
                 }
-            }, 2000);
+            }, 1000);
         }catch(Exception ex){
             ServerLogger.error(TAG, "An error occurred while shutting down the server.", ex);
             System.exit(returnCode);
