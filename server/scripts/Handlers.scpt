@@ -143,7 +143,7 @@ on renameGroup(algorithmRow, groupNameCheck, noNameFlag, newGroupTitle)
 		tell process "Messages"
 			select groupChat
 			try
-				tell window 1 to tell splitter group 1 to tell button 2
+				tell window 1 to tell splitter group 1 to tell button "Details"
 					click
 					tell pop over 1 to tell scroll area 1 to tell text field 1
 						set value to newGroupTitle
@@ -189,7 +189,7 @@ on addParticipantToGroup(algorithmRow, groupNameCheck, noNameFlag, phoneNumber)
 			tell process "Messages"
 				select groupChat
 				try
-					tell window 1 to tell splitter group 1 to tell button 2
+					tell window 1 to tell splitter group 1 to tell button "Details"
 						click
 
 						tell pop over 1 to tell scroll area 1 to tell text field 2
@@ -246,7 +246,7 @@ on addParticipantToGroup(algorithmRow, groupNameCheck, noNameFlag, phoneNumber)
 		tell process "Messages"
 			select groupChat
 			try
-				tell window 1 to tell splitter group 1 to tell button 2
+				tell window 1 to tell splitter group 1 to tell button "Details"
 					click
 
 					tell pop over 1 to tell scroll area 1 to tell text field 2
@@ -306,7 +306,7 @@ on removeParticipantFromGroup(algorithmRow, groupNameCheck, noNameFlag, phoneNum
 		tell process "Messages"
 			select groupChat
 			try
-				tell window 1 to tell splitter group 1 to tell button 2
+				tell window 1 to tell splitter group 1 to tell button "Details"
 					click
 					tell pop over 1 to tell scroll area 1
 						repeat with theRow in (table 1's entire contents) as list
@@ -348,13 +348,31 @@ on createGroup(groupName, participants, targetMessage)
 
 	try
 		tell application "System Events" to tell process "Messages"
+			set theTextField to missing value
+
+			tell window 1 to tell splitter group 1 to tell button 1 to click
+
+			try
+				set theTextField to text field 1 of scroll area 3 of splitter group 1 of window 1
+			on error
+				set theTextField to text field 1 of scroll area 4 of splitter group 1 of window 1
+			end try
+
 			tell window 1
-				tell splitter group 1 to tell button 1 to click
-				tell splitter group 1 to tell scroll area 3 to tell text field 1
+				tell theTextField
 					set value to participants
 					keystroke ","
 				end tell
-				tell text area 1 of scroll area 4 of splitter group 1
+
+				set theTextArea to missing value
+
+				try
+					set theTextArea to text area 1 of scroll area 4 of splitter group 1
+				on error
+					set theTextArea to text area 1 of scroll area 3 of splitter group 1
+				end try
+
+				tell theTextArea
 					select
 					set value to targetMessage
 					keystroke return
@@ -362,7 +380,7 @@ on createGroup(groupName, participants, targetMessage)
 				end tell
 				delay 0.2
 				try
-					tell splitter group 1 to tell button 2
+					tell splitter group 1 to tell button "Details"
 						click
 						tell pop over 1 to tell scroll area 1 to tell text field 1
 							set value to groupName
@@ -402,7 +420,7 @@ on leaveGroup(algorithmRow, groupNameCheck, noNameFlag)
 		tell process "Messages"
 			select groupChat
 			try
-				tell window 1 to tell splitter group 1 to tell button 2
+				tell window 1 to tell splitter group 1 to tell button "Details"
 					click
 					tell pop over 1 to tell scroll area 1
 						tell button 1
@@ -463,7 +481,16 @@ on sendGroupTextMessage(algorithmRow, groupNameCheck, noNameFlag, targetMessage)
 		tell application "System Events"
 			tell process "Messages"
 				select groupChat
-				tell text area 1 of scroll area 4 of splitter group 1 of window 1
+
+				set theTextArea to missing value
+
+				try
+					set theTextArea to text area 1 of scroll area 4 of splitter group 1 of window 1
+				on error
+					set theTextArea to text area 1 of scroll area 3 of splitter group 1 of window 1
+				end try
+
+				tell theTextArea
 					set value to targetMessage
 					keystroke return
 					return SENT
@@ -539,7 +566,16 @@ on sendGroupMessageFile(algorithmRow, groupNameCheck, noNameFlag, fileLocation)
 			my foregroundApp("Messages", "Messages", true)
 			tell process "Messages"
 				select groupChat
-				tell text area 1 of scroll area 4 of splitter group 1 of window 1
+
+				set theTextArea to missing value
+
+				try
+					set theTextArea to text area 1 of scroll area 4 of splitter group 1 of window 1
+				on error
+					set theTextArea to text area 1 of scroll area 3 of splitter group 1 of window 1
+				end try
+
+				tell theTextArea
 					keystroke "v" using command down
 					keystroke return
 					return SENT
@@ -588,7 +624,7 @@ on findGroupRow(algorithmRow, groupNameCheck, noNameFlag)
 					set rowParticipantList to {}
 
 					tell table 1 of scroll area 1 of splitter group 1 of window 1 to select row theRow
-					tell window 1 to tell splitter group 1 to tell button 2
+					tell window 1 to tell splitter group 1 to tell button "Details"
 						click
 
 						tell pop over 1 to tell scroll area 1
@@ -661,10 +697,21 @@ end findGroupRow
 
 on isNumberIMessage(phoneNumber)
 	try
+		set theTextField to missing value
+
+		tell application "System Events" to tell process "Messages" to tell window 1 to tell splitter group 1 to tell button 1 to click
+
+		tell application "System Events" to tell process "Messages"
+			try
+				set theTextField to text field 1 of scroll area 3 of splitter group 1 of window 1
+			on error
+				set theTextField to text field 1 of scroll area 4 of splitter group 1 of window 1
+			end try
+		end tell
+
 		tell application "System Events" to tell process "Messages"
 			tell window 1
-				tell splitter group 1 to tell button 1 to click
-				tell splitter group 1 to tell scroll area 3 to tell text field 1
+				tell theTextField
 					set value to phoneNumber
 					keystroke ","
 					keystroke (ASCII character 8)
@@ -673,7 +720,7 @@ on isNumberIMessage(phoneNumber)
 		end tell
 
 		ignoring application responses
-			tell application "System Events" to tell process "Messages" to tell window 1 to tell splitter group 1 to tell scroll area 3 to tell text field 1
+			tell application "System Events" to tell process "Messages" to tell theTextField
 				perform action "AXShowMenu" of menu button 1
 			end tell
 		end ignoring
@@ -683,7 +730,7 @@ on isNumberIMessage(phoneNumber)
 		delay 0.05
 
 		tell application "System Events" to tell process "Messages"
-			tell window 1 to tell splitter group 1 to tell scroll area 3 to tell text field 1
+			tell theTextField
 				try
 					set menuItemTitle to title of menu item 2 of menu 1
 				on error

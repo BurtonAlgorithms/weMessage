@@ -125,7 +125,8 @@ public class CommandResetLoginInfo extends CoreCommand {
 
                     configuration.writeJsonToConfig(configJSON);
                     isPasswordNotAuthenticated = false;
-                    ServerLogger.log("Password successfully updated.");
+                    ServerLogger.emptyLine();
+                    ServerLogger.log("Login information successfully updated.");
                 } catch (Exception ex) {
                     ServerLogger.error("An error occurred while trying to set a password. Shutting down!", ex);
                     getCommandManager().getMessageServer().shutdown(-1, false);
