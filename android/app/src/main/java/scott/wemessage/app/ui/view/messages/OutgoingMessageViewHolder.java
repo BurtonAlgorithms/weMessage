@@ -60,12 +60,12 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
     public OutgoingMessageViewHolder(View itemView) {
         super(itemView);
 
-        attachmentsContainer = (LinearLayout) itemView.findViewById(R.id.attachmentsContainer);
-        errorBubble = (ImageView) itemView.findViewById(R.id.errorBubble);
-        errorMessageView = (TextView) itemView.findViewById(R.id.errorMessageView);
-        selectedBubble = (ImageView) itemView.findViewById(R.id.selectedMessageBubble);
-        deliveryMessageView = (TextView) itemView.findViewById(R.id.deliveryMessageView);
-        deliveryMessageTimeView = (TextView) itemView.findViewById(R.id.deliveryMessageTimeView);
+        attachmentsContainer = itemView.findViewById(R.id.attachmentsContainer);
+        errorBubble = itemView.findViewById(R.id.errorBubble);
+        errorMessageView = itemView.findViewById(R.id.errorMessageView);
+        selectedBubble = itemView.findViewById(R.id.selectedMessageBubble);
+        deliveryMessageView = itemView.findViewById(R.id.deliveryMessageView);
+        deliveryMessageTimeView = itemView.findViewById(R.id.deliveryMessageTimeView);
     }
 
     @Override
@@ -229,11 +229,7 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
 
         bubble.setLayoutParams(layoutParams);
 
-        if (!message.hasErrored() && (message.getMessage().isDelivered() || message.getMessage().isRead())){
-            showDeliveryView = true;
-        }else {
-            showDeliveryView = false;
-        }
+        showDeliveryView = !message.hasErrored() && (message.getMessage().isDelivered() || message.getMessage().isRead());
 
         if (message.getMessage().isDelivered()){
             deliveryMessageView.setText(itemView.getContext().getString(R.string.word_delivered));

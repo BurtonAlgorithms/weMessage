@@ -25,14 +25,14 @@ public class AlertDialogLayout extends LinearLayout {
     }
 
     public void setTitle(String title){
-        TextView view = (TextView) findViewById(R.id.alertDialogTitle);
+        TextView view = findViewById(R.id.alertDialogTitle);
         view.setText(title);
 
         this.title = title;
     }
 
     public void setMessage(String message){
-        TextView view = (TextView) findViewById(R.id.alertDialogMessage);
+        TextView view = findViewById(R.id.alertDialogMessage);
         view.setText(message);
 
         this.message = message;

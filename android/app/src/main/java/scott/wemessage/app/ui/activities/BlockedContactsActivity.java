@@ -135,8 +135,8 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
         weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
         LocalBroadcastManager.getInstance(this).registerReceiver(blockedContactsBroadcastReceiver, broadcastIntentFilter);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.blockedContactsToolbar);
-        ImageButton backButton = (ImageButton) toolbar.findViewById(R.id.blockedContactsBackButton);
+        Toolbar toolbar = findViewById(R.id.blockedContactsToolbar);
+        ImageButton backButton = toolbar.findViewById(R.id.blockedContactsBackButton);
 
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -148,8 +148,8 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
         toolbar.setTitle(null);
         setSupportActionBar(toolbar);
 
-        searchContactEditText = (EditText) findViewById(R.id.searchContactEditText);
-        contactsRecyclerView = (RecyclerView) findViewById(R.id.contactsRecyclerView);
+        searchContactEditText = findViewById(R.id.searchContactEditText);
+        contactsRecyclerView = findViewById(R.id.contactsRecyclerView);
 
         contactAdapter = new ContactAdapter();
         contactsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -358,7 +358,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             View snackbarView = snackbar.getView();
-            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
             textView.setMaxLines(5);
 
             snackbar.show();
@@ -503,10 +503,10 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                 isInit = true;
 
                 swipeLayout = (SwipeLayout) itemView;
-                contactPictureView = (ImageView) itemView.findViewById(R.id.blockedContactPictureView);
-                contactDisplayNameView = (TextView) itemView.findViewById(R.id.blockedContactDisplayNameView);
-                contactHandle = (TextView) itemView.findViewById(R.id.blockedContactHandle);
-                unblockContactButton = (LinearLayout) itemView.findViewById(R.id.contactUnblockButton);
+                contactPictureView = itemView.findViewById(R.id.blockedContactPictureView);
+                contactDisplayNameView = itemView.findViewById(R.id.blockedContactDisplayNameView);
+                contactHandle = itemView.findViewById(R.id.blockedContactHandle);
+                unblockContactButton = itemView.findViewById(R.id.contactUnblockButton);
             }
         }
     }

@@ -41,8 +41,8 @@ public class MessageVideoActivity extends AppCompatActivity implements EasyVideo
             previousChatId = savedInstanceState.getString("previousChatId");
         }
 
-        doneButton = (TextView) findViewById(R.id.doneButton);
-        videoPlayer = (VideoAttachmentPlayer) findViewById(R.id.messageVideoPlayer);
+        doneButton = findViewById(R.id.doneButton);
+        videoPlayer = findViewById(R.id.messageVideoPlayer);
 
         doneButton.setOnClickListener(new View.OnClickListener() {
             @Override

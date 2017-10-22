@@ -205,11 +205,11 @@ public class LaunchFragment extends Fragment {
     public View onCreateView(final LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_launch, container, false);
 
-        launchConstraintLayout = (ConstraintLayout) view.findViewById(R.id.launchConstraintLayout);
-        ipEditText = (EditText) view.findViewById(R.id.launchIpEditText);
-        emailEditText = (EditText) view.findViewById(R.id.launchEmailEditText);
-        passwordEditText = (EditText) view.findViewById(R.id.launchPasswordEditText);
-        signInButton = (FontButton) view.findViewById(R.id.signInButton);
+        launchConstraintLayout = view.findViewById(R.id.launchConstraintLayout);
+        ipEditText = view.findViewById(R.id.launchIpEditText);
+        emailEditText = view.findViewById(R.id.launchEmailEditText);
+        passwordEditText = view.findViewById(R.id.launchPasswordEditText);
+        signInButton = view.findViewById(R.id.signInButton);
         oldEditTextColor = emailEditText.getCurrentTextColor();
 
         if (savedInstanceState != null) {
@@ -654,7 +654,7 @@ public class LaunchFragment extends Fragment {
         snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
         View snackbarView = snackbar.getView();
-        TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+        TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
         textView.setMaxLines(5);
 
         return snackbar;

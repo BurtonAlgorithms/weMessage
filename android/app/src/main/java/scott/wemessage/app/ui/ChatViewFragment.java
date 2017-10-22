@@ -222,10 +222,10 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_chat_view, container, false);
 
-        Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.chatViewToolbar);
-        toolbarBackButton = (ImageButton) toolbar.findViewById(R.id.chatViewBackButton);
-        toolbarEditButton = (Button) toolbar.findViewById(R.id.chatViewEditButton);
-        toolbarCancelButton = (Button) toolbar.findViewById(R.id.chatViewCancelButton);
+        Toolbar toolbar = getActivity().findViewById(R.id.chatViewToolbar);
+        toolbarBackButton = toolbar.findViewById(R.id.chatViewBackButton);
+        toolbarEditButton = toolbar.findViewById(R.id.chatViewEditButton);
+        toolbarCancelButton = toolbar.findViewById(R.id.chatViewCancelButton);
 
         toolbarBackButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -255,11 +255,11 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         toolbar.setTitle(null);
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
-        chatViewRecyclerView = (RecyclerView) view.findViewById(R.id.chatViewRecyclerView);
-        bottomSheetLayout = (BottomSheetLayout) view.findViewById(R.id.chatViewBottomSheetLayout);
-        chatViewChoosePhotoLayout = (RelativeLayout) view.findViewById(R.id.chatViewChoosePhotoLayout);
-        chatViewChoosePhotoRecyclerView = (RecyclerView) view.findViewById(R.id.chatViewChoosePhotoRecyclerView);
-        chatViewChoosePhotoErrorTextView = (TextView) view.findViewById(R.id.chatViewChoosePhotoErrorTextView);
+        chatViewRecyclerView = view.findViewById(R.id.chatViewRecyclerView);
+        bottomSheetLayout = view.findViewById(R.id.chatViewBottomSheetLayout);
+        chatViewChoosePhotoLayout = view.findViewById(R.id.chatViewChoosePhotoLayout);
+        chatViewChoosePhotoRecyclerView = view.findViewById(R.id.chatViewChoosePhotoRecyclerView);
+        chatViewChoosePhotoErrorTextView = view.findViewById(R.id.chatViewChoosePhotoErrorTextView);
 
         GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), 2);
         layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -932,7 +932,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             View snackbarView = snackbar.getView();
-            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
             textView.setMaxLines(5);
 
             snackbar.show();
@@ -1198,15 +1198,15 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             if (!isInit){
                 isInit = true;
 
-                chatViewPictureContainer = (LinearLayout) itemView.findViewById(R.id.chatViewPictureContainer);
-                chatViewPicture = (ImageView) itemView.findViewById(R.id.chatViewPicture);
-                chatViewEditPictureTextView = (TextView) itemView.findViewById(R.id.chatViewEditPictureTextView);
-                chatViewNameSwitcher = (ViewSwitcher) itemView.findViewById(R.id.chatViewNameSwitcher);
-                chatViewName = (TextView) itemView.findViewById(R.id.chatViewName);
-                chatViewEditName = (EditText) itemView.findViewById(R.id.chatViewEditName);
-                chatDoNotDisturbSwitch = (Switch) itemView.findViewById(R.id.chatViewDoNotDisturbSwitch);
-                chatLeaveButton = (Button) itemView.findViewById(R.id.chatViewLeaveButton);
-                chatViewContactsTextView = (TextView) itemView.findViewById(R.id.chatViewContactsTextView);
+                chatViewPictureContainer = itemView.findViewById(R.id.chatViewPictureContainer);
+                chatViewPicture = itemView.findViewById(R.id.chatViewPicture);
+                chatViewEditPictureTextView = itemView.findViewById(R.id.chatViewEditPictureTextView);
+                chatViewNameSwitcher = itemView.findViewById(R.id.chatViewNameSwitcher);
+                chatViewName = itemView.findViewById(R.id.chatViewName);
+                chatViewEditName = itemView.findViewById(R.id.chatViewEditName);
+                chatDoNotDisturbSwitch = itemView.findViewById(R.id.chatViewDoNotDisturbSwitch);
+                chatLeaveButton = itemView.findViewById(R.id.chatViewLeaveButton);
+                chatViewContactsTextView = itemView.findViewById(R.id.chatViewContactsTextView);
 
                 chatViewEditName.setOnKeyListener(new View.OnKeyListener() {
                     @Override
@@ -1342,9 +1342,9 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 isInit = true;
 
                 swipeLayout = (SwipeLayout) itemView;
-                chatContactRemoveButtonLayout = (LinearLayout) itemView.findViewById(R.id.chatContactRemoveButtonLayout);
-                chatContactPictureView = (ImageView) itemView.findViewById(R.id.chatContactPictureView);
-                chatContactDisplayNameView = (TextView) itemView.findViewById(R.id.chatContactDisplayNameView);
+                chatContactRemoveButtonLayout = itemView.findViewById(R.id.chatContactRemoveButtonLayout);
+                chatContactPictureView = itemView.findViewById(R.id.chatContactPictureView);
+                chatContactDisplayNameView = itemView.findViewById(R.id.chatContactDisplayNameView);
             }
         }
     }
@@ -1387,9 +1387,9 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         public AttachmentHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_item_full_gallery_view, parent, false));
 
-            galleryViewLayout = (RelativeLayout) itemView.findViewById(R.id.galleryViewLayout);
-            galleryImageView = (ImageView) itemView.findViewById(R.id.galleryImageView);
-            videoIndicatorView = (ImageView) itemView.findViewById(R.id.videoIndicatorView);
+            galleryViewLayout = itemView.findViewById(R.id.galleryViewLayout);
+            galleryImageView = itemView.findViewById(R.id.galleryImageView);
+            videoIndicatorView = itemView.findViewById(R.id.videoIndicatorView);
 
             itemView.setOnClickListener(this);
         }
@@ -1488,8 +1488,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         public ChoosePhotoHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_item_full_gallery_view, parent, false));
 
-            galleryViewLayout = (RelativeLayout) itemView.findViewById(R.id.galleryViewLayout);
-            galleryImageView = (ImageView) itemView.findViewById(R.id.galleryImageView);
+            galleryViewLayout = itemView.findViewById(R.id.galleryViewLayout);
+            galleryImageView = itemView.findViewById(R.id.galleryImageView);
 
             itemView.setOnClickListener(this);
         }

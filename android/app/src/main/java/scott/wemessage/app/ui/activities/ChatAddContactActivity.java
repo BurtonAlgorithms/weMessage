@@ -152,8 +152,8 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
         weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
         LocalBroadcastManager.getInstance(this).registerReceiver(addContactBroadcastReceiver, broadcastIntentFilter);
 
-        searchContactEditText = (EditText) findViewById(R.id.searchContactEditText);
-        contactsRecyclerView = (RecyclerView) findViewById(R.id.contactsRecyclerView);
+        searchContactEditText = findViewById(R.id.searchContactEditText);
+        contactsRecyclerView = findViewById(R.id.contactsRecyclerView);
         oldEditTextColor = searchContactEditText.getCurrentTextColor();
 
         findViewById(R.id.chatAddContactCancelButton).setOnClickListener(new View.OnClickListener() {
@@ -474,7 +474,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             View snackbarView = snackbar.getView();
-            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
             textView.setMaxLines(5);
 
             snackbar.show();
@@ -532,9 +532,9 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
         public ContactHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_item_contact, parent, false));
 
-            contactPictureView = (ImageView) itemView.findViewById(R.id.contactPictureView);
-            contactDisplayNameView = (TextView) itemView.findViewById(R.id.contactDisplayNameView);
-            contactHandle = (TextView) itemView.findViewById(R.id.contactHandle);
+            contactPictureView = itemView.findViewById(R.id.contactPictureView);
+            contactDisplayNameView = itemView.findViewById(R.id.contactDisplayNameView);
+            contactHandle = itemView.findViewById(R.id.contactHandle);
 
             itemView.setOnClickListener(this);
         }

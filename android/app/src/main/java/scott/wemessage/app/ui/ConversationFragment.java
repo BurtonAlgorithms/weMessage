@@ -263,9 +263,9 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         if (getChat() == null) return view;
 
-        Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.conversationToolbar);
-        ImageButton backButton = (ImageButton) toolbar.findViewById(R.id.conversationBackButton);
-        ImageButton infoButton = (ImageButton) toolbar.findViewById(R.id.conversationInfoButton);
+        Toolbar toolbar = getActivity().findViewById(R.id.conversationToolbar);
+        ImageButton backButton = toolbar.findViewById(R.id.conversationBackButton);
+        ImageButton infoButton = toolbar.findViewById(R.id.conversationInfoButton);
 
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -288,14 +288,14 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         toolbar.setTitle(null);
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
 
-        chatTitleView = (ChatTitleView) toolbar.findViewById(R.id.chatTitleView);
-        messageList = (MessagesList) view.findViewById(R.id.messagesList);
-        messageInput = (MessageInput) view.findViewById(R.id.messageInputView);
+        chatTitleView = toolbar.findViewById(R.id.chatTitleView);
+        messageList = view.findViewById(R.id.messagesList);
+        messageInput = view.findViewById(R.id.messageInputView);
 
         bottomDivider = view.findViewById(R.id.messageInputDivider);
-        conversationBottomSheet = (BottomSheetLayout) view.findViewById(R.id.conversationBottomSheetLayout);
-        galleryFragmentContainer = (FrameLayout) view.findViewById(R.id.galleryFragmentContainer);
-        messageSelectionModeBar = (RelativeLayout) view.findViewById(R.id.messageSelectionModeBar);
+        conversationBottomSheet = view.findViewById(R.id.conversationBottomSheetLayout);
+        galleryFragmentContainer = view.findViewById(R.id.galleryFragmentContainer);
+        messageSelectionModeBar = view.findViewById(R.id.messageSelectionModeBar);
 
         ImageLoader imageLoader;
         final MessageManager messageManager = weMessage.get().getMessageManager();
@@ -877,10 +877,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public boolean onNotification(String macGuid) {
-        if (getChat().getMacGuid().equals(macGuid)){
-            return false;
-        }
-        return true;
+        return !getChat().getMacGuid().equals(macGuid);
     }
 
     public synchronized AudioAttachmentMediaPlayer getAudioAttachmentMediaPlayer(){
@@ -1449,7 +1446,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             View snackbarView = snackbar.getView();
-            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
             textView.setMaxLines(5);
 
             snackbar.show();

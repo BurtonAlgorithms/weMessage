@@ -63,7 +63,7 @@ public class AttachmentUndefinedView extends AttachmentView {
     private void init(){
         if (!isInit) {
             undefinedAttachmentImageView = (RoundedImageView) findViewById(R.id.undefinedAttachmentImageView);
-            undefinedAttachmentTextView = (FontTextView) findViewById(R.id.undefinedAttachmentTextView) ;
+            undefinedAttachmentTextView = findViewById(R.id.undefinedAttachmentTextView);
 
             isInit = true;
         }

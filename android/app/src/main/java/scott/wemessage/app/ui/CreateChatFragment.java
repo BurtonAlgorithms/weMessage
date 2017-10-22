@@ -176,14 +176,14 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_create_chat, container, false);
 
-        Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.newChatToolbar);
-        Button cancelButton = (Button) toolbar.findViewById(R.id.chatCreateCancelButton);
+        Toolbar toolbar = getActivity().findViewById(R.id.newChatToolbar);
+        Button cancelButton = toolbar.findViewById(R.id.chatCreateCancelButton);
 
-        bottomSheetLayout = (CreateChatBottomSheet) view.findViewById(R.id.createChatSheetLayout);
-        selectedContactsView = (FlexboxLayout) view.findViewById(R.id.selectedContactsView);
-        searchContactEditText = (EditText) view.findViewById(R.id.searchContactEditText);
-        newChatMessageInputView = (MessageInput) view.findViewById(R.id.newChatMessageInputView);
-        contactsRecyclerView = (RecyclerView) view.findViewById(R.id.contactsRecyclerView);
+        bottomSheetLayout = view.findViewById(R.id.createChatSheetLayout);
+        selectedContactsView = view.findViewById(R.id.selectedContactsView);
+        searchContactEditText = view.findViewById(R.id.searchContactEditText);
+        newChatMessageInputView = view.findViewById(R.id.newChatMessageInputView);
+        contactsRecyclerView = view.findViewById(R.id.contactsRecyclerView);
         oldEditTextColor = searchContactEditText.getCurrentTextColor();
 
         cancelButton.setOnClickListener(new View.OnClickListener() {
@@ -685,7 +685,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             View snackbarView = snackbar.getView();
-            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
             textView.setMaxLines(5);
 
             snackbar.show();
@@ -736,10 +736,10 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         public ContactHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_item_contact, parent, false));
 
-            selectedContactBubble = (ImageView) itemView.findViewById(R.id.selectedContactBubble);
-            contactPictureView = (ImageView) itemView.findViewById(R.id.contactPictureView);
-            contactDisplayNameView = (TextView) itemView.findViewById(R.id.contactDisplayNameView);
-            contactHandle = (TextView) itemView.findViewById(R.id.contactHandle);
+            selectedContactBubble = itemView.findViewById(R.id.selectedContactBubble);
+            contactPictureView = itemView.findViewById(R.id.contactPictureView);
+            contactDisplayNameView = itemView.findViewById(R.id.contactDisplayNameView);
+            contactHandle = itemView.findViewById(R.id.contactHandle);
 
             itemView.setOnClickListener(this);
         }

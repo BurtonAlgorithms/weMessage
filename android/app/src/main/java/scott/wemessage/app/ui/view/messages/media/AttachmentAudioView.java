@@ -253,11 +253,11 @@ public class AttachmentAudioView extends AttachmentView {
 
     private void init(){
         if (!isInit){
-            attachmentAudioBubble = (ViewGroup) findViewById(R.id.attachmentAudioBubble);
-            playImage = (ImageView) findViewById(R.id.audioPlayImage);
-            audioCounterView = (TextView) findViewById(R.id.audioCounterView);
-            durationView = (TextView) findViewById(R.id.audioDurationView);
-            errorBubble = (ImageView) findViewById(R.id.errorBubble);
+            attachmentAudioBubble = findViewById(R.id.attachmentAudioBubble);
+            playImage = findViewById(R.id.audioPlayImage);
+            audioCounterView = findViewById(R.id.audioCounterView);
+            durationView = findViewById(R.id.audioDurationView);
+            errorBubble = findViewById(R.id.errorBubble);
 
             isInit = true;
         }

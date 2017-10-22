@@ -54,9 +54,9 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
     public IncomingMessageViewHolder(View itemView) {
         super(itemView);
 
-        attachmentsContainer = (LinearLayout) itemView.findViewById(R.id.attachmentsContainer);
-        senderName = (TextView) itemView.findViewById(R.id.senderName);
-        selectedBubble = (ImageView) itemView.findViewById(R.id.selectedMessageBubble);
+        attachmentsContainer = itemView.findViewById(R.id.attachmentsContainer);
+        senderName = itemView.findViewById(R.id.senderName);
+        selectedBubble = itemView.findViewById(R.id.selectedMessageBubble);
     }
 
     @Override

@@ -229,10 +229,10 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_contact_view, container, false);
 
-        Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.contactViewToolbar);
-        final ImageButton backButton = (ImageButton) toolbar.findViewById(R.id.contactViewBackButton);
-        final Button editButton = (Button) toolbar.findViewById(R.id.contactViewEditButton);
-        final Button cancelButton = (Button) toolbar.findViewById(R.id.contactViewCancelButton);
+        Toolbar toolbar = getActivity().findViewById(R.id.contactViewToolbar);
+        final ImageButton backButton = toolbar.findViewById(R.id.contactViewBackButton);
+        final Button editButton = toolbar.findViewById(R.id.contactViewEditButton);
+        final Button cancelButton = toolbar.findViewById(R.id.contactViewCancelButton);
 
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -330,15 +330,15 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
         });
 
         contactViewRecyclerAdapter = new ContactViewRecyclerAdapter();
-        contactViewRecyclerView = (RecyclerView) view.findViewById(R.id.contactViewRecyclerView);
-        bottomSheetLayout = (BottomSheetLayout) view.findViewById(R.id.contactViewBottomSheetLayout);
+        contactViewRecyclerView = view.findViewById(R.id.contactViewRecyclerView);
+        bottomSheetLayout = view.findViewById(R.id.contactViewBottomSheetLayout);
 
         contactViewRecyclerView.setLayoutManager(layoutManager);
         contactViewRecyclerView.setAdapter(contactViewRecyclerAdapter);
 
-        contactViewChoosePhotoLayout = (RelativeLayout) view.findViewById(R.id.contactViewChoosePhotoLayout);
-        contactViewChoosePhotoErrorTextView = (TextView) view.findViewById(R.id.contactViewChoosePhotoErrorTextView);
-        contactViewChoosePhotoRecyclerView = (RecyclerView) view.findViewById(R.id.contactViewChoosePhotoRecyclerView);
+        contactViewChoosePhotoLayout = view.findViewById(R.id.contactViewChoosePhotoLayout);
+        contactViewChoosePhotoErrorTextView = view.findViewById(R.id.contactViewChoosePhotoErrorTextView);
+        contactViewChoosePhotoRecyclerView = view.findViewById(R.id.contactViewChoosePhotoRecyclerView);
 
         ViewGroup.LayoutParams layoutParams = contactViewChoosePhotoLayout.getLayoutParams();
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -783,7 +783,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             View snackbarView = snackbar.getView();
-            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
             textView.setMaxLines(5);
 
             snackbar.show();
@@ -1150,17 +1150,17 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             if (!isInit){
                 isInit = true;
 
-                contactPictureContainer = (LinearLayout) itemView.findViewById(R.id.contactViewPictureContainer);
-                contactPicture = (ImageView) itemView.findViewById(R.id.contactViewPicture);
-                contactPictureEditTextView = (TextView) itemView.findViewById(R.id.contactViewEditPictureTextView);
-                contactName = (TextView) itemView.findViewById(R.id.contactViewName);
-                contactHandleHeader = (TextView) itemView.findViewById(R.id.contactViewHandleHeader);
-                contactHandleTextView = (TextView) itemView.findViewById(R.id.contactViewHandleTextView);
-                contactViewNameSwitcher = (ViewSwitcher) itemView.findViewById(R.id.contactViewNameSwitcher);
-                contactViewEditFirstName = (EditText) itemView.findViewById(R.id.contactViewEditFirstName);
-                contactViewEditLastName = (EditText) itemView.findViewById(R.id.contactViewEditLastName);
-                doNotDisturbSwitch = (Switch) itemView.findViewById(R.id.contactViewDoNotDisturbSwitch);
-                blockButton = (Button) itemView.findViewById(R.id.contactViewBlockButton);
+                contactPictureContainer = itemView.findViewById(R.id.contactViewPictureContainer);
+                contactPicture = itemView.findViewById(R.id.contactViewPicture);
+                contactPictureEditTextView = itemView.findViewById(R.id.contactViewEditPictureTextView);
+                contactName = itemView.findViewById(R.id.contactViewName);
+                contactHandleHeader = itemView.findViewById(R.id.contactViewHandleHeader);
+                contactHandleTextView = itemView.findViewById(R.id.contactViewHandleTextView);
+                contactViewNameSwitcher = itemView.findViewById(R.id.contactViewNameSwitcher);
+                contactViewEditFirstName = itemView.findViewById(R.id.contactViewEditFirstName);
+                contactViewEditLastName = itemView.findViewById(R.id.contactViewEditLastName);
+                doNotDisturbSwitch = itemView.findViewById(R.id.contactViewDoNotDisturbSwitch);
+                blockButton = itemView.findViewById(R.id.contactViewBlockButton);
 
                 contactViewEditFirstName.setText(editedFirstName);
                 contactViewEditLastName.setText(editedLastName);
@@ -1222,9 +1222,9 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
         public GalleryHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_item_full_gallery_view, parent, false));
 
-            galleryViewLayout = (RelativeLayout) itemView.findViewById(R.id.galleryViewLayout);
-            galleryImageView = (ImageView) itemView.findViewById(R.id.galleryImageView);
-            videoIndicatorView = (ImageView) itemView.findViewById(R.id.videoIndicatorView);
+            galleryViewLayout = itemView.findViewById(R.id.galleryViewLayout);
+            galleryImageView = itemView.findViewById(R.id.galleryImageView);
+            videoIndicatorView = itemView.findViewById(R.id.videoIndicatorView);
 
             itemView.setOnClickListener(this);
         }
@@ -1323,8 +1323,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
         public ChoosePhotoHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_item_full_gallery_view, parent, false));
 
-            galleryViewLayout = (RelativeLayout) itemView.findViewById(R.id.galleryViewLayout);
-            galleryImageView = (ImageView) itemView.findViewById(R.id.galleryImageView);
+            galleryViewLayout = itemView.findViewById(R.id.galleryViewLayout);
+            galleryImageView = itemView.findViewById(R.id.galleryImageView);
 
             itemView.setOnClickListener(this);
         }

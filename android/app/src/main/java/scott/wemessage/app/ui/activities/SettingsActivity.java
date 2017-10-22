@@ -96,8 +96,8 @@ public class SettingsActivity extends AppCompatActivity {
 
         LocalBroadcastManager.getInstance(this).registerReceiver(settingsBroadcastReceiver, broadcastIntentFilter);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.settingsToolbar);
-        ImageButton homeButton = (ImageButton) toolbar.findViewById(R.id.settingsHomeButton);
+        Toolbar toolbar = findViewById(R.id.settingsToolbar);
+        ImageButton homeButton = toolbar.findViewById(R.id.settingsHomeButton);
 
         homeButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -109,9 +109,9 @@ public class SettingsActivity extends AppCompatActivity {
         toolbar.setTitle("");
         setSupportActionBar(toolbar);
 
-        TextView settingsVersionText = (TextView) findViewById(R.id.settingsVersionText);
-        ViewGroup settingsBlockedContacts = (ViewGroup) findViewById(R.id.settingsBlockedContacts);
-        ViewGroup settingsSignInOut = (ViewGroup) findViewById(R.id.settingsSignInOut);
+        TextView settingsVersionText = findViewById(R.id.settingsVersionText);
+        ViewGroup settingsBlockedContacts = findViewById(R.id.settingsBlockedContacts);
+        ViewGroup settingsSignInOut = findViewById(R.id.settingsSignInOut);
 
         settingsVersionText.setText(getString(R.string.settings_version, weMessage.WEMESSAGE_VERSION));
         settingsBlockedContacts.setOnClickListener(new View.OnClickListener() {
@@ -188,7 +188,7 @@ public class SettingsActivity extends AppCompatActivity {
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             View snackbarView = snackbar.getView();
-            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
             textView.setMaxLines(5);
 
             snackbar.show();

@@ -251,13 +251,13 @@ public class AttachmentImageView extends AttachmentView {
 
     private void init(){
         if (!isInit) {
-            attachmentImageLayout = (PercentFrameLayout) findViewById(R.id.attachmentImageLayout);
-            attachmentImage = (ImageView) findViewById(R.id.attachmentImage);
-            errorBubble = (ImageView) findViewById(R.id.errorBubble);
+            attachmentImageLayout = findViewById(R.id.attachmentImageLayout);
+            attachmentImage = findViewById(R.id.attachmentImage);
+            errorBubble = findViewById(R.id.errorBubble);
 
-            attachmentAnimatedImageLayout = (PercentFrameLayout) findViewById(R.id.attachmentAnimatedImageLayout);
-            attachmentAnimatedImageContainer = (FrameLayout) findViewById(R.id.attachmentAnimatedImageContainer);
-            animatedImage = (ImageView) findViewById(R.id.attachmentAnimatedImage);
+            attachmentAnimatedImageLayout = findViewById(R.id.attachmentAnimatedImageLayout);
+            attachmentAnimatedImageContainer = findViewById(R.id.attachmentAnimatedImageContainer);
+            animatedImage = findViewById(R.id.attachmentAnimatedImage);
 
             isInit = true;
         }

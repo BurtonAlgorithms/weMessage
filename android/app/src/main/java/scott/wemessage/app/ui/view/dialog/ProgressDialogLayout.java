@@ -27,22 +27,22 @@ public class ProgressDialogLayout extends LinearLayout {
     }
 
     public void setTitle(String title){
-        TextView titleView = (TextView) findViewById(R.id.progressDialogTitle);
+        TextView titleView = findViewById(R.id.progressDialogTitle);
         titleView.setText(title);
 
         this.title = title;
     }
 
     public void setMessage(String message){
-        TextView messageView = (TextView) findViewById(R.id.progressDialogMessage);
+        TextView messageView = findViewById(R.id.progressDialogMessage);
         messageView.setText(message);
 
         this.message = message;
     }
 
     public void hideButton(){
-        Button actionButton = (Button) findViewById(R.id.progressDialogButton);
-        LinearLayout buttonContainer = (LinearLayout) findViewById(R.id.progressDialogButtonContainer);
+        Button actionButton = findViewById(R.id.progressDialogButton);
+        LinearLayout buttonContainer = findViewById(R.id.progressDialogButtonContainer);
 
         actionButton.setClickable(false);
         actionButton.setVisibility(View.GONE);
@@ -50,8 +50,8 @@ public class ProgressDialogLayout extends LinearLayout {
     }
 
     public void showButton(){
-        Button actionButton = (Button) findViewById(R.id.progressDialogButton);
-        LinearLayout buttonContainer = (LinearLayout) findViewById(R.id.progressDialogButtonContainer);
+        Button actionButton = findViewById(R.id.progressDialogButton);
+        LinearLayout buttonContainer = findViewById(R.id.progressDialogButtonContainer);
 
         actionButton.setClickable(true);
         actionButton.setVisibility(View.VISIBLE);
@@ -59,7 +59,7 @@ public class ProgressDialogLayout extends LinearLayout {
     }
 
     public void setButton(String buttonName, OnClickListener onClickListener){
-        Button actionButton = (Button) findViewById(R.id.progressDialogButton);
+        Button actionButton = findViewById(R.id.progressDialogButton);
 
         actionButton.setText(buttonName);
         actionButton.setOnClickListener(onClickListener);

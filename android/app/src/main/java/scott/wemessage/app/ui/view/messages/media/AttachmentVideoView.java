@@ -123,9 +123,9 @@ public class AttachmentVideoView extends AttachmentView {
 
     private void init(){
         if (!isInit) {
-            attachmentVideoThumbnailLayout = (PercentFrameLayout) findViewById(R.id.attachmentVideoThumbnailLayout);
+            attachmentVideoThumbnailLayout = findViewById(R.id.attachmentVideoThumbnailLayout);
             attachmentVideoThumbnail = (RoundedImageView) findViewById(R.id.attachmentVideoThumbnail);
-            errorBubble = (ImageView) findViewById(R.id.errorBubble);
+            errorBubble = findViewById(R.id.errorBubble);
             isInit = true;
         }
     }

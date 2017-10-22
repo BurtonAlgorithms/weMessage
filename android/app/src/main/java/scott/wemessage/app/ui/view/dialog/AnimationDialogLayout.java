@@ -24,7 +24,7 @@ public class AnimationDialogLayout extends LinearLayout {
 
     public void setAnimationSource(int videoFile){
         Uri uri = Uri.parse("android.resource://" + getContext().getPackageName() + "/" + videoFile);
-        VideoView videoView = (VideoView) findViewById(R.id.animationDialogVideoView);
+        VideoView videoView = findViewById(R.id.animationDialogVideoView);
         videoView.setVideoURI(uri);
     }
 
@@ -33,7 +33,7 @@ public class AnimationDialogLayout extends LinearLayout {
     }
 
     public void startAnimation(){
-        VideoView videoView = (VideoView) findViewById(R.id.animationDialogVideoView);
+        VideoView videoView = findViewById(R.id.animationDialogVideoView);
         videoView.seekTo(0);
         videoView.start();
     }

@@ -19,9 +19,9 @@ public class ActionMessageViewHolder extends MessageHolders.BaseMessageViewHolde
     public ActionMessageViewHolder(View itemView) {
         super(itemView);
 
-        actionMessageTextView = (TextView) itemView.findViewById(R.id.actionMessageText);
-        actionMessageTimeTextView = (TextView) itemView.findViewById(R.id.actionMessageTime);
-        actionMessageDayTextView = (TextView) itemView.findViewById(R.id.actionMessageDay);
+        actionMessageTextView = itemView.findViewById(R.id.actionMessageText);
+        actionMessageTimeTextView = itemView.findViewById(R.id.actionMessageTime);
+        actionMessageDayTextView = itemView.findViewById(R.id.actionMessageDay);
     }
 
     @Override

@@ -163,11 +163,11 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_chat_list, container, false);
 
-        dialogsList = (DialogsList) view.findViewById(R.id.chatDialogsList);
-        noConversationsView = (LinearLayout) view.findViewById(R.id.noConversationsView);
-        addChatButton = (FloatingActionButton) view.findViewById(R.id.addChatButton);
+        dialogsList = view.findViewById(R.id.chatDialogsList);
+        noConversationsView = view.findViewById(R.id.noConversationsView);
+        addChatButton = view.findViewById(R.id.addChatButton);
 
-        Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.chatListToolbar);
+        Toolbar toolbar = getActivity().findViewById(R.id.chatListToolbar);
 
         toolbar.findViewById(R.id.chatListSettingsButton).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -587,7 +587,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             View snackbarView = snackbar.getView();
-            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
             textView.setMaxLines(5);
 
             snackbar.show();

@@ -79,10 +79,10 @@ public class AttachmentPopupFragment extends MessagingFragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_popup_attachment, container, false);
 
-        mediaErrorView = (TextView) view.findViewById(R.id.mediaErrorView);
-        attachmentPopupCameraButton = (Button) view.findViewById(R.id.attachmentPopupCameraButton);
-        attachmentPopupAudioButton = (Button) view.findViewById(R.id.attachmentPopupAudioButton);
-        galleryRecyclerView = (RecyclerView) view.findViewById(R.id.galleryRecyclerView);
+        mediaErrorView = view.findViewById(R.id.mediaErrorView);
+        attachmentPopupCameraButton = view.findViewById(R.id.attachmentPopupCameraButton);
+        attachmentPopupAudioButton = view.findViewById(R.id.attachmentPopupAudioButton);
+        galleryRecyclerView = view.findViewById(R.id.galleryRecyclerView);
         galleryRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 2, GridLayoutManager.HORIZONTAL, false));
 
         mediaErrorView.setVisibility(View.GONE);
@@ -458,7 +458,7 @@ public class AttachmentPopupFragment extends MessagingFragment {
             snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
 
             View snackbarView = snackbar.getView();
-            TextView textView = (TextView) snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
             textView.setMaxLines(5);
 
             snackbar.show();
@@ -506,10 +506,10 @@ public class AttachmentPopupFragment extends MessagingFragment {
         public GalleryHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_item_popup_gallery_view, parent, false));
 
-            galleryImageView = (ImageView) itemView.findViewById(R.id.galleryImageView);
-            checkmarkView = (ImageView) itemView.findViewById(R.id.checkmarkView);
-            videoIndicatorView = (ImageView) itemView.findViewById(R.id.videoIndicatorView);
-            galleryFileName = (TextView) itemView.findViewById(R.id.galleryFileName);
+            galleryImageView = itemView.findViewById(R.id.galleryImageView);
+            checkmarkView = itemView.findViewById(R.id.checkmarkView);
+            videoIndicatorView = itemView.findViewById(R.id.videoIndicatorView);
+            galleryFileName = itemView.findViewById(R.id.galleryFileName);
 
             itemView.setOnClickListener(this);
         }

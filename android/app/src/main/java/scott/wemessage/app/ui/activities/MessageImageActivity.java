@@ -44,8 +44,8 @@ public class MessageImageActivity extends AppCompatActivity {
             previousChatId = savedInstanceState.getString("previousChatId");
         }
 
-        doneButton = (TextView) findViewById(R.id.doneButton);
-        imageView = (ImageView) findViewById(R.id.messageFullScreenImageView);
+        doneButton = findViewById(R.id.doneButton);
+        imageView = findViewById(R.id.messageFullScreenImageView);
 
         if (isCollapsed){
             View doneBar = findViewById(R.id.doneBar);
