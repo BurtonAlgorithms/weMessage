@@ -38,7 +38,7 @@ public class ActionMessageViewHolder extends MessageHolders.BaseMessageViewHolde
             if (DateFormatter.isCurrentYear(date)){
                 actionMessageDayTextView.setText(DateFormatter.format(date, "MMMM d"));
             }else {
-                actionMessageDayTextView.setText(DateFormatter.format(date, "MMMM d yyyy"));
+                actionMessageDayTextView.setText(DateFormatter.format(date, "MMMM d, yyyy"));
             }
         }
         actionMessageTimeTextView.setText(" " + DateFormatter.format(date, "h:mm a"));

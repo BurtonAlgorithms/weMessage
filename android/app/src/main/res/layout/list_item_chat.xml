@@ -101,12 +101,12 @@
 
                         <TextView
                             android:id="@id/dialogDate"
-                            android:layout_weight="5"
+                            android:layout_weight="4"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="end"
                             android:ellipsize="end"
-                            android:lines="1"
+                            android:maxLines="2"
                             android:text="8:00 AM" />
                     </LinearLayout>
 

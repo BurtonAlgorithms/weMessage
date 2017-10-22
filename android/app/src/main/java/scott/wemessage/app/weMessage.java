@@ -237,6 +237,8 @@ public final class weMessage extends Application implements Constants {
         notificationManager.cancelAll();
         editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
         editor.apply();
+
+        dumpMessageManager();
     }
 
     public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){

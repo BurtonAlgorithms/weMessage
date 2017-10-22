@@ -6,9 +6,10 @@ import com.google.firebase.crash.FirebaseCrash;
 
 public final class AppLogger {
 
-    private AppLogger() { }
-
     private static final String DEFAULT_TAG = "weMessage";
+    private static final boolean USE_FIREBASE = true;
+
+    private AppLogger() { }
 
     public static void log(String message){
         log(null, null, message);
@@ -51,13 +52,17 @@ public final class AppLogger {
         if(tag == null) {
             Log.e(DEFAULT_TAG, message, ex);
 
-            FirebaseCrash.log(message);
-            FirebaseCrash.report(ex);
+            if (USE_FIREBASE) {
+                FirebaseCrash.log(message);
+                FirebaseCrash.report(ex);
+            }
         }else {
             Log.e(tag, message, ex);
 
-            FirebaseCrash.log(tag + "  " + message);
-            FirebaseCrash.report(ex);
+            if (USE_FIREBASE) {
+                FirebaseCrash.log(tag + "  " + message);
+                FirebaseCrash.report(ex);
+            }
         }
     }
 

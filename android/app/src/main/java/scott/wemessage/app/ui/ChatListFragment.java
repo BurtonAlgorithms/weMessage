@@ -200,7 +200,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                     if (DateFormatter.isCurrentYear(date)){
                         return DateFormatter.format(date, "MMMM d");
                     }else {
-                        return DateFormatter.format(date, "MMMM d yyyy");
+                        return DateFormatter.format(date, "MMMM d, yyyy");
                     }
                 }
             }

@@ -254,7 +254,7 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
                 if (DateFormatter.isCurrentYear(date)){
                     deliveryMessageTimeView.setText(DateFormatter.format(date, " MMMM d"));
                 }else {
-                    deliveryMessageTimeView.setText(DateFormatter.format(date, " MMMM d yyyy"));
+                    deliveryMessageTimeView.setText(DateFormatter.format(date, " MMMM d, yyyy"));
                 }
             }
             deliveryMessageTimeView.setVisibility(View.VISIBLE);

@@ -282,6 +282,10 @@ public class AttachmentAudioView extends AttachmentView {
         currentAudioLoopHandler.runTask();
     }
 
+    private int round(double value, double multiple){
+        return (int) (Math.round(value / multiple) * multiple);
+    }
+
     private class AudioTrackMetadata {
         String attachmentUuid;
         int durationMillisecond;
@@ -316,10 +320,13 @@ public class AttachmentAudioView extends AttachmentView {
                                 }else {
                                     currentPositionMillisecond += 1000;
                                 }
+
+                                int roundedMillis = round(currentPositionMillisecond, 1000);
+
                                 String countFormat = String.format(getResources().getConfiguration().locale, "%d:%02d",
-                                        TimeUnit.MILLISECONDS.toMinutes(currentPositionMillisecond),
-                                        TimeUnit.MILLISECONDS.toSeconds(currentPositionMillisecond)
-                                                - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(currentPositionMillisecond)));
+                                        TimeUnit.MILLISECONDS.toMinutes(roundedMillis),
+                                        TimeUnit.MILLISECONDS.toSeconds(roundedMillis)
+                                                - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(roundedMillis)));
                                 audioCounterView.setText(countFormat);
                                 handler.postDelayed(this, 1000);
                             }

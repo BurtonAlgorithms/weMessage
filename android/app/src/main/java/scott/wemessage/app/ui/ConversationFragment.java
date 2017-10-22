@@ -339,7 +339,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     if (DateFormatter.isCurrentYear(date)){
                         return DateFormatter.format(date, "MMMM d");
                     }else {
-                        return DateFormatter.format(date, "MMMM d yyyy");
+                        return DateFormatter.format(date, "MMMM d, yyyy");
                     }
                 }
             }
@@ -1166,7 +1166,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                 if (DateFormatter.isCurrentYear(message.getCreatedAt())) {
                     createdAt = new SimpleDateFormat("EEEE, MMMM d 'at' h:mm a", Locale.getDefault()).format(message.getCreatedAt());
                 } else {
-                    createdAt = new SimpleDateFormat("EEEE, MMMM d yyyy 'at' h:mm a", Locale.getDefault()).format(message.getCreatedAt());
+                    createdAt = new SimpleDateFormat("EEEE, MMMM d, yyyy 'at' h:mm a", Locale.getDefault()).format(message.getCreatedAt());
                 }
 
                 fullMessage += String.format(Locale.getDefault(), "%s: %s (%s)", message.getUser().getName(), message.getText(), createdAt) + "\n";
