@@ -1,5 +1,7 @@
 package scott.wemessage.app.ui;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -403,9 +405,9 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     @Override
                     public void run() {
                         if (!isPopupFragmentOpen) {
-                            launchAttachmentPopupFragment();
+                            launchAttachmentPopupFragment(true);
                         }else {
-                            closeAttachmentPopupFragment();
+                            closeAttachmentPopupFragment(true);
                         }
                     }
                 }, 200);
@@ -423,7 +425,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (isPopupFragmentOpen){
-                    closeAttachmentPopupFragment();
+                    closeAttachmentPopupFragment(true);
                 }
                 return false;
             }
@@ -469,7 +471,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         if (savedInstanceState != null) {
             if (savedInstanceState.getBoolean(weMessage.BUNDLE_GALLERY_FRAGMENT_OPEN)) {
-                launchAttachmentPopupFragment();
+                launchAttachmentPopupFragment(false);
             }
         }
 
@@ -508,7 +510,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
 
         if (isPopupFragmentOpen){
-            closeAttachmentPopupFragment();
+            closeAttachmentPopupFragment(false);
         }
         super.onSaveInstanceState(outState);
     }
@@ -995,7 +997,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                 }
             }
             getAttachmentPopupFragment().clearSelectedAttachments();
-            closeAttachmentPopupFragment();
+            closeAttachmentPopupFragment(true);
         } else {
             for (String s : attachmentsInput) {
                 try {
@@ -1314,31 +1316,22 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         getActivity().finish();
     }
 
-    private void launchAttachmentPopupFragment(){
+    private void launchAttachmentPopupFragment(boolean performAnimation){
         if (!isPopupFragmentOpen) {
             isPopupFragmentOpen = true;
 
-            RelativeLayout.LayoutParams messageInputLayoutParams = (RelativeLayout.LayoutParams) messageInput.getLayoutParams();
-            RelativeLayout.LayoutParams fragmentContainerLayoutParams = (RelativeLayout.LayoutParams) galleryFragmentContainer.getLayoutParams();
+            if (performAnimation) {
+                galleryFragmentContainer.animate().alpha(1.0f).translationY(0).setDuration(250).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationStart(Animator animation) {
+                        super.onAnimationStart(animation);
 
-            messageInputLayoutParams.removeRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-            messageInputLayoutParams.addRule(RelativeLayout.ABOVE, R.id.galleryFragmentContainer);
-            fragmentContainerLayoutParams.removeRule(RelativeLayout.BELOW);
-            fragmentContainerLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-
-            messageInput.setLayoutParams(messageInputLayoutParams);
-            galleryFragmentContainer.setLayoutParams(fragmentContainerLayoutParams);
-            galleryFragmentContainer.setVisibility(View.VISIBLE);
-
-            AttachmentPopupFragment popupFragment = new AttachmentPopupFragment();
-            Bundle popupArgs = new Bundle();
-
-            popupArgs.putString(weMessage.ARG_CAMERA_ATTACHMENT_FILE, cameraAttachmentInput);
-            popupArgs.putString(weMessage.ARG_VOICE_RECORDING_FILE, voiceMessageInput);
-            popupArgs.putStringArrayList(weMessage.ARG_ATTACHMENT_GALLERY_CACHE, new ArrayList<>(attachmentsInput));
-            popupFragment.setArguments(popupArgs);
-
-            getChildFragmentManager().beginTransaction().add(R.id.galleryFragmentContainer, popupFragment).commit();
+                        handleOpenAttachmentPopupFragment();
+                    }
+                });
+            } else {
+                handleOpenAttachmentPopupFragment();
+            }
         }
     }
 
@@ -1370,25 +1363,65 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         getChildFragmentManager().beginTransaction().add(R.id.galleryFragmentContainer, popupFragment).commit();
     }
 
-    private void closeAttachmentPopupFragment(){
-
+    private void closeAttachmentPopupFragment(boolean performAnimation){
         if (isPopupFragmentOpen) {
             isPopupFragmentOpen = false;
 
-            RelativeLayout.LayoutParams messageInputLayoutParams = (RelativeLayout.LayoutParams) messageInput.getLayoutParams();
-            RelativeLayout.LayoutParams fragmentContainerLayoutParams = (RelativeLayout.LayoutParams) galleryFragmentContainer.getLayoutParams();
+            if (performAnimation){
+                int height = galleryFragmentContainer.getHeight();
 
-            fragmentContainerLayoutParams.removeRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-            fragmentContainerLayoutParams.addRule(RelativeLayout.BELOW, R.id.messageInput);
-            messageInputLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-            messageInputLayoutParams.removeRule(RelativeLayout.ABOVE);
+                galleryFragmentContainer.animate().alpha(0.f).translationY(height).setDuration(250).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
 
-            messageInput.setLayoutParams(messageInputLayoutParams);
-            galleryFragmentContainer.setLayoutParams(fragmentContainerLayoutParams);
-            galleryFragmentContainer.setVisibility(View.GONE);
-
-            getChildFragmentManager().beginTransaction().remove(getChildFragmentManager().findFragmentById(R.id.galleryFragmentContainer)).commit();
+                        handleCloseAttachmentPopupFragment();
+                    }
+                });
+            }else {
+                handleCloseAttachmentPopupFragment();
+            }
         }
+    }
+
+    private void handleOpenAttachmentPopupFragment(){
+        RelativeLayout.LayoutParams messageInputLayoutParams = (RelativeLayout.LayoutParams) messageInput.getLayoutParams();
+        RelativeLayout.LayoutParams fragmentContainerLayoutParams = (RelativeLayout.LayoutParams) galleryFragmentContainer.getLayoutParams();
+
+        messageInputLayoutParams.removeRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        messageInputLayoutParams.addRule(RelativeLayout.ABOVE, R.id.galleryFragmentContainer);
+        fragmentContainerLayoutParams.removeRule(RelativeLayout.BELOW);
+        fragmentContainerLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+
+        messageInput.setLayoutParams(messageInputLayoutParams);
+        galleryFragmentContainer.setLayoutParams(fragmentContainerLayoutParams);
+        galleryFragmentContainer.setVisibility(View.VISIBLE);
+
+        AttachmentPopupFragment popupFragment = new AttachmentPopupFragment();
+        Bundle popupArgs = new Bundle();
+
+        popupArgs.putString(weMessage.ARG_CAMERA_ATTACHMENT_FILE, cameraAttachmentInput);
+        popupArgs.putString(weMessage.ARG_VOICE_RECORDING_FILE, voiceMessageInput);
+        popupArgs.putStringArrayList(weMessage.ARG_ATTACHMENT_GALLERY_CACHE, new ArrayList<>(attachmentsInput));
+        popupFragment.setArguments(popupArgs);
+
+        getChildFragmentManager().beginTransaction().add(R.id.galleryFragmentContainer, popupFragment).commit();
+    }
+
+    private void handleCloseAttachmentPopupFragment(){
+        RelativeLayout.LayoutParams messageInputLayoutParams = (RelativeLayout.LayoutParams) messageInput.getLayoutParams();
+        RelativeLayout.LayoutParams fragmentContainerLayoutParams = (RelativeLayout.LayoutParams) galleryFragmentContainer.getLayoutParams();
+
+        fragmentContainerLayoutParams.removeRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        fragmentContainerLayoutParams.addRule(RelativeLayout.BELOW, R.id.messageInput);
+        messageInputLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        messageInputLayoutParams.removeRule(RelativeLayout.ABOVE);
+
+        messageInput.setLayoutParams(messageInputLayoutParams);
+        galleryFragmentContainer.setLayoutParams(fragmentContainerLayoutParams);
+        galleryFragmentContainer.setVisibility(View.GONE);
+
+        getChildFragmentManager().beginTransaction().remove(getChildFragmentManager().findFragmentById(R.id.galleryFragmentContainer)).commit();
     }
 
     private boolean isMessageBlocked(Message message){
