@@ -26,7 +26,9 @@ public class MessagesDatabaseListener extends Listener {
         try {
             databaseManager.reloadChatDatabaseConnection();
         }catch(Exception ex){
-            ServerLogger.error("An error occurred while reloading the Messages database", ex);
+            ServerLogger.error("An error occurred while reloading the Messages database. Shutting down due to this error!", ex);
+            event.getMessageServer().shutdown(-1, false);
+            return;
         }
 
         try {

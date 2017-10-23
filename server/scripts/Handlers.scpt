@@ -459,8 +459,12 @@ on sendTextMessage(phoneNumber, targetMessage)
 			send targetMessage to targetPerson
 			return SENT
 		on error errorMessage
-			my logError("SendMessage.scpt", errorMessage)
-			return NOT_SENT
+			if errorMessage contains "get buddy id" then
+				return INVALID_NUMBER
+			else
+				my logError("SendMessage.scpt", errorMessage)
+				return NOT_SENT
+			end if
 		end try
 	end tell
 end sendTextMessage
@@ -529,8 +533,12 @@ on sendMessageFile(phoneNumber, fileLocation)
 			send targetAttachment to targetPerson
 			return SENT
 		on error errorMessage
-			my logError("SendMessage.scpt", errorMessage)
-			return NOT_SENT
+			if errorMessage contains "get buddy id" then
+				return INVALID_NUMBER
+			else
+				my logError("SendMessage.scpt", errorMessage)
+				return NOT_SENT
+			end if
 		end try
 	end tell
 end sendMessageFile
@@ -827,10 +835,10 @@ end showServerNotRunningDialog
 
 
 on logError(callScript, theError)
-	set weMessageDb to space & (POSIX path of getProjectRoot()) & "weserver.db" & space
-	set head to "sqlite3 -column " & weMessageDb & quote
-	set query to "insert into errors(script, errormessage) VALUES('" & callScript & "', '" & theError & "');"
-	do shell script head & query & quote
+	set outputFile to ((POSIX path of getProjectRoot()) & "scriptError-" & generateRandom(12))
+	set sanitizedError to do shell script "echo " & quoted form of theError & " | tr -d '\"' "
+	set theString to "{\"callScript\":\"" & callScript & "\", \"error\":\"" & sanitizedError & "\"}"
+	do shell script "echo " & quoted form of theString & " > " & quoted form of outputFile
 end logError
 
 
@@ -978,3 +986,17 @@ on checkListEquivalence(listOne, listTwo)
 
 	return true
 end checkListEquivalence
+
+
+
+on generateRandom(theLength)
+	set chars to {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
+
+	set returnString to ""
+
+	repeat theLength times
+		set returnString to returnString & some item of chars
+	end repeat
+
+	return returnString
+end generateRandom

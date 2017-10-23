@@ -36,6 +36,7 @@ public final class AppleScriptExecutor extends Thread {
 
     private final String TAG = "AppleScript Runner";
     private final List<UUID> queue = Collections.synchronizedList(new ArrayList<UUID>());
+    private final Object messageServerLock = new Object();
     private final Object scriptsFolderLock = new Object();
     private final Object scriptsFolderPathLock = new Object();
     private final Object tempFolderLock = new Object();
@@ -61,12 +62,18 @@ public final class AppleScriptExecutor extends Thread {
             }
         }catch(IOException ex){
             ServerLogger.error(TAG, "An unknown error occurred while creating the weServer temp directory. Shutting down!", ex);
-            messageServer.shutdown(-1, false);
+            server.shutdown(-1, false);
         }
 
         if (!getScriptsFolder().exists()){
             ServerLogger.error(TAG, "weServer Scripts folder could not be found. Shutting down!", new Exception());
-            messageServer.shutdown(-1, false);
+            server.shutdown(-1, false);
+        }
+    }
+
+    private MessageServer getMessageServer(){
+        synchronized (messageServerLock){
+            return messageServer;
         }
     }
 
@@ -125,14 +132,14 @@ public final class AppleScriptExecutor extends Thread {
     public Object runSendGroupMessageScript(GroupChat chat, String fileLocation, String message){
         ScriptChatMetadata metadata = new ScriptChatMetadata(chat);
 
-        return runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { String.valueOf(metadata.getAlgorithmicRow(messageServer.getMessagesDatabase())),
+        return runScript(ActionType.SEND_GROUP_MESSAGE, new String[] { String.valueOf(metadata.getAlgorithmicRow(getMessageServer().getMessagesDatabase())),
                 metadata.getGuid(), metadata.getNameCheck(), String.valueOf(metadata.getNoNameFlag()), fileLocation, message });
     }
 
     public Object runAddParticipantScript(GroupChat chat, String account){
         ScriptChatMetadata metadata = new ScriptChatMetadata(chat);
 
-        return runScript(ActionType.ADD_PARTICIPANT, new String[] { String.valueOf(metadata.getAlgorithmicRow(messageServer.getMessagesDatabase())),
+        return runScript(ActionType.ADD_PARTICIPANT, new String[] { String.valueOf(metadata.getAlgorithmicRow(getMessageServer().getMessagesDatabase())),
                 metadata.getNameCheck(), String.valueOf(metadata.getNoNameFlag()), account });
     }
 
@@ -145,21 +152,21 @@ public final class AppleScriptExecutor extends Thread {
     public Object runLeaveGroupScript(GroupChat chat){
         ScriptChatMetadata metadata = new ScriptChatMetadata(chat);
 
-        return runScript(ActionType.LEAVE_GROUP, new String[] { String.valueOf(metadata.getAlgorithmicRow(messageServer.getMessagesDatabase())),
+        return runScript(ActionType.LEAVE_GROUP, new String[] { String.valueOf(metadata.getAlgorithmicRow(getMessageServer().getMessagesDatabase())),
                 metadata.getNameCheck(), String.valueOf(metadata.getNoNameFlag()) });
     }
 
     public Object runRemoveParticipantScript(GroupChat chat, String account){
         ScriptChatMetadata metadata = new ScriptChatMetadata(chat);
 
-        return runScript(ActionType.REMOVE_PARTICIPANT, new String[] { String.valueOf(metadata.getAlgorithmicRow(messageServer.getMessagesDatabase())),
+        return runScript(ActionType.REMOVE_PARTICIPANT, new String[] { String.valueOf(metadata.getAlgorithmicRow(getMessageServer().getMessagesDatabase())),
                 metadata.getNameCheck(), String.valueOf(metadata.getNoNameFlag()), account });
     }
 
     public Object runRenameGroupScript(GroupChat chat, String newTitle){
         ScriptChatMetadata metadata = new ScriptChatMetadata(chat);
 
-        return runScript(ActionType.RENAME_GROUP, new String[] { String.valueOf(metadata.getAlgorithmicRow(messageServer.getMessagesDatabase())),
+        return runScript(ActionType.RENAME_GROUP, new String[] { String.valueOf(metadata.getAlgorithmicRow(getMessageServer().getMessagesDatabase())),
                 metadata.getNameCheck(), String.valueOf(metadata.getNoNameFlag()), newTitle });
     }
 

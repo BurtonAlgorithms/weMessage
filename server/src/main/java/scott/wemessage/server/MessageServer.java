@@ -29,11 +29,11 @@ import scott.wemessage.server.listeners.connection.DeviceJoinListener;
 import scott.wemessage.server.listeners.connection.DeviceQuitListener;
 import scott.wemessage.server.listeners.connection.DeviceUpdateListener;
 import scott.wemessage.server.listeners.connection.FileReceivedListener;
-import scott.wemessage.server.listeners.database.ErrorWatcher;
 import scott.wemessage.server.listeners.database.MessagesDatabaseListener;
 import scott.wemessage.server.scripts.AppleScriptExecutor;
 import scott.wemessage.server.security.Authenticator;
 import scott.wemessage.server.security.ServerBase64Wrapper;
+import scott.wemessage.server.utils.ErrorWatcher;
 
 public final class MessageServer {
 
@@ -49,12 +49,14 @@ public final class MessageServer {
     private CommandManager commandManager;
     private DeviceManager deviceManager;
     private EventManager eventManager;
+    private ErrorWatcher errorWatcher;
     private NotificationManager notificationManager;
 
     private final Object databaseManagerLock = new Object();
     private final Object messageDatabaseLock = new Object();
     private final Object deviceManagerLock = new Object();
     private final Object eventManagerLock = new Object();
+    private final Object errorWatcherLock = new Object();
     private final Object serverConfigurationLock = new Object();
     private final Object scriptExecutorLock = new Object();
     private final Object notificationManagerLock = new Object();
@@ -78,6 +80,7 @@ public final class MessageServer {
                 this.commandManager = new CommandManager(this);
                 this.deviceManager = new DeviceManager(this);
                 this.eventManager = new EventManager(this);
+                this.errorWatcher = new ErrorWatcher(this, serverConfiguration);
                 this.notificationManager = new NotificationManager(this);
 
                 isRunning.set(true);
@@ -238,9 +241,11 @@ public final class MessageServer {
             synchronized (scriptExecutorLock){
                 appleScriptExecutor.start();
             }
+            synchronized (errorWatcherLock){
+                errorWatcher.start();
+            }
             synchronized (eventManagerLock){
                 eventManager.start();
-                eventManager.registerListener(new ErrorWatcher());
                 eventManager.registerListener(new MessagesDatabaseListener());
                 eventManager.registerListener(new DeviceJoinListener());
                 eventManager.registerListener(new DeviceQuitListener());
@@ -346,6 +351,7 @@ public final class MessageServer {
                 if (deviceManager != null) deviceManager.stopService();
                 if (appleScriptExecutor != null) appleScriptExecutor.stopService();
                 if (eventManager != null) eventManager.stopService();
+                if (errorWatcher != null) errorWatcher.stopService();
                 isInitialized.set(false);
             }
             ServerLogger.emptyLine();

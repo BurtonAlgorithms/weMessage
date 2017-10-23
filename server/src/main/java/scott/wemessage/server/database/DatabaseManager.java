@@ -1,16 +1,9 @@
 package scott.wemessage.server.database;
 
 import com.google.gson.GsonBuilder;
-import com.sun.nio.file.SensitivityWatchEventModifier;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -29,8 +22,6 @@ import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.configuration.ServerConfiguration;
-import scott.wemessage.server.events.EventManager;
-import scott.wemessage.server.events.database.ServerDatabaseUpdateEvent;
 import scott.wemessage.server.security.ServerBase64Wrapper;
 import scott.wemessage.server.weMessage;
 
@@ -43,7 +34,6 @@ public final class DatabaseManager extends Thread {
 
     public final String TABLE_PROPERTIES = "properties";
     public final String TABLE_DEVICES = "devices";
-    public final String TABLE_ERRORS = "errors";
     public final String TABLE_QUEUE = "queue";
     public final String TABLE_ACTION_QUEUE = "action_queue";
     public final String TABLE_REGISTRATION_TOKENS = "registration_tokens";
@@ -56,10 +46,6 @@ public final class DatabaseManager extends Thread {
     public final String COLUMN_DEVICE_NAME = "device_name";
     public final String COLUMN_DEVICE_ADDRESS = "address";
     public final String COLUMN_DEVICE_LAST_EMAIL = "last_email";
-    
-    public final String COLUMN_ERROR_ROWID = "id";
-    public final String COLUMN_ERROR_MESSAGE = "errormessage";
-    public final String COLUMN_ERRORED_SCRIPT = "script";
 
     public final String COLUMN_QUEUE_MESSAGE_ROWID = "id";
     public final String COLUMN_QUEUE_MESSAGE_GUID = "guid";
@@ -545,31 +531,6 @@ public final class DatabaseManager extends Thread {
         isRunning.set(true);
 
         ServerLogger.log(ServerLogger.Level.INFO, TAG, "Database Service has started");
-
-        try (final WatchService watchService = FileSystems.getDefault().newWatchService()) {
-            final WatchKey watchKey = FileSystems.getDefault().getPath(serverConfiguration.getParentDirectoryPath()).register(watchService, new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_MODIFY}, SensitivityWatchEventModifier.HIGH);
-            while (isRunning.get()) {
-                final WatchKey wk = watchService.take();
-
-                for (WatchEvent<?> event : wk.pollEvents()) {
-                    final Path changed = (Path) event.context();
-
-                    if (changed.endsWith(serverDatabaseFileName)) {
-                        EventManager eventManager = messageServer.getEventManager();
-                        eventManager.callEvent(new ServerDatabaseUpdateEvent(eventManager, this));
-                    }
-                }
-                boolean valid = wk.reset();
-                if (!valid) {
-                    ServerLogger.log(ServerLogger.Level.INFO, TAG, "The watcher key has been unregistered");
-                }
-            }
-        }catch(Exception ex){
-            if (isRunning.get()) {
-                ServerLogger.error(TAG, "An error occurred while watching the weServer database. Shutting down!", ex);
-                messageServer.shutdown(-1, false);
-            }
-        }
     }
 
     public void stopService(){
@@ -636,21 +597,6 @@ public final class DatabaseManager extends Thread {
         Statement createDevicesStatement = serverDatabaseConnection.createStatement();
         createDevicesStatement.execute(createDevicesStatementString);
         createDevicesStatement.close();
-
-        String createErrorStatementString = "CREATE TABLE IF NOT EXISTS " + TABLE_ERRORS
-                + " (" + COLUMN_ERROR_ROWID + " integer PRIMARY KEY,  "
-                + COLUMN_ERRORED_SCRIPT + " text, "
-                + COLUMN_ERROR_MESSAGE + " text );";
-
-        Statement createErrorStatement = serverDatabaseConnection.createStatement();
-        createErrorStatement.execute(createErrorStatementString);
-        createErrorStatement.close();
-
-        String deletePresentErrorsString = "DELETE FROM " + TABLE_ERRORS + " WHERE " + COLUMN_ERROR_ROWID + " > -1;";
-        Statement deletePresentErrors = serverDatabaseConnection.createStatement();
-
-        deletePresentErrors.execute(deletePresentErrorsString);
-        deletePresentErrors.close();
 
         String createQueueStatementString = "CREATE TABLE IF NOT EXISTS " + TABLE_QUEUE
                 + " (" + COLUMN_QUEUE_MESSAGE_ROWID + " integer PRIMARY KEY,  "
