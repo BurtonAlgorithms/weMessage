@@ -323,7 +323,8 @@ public final class MessageServer {
             Integer osNumber = Integer.parseInt(System.getProperty("os.version").split("\\.")[1]);
 
             if (osNumber < weMessage.MIN_OS_VERSION) {
-                ServerLogger.log(ServerLogger.Level.INFO, TAG, "As of now, weServer only supports Mac OS Yosemite and higher. Shutting down!");
+                ServerLogger.log(ServerLogger.Level.INFO, TAG, "weServer only supports Mac OS Yosemite and higher.");
+                ServerLogger.log(ServerLogger.Level.INFO, TAG, "Please update your operating system to use it. Shutting down!");
                 shutdown(-1, false);
                 return false;
             }

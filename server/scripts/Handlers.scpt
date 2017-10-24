@@ -208,9 +208,7 @@ on addParticipantToGroup(algorithmRow, groupNameCheck, noNameFlag, phoneNumber)
 					set totalWindows to count windows
 
 					if totalWindows is greater than 1 then
-
 						repeat (totalWindows - 1) times
-
 							try
 								tell button 1 of window 1 to perform action "AXPress"
 							on error
@@ -220,7 +218,13 @@ on addParticipantToGroup(algorithmRow, groupNameCheck, noNameFlag, phoneNumber)
 
 						return NUMBER_NOT_IMESSAGE
 					else
-						return ACTION_PERFORMED
+						try
+							tell button 1 of sheet 1 of window 1 to perform action "AXPress"
+
+							return NUMBER_NOT_IMESSAGE
+						on error
+							return ACTION_PERFORMED
+						end try
 					end if
 				on error errorMessage
 					key code 53
@@ -390,9 +394,15 @@ on createGroup(groupName, participants, targetMessage)
 					end tell
 					return ACTION_PERFORMED
 				on error errorMessage
-					key code 53
-					my logError("CreateGroup.scpt", errorMessage)
-					return UI_ERROR
+					delay 1
+
+					if my createGroupErrorHelper() is equal to true then
+						return NUMBER_NOT_IMESSAGE
+					else
+						key code 53
+						my logError("CreateGroup.scpt", errorMessage)
+						return UI_ERROR
+					end if
 				end try
 			end tell
 		end tell
@@ -598,6 +608,33 @@ end sendGroupMessageFile
 
 
 
+on createGroupErrorHelper()
+	tell application "System Events" to tell process "Messages"
+		set totalWindows to count windows
+
+		if totalWindows is greater than 1 then
+			repeat (totalWindows - 1) times
+				try
+					tell button 1 of window 1 to perform action "AXPress"
+				on error
+					exit repeat
+				end try
+			end repeat
+
+			return true
+		else
+			try
+				tell button 1 of sheet 1 of window 1 to perform action "AXPress"
+				return true
+			on error
+				return false
+			end try
+		end if
+	end tell
+end createGroupErrorHelper
+
+
+
 on findGroupRow(algorithmRow, groupNameCheck, noNameFlag)
 	try
 		tell application "System Events"
@@ -695,7 +732,6 @@ on findGroupRow(algorithmRow, groupNameCheck, noNameFlag)
 			end tell
 		end tell
 	on error errorMessage
-		log errorMessage
 		my logError("Handlers.scpt", errorMessage)
 		return UI_ERROR
 	end try
@@ -800,6 +836,7 @@ on UIPreconditions()
 			set windowCount to count windows
 		end tell
 
+		if windowCount is equal to 0 then my respringMessages()
 		if windowCount is greater than 1 then my respringMessages()
 	end tell
 
