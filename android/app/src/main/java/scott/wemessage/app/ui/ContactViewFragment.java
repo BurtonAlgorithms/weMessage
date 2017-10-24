@@ -523,7 +523,14 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     public void onActionMessageAdd(ActionMessage message) { }
 
     @Override
-    public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) { }
+    public void onMessageSendFailure(final JSONMessage jsonMessage, final ReturnType returnType) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showMessageSendFailureSnackbar(jsonMessage, returnType);
+            }
+        });
+    }
 
     @Override
     public void onActionPerformFailure(final JSONAction jsonAction, final ReturnType returnType) {

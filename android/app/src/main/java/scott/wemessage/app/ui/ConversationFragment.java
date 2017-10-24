@@ -790,32 +790,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public void onMessageSendFailure(JSONMessage jsonMessage, final ReturnType returnType) {
+    public void onMessageSendFailure(final JSONMessage jsonMessage, final ReturnType returnType) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (getView() != null) {
-                    switch (returnType) {
-                        case INVALID_NUMBER:
-                            showErroredSnackbar(getString(R.string.message_delivery_failure_invalid_number));
-                            break;
-                        case NUMBER_NOT_IMESSAGE:
-                            showErroredSnackbar(getString(R.string.message_delivery_failure_imessage));
-                            break;
-                        case GROUP_CHAT_NOT_FOUND:
-                            showErroredSnackbar(getString(R.string.message_delivery_failure_group_chat));
-                            break;
-                        case SERVICE_NOT_AVAILABLE:
-                            showErroredSnackbar(getString(R.string.message_delivery_failure_service));
-                            break;
-                        case ASSISTIVE_ACCESS_DISABLED:
-                            showErroredSnackbar(getString(R.string.message_delivery_failure_assistive));
-                            break;
-                        case UI_ERROR:
-                            showErroredSnackbar(getString(R.string.message_delivery_failure_ui_error));
-                            break;
-                    }
-                }
+                showMessageSendFailureSnackbar(jsonMessage, returnType);
             }
         });
     }
@@ -861,7 +840,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     public void setAttachmentsInput(List<String> attachments, String cameraAttachmentFile, String audioFile) {
         if (isResumed()){
             if (attachments.size() > 0 && attachments.size() != attachmentsInput.size()){
-                Toast.makeText(getActivity(), getString(R.string.attachments_added_toast, attachments.size()), Toast.LENGTH_SHORT).show();
+                if (attachments.size() == 1) {
+                    Toast.makeText(getActivity(), getString(R.string.single_attachment_added_toast), Toast.LENGTH_SHORT).show();
+                }else {
+                    Toast.makeText(getActivity(), getString(R.string.attachments_added_toast, attachments.size()), Toast.LENGTH_SHORT).show();
+                }
             }
             attachmentsInput = new ArrayList<>(attachments);
 

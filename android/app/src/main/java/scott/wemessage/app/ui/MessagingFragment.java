@@ -9,12 +9,37 @@ import android.widget.TextView;
 
 import scott.wemessage.R;
 import scott.wemessage.commons.connection.json.action.JSONAction;
+import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.ReturnType;
 
 public abstract class MessagingFragment extends Fragment {
 
     private final int ERROR_SNACKBAR_DURATION = 5;
+
+    protected void showMessageSendFailureSnackbar(JSONMessage jsonMessage,  ReturnType returnType){
+
+        switch (returnType) {
+            case INVALID_NUMBER:
+                showErroredSnackbar(getString(R.string.message_delivery_failure_invalid_number));
+                break;
+            case NUMBER_NOT_IMESSAGE:
+                showErroredSnackbar(getString(R.string.message_delivery_failure_imessage));
+                break;
+            case GROUP_CHAT_NOT_FOUND:
+                showErroredSnackbar(getString(R.string.message_delivery_failure_group_chat));
+                break;
+            case SERVICE_NOT_AVAILABLE:
+                showErroredSnackbar(getString(R.string.message_delivery_failure_service));
+                break;
+            case ASSISTIVE_ACCESS_DISABLED:
+                showErroredSnackbar(getString(R.string.message_delivery_failure_assistive));
+                break;
+            case UI_ERROR:
+                showErroredSnackbar(getString(R.string.message_delivery_failure_ui_error));
+                break;
+        }
+    }
 
     protected void showActionFailureSnackbar(JSONAction jsonAction, ReturnType returnType){
         ActionType actionType = ActionType.fromCode(jsonAction.getActionType());

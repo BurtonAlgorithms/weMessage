@@ -493,8 +493,13 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     }
 
     @Override
-    public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) {
-
+    public void onMessageSendFailure(final JSONMessage jsonMessage, final ReturnType returnType) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showMessageSendFailureSnackbar(jsonMessage, returnType);
+            }
+        });
     }
 
     @Override

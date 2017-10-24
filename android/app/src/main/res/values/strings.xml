@@ -87,6 +87,7 @@
     <string name="camera_attachment_added">Camera Attachment added to the message.</string>
     <string name="audio_recording_added">Voice Message added to the message.</string>
     <string name="media_fetch_error">An error occurred while trying to get media from the device.</string>
+    <string name="single_attachment_added_toast">Attachment added to the message.</string>
     <string name="attachments_added_toast">%1$d Attachments added to the message.</string>
     <string name="max_file_size_alert_title">Files Too Large</string>
     <string name="max_file_size_alert_message">You have exceeded the maximum attachment size (%1$s). \n\nThe attachments selected are too large to be sent.</string>
