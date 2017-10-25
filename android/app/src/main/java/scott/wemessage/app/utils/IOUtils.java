@@ -1,20 +1,31 @@
 package scott.wemessage.app.utils;
 
+import android.app.Activity;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.res.Resources;
 import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.annotation.AnyRes;
 import android.support.annotation.NonNull;
+import android.view.View;
 
 import java.io.File;
 
 import scott.wemessage.R;
+import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.objects.Contact;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.utils.media.MediaDownloadCallbacks;
+import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
+import scott.wemessage.commons.types.MimeType;
+import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class IOUtils {
@@ -94,6 +105,120 @@ public class IOUtils {
         }
 
         return IOUtils.getUriFromResource(weMessage.get(), resId).toString();
+    }
+
+    public static void saveMediaToGallery(final MediaDownloadCallbacks callbacks, final Activity activity, final View view, MimeType mimeType, String attachmentUri){
+        if (!callbacks.canMediaDownloadTaskStart(attachmentUri)) return;
+
+        callbacks.onMediaDownloadTaskStart(attachmentUri);
+
+        if (mimeType == MimeType.IMAGE){
+            new AsyncTask<String, Void, GallerySaveResult>() {
+
+                @Override
+                protected GallerySaveResult doInBackground(String... params) {
+                    try {
+                        File original = new File(Uri.parse(params[0]).getPath());
+                        File output = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), original.getName());
+
+                        if (!output.exists()){
+                            FileUtils.copy(original, output);
+
+                            ContentValues values = new ContentValues();
+                            values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
+                            values.put(MediaStore.Images.Media.MIME_TYPE, AndroidUtils.getMimeTypeStringFromPath(output.getAbsolutePath()));
+                            values.put(MediaStore.MediaColumns.DATA, output.getAbsolutePath());
+
+                            activity.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
+                            return GallerySaveResult.SUCCESS;
+                        }else {
+                            return GallerySaveResult.ALREADY_EXISTS;
+                        }
+                    }catch (Exception ex){
+                        AppLogger.error("An error occurred while saving an image to gallery", ex);
+                        return GallerySaveResult.ERROR;
+                    }finally {
+                        callbacks.onMediaDownloadTaskFinish(params[0]);
+                    }
+                }
+
+                @Override
+                protected void onPostExecute(GallerySaveResult result) {
+                    if (activity != null && !activity.isDestroyed() && !activity.isFinishing() && view != null) {
+                        switch (result){
+                            case SUCCESS:
+                                DisplayUtils.showPositiveSnackbar(activity, view, 5, activity.getString(R.string.image_gallery_save));
+                                break;
+                            case ALREADY_EXISTS:
+                                DisplayUtils.showErroredSnackbar(activity, view, 5, activity.getString(R.string.image_gallery_exists));
+                                break;
+                            case ERROR:
+                                DisplayUtils.showErroredSnackbar(activity, view, 5, activity.getString(R.string.image_gallery_error));
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }.execute(attachmentUri);
+        }else if (mimeType == MimeType.VIDEO){
+            new AsyncTask<String, Void, GallerySaveResult>() {
+
+                @Override
+                protected GallerySaveResult doInBackground(String... params) {
+                    try {
+                        File original = new File(Uri.parse(params[0]).getPath());
+                        File output = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), original.getName());
+
+                        if (!output.exists()){
+                            FileUtils.copy(original, output);
+
+                            ContentValues values = new ContentValues();
+                            values.put(MediaStore.Video.Media.DATE_TAKEN, System.currentTimeMillis());
+                            values.put(MediaStore.Video.Media.MIME_TYPE, AndroidUtils.getMimeTypeStringFromPath(output.getAbsolutePath()));
+                            values.put(MediaStore.MediaColumns.DATA, output.getAbsolutePath());
+
+                            activity.getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+
+                            return GallerySaveResult.SUCCESS;
+                        }else {
+                            return GallerySaveResult.ALREADY_EXISTS;
+                        }
+                    }catch (Exception ex){
+                        AppLogger.error("An error occurred while saving a video to gallery", ex);
+                        return GallerySaveResult.ERROR;
+                    }finally {
+                        callbacks.onMediaDownloadTaskFinish(params[0]);
+                    }
+                }
+
+                @Override
+                protected void onPostExecute(GallerySaveResult result) {
+                    if (activity != null && !activity.isDestroyed() && !activity.isFinishing() && view != null) {
+                        switch (result){
+                            case SUCCESS:
+                                DisplayUtils.showPositiveSnackbar(activity, view, 5, activity.getString(R.string.video_gallery_save));
+                                break;
+                            case ALREADY_EXISTS:
+                                DisplayUtils.showErroredSnackbar(activity, view, 5, activity.getString(R.string.video_gallery_exists));
+                                break;
+                            case ERROR:
+                                DisplayUtils.showErroredSnackbar(activity, view, 5, activity.getString(R.string.video_gallery_error));
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }.execute(attachmentUri);
+        }
+    }
+
+    private enum GallerySaveResult {
+        SUCCESS,
+        ALREADY_EXISTS,
+        ERROR
     }
 
     public enum IconSize {

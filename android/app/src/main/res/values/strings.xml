@@ -77,7 +77,7 @@
     <string name="no_media_found">No media was found on this device.</string>
     <string name="permissions_error_title">Permissions Error</string>
     <string name="no_media_permission">weMessage does not have permission to access media storage.\n\nPlease grant it permission in order to be able to send attachments.</string>
-    <string name="no_media_write_permission">weMessage does not have permission to write to your storage.\n\nPlease grant it permission in order to use the Camera.</string>
+    <string name="no_media_write_permission">weMessage does not have permission to write to your storage.\n\nPlease grant it permission in order save attachments.</string>
     <string name="no_camera_permission">weMessage does not have permission to access the camera. \n\nPlease grant it permission in order to use the Camera.</string>
     <string name="no_audio_record_permission">weMessage does not have permission to record audio. \n\nPlease grant it permission in order to send voice messages.</string>
     <string name="audio_record_error">An error occurred while trying record your audio.</string>
@@ -162,10 +162,17 @@
     <string name="word_unblock">Unblock</string>
     <string name="word_delivered">Delivered</string>
     <string name="word_read">Read</string>
+    <string name="word_download">Download</string>
     <string name="offline_mode">Offline Mode</string>
     <string name="notification_channel_name">New Messages</string>
     <string name="notification_attachments">%1$s Attachments</string>
     <string name="notification_error">Notification Error</string>
     <string name="notification_error_body">An error occurred while receiving a notification.</string>
+    <string name="image_gallery_save">Image saved to your photo library!</string>
+    <string name="image_gallery_exists">This image already exists in your photo library.</string>
+    <string name="image_gallery_error">An error occurred while saving this to your photo library.</string>
+    <string name="video_gallery_save">Video saved to your video library!</string>
+    <string name="video_gallery_exists">This video already exists in your video library.</string>
+    <string name="video_gallery_error">An error occurred while saving this to your video library.</string>
 
 </resources>

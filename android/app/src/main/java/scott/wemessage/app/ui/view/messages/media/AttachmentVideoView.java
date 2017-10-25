@@ -45,6 +45,8 @@ public class AttachmentVideoView extends AttachmentView {
 
     public void bind(MessageView messageView, Attachment attachment, final MessageType messageType, final boolean isErrored){
         init();
+        final String attachmentUuid = attachment.getUuid().toString();
+
         attachmentVideoThumbnailLayout.setAlpha(0.0f);
 
         new AsyncTask<Attachment, Void, ThumbnailBitmap>(){
@@ -117,6 +119,14 @@ public class AttachmentVideoView extends AttachmentView {
             @Override
             public void onClick(View v) {
                 launchFullScreenVideoActivity(uri);
+            }
+        });
+
+        attachmentVideoThumbnailLayout.setOnLongClickListener(new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                getParentFragment().showAttachmentOptionsSheet(attachmentUuid);
+                return true;
             }
         });
     }

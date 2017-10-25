@@ -1,5 +1,6 @@
 package scott.wemessage.app.ui;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.BroadcastReceiver;
@@ -8,11 +9,15 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -86,6 +91,7 @@ import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.media.AudioAttachmentMediaPlayer;
+import scott.wemessage.app.utils.media.MediaDownloadCallbacks;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
@@ -94,7 +100,7 @@ import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ConversationFragment extends MessagingFragment implements MessageCallbacks, NotificationCallbacks,
+public class ConversationFragment extends MessagingFragment implements MessageCallbacks, NotificationCallbacks, MediaDownloadCallbacks,
         AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
 
     private final String TAG = "ConversationFragment";
@@ -111,6 +117,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private String cameraAttachmentInput;
     private String voiceMessageInput;
+    private String tempPermissionDownloadAttachment;
     private List<String> attachmentsInput = new ArrayList<>();
 
     private Chat chat;
@@ -130,6 +137,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     private ConcurrentHashMap<String, MessageView> selectedMessages = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Message> messageMapIntegrity = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, ActionMessage> actionMessageMapIntegrity = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, String> downloadTasks = new ConcurrentHashMap<>();
 
     private BroadcastReceiver messageListBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -542,6 +550,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         messageMapIntegrity.clear();
         actionMessageMapIntegrity.clear();
+        downloadTasks.clear();
 
         if (messageListAdapter != null) {
             messageListAdapter.clear();
@@ -557,6 +566,19 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         stopAudio();
         super.onDestroy();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode){
+            case weMessage.REQUEST_PERMISSION_WRITE_STORAGE:
+                if (isGranted(grantResults)){
+                    if (!StringUtils.isEmpty(tempPermissionDownloadAttachment)) {
+                        saveMediaToGallery(weMessage.get().getMessageDatabase().getAttachmentByUuid(tempPermissionDownloadAttachment));
+                    }
+                }
+                break;
+        }
     }
 
     @Override
@@ -861,6 +883,21 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
+    public void onMediaDownloadTaskStart(String attachmentUri) {
+        downloadTasks.put(attachmentUri, UUID.randomUUID().toString());
+    }
+
+    @Override
+    public void onMediaDownloadTaskFinish(String attachmentUri) {
+        downloadTasks.remove(attachmentUri);
+    }
+
+    @Override
+    public boolean canMediaDownloadTaskStart(String attachmentUri) {
+        return !downloadTasks.containsKey(attachmentUri);
+    }
+
+    @Override
     public boolean onNotification(String macGuid) {
         return !getChat().getMacGuid().equals(macGuid);
     }
@@ -915,6 +952,22 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             return true;
         }
         return false;
+    }
+
+    public synchronized void showAttachmentOptionsSheet(final String attachmentUuid){
+        if (!isSelectionMode) {
+            conversationBottomSheet.showWithSheetView(LayoutInflater.from(getActivity()).inflate(R.layout.sheet_conversation_attachment_options, conversationBottomSheet, false));
+
+            conversationBottomSheet.findViewById(R.id.conversationAttachmentSheetDownloadButton).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Attachment a = weMessage.get().getMessageDatabase().getAttachmentByUuid(attachmentUuid);
+
+                    saveMediaToGallery(a);
+                    conversationBottomSheet.dismissSheet();
+                }
+            });
+        }
     }
 
     public synchronized boolean isInSelectionMode(){
@@ -1261,6 +1314,14 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
     }
 
+    private void saveMediaToGallery(Attachment a){
+        if (!hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, getString(R.string.no_media_write_permission), "WritePermissionAlertFragment", weMessage.REQUEST_PERMISSION_WRITE_STORAGE)){
+            tempPermissionDownloadAttachment = a.getUuid().toString();
+            return;
+        }
+        IOUtils.saveMediaToGallery(this, getActivity(), getView(), AndroidUtils.getMimeTypeFromPath(a.getFileLocation().getFileLocation()), IOUtils.getUriFromFile(a.getFileLocation().getFile()).toString());
+    }
+
     private void launchContactView(){
         Intent launcherIntent = new Intent(weMessage.get(), ContactViewActivity.class);
 
@@ -1409,6 +1470,31 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private boolean isMessageBlocked(Message message){
         return message.getSender().isBlocked();
+    }
+
+    private boolean hasPermission(final String permission, String rationaleString, String alertTagId, final int requestCode){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(getActivity(), permission) != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(permission)){
+                DialogDisplayer.AlertDialogFragment alertDialogFragment = DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), rationaleString);
+
+                alertDialogFragment.setOnDismiss(new Runnable() {
+                    @Override
+                    public void run() {
+                        requestPermissions(new String[] { permission }, requestCode);
+                    }
+                });
+                alertDialogFragment.show(getFragmentManager(), alertTagId);
+                return false;
+            } else {
+                requestPermissions(new String[] { permission }, requestCode);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isGranted(int[] grantResults){
+        return (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
     }
 
     private void bindService(){

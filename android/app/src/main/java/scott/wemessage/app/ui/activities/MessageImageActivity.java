@@ -1,31 +1,44 @@
 package scott.wemessage.app.ui.activities;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 
 import scott.wemessage.R;
+import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
+import scott.wemessage.app.utils.IOUtils;
+import scott.wemessage.app.utils.OnClickWaitListener;
+import scott.wemessage.app.utils.media.MediaDownloadCallbacks;
 import scott.wemessage.app.weMessage;
+import scott.wemessage.commons.types.MimeType;
 
-public class MessageImageActivity extends AppCompatActivity {
+public class MessageImageActivity extends AppCompatActivity implements MediaDownloadCallbacks {
 
     private TextView doneButton;
     private ImageView imageView;
+    private ImageButton downloadButton;
 
+    private boolean isCollapsed;
+    private boolean isTaskRunning = false;
     private String imageUri;
     private String previousChatId;
-    private boolean isCollapsed;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -45,6 +58,7 @@ public class MessageImageActivity extends AppCompatActivity {
         }
 
         doneButton = findViewById(R.id.doneButton);
+        downloadButton = findViewById(R.id.downloadImageButton);
         imageView = findViewById(R.id.messageFullScreenImageView);
 
         if (isCollapsed){
@@ -118,6 +132,13 @@ public class MessageImageActivity extends AppCompatActivity {
             }
         });
 
+        downloadButton.setOnClickListener(new OnClickWaitListener(1000L) {
+            @Override
+            public void onWaitClick(View v) {
+                saveToGallery();
+            }
+        });
+
         Glide.with(this).load(imageUri).into(imageView);
     }
 
@@ -138,8 +159,40 @@ public class MessageImageActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode){
+            case weMessage.REQUEST_PERMISSION_WRITE_STORAGE:
+                if (isGranted(grantResults)){
+                    saveToGallery();
+                }
+                break;
+        }
+    }
+
+    @Override
     public void onBackPressed() {
         returnToConversationScreen();
+    }
+
+    @Override
+    public boolean canMediaDownloadTaskStart(String attachmentUri) {
+        return !isTaskRunning;
+    }
+
+    @Override
+    public void onMediaDownloadTaskStart(String attachmentUri) {
+        isTaskRunning = true;
+    }
+
+    @Override
+    public void onMediaDownloadTaskFinish(String attachmentUri) {
+        isTaskRunning = false;
+    }
+
+    private void saveToGallery(){
+        if (!hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, getString(R.string.no_media_write_permission), "WritePermissionAlertFragment", weMessage.REQUEST_PERMISSION_WRITE_STORAGE)) return;
+
+        IOUtils.saveMediaToGallery(this, this, findViewById(R.id.messageImageParentView), MimeType.IMAGE, imageUri);
     }
 
     private void returnToConversationScreen() {
@@ -150,5 +203,32 @@ public class MessageImageActivity extends AppCompatActivity {
 
         startActivity(launcherIntent);
         finish();
+    }
+
+    private boolean hasPermission(final String permission, String rationaleString, String alertTagId, final int requestCode){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(permission)){
+                DialogDisplayer.AlertDialogFragment alertDialogFragment = DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), rationaleString);
+
+                alertDialogFragment.setOnDismiss(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            requestPermissions(new String[]{permission}, requestCode);
+                        }
+                    }
+                });
+                alertDialogFragment.show(getSupportFragmentManager(), alertTagId);
+                return false;
+            } else {
+                requestPermissions(new String[] { permission }, requestCode);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isGranted(int[] grantResults){
+        return (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
     }
 }

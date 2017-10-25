@@ -61,6 +61,7 @@ public class AttachmentImageView extends AttachmentView {
     public void bind(MessageView messageView, Attachment attachment, final MessageType messageType, final boolean isErrored){
         init();
 
+        final String attachmentUuid = attachment.getUuid().toString();
         int orientation = getResources().getConfiguration().orientation;
         MimeType.MimeExtension mimeExtension = MimeType.MimeExtension.getExtensionFromString(attachment.getFileType());
 
@@ -152,6 +153,14 @@ public class AttachmentImageView extends AttachmentView {
                     launchFullScreenImageActivity(uri);
                 }
             });
+
+            animatedImage.setOnLongClickListener(new OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    getParentFragment().showAttachmentOptionsSheet(attachmentUuid);
+                    return true;
+                }
+            });
         } else {
             View imageOverlay = findViewById(R.id.attachmentImageOverlay);
 
@@ -241,6 +250,14 @@ public class AttachmentImageView extends AttachmentView {
                 @Override
                 public void onClick(View v) {
                     launchFullScreenImageActivity(uri);
+                }
+            });
+
+            attachmentImage.setOnLongClickListener(new OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    getParentFragment().showAttachmentOptionsSheet(attachmentUuid);
+                    return true;
                 }
             });
 

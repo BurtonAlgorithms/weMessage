@@ -43,6 +43,7 @@ public final class weMessage extends Application implements Constants {
     public static final int REQUEST_PERMISSION_READ_STORAGE = 5000;
     public static final int REQUEST_PERMISSION_CAMERA = 5002;
     public static final int REQUEST_PERMISSION_RECORD_AUDIO = 5003;
+    public static final int REQUEST_PERMISSION_WRITE_STORAGE = 5004;
 
     public static final int REQUEST_CODE_CAMERA = 6000;
 
