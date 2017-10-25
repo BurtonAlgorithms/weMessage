@@ -693,7 +693,7 @@ public final class MessagesDatabase extends Thread {
 
     public Attachment buildAttachment(ResultSet resultSet) throws SQLException {
         Attachment attachment = new Attachment().setGuid(resultSet.getString(COLUMN_ATTACHMENT_GUID)).setRowID(resultSet.getInt(COLUMN_ATTACHMENT_ROWID))
-                .setCreatedDate(resultSet.getInt(COLUMN_ATTACHMENT_CREATED_DATE)).setFileLocation(resultSet.getString(COLUMN_ATTACHMENT_FILENAME))
+                .setCreatedDate(processTime(resultSet.getDouble(COLUMN_ATTACHMENT_CREATED_DATE))).setFileLocation(resultSet.getString(COLUMN_ATTACHMENT_FILENAME))
                 .setTransferName(resultSet.getString(COLUMN_ATTACHMENT_TRANSFER_NAME)).setFileType(resultSet.getString(COLUMN_ATTACHMENT_FILETYPE))
                 .setTotalBytes(resultSet.getInt(COLUMN_ATTACHMENT_BYTES));
         return attachment;
@@ -1017,9 +1017,9 @@ public final class MessagesDatabase extends Thread {
         boolean isRead = resultSet.getInt(COLUMN_MESSAGE_IS_READ) == 1;
         boolean isFinished = resultSet.getInt(COLUMN_MESSAGE_IS_FINISHED) == 1;
         boolean isFromMe = resultSet.getInt(COLUMN_MESSAGE_IS_FROM_ME) == 1;
-        Integer dateSent = resultSet.getInt(COLUMN_MESSAGE_DATE_SENT);
-        Integer dateDelivered = resultSet.getInt(COLUMN_MESSAGE_DATE_DELIVERED);
-        Integer dateRead = resultSet.getInt(COLUMN_MESSAGE_DATE_READ);
+        Integer dateSent = processTime(resultSet.getDouble(COLUMN_MESSAGE_DATE_SENT));
+        Integer dateDelivered = processTime(resultSet.getDouble(COLUMN_MESSAGE_DATE_DELIVERED));
+        Integer dateRead = processTime(resultSet.getDouble(COLUMN_MESSAGE_DATE_READ));
 
         if (dateSent == 0){
             dateSent = null;
@@ -1173,5 +1173,15 @@ public final class MessagesDatabase extends Thread {
         }
 
         return Collections.max(theInts);
+    }
+
+    private static int processTime(double time){
+        int unpacked = (int) Math.floor(time / Math.pow(10, 9));
+
+        if (unpacked > 0){
+            return unpacked;
+        }
+
+        return (int) time;
     }
 }
