@@ -37,15 +37,6 @@ public class DateUtils {
         return df.format(date);
     }
 
-    private static long get2001Time() throws ParseException {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
-        sdf.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
-        String dateInString = "01-01-2001 00:00:00";
-        Date date = sdf.parse(dateInString);
-
-        return date.getTime();
-    }
-
     public static boolean isSameDay(Date dateOne, Date dateTwo) {
         if (dateOne == null || dateTwo == null) {
             throw new IllegalArgumentException("The dates must not be null");
@@ -74,5 +65,14 @@ public class DateUtils {
 
     public static boolean isSameHour(Date dateNow, Date dateBefore){
         return (dateNow.getTime() - dateBefore.getTime()) <= 60*60*1000;
+    }
+
+    private static long get2001Time() throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+        sdf.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
+        String dateInString = "01-01-2001 00:00:00";
+        Date date = sdf.parse(dateInString);
+
+        return date.getTime();
     }
 }
