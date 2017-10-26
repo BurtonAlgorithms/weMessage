@@ -46,6 +46,8 @@
     <string name="send_message_error">An error occurred while trying to send a message.</string>
     <string name="new_message_error">An error occurred while trying to receive a new message.</string>
     <string name="message_update_error">An error occurred while trying to update a message.</string>
+    <string name="chat_update_error">An error occurred while updating a group chat.</string>
+    <string name="contact_update_error">An error occurred while updating contact information.</string>
     <string name="result_process_error">An error occurred while trying to process a result returned from a message.</string>
     <string name="word_yesterday">Yesterday</string>
     <string name="word_today">Today</string>

@@ -205,8 +205,9 @@ public class MessageVideoActivity extends AppCompatActivity implements EasyVideo
 
     private void saveToGallery(){
         if (!hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, getString(R.string.no_media_write_permission), "WritePermissionAlertFragment", weMessage.REQUEST_PERMISSION_WRITE_STORAGE)) return;
+        if (videoPlayer.isControlsShown()) videoPlayer.hideControls();
 
-        IOUtils.saveMediaToGallery(this, this, findViewById(R.id.messageVideoPlayer), MimeType.VIDEO, videoUri);
+        IOUtils.saveMediaToGallery(MessageVideoActivity.this, MessageVideoActivity.this, findViewById(R.id.messageVideoParentView), MimeType.VIDEO, videoUri);
     }
 
     private void returnToConversationScreen() {

@@ -87,6 +87,7 @@ import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ChatViewFragment extends MessagingFragment implements MessageCallbacks {
@@ -620,21 +621,39 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 toggleChoosePhotoLayout(false);
             }
 
-            if (saveChanges){
-                GroupChat oldVal = ((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid));
+            try {
+                if (saveChanges) {
+                    GroupChat oldVal = ((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid));
 
-                if (editedName != null && !editedName.equals(oldVal.getDisplayName())){
-                    serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingRenameGroupAction(oldVal, editedName);
-                }
-
-                if (!StringUtils.isEmpty(editedChatPicture)){
-                    if (editedChatPicture.equals("DELETE")){
-                        oldVal.setChatPictureFileLocation(null);
-                    }else {
-                        oldVal.setChatPictureFileLocation(new FileLocationContainer(editedChatPicture));
+                    if (editedName != null && !editedName.equals(oldVal.getDisplayName())) {
+                        serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingRenameGroupAction(oldVal, editedName);
                     }
+
+                    if (!StringUtils.isEmpty(editedChatPicture)) {
+                        if (editedChatPicture.equals("DELETE")) {
+                            if (oldVal.getChatPictureFileLocation() != null && oldVal.getChatPictureFileLocation().getFile().exists()){
+                                oldVal.getChatPictureFileLocation().getFile().delete();
+                            }
+
+                            oldVal.setChatPictureFileLocation(null);
+                        } else {
+                            File srcFile = new File(editedChatPicture);
+                            File newFile = new File(weMessage.get().getChatIconsFolder(), chatUuid + srcFile.getName());
+
+                            FileUtils.copy(srcFile, newFile);
+
+                            if (oldVal.getChatPictureFileLocation() != null && oldVal.getChatPictureFileLocation().getFile().exists()){
+                                oldVal.getChatPictureFileLocation().getFile().delete();
+                            }
+
+                            oldVal.setChatPictureFileLocation(new FileLocationContainer(newFile));
+                        }
+                    }
+                    weMessage.get().getMessageManager().updateChat(chatUuid, oldVal, true);
                 }
-                weMessage.get().getMessageManager().updateChat(chatUuid, oldVal, true);
+            }catch (Exception ex){
+                showErroredSnackBar(getString(R.string.chat_update_error));
+                AppLogger.error("An error occurred while updating a group chat", ex);
             }
 
             editedChatPicture = null;
@@ -736,10 +755,6 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     }
 
     private void deleteChatPicture() {
-        if (editedChatPicture != null && !editedChatPicture.equals("DELETE")) {
-            File file = new File(editedChatPicture);
-            file.delete();
-        }
         editedChatPicture = "DELETE";
         chatViewAdapter.updatePicture("DELETE");
     }

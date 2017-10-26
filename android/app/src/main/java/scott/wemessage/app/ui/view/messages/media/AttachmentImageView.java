@@ -126,7 +126,7 @@ public class AttachmentImageView extends AttachmentView {
                         errorBubble.setVisibility(GONE);
                     }
                 }
-            }.execute(attachment);
+            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, attachment);
 
             if (messageType == MessageType.INCOMING) {
                 ((ImageView) findViewById(R.id.attachmentAnimatedImageMask)).setImageDrawable(getContext().getDrawable(R.drawable.attachment_image_incoming_frame));
@@ -216,7 +216,7 @@ public class AttachmentImageView extends AttachmentView {
                         errorBubble.setVisibility(GONE);
                     }
                 }
-            }.execute(attachment);
+            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, attachment);
 
             if (messageType == MessageType.INCOMING) {
                 if (attachmentImage != null && attachmentImage instanceof RoundedImageView) {

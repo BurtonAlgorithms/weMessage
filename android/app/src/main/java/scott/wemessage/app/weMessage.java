@@ -37,6 +37,7 @@ public final class weMessage extends Application implements Constants {
     public static final String APP_IDENTIFIER = "scott.wemessage.app";
     public static final String IDENTIFIER_PREFIX = "scott.wemessage.app.";
     public static final String ATTACHMENT_FOLDER_NAME = "attachments";
+    public static final String CHAT_ICONS_FOLDER_NAME = "chaticons";
     public static final String NOTIFICATION_CHANNEL_NAME = "weMessage-Notifications";
     public static final String NOTIFICATION_TAG = "weMessage-Notification-";
 
@@ -120,6 +121,7 @@ public final class weMessage extends Application implements Constants {
     private MessageManager messageManager;
     private Account currentAccount;
     private File attachmentFolder;
+    private File chatIconsFolder;
     private NotificationCallbacks notificationCallbacks;
 
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
@@ -150,9 +152,13 @@ public final class weMessage extends Application implements Constants {
         EmojiCompat.init(emojiConfig);
 
         File attachmentFolder = new File(getFilesDir(), weMessage.ATTACHMENT_FOLDER_NAME);
+        File chatIconsFolder = new File(getFilesDir(), weMessage.CHAT_ICONS_FOLDER_NAME);
+
         attachmentFolder.mkdir();
+        chatIconsFolder.mkdir();
 
         this.attachmentFolder = attachmentFolder;
+        this.chatIconsFolder = chatIconsFolder;
         this.messageDatabase = new MessageDatabase(this);
 
         instance = this;
@@ -160,6 +166,10 @@ public final class weMessage extends Application implements Constants {
 
     public synchronized File getAttachmentFolder(){
         return attachmentFolder;
+    }
+
+    public synchronized File getChatIconsFolder(){
+        return chatIconsFolder;
     }
 
     public synchronized MessageDatabase getMessageDatabase(){

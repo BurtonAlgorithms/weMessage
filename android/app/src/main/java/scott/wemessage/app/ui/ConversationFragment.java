@@ -105,7 +105,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private final String TAG = "ConversationFragment";
     private final Object chatLock = new Object();
-    private final int MESSAGE_QUEUE_AMOUNT = 50;
+    private final int MESSAGE_QUEUE_AMOUNT = 25;
     private final int ERROR_SNACKBAR_DURATION = 5;
     private final byte CONTENT_TYPE_ACTION = 22;
 

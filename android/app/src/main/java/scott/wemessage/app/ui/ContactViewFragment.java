@@ -87,6 +87,7 @@ import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.AuthenticationUtils;
+import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ContactViewFragment extends MessagingFragment implements MessageCallbacks {
@@ -279,24 +280,41 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                         isInEditMode = false;
                         contactViewRecyclerAdapter.dispatchKeys();
 
-                        Contact oldVal = weMessage.get().getMessageDatabase().getContactByUuid(contactUuid);
+                        try {
+                            Contact oldVal = weMessage.get().getMessageDatabase().getContactByUuid(contactUuid);
 
-                        if (!editedFirstName.equals(oldVal.getFirstName())){
-                            oldVal.setFirstName(editedFirstName);
-                        }
-                        if (!editedLastName.equals(oldVal.getLastName())){
-                            oldVal.setLastName(editedLastName);
-                        }
-
-                        if (!StringUtils.isEmpty(editedContactPicture)){
-                            if (editedContactPicture.equals("DELETE")){
-                                oldVal.setContactPictureFileLocation(null);
-                            }else {
-                                oldVal.setContactPictureFileLocation(new FileLocationContainer(editedContactPicture));
+                            if (!editedFirstName.equals(oldVal.getFirstName())) {
+                                oldVal.setFirstName(editedFirstName);
                             }
-                        }
+                            if (!editedLastName.equals(oldVal.getLastName())) {
+                                oldVal.setLastName(editedLastName);
+                            }
 
-                        weMessage.get().getMessageManager().updateContact(contactUuid, oldVal, true);
+                            if (!StringUtils.isEmpty(editedContactPicture)) {
+                                if (editedContactPicture.equals("DELETE")) {
+                                    if (oldVal.getContactPictureFileLocation() != null && oldVal.getContactPictureFileLocation().getFile().exists()){
+                                        oldVal.getContactPictureFileLocation().getFile().delete();
+                                    }
+
+                                    oldVal.setContactPictureFileLocation(null);
+                                } else {
+                                    File srcFile = new File(editedContactPicture);
+                                    File newFile = new File(weMessage.get().getChatIconsFolder(), contactUuid + srcFile.getName());
+
+                                    FileUtils.copy(srcFile, newFile);
+
+                                    if (oldVal.getContactPictureFileLocation() != null && oldVal.getContactPictureFileLocation().getFile().exists()){
+                                        oldVal.getContactPictureFileLocation().getFile().delete();
+                                    }
+                                    oldVal.setContactPictureFileLocation(new FileLocationContainer(newFile));
+                                }
+                            }
+
+                            weMessage.get().getMessageManager().updateContact(contactUuid, oldVal, true);
+                        }catch (Exception ex){
+                            showErroredSnackBar(getString(R.string.contact_update_error));
+                            AppLogger.error("An error occurred while updating a contact", ex);
+                        }
                         contactViewRecyclerAdapter.toggleEditMode(false);
 
                         editButton.setText(R.string.word_edit);
@@ -716,10 +734,6 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     }
 
     private void deleteContactPicture() {
-        if (editedContactPicture != null && !editedContactPicture.equals("DELETE")) {
-            File file = new File(editedContactPicture);
-            file.delete();
-        }
         editedContactPicture = "DELETE";
         contactViewRecyclerAdapter.updatePicture("DELETE");
     }
