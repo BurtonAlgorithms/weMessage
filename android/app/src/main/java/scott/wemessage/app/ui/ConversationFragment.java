@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -999,13 +1000,41 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     private boolean sendMessage(CharSequence input){
         if (StringUtils.isEmpty(input.toString().trim())) return false;
 
-        List<Attachment> attachments = new ArrayList<>();
-        int totalSize = 0;
+        UnprocessedMessage unprocessedMessage = preprocessMessage(input);
 
-        if (isPopupFragmentOpen) {
-            if (getAttachmentPopupFragment() != null) {
-                for (String s : getAttachmentPopupFragment().getSelectedAttachments()) {
+        new AsyncTask<UnprocessedMessage, Void, MessageTaskReturnType>(){
+            @Override
+            protected MessageTaskReturnType doInBackground(UnprocessedMessage... params) {
+                int totalSize = 0;
+                UnprocessedMessage unprocessedMessage = params[0];
 
+                for (String s : unprocessedMessage.getInputAttachments()) {
+                    totalSize += Math.round(new File(s).length());
+                }
+
+                if (unprocessedMessage.getCameraInput() != null){
+                    File inputFile = new File(unprocessedMessage.getCameraInput());
+
+                    if (inputFile.exists()){
+                        totalSize += Math.round(inputFile.length());
+                    }
+                }
+
+                if (unprocessedMessage.getVoiceInput() != null){
+                    File inputFile = new File(unprocessedMessage.getVoiceInput());
+
+                    if (inputFile.exists()){
+                        totalSize += Math.round(inputFile.length());
+                    }
+                }
+
+                if (totalSize > weMessage.MAX_FILE_SIZE){
+                    return MessageTaskReturnType.FILE_SIZE_TOO_LARGE;
+                }
+
+                List<Attachment> attachments = new ArrayList<>();
+
+                for (String s : unprocessedMessage.getInputAttachments()){
                     try {
                         String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
                         String transferName = Uri.parse(s).getLastPathSegment();
@@ -1024,108 +1053,105 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                                 totalBytes
                         );
                         attachments.add(a);
-                        totalSize += totalBytes;
 
                     }catch (Exception ex){
                         showErroredSnackbar(getString(R.string.send_attachment_error));
                         AppLogger.error("An error occurred while loading a file into a message.", ex);
                     }
                 }
+
+                if (unprocessedMessage.getCameraInput() != null){
+                    File inputFile = new File(unprocessedMessage.getCameraInput());
+
+                    if (inputFile.exists()) {
+                        int totalBytes = Math.round(inputFile.length());
+                        Attachment a = new Attachment(
+                                UUID.randomUUID(),
+                                null,
+                                Uri.parse(unprocessedMessage.getCameraInput()).getLastPathSegment(),
+                                new FileLocationContainer(unprocessedMessage.getCameraInput()),
+                                AndroidUtils.getMimeTypeStringFromPath(unprocessedMessage.getCameraInput()),
+                                totalBytes
+                        );
+                        attachments.add(a);
+                    }
+                }
+
+                if (unprocessedMessage.getVoiceInput() != null){
+                    File inputFile = new File(unprocessedMessage.getVoiceInput());
+                    if (inputFile.exists()) {
+                        int totalBytes = Math.round(inputFile.length());
+                        Attachment a = new Attachment(
+                                UUID.randomUUID(),
+                                null,
+                                Uri.parse(unprocessedMessage.getVoiceInput()).getLastPathSegment(),
+                                new FileLocationContainer(unprocessedMessage.getVoiceInput()),
+                                AndroidUtils.getMimeTypeStringFromPath(unprocessedMessage.getVoiceInput()),
+                                totalBytes
+                        );
+                        attachments.add(a);
+                    }
+                }
+
+                Message message = new Message(
+                        UUID.randomUUID(),
+                        null,
+                        getChat(),
+                        weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())),
+                        attachments,
+                        unprocessedMessage.getInput().toString().trim(),
+                        DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
+                        null,
+                        null,
+                        false,
+                        true,
+                        false,
+                        false,
+                        true,
+                        true
+                );
+                weMessage.get().sendMessage(message, true);
+
+                return MessageTaskReturnType.TASK_PERFORMED;
             }
-            getAttachmentPopupFragment().clearSelectedAttachments();
-            closeAttachmentPopupFragment(true);
-        } else {
-            for (String s : attachmentsInput) {
-                try {
-                    String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
-                    String transferName = Uri.parse(s).getLastPathSegment();
-                    File copiedFile = new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + transferName);
 
-                    copiedFile.createNewFile();
-                    FileUtils.copy(new File(s), copiedFile);
-
-                    int totalBytes = Math.round(copiedFile.length());
-                    Attachment a = new Attachment(
-                            UUID.randomUUID(),
-                            null,
-                            transferName,
-                            new FileLocationContainer(copiedFile),
-                            AndroidUtils.getMimeTypeStringFromPath(s),
-                            totalBytes
-                    );
-                    attachments.add(a);
-                    totalSize += totalBytes;
-
-                }catch (Exception ex){
-                    showErroredSnackbar(getString(R.string.send_attachment_error));
-                    AppLogger.error("An error occurred while loading a file into a message.", ex);
+            @Override
+            protected void onPostExecute(MessageTaskReturnType returnType) {
+                if (returnType == MessageTaskReturnType.FILE_SIZE_TOO_LARGE){
+                    if (getActivity() != null && isAdded() && !getActivity().isDestroyed() && !getActivity().isFinishing()){
+                        DialogDisplayer.generateAlertDialog(getString(R.string.max_file_size_alert_title), getString(R.string.max_file_size_alert_message, FileUtils.getFileSizeString(weMessage.MAX_FILE_SIZE)))
+                                .show(getFragmentManager(), "AttachmentMaxFileSizeAlert");
+                    }
                 }
             }
-        }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, unprocessedMessage);
 
-        if (cameraAttachmentInput != null){
-            File inputFile = new File(cameraAttachmentInput);
+        return true;
+    }
 
-            if (inputFile.exists()) {
-                int totalBytes = Math.round(inputFile.length());
-                Attachment a = new Attachment(
-                        UUID.randomUUID(),
-                        null,
-                        Uri.parse(cameraAttachmentInput).getLastPathSegment(),
-                        new FileLocationContainer(cameraAttachmentInput),
-                        AndroidUtils.getMimeTypeStringFromPath(cameraAttachmentInput),
-                        totalBytes
-                );
-                attachments.add(a);
-                totalSize += totalBytes;
+    private UnprocessedMessage preprocessMessage(CharSequence input){
+        ArrayList<String> inputAttachments = new ArrayList<>();
+        String cameraAttachment = cameraAttachmentInput;
+        String voiceMessage = voiceMessageInput;
+
+        if (isPopupFragmentOpen) {
+            if (getAttachmentPopupFragment() != null) {
+                inputAttachments.addAll(getAttachmentPopupFragment().getSelectedAttachments());
+
+                getAttachmentPopupFragment().clearSelectedAttachments();
             }
+            closeAttachmentPopupFragment(true);
+        } else {
+            inputAttachments.addAll(attachmentsInput);
         }
 
-        if (voiceMessageInput != null){
-            File inputFile = new File(voiceMessageInput);
-            if (inputFile.exists()) {
-                int totalBytes = Math.round(inputFile.length());
-                Attachment a = new Attachment(
-                        UUID.randomUUID(),
-                        null,
-                        Uri.parse(voiceMessageInput).getLastPathSegment(),
-                        new FileLocationContainer(voiceMessageInput),
-                        AndroidUtils.getMimeTypeStringFromPath(voiceMessageInput),
-                        totalBytes
-                );
-                attachments.add(a);
-                totalSize += totalBytes;
-            }
-        }
+        UnprocessedMessage message = new UnprocessedMessage(input, inputAttachments, cameraAttachment, voiceMessage);
 
-        if (totalSize > weMessage.MAX_FILE_SIZE){
-            DialogDisplayer.generateAlertDialog(getString(R.string.max_file_size_alert_title), getString(R.string.max_file_size_alert_message, FileUtils.getFileSizeString(weMessage.MAX_FILE_SIZE)))
-                    .show(getFragmentManager(), "AttachmentMaxFileSizeAlert");
-            return false;
-        }
-
-        Message message = new Message(
-                UUID.randomUUID(),
-                null,
-                getChat(),
-                weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())),
-                attachments,
-                input.toString().trim(),
-                DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
-                null,
-                null,
-                false,
-                true,
-                false,
-                false,
-                true,
-                true
-        );
-        serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
         attachmentsInput.clear();
         cameraAttachmentInput = null;
         voiceMessageInput = null;
-        return true;
+
+        return message;
     }
 
     private void showDeliveryStatusOnLastMessage(){
@@ -1411,7 +1437,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         if (isPopupFragmentOpen) {
             isPopupFragmentOpen = false;
 
-            if (performAnimation){
+            if (performAnimation) {
                 int height = galleryFragmentContainer.getHeight();
 
                 galleryFragmentContainer.animate().alpha(0.f).translationY(height).setDuration(250).setListener(new AnimatorListenerAdapter() {
@@ -1422,7 +1448,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                         handleCloseAttachmentPopupFragment();
                     }
                 });
-            }else {
+            } else {
                 handleCloseAttachmentPopupFragment();
             }
         }
@@ -1535,24 +1561,29 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
     }
 
-    private void showErroredSnackbar(String message){
-        if (getView() != null) {
-            final Snackbar snackbar = Snackbar.make(getView(), message, ERROR_SNACKBAR_DURATION * 1000);
+    private void showErroredSnackbar(final String message){
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (getView() != null) {
+                    final Snackbar snackbar = Snackbar.make(getView(), message, ERROR_SNACKBAR_DURATION * 1000);
 
-            snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackbar.dismiss();
+                    snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            snackbar.dismiss();
+                        }
+                    });
+                    snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
+
+                    View snackbarView = snackbar.getView();
+                    TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+                    textView.setMaxLines(5);
+
+                    snackbar.show();
                 }
-            });
-            snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
-
-            View snackbarView = snackbar.getView();
-            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
-            textView.setMaxLines(5);
-
-            snackbar.show();
-        }
+            }
+        });
     }
 
     private boolean isChatThis(Chat c){
@@ -1590,5 +1621,41 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             startActivity(returnIntent);
             getActivity().finish();
         }
+    }
+
+    private class UnprocessedMessage {
+
+        private CharSequence input;
+        private ArrayList<String> inputAttachments;
+        private String cameraInput;
+        private String voiceInput;
+
+        UnprocessedMessage(CharSequence input, ArrayList<String> inputAttachments, String cameraInput, String voiceInput){
+           this.input = input;
+           this.inputAttachments = inputAttachments;
+           this.cameraInput = cameraInput;
+           this.voiceInput = voiceInput;
+       }
+
+        CharSequence getInput() {
+            return input;
+        }
+
+        ArrayList<String> getInputAttachments() {
+            return inputAttachments;
+        }
+
+        String getCameraInput() {
+            return cameraInput;
+        }
+
+        String getVoiceInput() {
+            return voiceInput;
+        }
+    }
+
+    private enum MessageTaskReturnType {
+        FILE_SIZE_TOO_LARGE,
+        TASK_PERFORMED
     }
 }

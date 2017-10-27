@@ -581,7 +581,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 true,
                 true
         );
-        serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
+        weMessage.get().sendMessage(message, true);
     }
 
     private void addContactToSelectedView(Contact contact){

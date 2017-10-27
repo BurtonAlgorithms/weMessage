@@ -11,12 +11,12 @@ public abstract class OnClickWaitListener implements View.OnClickListener {
     private final long minimumInterval;
     private Map<View, Long> lastClickMap;
 
-    public abstract void onWaitClick(View v);
-
     public OnClickWaitListener(long minimumIntervalMillisec) {
         this.minimumInterval = minimumIntervalMillisec;
         this.lastClickMap = new WeakHashMap<View, Long>();
     }
+
+    public abstract void onWaitClick(View v);
 
     @Override
     public void onClick(View clickedView) {

@@ -3,6 +3,7 @@ package scott.wemessage.app;
 import android.app.Application;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
@@ -15,10 +16,13 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
+import scott.wemessage.app.connection.ConnectionService;
+import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.firebase.NotificationCallbacks;
 import scott.wemessage.app.messages.objects.Account;
+import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.security.util.AesPrngHelper;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.commons.Constants;
@@ -123,6 +127,7 @@ public final class weMessage extends Application implements Constants {
     private File attachmentFolder;
     private File chatIconsFolder;
     private NotificationCallbacks notificationCallbacks;
+    private ConnectionServiceConnection connectionServiceConnection = new ConnectionServiceConnection();
 
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
 
@@ -199,10 +204,53 @@ public final class weMessage extends Application implements Constants {
         return !sharedPreferences.getBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
     }
 
+    public boolean isEmojiCompatInitialized(){
+        return isEmojiInitialized.get();
+    }
+
     public synchronized boolean performNotification(String macGuid){
         if (notificationCallbacks == null) return true;
 
         return notificationCallbacks.onNotification(macGuid);
+    }
+
+    public synchronized void sendMessage(final Message message, final boolean performMessageManagerAdd){
+        Intent intent = new Intent(this, ConnectionService.class);
+        bindService(intent, connectionServiceConnection, Context.BIND_IMPORTANT);
+
+        connectionServiceConnection.scheduleTask(new Runnable() {
+            @Override
+            public void run() {
+                connectionServiceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, performMessageManagerAdd);
+            }
+        });
+        unbindService(connectionServiceConnection);
+    }
+
+    public synchronized void signIn(){
+        SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+
+        editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
+        editor.apply();
+    }
+
+    public synchronized void signOut(){
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+
+        notificationManager.cancelAll();
+        editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
+        editor.apply();
+
+        dumpMessageManager();
+    }
+
+    public synchronized void setCurrentAccount(Account account){
+        this.currentAccount = account;
+    }
+
+    public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){
+        this.notificationCallbacks = notificationCallbacks;
     }
 
     public synchronized void clearNotifications(String uuid){
@@ -224,36 +272,6 @@ public final class weMessage extends Application implements Constants {
         }else {
             notificationManager.cancelAll();
         }
-    }
-
-    public boolean isEmojiCompatInitialized(){
-        return isEmojiInitialized.get();
-    }
-
-    public synchronized void setCurrentAccount(Account account){
-        this.currentAccount = account;
-    }
-
-    public synchronized void signIn(){
-        SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
-
-        editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
-        editor.apply();
-    }
-
-    public synchronized void signOut(){
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
-
-        notificationManager.cancelAll();
-        editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
-        editor.apply();
-
-        dumpMessageManager();
-    }
-
-    public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){
-        this.notificationCallbacks = notificationCallbacks;
     }
 
     public synchronized void dumpMessageManager(){
