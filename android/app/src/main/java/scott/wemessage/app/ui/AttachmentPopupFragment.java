@@ -275,6 +275,7 @@ public class AttachmentPopupFragment extends MessagingFragment {
             getAudioRecorder().setAudioSource(MediaRecorder.AudioSource.MIC);
             getAudioRecorder().setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
             getAudioRecorder().setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+            //TODO: getAudioRecorder().setMaxDuration();
             getAudioRecorder().setOutputFile(fileName);
 
             try {

@@ -669,7 +669,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         db.update(AttachmentTable.TABLE_NAME, values, selection, new String[]{ macGuid });
     }
 
-    private void deleteAttachmentByUuid(String uuid){
+    public void deleteAttachmentByUuid(String uuid){
         String whereClause = AttachmentTable.UUID + " = ?";
         getWritableDatabase().delete(AttachmentTable.TABLE_NAME, whereClause, new String[] { uuid });
     }

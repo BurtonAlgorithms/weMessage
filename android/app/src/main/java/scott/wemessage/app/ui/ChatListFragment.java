@@ -53,6 +53,7 @@ import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 
 public class ChatListFragment extends MessagingFragment implements MessageCallbacks {
@@ -508,6 +509,26 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             @Override
             public void run() {
                 showActionFailureSnackbar(jsonAction, returnType);
+            }
+        });
+    }
+
+    @Override
+    public void onAttachmentSendFailure(final FailReason failReason) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showAttachmentSendFailureSnackbar(failReason);
+            }
+        });
+    }
+
+    @Override
+    public void onAttachmentReceiveFailure(final FailReason failReason) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showAttachmentReceiveFailureSnackbar(failReason);
             }
         });
     }

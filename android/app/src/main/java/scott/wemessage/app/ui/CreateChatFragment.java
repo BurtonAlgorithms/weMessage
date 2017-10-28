@@ -77,6 +77,7 @@ import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.DateUtils;
@@ -480,6 +481,26 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         });
     }
 
+    @Override
+    public void onAttachmentSendFailure(final FailReason failReason) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showAttachmentSendFailureSnackbar(failReason);
+            }
+        });
+    }
+
+    @Override
+    public void onAttachmentReceiveFailure(final FailReason failReason) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showAttachmentReceiveFailureSnackbar(failReason);
+            }
+        });
+    }
+
     public void goToChatList(){
         Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
 
@@ -581,7 +602,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 true,
                 true
         );
-        weMessage.get().sendMessage(message, true);
+        serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
     }
 
     private void addContactToSelectedView(Contact contact){

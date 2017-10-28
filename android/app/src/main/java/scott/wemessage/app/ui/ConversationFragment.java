@@ -96,6 +96,7 @@ import scott.wemessage.app.utils.media.MediaDownloadCallbacks;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
@@ -833,6 +834,26 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
+    public void onAttachmentSendFailure(final FailReason failReason) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showAttachmentSendFailureSnackbar(failReason);
+            }
+        });
+    }
+
+    @Override
+    public void onAttachmentReceiveFailure(final FailReason failReason) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showAttachmentReceiveFailureSnackbar(failReason);
+            }
+        });
+    }
+
+    @Override
     public void onPlaybackStart(Attachment a) {
         for (int childCount = messageList.getChildCount(), i = 0; i < childCount; ++i) {
             RecyclerView.ViewHolder holder = messageList.getChildViewHolder(messageList.getChildAt(i));
@@ -1005,18 +1026,20 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         new AsyncTask<UnprocessedMessage, Void, MessageTaskReturnType>(){
             @Override
             protected MessageTaskReturnType doInBackground(UnprocessedMessage... params) {
-                int totalSize = 0;
                 UnprocessedMessage unprocessedMessage = params[0];
+                long totalSize = 0;
 
                 for (String s : unprocessedMessage.getInputAttachments()) {
-                    totalSize += Math.round(new File(s).length());
+                    long length = new File(s).length();
+
+                    totalSize += length;
                 }
 
                 if (unprocessedMessage.getCameraInput() != null){
                     File inputFile = new File(unprocessedMessage.getCameraInput());
 
                     if (inputFile.exists()){
-                        totalSize += Math.round(inputFile.length());
+                        totalSize += inputFile.length();
                     }
                 }
 
@@ -1024,7 +1047,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     File inputFile = new File(unprocessedMessage.getVoiceInput());
 
                     if (inputFile.exists()){
-                        totalSize += Math.round(inputFile.length());
+                        totalSize += inputFile.length();;
                     }
                 }
 
@@ -1110,7 +1133,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                         true,
                         true
                 );
-                weMessage.get().sendMessage(message, true);
+                serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
 
                 return MessageTaskReturnType.TASK_PERFORMED;
             }

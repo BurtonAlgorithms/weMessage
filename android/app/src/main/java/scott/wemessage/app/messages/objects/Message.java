@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,14 +16,15 @@ import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.security.CryptoFile;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.EncryptionTask;
+import scott.wemessage.app.security.FailedCryptoFile;
 import scott.wemessage.app.security.FileEncryptionTask;
 import scott.wemessage.app.security.KeyTextPair;
 import scott.wemessage.commons.connection.json.message.JSONAttachment;
 import scott.wemessage.commons.connection.json.message.JSONChat;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.connection.security.EncryptedFile;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.utils.DateUtils;
-import scott.wemessage.commons.utils.FileUtils;
 
 public class Message extends MessageBase {
 
@@ -34,6 +36,7 @@ public class Message extends MessageBase {
     private String text;
     private Integer dateSent, dateDelivered, dateRead;
     private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe;
+    private HashMap<Attachment, FailReason> failedAttachments = new HashMap<>();
 
     public Message(){
 
@@ -76,6 +79,10 @@ public class Message extends MessageBase {
 
     public List<Attachment> getAttachments() {
         return attachments;
+    }
+
+    public HashMap<Attachment, FailReason> getFailedAttachments(){
+        return failedAttachments;
     }
 
     public String getText() {
@@ -243,19 +250,25 @@ public class Message extends MessageBase {
         }
 
         for (Attachment attachment : getAttachments()){
-            byte[] fileBytes = FileUtils.readBytesFromFile(new File(attachment.getFileLocation().getFileLocation()));
-
-            FileEncryptionTask fileEncryptionTask = new FileEncryptionTask(fileBytes, null, CryptoType.AES);
+            FileEncryptionTask fileEncryptionTask = new FileEncryptionTask(new File(attachment.getFileLocation().getFileLocation()), null, CryptoType.AES);
             fileEncryptionTask.runEncryptTask();
 
             CryptoFile cryptoFile = fileEncryptionTask.getEncryptedFile();
+
+            if (cryptoFile instanceof FailedCryptoFile){
+                failedAttachments.put(attachment, ((FailedCryptoFile) cryptoFile).getFailReason());
+
+                fileEncryptionTask = null;
+                cryptoFile = null;
+                continue;
+            }
 
             EncryptedFile encryptedFile = new EncryptedFile(
                     attachment.getUuid().toString(),
                     attachment.getTransferName(),
                     cryptoFile.getEncryptedBytes(),
                     cryptoFile.getKey(),
-                    cryptoFile.getIvMac()
+                    cryptoFile.getIv()
             );
 
             JSONAttachment jsonAttachment = new JSONAttachment(
@@ -269,11 +282,9 @@ public class Message extends MessageBase {
             connectionHandler.sendOutgoingFile(encryptedFile, attachment);
             attachments.add(jsonAttachment);
 
-            fileBytes = null;
             fileEncryptionTask = null;
             cryptoFile = null;
             encryptedFile = null;
-
         }
 
         EncryptionTask encryptionTask = new EncryptionTask(getText(), null, CryptoType.AES);

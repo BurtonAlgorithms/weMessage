@@ -11,6 +11,7 @@ import scott.wemessage.R;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.ActionType;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 
 public abstract class MessagingFragment extends Fragment {
@@ -18,7 +19,6 @@ public abstract class MessagingFragment extends Fragment {
     private final int ERROR_SNACKBAR_DURATION = 5;
 
     protected void showMessageSendFailureSnackbar(JSONMessage jsonMessage,  ReturnType returnType){
-
         switch (returnType) {
             case INVALID_NUMBER:
                 showErroredSnackbar(getString(R.string.message_delivery_failure_invalid_number));
@@ -159,6 +159,28 @@ public abstract class MessagingFragment extends Fragment {
                 break;
             default:
                 showErroredSnackbar(getString(R.string.action_failure_generic));
+                break;
+        }
+    }
+
+    protected void showAttachmentSendFailureSnackbar(FailReason reason){
+        switch (reason){
+            case MEMORY:
+                showErroredSnackbar(getString(R.string.attachment_send_failure_size));
+                break;
+            default:
+                showErroredSnackbar(getString(R.string.attachment_send_failure_generic));
+                break;
+        }
+    }
+
+    protected void showAttachmentReceiveFailureSnackbar(FailReason reason){
+        switch (reason){
+            case MEMORY:
+                showErroredSnackbar(getString(R.string.attachment_receive_failure_size));
+                break;
+            default:
+                showErroredSnackbar(getString(R.string.attachment_receive_failure_generic));
                 break;
         }
     }

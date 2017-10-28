@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -73,6 +74,7 @@ import scott.wemessage.commons.connection.security.EncryptedText;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.DeviceType;
 import scott.wemessage.commons.types.DisconnectReason;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.DateUtils;
@@ -257,6 +259,25 @@ public final class ConnectionHandler extends Thread {
                             .toJson(message.toJson(ConnectionHandler.this), type);
                     ClientMessage clientMessage = new ClientMessage(clientMessageUuid, outgoingDataJson);
                     String outgoingJson = new Gson().toJson(clientMessage);
+
+                    if (message.getFailedAttachments().size() > 0){
+                        HashMap<String, Attachment> passedAttachments = new HashMap<>();
+
+                        for (Attachment a : message.getAttachments()){
+                            passedAttachments.put(a.getUuid().toString(), a);
+                        }
+
+                        for (Attachment a : message.getFailedAttachments().keySet()){
+                            passedAttachments.remove(a.getUuid().toString());
+                        }
+
+                        message.setAttachments(new ArrayList<>(passedAttachments.values()));
+                        weMessage.get().getMessageManager().updateMessage(message.getUuid().toString(), message, false);
+
+                        for (Attachment a : message.getFailedAttachments().keySet()){
+                            weMessage.get().getMessageManager().alertAttachmentSendFailure(a, message.getFailedAttachments().get(a));
+                        }
+                    }
 
                     connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
                     messageAndConnectionMessageMap.put(clientMessageUuid, message.getUuid().toString());
@@ -476,6 +497,28 @@ public final class ConnectionHandler extends Thread {
                     sendOutgoingMessage(weMessage.JSON_INIT_CONNECT, initConnect, InitConnect.class);
                     hasTriedAuthenticating.set(true);
                 }
+            }catch(SocketException ex){
+                boolean socketOpenCheck = false;
+
+                try {
+                    if (getInputStream().read() == -1){
+                        Bundle extras = new Bundle();
+                        extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_authentication_message));
+                        sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
+                        getParentService().endService();
+                        socketOpenCheck = true;
+                    }
+                }catch (Exception exc){ }
+
+                if (!socketOpenCheck) {
+                    AppLogger.error(TAG, "An error occurred while authenticating login information", ex);
+
+                    Bundle extras = new Bundle();
+                    extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_authentication_message));
+                    sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
+                    getParentService().endService();
+                }
+                return;
             }catch(Exception ex){
                 AppLogger.error(TAG, "An error occurred while authenticating login information", ex);
 
@@ -511,7 +554,18 @@ public final class ConnectionHandler extends Thread {
                         fileDecryptionTask.runDecryptTask();
 
                         byte[] decryptedBytes = fileDecryptionTask.getDecryptedBytes();
-                        attachment.getFileLocation().writeBytesToFile(decryptedBytes);
+
+                        if (decryptedBytes.length == 1){
+                            if (decryptedBytes[0] == weMessage.CRYPTO_ERROR_MEMORY) {
+                                weMessage.get().getMessageManager().alertAttachmentReceiveFailure(FailReason.MEMORY);
+                                cryptoFile = null;
+                                continue;
+                            }else {
+                                attachment.getFileLocation().writeBytesToFile(decryptedBytes);
+                            }
+                        }else {
+                            attachment.getFileLocation().writeBytesToFile(decryptedBytes);
+                        }
 
                         cryptoFile = null;
                         fileDecryptionTask = null;
@@ -672,11 +726,13 @@ public final class ConnectionHandler extends Thread {
                                 for (JSONAttachment jsonAttachment : jsonMessage.getAttachments()) {
                                     Attachment attachment = fileAttachmentsMap.get(jsonAttachment.getUuid());
 
-                                    attachment.setMacGuid(jsonAttachment.getMacGuid());
-                                    attachment.setFileType(jsonAttachment.getFileType());
-                                    attachment.setTotalBytes(jsonAttachment.getTotalBytes());
+                                    if (attachment != null) {
+                                        attachment.setMacGuid(jsonAttachment.getMacGuid());
+                                        attachment.setFileType(jsonAttachment.getFileType());
+                                        attachment.setTotalBytes(jsonAttachment.getTotalBytes());
 
-                                    attachments.add(attachment);
+                                        attachments.add(attachment);
+                                    }
                                 }
 
                                 Message message = new Message(UUID.randomUUID(), jsonMessage.getMacGuid(), messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, attachments,

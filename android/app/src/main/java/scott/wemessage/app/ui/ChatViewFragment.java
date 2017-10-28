@@ -85,6 +85,7 @@ import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.FileUtils;
@@ -589,6 +590,26 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         });
     }
 
+    @Override
+    public void onAttachmentSendFailure(final FailReason failReason) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showAttachmentSendFailureSnackbar(failReason);
+            }
+        });
+    }
+
+    @Override
+    public void onAttachmentReceiveFailure(final FailReason failReason) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showAttachmentReceiveFailureSnackbar(failReason);
+            }
+        });
+    }
+
     public void returnToConversationScreen() {
         Intent launcherIntent = new Intent(weMessage.get(), ConversationActivity.class);
 
@@ -631,22 +652,28 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
                     if (!StringUtils.isEmpty(editedChatPicture)) {
                         if (editedChatPicture.equals("DELETE")) {
-                            if (oldVal.getChatPictureFileLocation() != null && oldVal.getChatPictureFileLocation().getFile().exists()){
+                            if (oldVal.getChatPictureFileLocation() != null && !StringUtils.isEmpty(oldVal.getChatPictureFileLocation().getFileLocation())){
                                 oldVal.getChatPictureFileLocation().getFile().delete();
                             }
 
                             oldVal.setChatPictureFileLocation(null);
                         } else {
                             File srcFile = new File(editedChatPicture);
-                            File newFile = new File(weMessage.get().getChatIconsFolder(), chatUuid + srcFile.getName());
 
-                            FileUtils.copy(srcFile, newFile);
+                            if (srcFile.length() > weMessage.MAX_CHAT_ICON_SIZE){
+                                DialogDisplayer.generateAlertDialog(getString(R.string.max_file_chat_size_alert_title), getString(R.string.max_file_chat_size_alert_message, FileUtils.getFileSizeString(weMessage.MAX_CHAT_ICON_SIZE)))
+                                        .show(getFragmentManager(), "AttachmentMaxFileSizeAlert");
+                            }else {
+                                File newFile = new File(weMessage.get().getChatIconsFolder(), chatUuid + srcFile.getName());
 
-                            if (oldVal.getChatPictureFileLocation() != null && oldVal.getChatPictureFileLocation().getFile().exists()){
-                                oldVal.getChatPictureFileLocation().getFile().delete();
+                                FileUtils.copy(srcFile, newFile);
+
+                                if (oldVal.getChatPictureFileLocation() != null && oldVal.getChatPictureFileLocation().getFile().exists()) {
+                                    oldVal.getChatPictureFileLocation().getFile().delete();
+                                }
+
+                                oldVal.setChatPictureFileLocation(new FileLocationContainer(newFile));
                             }
-
-                            oldVal.setChatPictureFileLocation(new FileLocationContainer(newFile));
                         }
                     }
                     weMessage.get().getMessageManager().updateChat(chatUuid, oldVal, true);

@@ -4,12 +4,12 @@ public class CryptoFile {
 
     private final String key;
     private final byte[] encryptedBytes;
-    private final String ivMac;
+    private final byte[] iv;
 
-    public CryptoFile(byte[] encryptedBytes, String key, String ivMac){
+    public CryptoFile(byte[] encryptedBytes, String key, byte[] iv){
         this.key = key;
         this.encryptedBytes = encryptedBytes;
-        this.ivMac = ivMac;
+        this.iv = iv;
     }
 
     public byte[] getEncryptedBytes() {
@@ -20,8 +20,8 @@ public class CryptoFile {
         return key;
     }
 
-    public String getIvMac(){
-        return ivMac;
+    public byte[] getIv(){
+        return iv;
     }
 
 }

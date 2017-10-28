@@ -23,6 +23,7 @@ import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.StringUtils;
@@ -278,6 +279,21 @@ public final class MessageManager {
     public void alertActionPerformFailure(JSONAction jsonAction, ReturnType returnType){
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onActionPerformFailure(jsonAction, returnType);
+        }
+    }
+
+    public void alertAttachmentSendFailure(Attachment attachment, FailReason failReason){
+        attachment.getFileLocation().getFile().delete();
+        weMessage.get().getMessageDatabase().deleteAttachmentByUuid(attachment.getUuid().toString());
+
+        for (MessageCallbacks callbacks : callbacksMap.values()){
+            callbacks.onAttachmentSendFailure(failReason);
+        }
+    }
+
+    public void alertAttachmentReceiveFailure(FailReason failReason){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
+            callbacks.onAttachmentReceiveFailure(failReason);
         }
     }
 

@@ -58,6 +58,7 @@ import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.StringUtils;
@@ -381,6 +382,12 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
 
     @Override
     public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) { }
+
+    @Override
+    public void onAttachmentSendFailure(FailReason failReason) { }
+
+    @Override
+    public void onAttachmentReceiveFailure(FailReason failReason) { }
 
     private void performAddParticipantAction(String participant){
         serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingAddParticipantAction(((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid)), participant);

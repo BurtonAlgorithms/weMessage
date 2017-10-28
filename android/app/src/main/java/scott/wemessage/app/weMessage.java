@@ -3,7 +3,6 @@ package scott.wemessage.app;
 import android.app.Application;
 import android.app.NotificationManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
@@ -16,13 +15,10 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
-import scott.wemessage.app.connection.ConnectionService;
-import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.firebase.NotificationCallbacks;
 import scott.wemessage.app.messages.objects.Account;
-import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.security.util.AesPrngHelper;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.commons.Constants;
@@ -36,6 +32,7 @@ public final class weMessage extends Application implements Constants {
 
     public static final int DATABASE_VERSION = 1;
     public static final int CONNECTION_TIMEOUT_WAIT = 15;
+    public static final int MAX_CHAT_ICON_SIZE = 26214400;
 
     public static final String DATABASE_NAME = "weMessage.db";
     public static final String APP_IDENTIFIER = "scott.wemessage.app";
@@ -127,7 +124,6 @@ public final class weMessage extends Application implements Constants {
     private File attachmentFolder;
     private File chatIconsFolder;
     private NotificationCallbacks notificationCallbacks;
-    private ConnectionServiceConnection connectionServiceConnection = new ConnectionServiceConnection();
 
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
 
@@ -212,19 +208,6 @@ public final class weMessage extends Application implements Constants {
         if (notificationCallbacks == null) return true;
 
         return notificationCallbacks.onNotification(macGuid);
-    }
-
-    public synchronized void sendMessage(final Message message, final boolean performMessageManagerAdd){
-        Intent intent = new Intent(this, ConnectionService.class);
-        bindService(intent, connectionServiceConnection, Context.BIND_IMPORTANT);
-
-        connectionServiceConnection.scheduleTask(new Runnable() {
-            @Override
-            public void run() {
-                connectionServiceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, performMessageManagerAdd);
-            }
-        });
-        unbindService(connectionServiceConnection);
     }
 
     public synchronized void signIn(){

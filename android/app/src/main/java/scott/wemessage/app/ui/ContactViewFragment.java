@@ -84,6 +84,7 @@ import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.AuthenticationUtils;
@@ -299,14 +300,20 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                                     oldVal.setContactPictureFileLocation(null);
                                 } else {
                                     File srcFile = new File(editedContactPicture);
-                                    File newFile = new File(weMessage.get().getChatIconsFolder(), contactUuid + srcFile.getName());
 
-                                    FileUtils.copy(srcFile, newFile);
+                                    if (srcFile.length() > weMessage.MAX_CHAT_ICON_SIZE) {
+                                        DialogDisplayer.generateAlertDialog(getString(R.string.max_file_chat_size_alert_title), getString(R.string.max_file_chat_size_alert_message, FileUtils.getFileSizeString(weMessage.MAX_CHAT_ICON_SIZE)))
+                                                .show(getFragmentManager(), "AttachmentMaxFileSizeAlert");
+                                    }else {
+                                        File newFile = new File(weMessage.get().getChatIconsFolder(), contactUuid + srcFile.getName());
 
-                                    if (oldVal.getContactPictureFileLocation() != null && oldVal.getContactPictureFileLocation().getFile().exists()){
-                                        oldVal.getContactPictureFileLocation().getFile().delete();
+                                        FileUtils.copy(srcFile, newFile);
+
+                                        if (oldVal.getContactPictureFileLocation() != null && !StringUtils.isEmpty(oldVal.getContactPictureFileLocation().getFileLocation())) {
+                                            oldVal.getContactPictureFileLocation().getFile().delete();
+                                        }
+                                        oldVal.setContactPictureFileLocation(new FileLocationContainer(newFile));
                                     }
-                                    oldVal.setContactPictureFileLocation(new FileLocationContainer(newFile));
                                 }
                             }
 
@@ -556,6 +563,26 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             @Override
             public void run() {
                 showActionFailureSnackbar(jsonAction, returnType);
+            }
+        });
+    }
+
+    @Override
+    public void onAttachmentSendFailure(final FailReason failReason) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showAttachmentSendFailureSnackbar(failReason);
+            }
+        });
+    }
+
+    @Override
+    public void onAttachmentReceiveFailure(final FailReason failReason) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                showAttachmentReceiveFailureSnackbar(failReason);
             }
         });
     }

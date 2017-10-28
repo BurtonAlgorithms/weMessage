@@ -9,6 +9,7 @@ import scott.wemessage.app.messages.objects.MessageBase;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 
 public interface MessageCallbacks {
@@ -52,4 +53,8 @@ public interface MessageCallbacks {
     void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType);
 
     void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType);
+
+    void onAttachmentSendFailure(FailReason failReason);
+
+    void onAttachmentReceiveFailure(FailReason failReason);
 }

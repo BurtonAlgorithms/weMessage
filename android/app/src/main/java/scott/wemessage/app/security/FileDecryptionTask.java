@@ -28,12 +28,12 @@ public class FileDecryptionTask extends CryptoTask {
                     hasTaskFinished.set(true);
                     throw new CryptoException("Key cannot be null");
                 }
-                if (cryptoFile.getIvMac() == null){
+                if (cryptoFile.getIv() == null){
                     hasTaskFinished.set(true);
-                    throw new CryptoException("Iv Mac cannot be null");
+                    throw new CryptoException("Iv cannot be null");
                 }
                 synchronized (decryptedBytesLock) {
-                    decryptedBytes = AESCrypto.decryptBytes(new AESCrypto.CipherByteArrayIvMac(cryptoFile.getEncryptedBytes(), cryptoFile.getIvMac()), cryptoFile.getKey());
+                    decryptedBytes = AESCrypto.decryptFileBytes(new AESCrypto.CipherByteArrayIv(cryptoFile.getEncryptedBytes(), cryptoFile.getIv()), cryptoFile.getKey());
                 }
                 hasTaskFinished.set(true);
             } else {
