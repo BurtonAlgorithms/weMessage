@@ -298,21 +298,19 @@ public class Message {
                     File encodedFile = new File(appleScriptExecutor.getTempFolder().toString(), outputName);
 
                     if (sendAttachments) {
-                        byte[] fileBytes = FileUtils.readBytesFromFile(encodedFile);
                         String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
-                        AESCrypto.CipherByteArrayIvMac byteArrayIvMac = AESCrypto.encryptBytes(fileBytes, keys);
+                        AESCrypto.CipherByteArrayIv byteArrayIv = AESCrypto.encryptFile(encodedFile, keys);
 
                         EncryptedFile encryptedFile = new EncryptedFile(
                                 attachmentUuid,
                                 outputName,
-                                byteArrayIvMac.getCipherBytes(),
+                                byteArrayIv.getCipherBytes(),
                                 keys,
-                                byteArrayIvMac.joinedIvAndMac()
+                                byteArrayIv.getIv()
                         );
                         device.sendOutgoingFile(encryptedFile);
 
-                        fileBytes = null;
-                        byteArrayIvMac = null;
+                        byteArrayIv = null;
                         encryptedFile = null;
                     }
 
@@ -327,23 +325,20 @@ public class Message {
                     attachments.add(jsonAttachment);
                 } else {
                     if (sendAttachments) {
-                        byte[] fileBytes = FileUtils.readBytesFromFile(new File(filePath));
-
                         String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
-                        AESCrypto.CipherByteArrayIvMac byteArrayIvMac = AESCrypto.encryptBytes(fileBytes, keys);
+                        AESCrypto.CipherByteArrayIv byteArrayIv = AESCrypto.encryptFile(new File(filePath), keys);
 
                         EncryptedFile encryptedFile = new EncryptedFile(
                                 attachmentUuid,
                                 attachment.getTransferName(),
-                                byteArrayIvMac.getCipherBytes(),
+                                byteArrayIv.getCipherBytes(),
                                 keys,
-                                byteArrayIvMac.joinedIvAndMac()
+                                byteArrayIv.getIv()
                         );
 
                         device.sendOutgoingFile(encryptedFile);
 
-                        fileBytes = null;
-                        byteArrayIvMac = null;
+                        byteArrayIv = null;
                         encryptedFile = null;
                     }
 

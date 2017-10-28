@@ -30,7 +30,7 @@ import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.connection.security.EncryptedFile;
 import scott.wemessage.commons.connection.security.EncryptedText;
 import scott.wemessage.commons.crypto.AESCrypto;
-import scott.wemessage.commons.crypto.AESCrypto.CipherByteArrayIvMac;
+import scott.wemessage.commons.crypto.AESCrypto.CipherByteArrayIv;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.DeviceType;
 import scott.wemessage.commons.types.DisconnectReason;
@@ -559,9 +559,9 @@ public class Device extends Thread {
                     if (object instanceof EncryptedFile){
                         EncryptedFile encryptedFile = (EncryptedFile) object;
                         String key = encryptedFile.getKey();
-                        String ivParam = encryptedFile.getIvParams();
+                        byte[] ivParam = encryptedFile.getIvParams();
                         byte[] bytes = encryptedFile.getEncryptedData();
-                        byte[] decryptedBytes = AESCrypto.decryptBytes(new CipherByteArrayIvMac(bytes, ivParam), key);
+                        byte[] decryptedBytes = AESCrypto.decryptFileBytes(new CipherByteArrayIv(bytes, ivParam), key);
                         File file = new File(getDeviceManager().getMessageServer().getScriptExecutor().getTempFolder().toString(), encryptedFile.getTransferName());
 
                         if (!file.exists()){
