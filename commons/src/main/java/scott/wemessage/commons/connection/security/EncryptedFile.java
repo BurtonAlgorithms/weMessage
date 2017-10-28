@@ -7,10 +7,10 @@ public class EncryptedFile implements Serializable {
     private String uuid;
     private String transferName;
     private byte[] encryptedData;
-    private String ivParams;
+    private byte[] ivParams;
     private String key;
 
-    public EncryptedFile(String uuid, String transferName, byte[] encryptedData, String key, String ivParams){
+    public EncryptedFile(String uuid, String transferName, byte[] encryptedData, String key, byte[] ivParams){
         this.uuid = uuid;
         this.transferName = transferName;
         this.encryptedData = encryptedData;
@@ -30,7 +30,7 @@ public class EncryptedFile implements Serializable {
         return encryptedData;
     }
 
-    public String getIvParams(){
+    public byte[] getIvParams(){
         return ivParams;
     }
 
@@ -50,7 +50,7 @@ public class EncryptedFile implements Serializable {
         this.encryptedData = encryptedData;
     }
 
-    public void setIvParams(String ivParams) {
+    public void setIvParams(byte[] ivParams) {
         this.ivParams = ivParams;
     }
 

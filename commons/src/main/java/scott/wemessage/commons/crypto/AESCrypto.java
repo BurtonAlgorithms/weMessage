@@ -24,6 +24,12 @@
 
 package scott.wemessage.commons.crypto;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -34,6 +40,8 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -41,6 +49,8 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import scott.wemessage.commons.Constants;
 
 /**
  * Simple library for the "right" defaults for AES key generation, encryption,
@@ -358,6 +368,75 @@ public class AESCrypto {
     }
 
     /**
+     * Generates a random IV and encrypts bytes from a file with the given key. Then it is bundled in a
+     * CipherByteArrayIv class.
+     *
+     * @param inputFile The file that will be encrypted
+     * @param secretKeys The combined AES & HMAC keys with which to encrypt
+     * @return a tuple of the IV and byte array
+     * @throws GeneralSecurityException if AES is not implemented on this system
+     * @throws IOException if the file is not found or an error occurs while reading bytes from it
+     */
+
+    public static CipherByteArrayIv encryptFile(File inputFile, SecretKeys secretKeys) throws GeneralSecurityException, IOException {
+        byte[] iv = generateIv();
+        Cipher aesCipherForEncryption = Cipher.getInstance(CIPHER_TRANSFORMATION);
+        aesCipherForEncryption.init(Cipher.ENCRYPT_MODE, secretKeys.getConfidentialityKey(), new IvParameterSpec(iv));
+
+        iv = aesCipherForEncryption.getIV();
+
+        BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(inputFile));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        CipherOutputStream cipherOutputStream = new CipherOutputStream(baos, aesCipherForEncryption);
+
+        int read;
+        byte[] buffer = new byte[1024];
+        boolean outOfMemTrigger = false;
+        long fileLength = inputFile.length();
+
+        while ((read = inputStream.read(buffer)) != -1) {
+            Runtime runtime = Runtime.getRuntime();
+            long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+            long maxHeapSize = runtime.maxMemory() / 1048576L;
+            long availableHeapSize = maxHeapSize - usedMemory;
+
+            if ((fileLength / (1024L * 1024L)) > (availableHeapSize - 10)) {
+                outOfMemTrigger = true;
+                break;
+            }
+
+            cipherOutputStream.write(buffer, 0, read);
+        }
+
+        baos.close();
+        inputStream.close();
+        cipherOutputStream.close();
+
+        if (outOfMemTrigger){
+            System.gc();
+            return new OOMCipherByteArray();
+        }
+
+        return new CipherByteArrayIv(baos.toByteArray(), iv);
+    }
+
+    /**
+     * Generates a random IV and encrypts bytes from a file with the given key. Then it is bundled in a
+     * CipherByteArrayIv class.
+     *
+     * @param inputFile The file that will be encrypted
+     * @param secretKeys The combined AES & HMAC keys with which to encrypt, as a string
+     * @return a tuple of the IV and byte array
+     * @throws GeneralSecurityException if AES is not implemented on this system
+     * @throws IOException if the file is not found or an error occurs while reading bytes from it
+     */
+
+    public static CipherByteArrayIv encryptFile(File inputFile, String secretKeys) throws GeneralSecurityException, IOException {
+        return encryptFile(inputFile, stringToKeys(secretKeys));
+    }
+
+
+    /**
      * Ensures that the PRNG is fixed. Should be used before generating any keys.
      * Will only run once, and every subsequent call should return immediately.
      */
@@ -463,7 +542,7 @@ public class AESCrypto {
     }
 
     /**
-     * AES CBC decryption of file data (byte array)
+     * AES CBC decryption of a byte array
      *
      * @param byteArrayIvMac the ciphered byte array, iv, and mac
      * @param secretKeys the AES & HMAC keys
@@ -485,7 +564,7 @@ public class AESCrypto {
     }
 
     /**
-     * AES CBC decryption of file data (byte array)
+     * AES CBC decryption of a byte array
      *
      * @param byteArrayIvMac the ciphered byte array, iv, and mac
      * @param secretKeys the AES & HMAC keys as a string
@@ -495,6 +574,74 @@ public class AESCrypto {
     public static byte[] decryptBytes(CipherByteArrayIvMac byteArrayIvMac, String secretKeys) throws GeneralSecurityException {
         return decryptBytes(byteArrayIvMac, stringToKeys(secretKeys));
     }
+
+    /**
+     * AES CBC decryption of a file byte array
+     *
+     * @param byteArrayIv the ciphered byte array and iv
+     * @param secretKeys the AES & HMAC keys
+     * @return The raw decrypted bytes
+     * @throws GeneralSecurityException if MACs don't match or AES is not implemented
+     * @throws IOException if an error occurs while reading the bytes
+     */
+
+    public static byte[] decryptFileBytes(CipherByteArrayIv byteArrayIv, SecretKeys secretKeys) throws GeneralSecurityException, IOException {
+        Cipher aesCipherForDecryption = Cipher.getInstance(CIPHER_TRANSFORMATION);
+        aesCipherForDecryption.init(Cipher.DECRYPT_MODE, secretKeys.getConfidentialityKey(), new IvParameterSpec(byteArrayIv.getIv()));
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(byteArrayIv.getCipherBytes());
+        CipherInputStream cipherInputStream = new CipherInputStream(bais, aesCipherForDecryption);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        long byteLength = byteArrayIv.getCipherBytes().length;
+        byte[] b = new byte[1024];
+        int bytesRead;
+
+        boolean outOfMemTrigger = false;
+
+        while ((bytesRead = cipherInputStream.read(b)) >= 0) {
+            Runtime runtime = Runtime.getRuntime();
+            long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+            long maxHeapSize = runtime.maxMemory() / 1048576L;
+            long availableHeapSize = maxHeapSize - usedMemory;
+
+            if ((byteLength / (1024L * 1024L)) > (availableHeapSize - 10)) {
+                outOfMemTrigger = true;
+                break;
+            }
+
+            baos.write(b, 0, bytesRead);
+        }
+
+        baos.close();
+        bais.close();
+        cipherInputStream.close();
+
+        if (outOfMemTrigger){
+            byte[] oom = new byte[1];
+            Arrays.fill(oom, (byte) Constants.CRYPTO_ERROR_MEMORY);
+
+            return oom;
+        }else {
+            return baos.toByteArray();
+        }
+    }
+
+    /**
+     * AES CBC decryption of a file byte array
+     *
+     * @param byteArrayIv the ciphered byte array and iv
+     * @param secretKeys the AES & HMAC keys, as a string
+     * @return The raw decrypted bytes
+     * @throws GeneralSecurityException if MACs don't match or AES is not implemented
+     * @throws IOException if an error occurs while reading the bytes
+     */
+
+    public static byte[] decryptFileBytes(CipherByteArrayIv byteArrayIv, String secretKeys) throws GeneralSecurityException, IOException {
+        return decryptFileBytes(byteArrayIv, stringToKeys(secretKeys));
+    }
+
+
 
     /*
      * -----------------------------------------------------------------
@@ -516,6 +663,8 @@ public class AESCrypto {
         sha256_HMAC.init(integrityKey);
         return sha256_HMAC.doFinal(byteCipherText);
     }
+
+
     /**
      * Holder class that has both the secret AES key for encryption (confidentiality)
      * and the secret HMAC key for integrity.
@@ -821,6 +970,40 @@ public class AESCrypto {
         }
     }
 
+
+
+    /**
+     * Holder class that allows us to bundle ciphered byte array and IV together (without the MAC integrity).
+     */
+
+    public static class CipherByteArrayIv {
+        private final byte[] cipherBytes;
+        private final byte[] iv;
+
+        public CipherByteArrayIv(byte[] cipherBytes, byte[] iv){
+            this.cipherBytes = cipherBytes;
+            this.iv = iv;
+        }
+
+        public byte[] getCipherBytes() {
+            return cipherBytes;
+        }
+
+        public byte[] getIv() {
+            return iv;
+        }
+    }
+
+    /**
+     * A holder class that indicates whether or not an encryption operation will throw an Out of Memory Error
+     */
+
+    public static class OOMCipherByteArray extends CipherByteArrayIv {
+
+        public OOMCipherByteArray() {
+            super(null, null);
+        }
+    }
 
     /**
      * Copy the elements from the start to the end

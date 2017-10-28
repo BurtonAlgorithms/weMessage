@@ -8,7 +8,7 @@ public interface Constants {
 
     int DEFAULT_PORT = 22222;
     int MINIMUM_PASSWORD_LENGTH = 8;
-    int MAX_FILE_SIZE = 262144000;
+    long MAX_FILE_SIZE = 262144000; //TODO: 157286400L;
     int NOTIFICATION_MAX_CHAR_SIZE = 100;
     String DEFAULT_PASSWORD = "password";
 
@@ -21,6 +21,8 @@ public interface Constants {
     String JSON_ACTION = "ACTION - ";
     String JSON_MESSAGE_UPDATED = "MESSAGE UPDATED - ";
     String JSON_RETURN_RESULT = "RETURN RESULT - ";
+
+    int CRYPTO_ERROR_MEMORY = -1;
 
     int HTTP_FIREBASE_GENERIC_ERROR = 500;
     int HTTP_FIREBASE_UNSUPPORTED_NOTIFICATION_VERSION = 501;
