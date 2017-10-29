@@ -94,6 +94,7 @@
     <string name="max_file_size_alert_title">Files Too Large</string>
     <string name="max_file_chat_size_alert_title">Picture Too Large</string>
     <string name="max_file_size_alert_message">You have exceeded the maximum attachment size (%1$s). \n\nThe attachments selected are too large to be sent.</string>
+    <string name="memory_file_size_alert_message">The attachments are too large to be sent. \n\nPlease reduce your file sizes.</string>
     <string name="max_file_chat_size_alert_message">You have exceeded the maximum chat icon size (%1$s). \n\nPlease choose a smaller photo.</string>
     <string name="message_delivery_error">Not Delivered</string>
     <string name="message_delivery_failure_unknown">An error occurred while delivering this message.</string>

@@ -8,6 +8,18 @@ import scott.wemessage.commons.types.MimeType;
 
 public class AndroidUtils {
 
+    public static boolean hasMemoryForOperation(long memoryNeeded){
+        Runtime runtime = Runtime.getRuntime();
+        long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+        long maxHeapSize = runtime.maxMemory() / 1048576L;
+        long availableHeapSize = maxHeapSize - usedMemory;
+
+        if ((memoryNeeded / 1048576L) > (availableHeapSize - 10)) {
+            return false;
+        }
+        return true;
+    }
+
     public static String getDeviceName(){
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         String deviceName;

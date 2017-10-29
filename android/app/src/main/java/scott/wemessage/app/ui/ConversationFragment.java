@@ -1027,12 +1027,14 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             @Override
             protected MessageTaskReturnType doInBackground(UnprocessedMessage... params) {
                 UnprocessedMessage unprocessedMessage = params[0];
+                List<Long> sizes = new ArrayList<>();
                 long totalSize = 0;
 
                 for (String s : unprocessedMessage.getInputAttachments()) {
                     long length = new File(s).length();
 
                     totalSize += length;
+                    sizes.add(length);
                 }
 
                 if (unprocessedMessage.getCameraInput() != null){
@@ -1040,6 +1042,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
                     if (inputFile.exists()){
                         totalSize += inputFile.length();
+                        sizes.add(inputFile.length());
                     }
                 }
 
@@ -1047,12 +1050,17 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     File inputFile = new File(unprocessedMessage.getVoiceInput());
 
                     if (inputFile.exists()){
-                        totalSize += inputFile.length();;
+                        totalSize += inputFile.length();
+                        sizes.add(inputFile.length());
                     }
                 }
 
                 if (totalSize > weMessage.MAX_FILE_SIZE){
                     return MessageTaskReturnType.FILE_SIZE_TOO_LARGE;
+                }
+
+                if (sizes.size() > 0 && !AndroidUtils.hasMemoryForOperation(Collections.max(sizes))) {
+                    return MessageTaskReturnType.NOT_ENOUGH_MEMORY;
                 }
 
                 List<Attachment> attachments = new ArrayList<>();
@@ -1140,10 +1148,13 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
             @Override
             protected void onPostExecute(MessageTaskReturnType returnType) {
-                if (returnType == MessageTaskReturnType.FILE_SIZE_TOO_LARGE){
-                    if (getActivity() != null && isAdded() && !getActivity().isDestroyed() && !getActivity().isFinishing()){
+                if (getActivity() != null && isAdded() && !getActivity().isDestroyed() && !getActivity().isFinishing()){
+                    if (returnType == MessageTaskReturnType.FILE_SIZE_TOO_LARGE){
                         DialogDisplayer.generateAlertDialog(getString(R.string.max_file_size_alert_title), getString(R.string.max_file_size_alert_message, FileUtils.getFileSizeString(weMessage.MAX_FILE_SIZE)))
                                 .show(getFragmentManager(), "AttachmentMaxFileSizeAlert");
+                    }else if (returnType == MessageTaskReturnType.NOT_ENOUGH_MEMORY){
+                        DialogDisplayer.generateAlertDialog(getString(R.string.max_file_size_alert_title), getString(R.string.memory_file_size_alert_message))
+                                .show(getFragmentManager(), "AttachmentMaxMemorySizeAlert");
                     }
                 }
             }
@@ -1683,6 +1694,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private enum MessageTaskReturnType {
         FILE_SIZE_TOO_LARGE,
+        NOT_ENOUGH_MEMORY,
         TASK_PERFORMED
     }
 }
