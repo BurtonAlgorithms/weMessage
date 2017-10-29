@@ -1178,8 +1178,12 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     private void showDeliveryStatusOnLastMessage(){
+        Message lastMessage = weMessage.get().getMessageDatabase().getLastMessageFromChat(getChat());
+
+        if (lastMessage == null) return;
+
         String oldLastMessageId = lastMessageId;
-        lastMessageId = weMessage.get().getMessageDatabase().getLastMessageFromChat(getChat()).getUuid().toString();
+        lastMessageId = lastMessage.getUuid().toString();
 
         for (int childCount = messageList.getChildCount(), i = 0; i < childCount; ++i) {
             RecyclerView.ViewHolder holder = messageList.getChildViewHolder(messageList.getChildAt(i));

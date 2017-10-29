@@ -47,9 +47,10 @@ import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
 
-public class AttachmentPopupFragment extends MessagingFragment {
+public class AttachmentPopupFragment extends MessagingFragment implements MediaRecorder.OnInfoListener {
 
     private final int ERROR_SNACKBAR_DURATION = 5;
+    private final int AUDIO_MAX_DURATION = 180;
 
     private List<String> attachments = new ArrayList<>();
     private RecyclerView galleryRecyclerView;
@@ -179,6 +180,22 @@ public class AttachmentPopupFragment extends MessagingFragment {
         super.onDestroy();
     }
 
+    @Override
+    public void onInfo(MediaRecorder mr, int what, int extra) {
+        if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED){
+            isRecording = false;
+            getAudioRecorder().stop();
+            getAudioRecorder().release();
+            audioRecorder = null;
+
+            attachmentPopupAudioButton.setSelected(false);
+            attachmentPopupAudioButton.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.ic_trash_exit, 0, 0);
+            attachmentPopupAudioButton.setTextColor(Color.BLACK);
+            attachmentPopupAudioButton.setText(getString(R.string.delete_audio_recording));
+            attachmentPopupAudioButton.setTextSize(12);
+        }
+    }
+
     public List<String> getSelectedAttachments(){
         return attachments;
     }
@@ -275,8 +292,9 @@ public class AttachmentPopupFragment extends MessagingFragment {
             getAudioRecorder().setAudioSource(MediaRecorder.AudioSource.MIC);
             getAudioRecorder().setOutputFormat(MediaRecorder.OutputFormat.AMR_NB);
             getAudioRecorder().setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-            //TODO: getAudioRecorder().setMaxDuration();
+            getAudioRecorder().setMaxDuration(AUDIO_MAX_DURATION * 60000);
             getAudioRecorder().setOutputFile(fileName);
+            getAudioRecorder().setOnInfoListener(this);
 
             try {
                 getAudioRecorder().prepare();

@@ -539,15 +539,17 @@ public final class ConnectionHandler extends Thread {
                 if (incomingObject instanceof Heartbeat) continue;
 
                 if (incomingObject instanceof EncryptedFile){
-                    String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
                     EncryptedFile encryptedFile = (EncryptedFile) incomingObject;
 
-                    Attachment attachment = new Attachment(UUID.fromString(encryptedFile.getUuid()), null, encryptedFile.getTransferName(),
-                            new FileLocationContainer(
-                                    new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + encryptedFile.getTransferName())),
-                            null, -1);
-
                     if (fileAttachmentsMap.get(encryptedFile.getUuid()) == null && database.getAttachmentByUuid(encryptedFile.getUuid()) == null) {
+                        String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
+
+                        Attachment attachment = new Attachment(UUID.fromString(encryptedFile.getUuid()), null, encryptedFile.getTransferName(),
+                                new FileLocationContainer(
+                                        new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + encryptedFile.getTransferName())),
+                                null, -1);
+
+
                         CryptoFile cryptoFile = new CryptoFile(encryptedFile.getEncryptedData(), encryptedFile.getKey(), encryptedFile.getIvParams());
 
                         FileDecryptionTask fileDecryptionTask = new FileDecryptionTask(cryptoFile, CryptoType.AES);
@@ -567,12 +569,18 @@ public final class ConnectionHandler extends Thread {
                             attachment.getFileLocation().writeBytesToFile(decryptedBytes);
                         }
 
+                        fileAttachmentsMap.put(encryptedFile.getUuid(), attachment);
+
                         cryptoFile = null;
                         fileDecryptionTask = null;
                         decryptedBytes = null;
+                    }else {
+                        Attachment attachment = fileAttachmentsMap.get(encryptedFile.getUuid());
+
+                        attachment.setTransferName(encryptedFile.getTransferName());
+                        fileAttachmentsMap.put(encryptedFile.getUuid(), attachment);
                     }
 
-                    fileAttachmentsMap.put(encryptedFile.getUuid(), attachment);
                     encryptedFile = null;
                     continue;
                 }

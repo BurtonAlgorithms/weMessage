@@ -146,10 +146,13 @@ public final class weMessage extends Application implements Constants {
                     }
                 });
 
+        AESCrypto.setMemoryAvailabilityCheck(true);
         AESCrypto.setBase64Wrapper(new AndroidBase64Wrapper());
         AESCrypto.setPrngHelper(new AesPrngHelper());
+
         ClientMessage.setByteArrayAdapter(byteArrayAdapter);
         ServerMessage.setByteArrayAdapter(byteArrayAdapter);
+
         EmojiCompat.init(emojiConfig);
 
         File attachmentFolder = new File(getFilesDir(), weMessage.ATTACHMENT_FOLDER_NAME);
