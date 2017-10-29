@@ -38,8 +38,8 @@ public class NotificationManager {
 
                         String plainText;
 
-                        if (message.getText().length() > weMessage.NOTIFICATION_MAX_CHAR_SIZE + 1){
-                            plainText = message.getText().substring(0, weMessage.NOTIFICATION_MAX_CHAR_SIZE) + "...";
+                        if (message.getText().length() > weMessage.MAX_NOTIFICATION_CHAR_SIZE + 1){
+                            plainText = message.getText().substring(0, weMessage.MAX_NOTIFICATION_CHAR_SIZE) + "...";
                         }else {
                             plainText = message.getText();
                         }
