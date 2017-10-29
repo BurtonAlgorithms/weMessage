@@ -72,8 +72,9 @@ public class AESCrypto {
     private static final String PBE_ALGORITHM = "PBKDF2WithHmacSHA1";
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final int HMAC_KEY_LENGTH_BITS = 256;
-    static final AtomicBoolean prngFixed = new AtomicBoolean(false);
 
+    static final AtomicBoolean prngFixed = new AtomicBoolean(false);
+    static final AtomicBoolean checkMemoryAvailability = new AtomicBoolean(false);
 
     /**
      * Sets the Base64 Wrapper class so the proper Base64 methods are called for each perspective variation of Java
@@ -85,6 +86,17 @@ public class AESCrypto {
         if (base64Wrapper == null) {
             base64Wrapper = wrapper;
         }
+    }
+
+    /**
+     * Sets whether or not memory checks should be performed during encryption or decryption processes
+     * to prevent Out of Memory Errors
+     *
+     * @param checkAvailability Whether or not the check should be enabled
+     */
+
+    public static void setMemoryAvailabilityCheck(boolean checkAvailability){
+        checkMemoryAvailability.set(checkAvailability);
     }
 
     /**
@@ -395,14 +407,16 @@ public class AESCrypto {
         long fileLength = inputFile.length();
 
         while ((read = inputStream.read(buffer)) != -1) {
-            Runtime runtime = Runtime.getRuntime();
-            long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
-            long maxHeapSize = runtime.maxMemory() / 1048576L;
-            long availableHeapSize = maxHeapSize - usedMemory;
+            if (checkMemoryAvailability.get()) {
+                Runtime runtime = Runtime.getRuntime();
+                long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+                long maxHeapSize = runtime.maxMemory() / 1048576L;
+                long availableHeapSize = maxHeapSize - usedMemory;
 
-            if ((fileLength / (1024L * 1024L)) > (availableHeapSize - 10)) {
-                outOfMemTrigger = true;
-                break;
+                if ((fileLength / 1048576L) > (availableHeapSize - 10)) {
+                    outOfMemTrigger = true;
+                    break;
+                }
             }
 
             cipherOutputStream.write(buffer, 0, read);
@@ -600,14 +614,16 @@ public class AESCrypto {
         boolean outOfMemTrigger = false;
 
         while ((bytesRead = cipherInputStream.read(b)) >= 0) {
-            Runtime runtime = Runtime.getRuntime();
-            long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
-            long maxHeapSize = runtime.maxMemory() / 1048576L;
-            long availableHeapSize = maxHeapSize - usedMemory;
+            if (checkMemoryAvailability.get()) {
+                Runtime runtime = Runtime.getRuntime();
+                long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+                long maxHeapSize = runtime.maxMemory() / 1048576L;
+                long availableHeapSize = maxHeapSize - usedMemory;
 
-            if ((byteLength / (1024L * 1024L)) > (availableHeapSize - 10)) {
-                outOfMemTrigger = true;
-                break;
+                if ((byteLength / 1048576L) > (availableHeapSize - 10)) {
+                    outOfMemTrigger = true;
+                    break;
+                }
             }
 
             baos.write(b, 0, bytesRead);
@@ -618,10 +634,12 @@ public class AESCrypto {
         cipherInputStream.close();
 
         if (outOfMemTrigger){
-            byte[] oom = new byte[1];
-            Arrays.fill(oom, (byte) Constants.CRYPTO_ERROR_MEMORY);
+            System.gc();
 
-            return oom;
+            byte[] outOfMemoryByteErrorCode = new byte[1];
+            Arrays.fill(outOfMemoryByteErrorCode, (byte) Constants.CRYPTO_ERROR_MEMORY);
+
+            return outOfMemoryByteErrorCode;
         }else {
             return baos.toByteArray();
         }
