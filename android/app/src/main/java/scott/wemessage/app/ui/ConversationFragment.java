@@ -543,15 +543,6 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public void onResume() {
-        if (!isServiceRunning(ConnectionService.class)){
-            goToLauncherReconnect();
-        }
-
-        super.onResume();
-    }
-
-    @Override
     public void onDestroy() {
         if (getChat() == null){
             super.onDestroy();
@@ -1064,6 +1055,21 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private boolean sendMessage(CharSequence input){
         if (StringUtils.isEmpty(input.toString().trim())) return false;
+
+        if (!isConnectionServiceRunning()){
+            DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment =
+                    DialogDisplayer.generateOfflineDialog(getActivity(), getString(R.string.offline_mode_message_send));
+
+            alertDialogFragment.setOnDismiss(new Runnable() {
+                @Override
+                public void run() {
+                    goToLauncherReconnect();
+                }
+            });
+
+            alertDialogFragment.show(getFragmentManager(), "OfflineModeAlertDialog");
+            return false;
+        }
 
         UnprocessedMessage unprocessedMessage = preprocessMessage(input);
 

@@ -130,6 +130,28 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
     }
 
+    public List<Account> getAccounts(){
+        List<Account> accounts = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + AccountTable.TABLE_NAME;
+        Cursor cursor = db.rawQuery(selectQuery, null);
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                Account account = buildAccount(cursor);
+
+                if (account != null) {
+                    accounts.add(account);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return accounts;
+    }
+
     public List<Contact> getContacts(){
         List<Contact> contacts = new ArrayList<>();
 

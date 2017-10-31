@@ -20,6 +20,7 @@ import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
+import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.weMessage;
 
 public class SettingsActivity extends AppCompatActivity {
@@ -38,28 +39,28 @@ public class SettingsActivity extends AppCompatActivity {
                     public void run() {
                         goToLauncher();
                     }
-                });
+                }, true);
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new Runnable() {
                     @Override
                     public void run() {
                         goToLauncher();
                     }
-                });
+                }, true);
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
                         goToLauncher();
                     }
-                });
+                }, true);
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
                         goToLauncher();
                     }
-                });
+                }, false);
             }else if(intent.getAction().equals(weMessage.BROADCAST_SEND_MESSAGE_ERROR)){
                 showErroredSnackbar(getString(R.string.send_message_error), 5);
             }else if(intent.getAction().equals(weMessage.BROADCAST_ACTION_PERFORM_ERROR)){
@@ -110,6 +111,7 @@ public class SettingsActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         TextView settingsVersionText = findViewById(R.id.settingsVersionText);
+        TextView signInOutTextView = findViewById(R.id.settingsSignInOutTextView);
         ViewGroup settingsBlockedContacts = findViewById(R.id.settingsBlockedContacts);
         ViewGroup settingsSignInOut = findViewById(R.id.settingsSignInOut);
 
@@ -124,22 +126,26 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        settingsSignInOut.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                serviceConnection.getConnectionService().getConnectionHandler().disconnect();
-                weMessage.get().signOut();
-            }
-        });
-    }
-
-    @Override
-    public void onResume() {
-        if (!isServiceRunning(ConnectionService.class)){
-            goToLauncher();
+        if (isServiceRunning(ConnectionService.class)){
+            signInOutTextView.setText(R.string.sign_out);
+        }else {
+            signInOutTextView.setText(R.string.connect_to_server);
         }
 
-        super.onResume();
+        settingsSignInOut.setOnClickListener(new OnClickWaitListener(1000L) {
+            @Override
+            public void onWaitClick(View view) {
+                if (isServiceRunning(ConnectionService.class)) {
+                    serviceConnection.getConnectionService().getConnectionHandler().disconnect();
+                    weMessage.get().signOut();
+                } else {
+                    Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
+
+                    startActivity(launcherIntent);
+                    finish();
+                }
+            }
+        });
     }
 
     @Override
@@ -171,8 +177,12 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
-    private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
-        DialogDisplayer.showDisconnectReasonDialog(this, getSupportFragmentManager(), bundledIntent, defaultMessage, runnable);
+    private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable, boolean doubleButtonView){
+        if (doubleButtonView) {
+            DialogDisplayer.showDisconnectReasonDialog(this, getSupportFragmentManager(), bundledIntent, defaultMessage, runnable);
+        }else {
+            DialogDisplayer.showDisconnectReasonDialogSingleButton(this, getSupportFragmentManager(), bundledIntent, defaultMessage, runnable);
+        }
     }
 
     private void showErroredSnackbar(String message, int duration){

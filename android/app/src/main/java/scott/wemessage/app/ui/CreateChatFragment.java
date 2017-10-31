@@ -356,15 +356,6 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     }
 
     @Override
-    public void onResume() {
-        if (!isServiceRunning(ConnectionService.class)){
-            goToLauncherReconnect();
-        }
-
-        super.onResume();
-    }
-
-    @Override
     public void onDestroy() {
 
         weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
@@ -528,10 +519,9 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             if (selectedNameViews.get(0) instanceof SelectedContactNameView){
                 Chat chat = messageDatabase.getChatByHandle(((SelectedContactNameView) selectedNameViews.get(0)).getContact().getHandle());
                 if (chat != null){
-                    sendMessage(text, chat);
-                    return true;
+                    return sendMessage(text, chat);
                 }else {
-                    sendMessage(text, new PeerChat(
+                    return sendMessage(text, new PeerChat(
                             UUID.randomUUID(),
                             null,
                             null,
@@ -540,11 +530,10 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                             false,
                             ((SelectedContactNameView) selectedNameViews.get(0)).getContact()
                     ));
-                    return true;
                 }
             }else {
                 SelectedUnknownNameView selectedUnknownNameView = (SelectedUnknownNameView) selectedNameViews.get(0);
-                sendMessage(text, new PeerChat(
+                return sendMessage(text, new PeerChat(
                         UUID.randomUUID(),
                         null,
                         null,
@@ -553,9 +542,13 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                         false,
                         new Contact().setHandle(new Handle().setHandleID(selectedUnknownNameView.getHandle())
                 )));
-                return true;
             }
         }else {
+            if (!isConnectionServiceRunning()){
+                showOfflineActionDialog(getString(R.string.offline_mode_action_create_chat));
+                return false;
+            }
+
             String groupName;
             List<String> participants = new ArrayList<>();
 
@@ -584,7 +577,12 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         }
     }
 
-    private void sendMessage(String input, Chat chat){
+    private boolean sendMessage(String input, Chat chat){
+        if (!isConnectionServiceRunning()){
+            showOfflineActionDialog(getString(R.string.offline_mode_message_send));
+            return false;
+        }
+
         Message message = new Message(
                 UUID.randomUUID(),
                 null,
@@ -603,6 +601,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 true
         );
         serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
+        return true;
     }
 
     private void addContactToSelectedView(Contact contact){
@@ -698,6 +697,19 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
         DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage, runnable);
+    }
+
+    private void showOfflineActionDialog(String message){
+        DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment = DialogDisplayer.generateOfflineDialog(getActivity(), message);
+
+        alertDialogFragment.setOnDismiss(new Runnable() {
+            @Override
+            public void run() {
+                goToLauncherReconnect();
+            }
+        });
+
+        alertDialogFragment.show(getFragmentManager(), "OfflineModeAlertDialog");
     }
 
     private void showErroredSnackbar(String message, int duration){

@@ -61,8 +61,6 @@ import java.util.UUID;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.connection.ConnectionService;
-import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.ActionMessage;
@@ -104,7 +102,6 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     private String BUNDLE_EDITED_LAST_NAME = "bundleEditedLastName";
     private String BUNDLE_EDITED_CONTACT_PICTURE = "bundleEditedContactPicture";
 
-    private boolean isBoundToConnectionService = false;
     private boolean isInEditMode = false;
     private boolean isChoosePhotoLayoutShown = false;
 
@@ -125,14 +122,10 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     private RecyclerView contactViewChoosePhotoRecyclerView;
     private ChoosePhotoAdapter choosePhotoAdapter;
 
-    private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
-
     private BroadcastReceiver contactViewBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED)){
-                unbindService();
-            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
+            if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
@@ -181,10 +174,6 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        if (isServiceRunning(ConnectionService.class)){
-            bindService();
-        }
 
         MessageManager messageManager = weMessage.get().getMessageManager();
         IntentFilter broadcastIntentFilter = new IntentFilter();
@@ -449,22 +438,9 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     }
 
     @Override
-    public void onResume() {
-        if (!isServiceRunning(ConnectionService.class)){
-            goToLauncherReconnect();
-        }
-
-        super.onResume();
-    }
-
-    @Override
     public void onDestroy() {
         weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(contactViewBroadcastReceiver);
-
-        if (isBoundToConnectionService){
-            unbindService();
-        }
 
         super.onDestroy();
     }
@@ -835,19 +811,6 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
             textView.setMaxLines(5);
 
             snackbar.show();
-        }
-    }
-
-    private void bindService(){
-        Intent intent = new Intent(getActivity(), ConnectionService.class);
-        getActivity().bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
-        isBoundToConnectionService = true;
-    }
-
-    private void unbindService(){
-        if (isBoundToConnectionService) {
-            getActivity().unbindService(serviceConnection);
-            isBoundToConnectionService = false;
         }
     }
 

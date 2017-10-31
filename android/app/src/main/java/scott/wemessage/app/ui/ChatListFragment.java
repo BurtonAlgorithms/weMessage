@@ -32,8 +32,6 @@ import java.util.List;
 import java.util.UUID;
 
 import scott.wemessage.R;
-import scott.wemessage.app.connection.ConnectionService;
-import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.ActionMessage;
@@ -63,8 +61,6 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     private final int ERROR_SNACKBAR_DURATION = 5000;
 
     private String callbackUuid;
-    private boolean isBoundToConnectionService = false;
-    private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
 
     private LinearLayout noConversationsView;
     private FloatingActionButton addChatButton;
@@ -74,9 +70,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     private BroadcastReceiver chatListBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED)){
-                unbindService();
-            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
+            if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
@@ -134,9 +128,6 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-        if (isServiceRunning(ConnectionService.class)){
-            bindService();
-        }
 
         MessageManager messageManager = weMessage.get().getMessageManager();
         IntentFilter broadcastIntentFilter = new IntentFilter();
@@ -279,10 +270,6 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onResume() {
-        if (!isServiceRunning(ConnectionService.class)){
-            goToLauncherReconnect();
-        }
-
         toggleNoConversations(dialogsListAdapter.isEmpty());
         dialogsListAdapter.sortByLastMessageDate();
 
@@ -297,9 +284,6 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         messageManager.unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(chatListBroadcastReceiver);
 
-        if (isBoundToConnectionService){
-            unbindService();
-        }
         super.onDestroy();
     }
 
@@ -531,19 +515,6 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                 showAttachmentReceiveFailureSnackbar(failReason);
             }
         });
-    }
-
-    private void bindService(){
-        Intent intent = new Intent(getActivity(), ConnectionService.class);
-        getActivity().bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
-        isBoundToConnectionService = true;
-    }
-
-    private void unbindService(){
-        if (isBoundToConnectionService) {
-            getActivity().unbindService(serviceConnection);
-            isBoundToConnectionService = false;
-        }
     }
 
     private void closeDeleteButtonViews(){

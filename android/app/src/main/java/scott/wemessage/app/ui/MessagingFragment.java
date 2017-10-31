@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import scott.wemessage.R;
+import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.ActionType;
@@ -193,6 +194,10 @@ public abstract class MessagingFragment extends Fragment {
             }
         }
         return false;
+    }
+
+    protected boolean isConnectionServiceRunning(){
+        return isServiceRunning(ConnectionService.class);
     }
 
 

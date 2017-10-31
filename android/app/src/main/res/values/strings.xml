@@ -6,6 +6,7 @@
     <string name="login_password">Password</string>
     <string name="sign_in">Sign In</string>
     <string name="dismiss_button">Dismiss</string>
+    <string name="reconnect_button">Reconnect</string>
     <string name="no_ip">Please enter the IP address of the weServer.</string>
     <string name="port_not_valid">The port entered is not a number!</string>
     <string name="no_email">Please enter an email address to sign in with!</string>
@@ -186,5 +187,16 @@
     <string name="webview_copy_message">Copied To Clipboard</string>
     <string name="webview_share_via">Share Via</string>
     <string name="webview_open_with">Open With</string>
+    <string name="offline_mode_force_password">To use offline mode, please enter your password to confirm your identity.</string>
+    <string name="offline_mode_no_accounts">You have no accounts to sign in with.</string>
+    <string name="offline_mode_no_email">No login history for %1$s was found.</string>
+    <string name="offline_mode_incorrect_password">The password entered was not correct. Please try again.</string>
+    <string name="offline_mode_message_send">You cannot send messages in Offline Mode! \n\nConnect to your weServer in order to text.</string>
+    <string name="offline_mode_action_rename">You cannot rename group chats while in Offline Mode! \n\nConnect to your weServer in order to do this.</string>
+    <string name="offline_mode_action_leave">You cannot leave a group chat while in Offline Mode! \n\nConnect to your weServer in order to do this.</string>
+    <string name="offline_mode_action_remove">You cannot remove people in group chats while in Offline Mode! \n\nConnect to your weServer in order to do this.</string>
+    <string name="offline_mode_action_create_chat">You cannot create a group chat while in Offline Mode! \n\nConnect to your weServer in order to do this.</string>
+    <string name="offline_mode_action_add">You cannot add people to group chats while in Offline Mode! \n\nConnect to your weServer in order to do this.</string>
+    <string name="connect_to_server">Connect to weServer</string>
 
 </resources>

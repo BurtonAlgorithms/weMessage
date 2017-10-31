@@ -373,15 +373,6 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     }
 
     @Override
-    public void onResume() {
-        if (!isServiceRunning(ConnectionService.class)){
-            goToLauncherReconnect();
-        }
-
-        super.onResume();
-    }
-
-    @Override
     public void onDestroy() {
         weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(chatViewBroadcastReceiver);
@@ -647,7 +638,11 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     GroupChat oldVal = ((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid));
 
                     if (editedName != null && !editedName.equals(oldVal.getDisplayName())) {
-                        serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingRenameGroupAction(oldVal, editedName);
+                        if (!isConnectionServiceRunning()){
+                            showOfflineActionDialog(getString(R.string.offline_mode_action_rename));
+                        }else {
+                            serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingRenameGroupAction(oldVal, editedName);
+                        }
                     }
 
                     if (!StringUtils.isEmpty(editedChatPicture)) {
@@ -1013,6 +1008,19 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage, runnable);
     }
 
+    private void showOfflineActionDialog(String message){
+        DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment = DialogDisplayer.generateOfflineDialog(getActivity(), message);
+
+        alertDialogFragment.setOnDismiss(new Runnable() {
+            @Override
+            public void run() {
+                goToLauncherReconnect();
+            }
+        });
+
+        alertDialogFragment.show(getFragmentManager(), "OfflineModeAlertDialog");
+    }
+
     private class ChatViewAdapter extends RecyclerView.Adapter {
 
         public Integer showingDeletePosition;
@@ -1282,6 +1290,11 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 chatLeaveButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
+                        if (!isConnectionServiceRunning()){
+                            showOfflineActionDialog(getString(R.string.offline_mode_action_leave));
+                            return;
+                        }
+
                         if (chat.getParticipants().size() > 2) {
                             serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingLeaveGroupAction(chat);
                         }else {
@@ -1323,6 +1336,11 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 @Override
                 public void onClick(View view) {
                     GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid);
+
+                    if (!isConnectionServiceRunning()){
+                        showOfflineActionDialog(getString(R.string.offline_mode_action_remove));
+                        return;
+                    }
 
                     if (groupChat.getParticipants().size() > 2) {
                         serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingRemoveParticipantAction(groupChat, contactHandle);

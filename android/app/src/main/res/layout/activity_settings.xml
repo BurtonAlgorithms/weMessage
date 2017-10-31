@@ -111,6 +111,7 @@
                         android:layout_height="42dp"/>
 
                     <scott.wemessage.app.ui.view.font.FontTextView
+                        android:id="@+id/settingsSignInOutTextView"
                         android:text="@string/sign_out"
                         android:textSize="18sp"
                         android:layout_width="wrap_content"

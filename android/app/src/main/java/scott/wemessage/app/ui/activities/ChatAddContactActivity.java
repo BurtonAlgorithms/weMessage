@@ -268,15 +268,6 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
     }
 
     @Override
-    public void onResume() {
-        if (!isServiceRunning(ConnectionService.class)){
-            goToLauncherReconnect();
-        }
-
-        super.onResume();
-    }
-
-    @Override
     public void onDestroy() {
         weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(addContactBroadcastReceiver);
@@ -390,6 +381,21 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
     public void onAttachmentReceiveFailure(FailReason failReason) { }
 
     private void performAddParticipantAction(String participant){
+        if (!isServiceRunning(ConnectionService.class)){
+            DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment =
+                    DialogDisplayer.generateOfflineDialog(this, getString(R.string.offline_mode_action_add));
+
+            alertDialogFragment.setOnDismiss(new Runnable() {
+                @Override
+                public void run() {
+                    goToLauncherReconnect();
+                }
+            });
+
+            alertDialogFragment.show(getSupportFragmentManager(), "OfflineModeAlertDialog");
+            return;
+        }
+
         serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingAddParticipantAction(((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid)), participant);
 
         new Handler().postDelayed(new Runnable() {

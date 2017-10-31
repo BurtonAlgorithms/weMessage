@@ -40,14 +40,18 @@ import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.messages.MessageDatabase;
+import scott.wemessage.app.messages.objects.Account;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.ui.view.dialog.AnimationDialogLayout;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.dialog.ProgressDialogLayout;
 import scott.wemessage.app.ui.view.font.FontButton;
+import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
+import scott.wemessage.commons.crypto.BCrypt;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
@@ -68,7 +72,7 @@ public class LaunchFragment extends Fragment {
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private ConstraintLayout launchConstraintLayout;
     private EditText ipEditText, emailEditText, passwordEditText;
-    private FontButton signInButton;
+    private FontButton signInButton, offlineButton;
     private ProgressDialog loginProgressDialog;
 
     private BroadcastReceiver launcherBroadcastReceiver = new BroadcastReceiver() {
@@ -166,18 +170,22 @@ public class LaunchFragment extends Fragment {
             }
         }
 
-        serviceConnection.scheduleTask(new Runnable() {
-            @Override
-            public void run() {
-                if (serviceConnection.getConnectionService().getConnectionHandler().isConnected().get()) {
-                    if (canStartConversationActivity()){
-                        startConversationActivity(goToConversationHolder);
-                    }else {
-                        startChatListActivity();
+        if (!weMessage.get().isOfflineMode() && weMessage.get().isSignedIn()){
+            startChatListActivity();
+        }else {
+            serviceConnection.scheduleTask(new Runnable() {
+                @Override
+                public void run() {
+                    if (serviceConnection.getConnectionService().getConnectionHandler().isConnected().get()) {
+                        if (canStartConversationActivity()) {
+                            startConversationActivity(goToConversationHolder);
+                        } else {
+                            startChatListActivity();
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(weMessage.BROADCAST_LOGIN_TIMEOUT);
@@ -210,6 +218,7 @@ public class LaunchFragment extends Fragment {
         emailEditText = view.findViewById(R.id.launchEmailEditText);
         passwordEditText = view.findViewById(R.id.launchPasswordEditText);
         signInButton = view.findViewById(R.id.signInButton);
+        offlineButton = view.findViewById(R.id.offlineButton);
         oldEditTextColor = emailEditText.getCurrentTextColor();
 
         if (savedInstanceState != null) {
@@ -259,7 +268,8 @@ public class LaunchFragment extends Fragment {
             ipEditText.setText(host);
             emailEditText.setText(email);
 
-            if (weMessage.get().isSignedIn()) {
+            if ((weMessage.get().isSignedIn() && weMessage.get().isOfflineMode())
+                    || (!weMessage.get().isSignedIn() && weMessage.get().isOfflineMode()) || ((canStartConversationActivity() && weMessage.get().isOfflineMode()))) {
                 if (!(getActivity().getIntent().getExtras() != null && getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false))) {
                     if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
                         startConnectionService(view, ipAddress, port, email, hashedPass, true);
@@ -356,9 +366,9 @@ public class LaunchFragment extends Fragment {
             }
         });
 
-        signInButton.setOnClickListener(new View.OnClickListener() {
+        signInButton.setOnClickListener(new OnClickWaitListener(750L) {
             @Override
-            public void onClick(View v) {
+            public void onWaitClick(View v) {
                 clearEditTexts();
 
                 String ipUnformatted = ipEditText.getText().toString();
@@ -443,6 +453,71 @@ public class LaunchFragment extends Fragment {
                 }else {
                     startConnectionService(view, ipAddress, port, email, lastHashedPass, true);
                 }
+            }
+        });
+
+        offlineButton.setOnClickListener(new OnClickWaitListener(750L) {
+            @Override
+            public void onWaitClick(View v) {
+                clearEditTexts();
+
+                String email = emailEditText.getText().toString();
+                String password = passwordEditText.getText().toString();
+
+                if (StringUtils.isEmpty(email)) {
+                    invalidateField(emailEditText);
+                    generateInvalidSnackBar(view, getString(R.string.no_email)).show();
+                    return;
+                }
+
+                if (!AuthenticationUtils.isValidEmailFormat(email)) {
+                    invalidateField(emailEditText);
+                    generateInvalidSnackBar(view, getString(R.string.invalid_email_format)).show();
+                    return;
+                }
+
+                if (StringUtils.isEmpty(password)) {
+                    invalidateField(passwordEditText);
+                    generateInvalidSnackBar(view, getString(R.string.no_password)).show();
+                    return;
+                }
+
+                AuthenticationUtils.PasswordValidateType validateType = AuthenticationUtils.isValidPasswordFormat(password);
+
+                if (validateType == AuthenticationUtils.PasswordValidateType.LENGTH_TOO_SMALL) {
+                    invalidateField(passwordEditText);
+                    generateInvalidSnackBar(view, getString(R.string.password_too_short, weMessage.MINIMUM_PASSWORD_LENGTH)).show();
+                    return;
+                }
+
+                if (validateType == AuthenticationUtils.PasswordValidateType.PASSWORD_TOO_EASY && StringUtils.isEmpty(lastHashedPass)) {
+                    invalidateField(passwordEditText);
+                    generateInvalidSnackBar(view, getString(R.string.password_too_easy)).show();
+                    return;
+                }
+
+                if (validateType == AuthenticationUtils.PasswordValidateType.PASSWORD_TOO_EASY && !StringUtils.isEmpty(lastHashedPass)) {
+                    invalidateField(passwordEditText);
+                    generateInvalidSnackBar(view, getString(R.string.offline_mode_force_password)).show();
+                    return;
+                }
+
+                resetEditText(emailEditText);
+                resetEditText(passwordEditText);
+
+                float currentTextSize = DisplayUtils.convertPixelsToSp(offlineButton.getTextSize(), getActivity());
+                float finalTextSize = DisplayUtils.convertPixelsToSp(offlineButton.getTextSize(), getActivity()) + 2;
+
+                int currentTextColor = getResources().getColor(R.color.brightRed);
+                int finalTextColor = getResources().getColor(R.color.brightRedTextPressed);
+
+                startTextSizeAnimation(offlineButton, 0L, 75L, currentTextSize, finalTextSize);
+                startTextColorAnimation(offlineButton, 0L, 75L, currentTextColor, finalTextColor);
+
+                startTextSizeAnimation(offlineButton, 75L, 75L, finalTextSize, currentTextSize);
+                startTextColorAnimation(offlineButton, 75L, 75L, finalTextColor, currentTextColor);
+
+                signInOffline(email, password);
             }
         });
         return view;
@@ -550,6 +625,46 @@ public class LaunchFragment extends Fragment {
 
             startActivity(launcherIntent);
             getActivity().finish();
+        }
+    }
+
+    private void signInOffline(String email, String password){
+        if (weMessage.get().isSignedIn()){
+            startChatListActivity();
+        }else {
+            MessageDatabase database = weMessage.get().getMessageDatabase();
+
+            if (database.getAccounts().isEmpty()){
+                invalidateField(emailEditText);
+                generateInvalidSnackBar(getView(), getString(R.string.offline_mode_no_accounts)).show();
+                return;
+            }
+
+            Account account = database.getAccountByEmail(email);
+
+            if (account == null){
+                invalidateField(emailEditText);
+                generateInvalidSnackBar(getView(), getString(R.string.offline_mode_no_email, email)).show();
+                return;
+            }
+
+            if (!BCrypt.checkPassword(password, account.getEncryptedPassword())){
+                invalidateField(passwordEditText);
+                generateInvalidSnackBar(getView(), getString(R.string.offline_mode_incorrect_password)).show();
+                return;
+            }
+
+            SharedPreferences.Editor editor = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+            editor.putString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, email);
+            editor.putString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, password);
+
+            editor.apply();
+
+            weMessage.get().signIn();
+            weMessage.get().setCurrentAccount(account);
+            weMessage.get().setOfflineMode(true);
+
+            startChatListActivity();
         }
     }
 

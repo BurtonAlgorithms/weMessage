@@ -38,8 +38,6 @@ import java.util.TimerTask;
 import java.util.UUID;
 
 import scott.wemessage.R;
-import scott.wemessage.app.connection.ConnectionService;
-import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.objects.ActionMessage;
 import scott.wemessage.app.messages.objects.Contact;
@@ -57,20 +55,16 @@ import scott.wemessage.commons.utils.StringUtils;
 
 public class BlockedContactsActivity extends AppCompatActivity implements MessageCallbacks {
 
-    private boolean isBoundToConnectionService = false;
     private String callbackUuid;
 
     private EditText searchContactEditText;
     private RecyclerView contactsRecyclerView;
     private ContactAdapter contactAdapter;
-    private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
 
     private BroadcastReceiver blockedContactsBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED)){
-                unbindService();
-            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
+            if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
@@ -116,10 +110,6 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_blocked_contacts);
-
-        if (isServiceRunning(ConnectionService.class)){
-            bindService();
-        }
 
         IntentFilter broadcastIntentFilter = new IntentFilter();
 
@@ -198,22 +188,9 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
     }
 
     @Override
-    public void onResume() {
-        if (!isServiceRunning(ConnectionService.class)){
-            goToLauncherReconnect();
-        }
-
-        super.onResume();
-    }
-
-    @Override
     public void onDestroy() {
         weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(blockedContactsBroadcastReceiver);
-
-        if (isBoundToConnectionService){
-            unbindService();
-        }
 
         super.onDestroy();
     }
@@ -334,19 +311,6 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
     @Override
     public void onAttachmentReceiveFailure(FailReason failReason) { }
-
-    private void bindService(){
-        Intent intent = new Intent(this, ConnectionService.class);
-        bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
-        isBoundToConnectionService = true;
-    }
-
-    private void unbindService(){
-        if (isBoundToConnectionService) {
-            unbindService(serviceConnection);
-            isBoundToConnectionService = false;
-        }
-    }
 
     private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
         DialogDisplayer.showDisconnectReasonDialog(this, getSupportFragmentManager(), bundledIntent, defaultMessage, runnable);

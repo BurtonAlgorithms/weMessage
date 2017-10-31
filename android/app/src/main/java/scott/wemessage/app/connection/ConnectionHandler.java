@@ -645,6 +645,7 @@ public final class ConnectionHandler extends Thread {
                     successExtras.putBoolean(weMessage.BUNDLE_FAST_CONNECT, fastConnect);
 
                     weMessage.get().signIn();
+                    weMessage.get().setOfflineMode(false);
                     sendLocalBroadcast(weMessage.BROADCAST_LOGIN_SUCCESSFUL, successExtras);
 
                     synchronized (heartbeatThreadLock){

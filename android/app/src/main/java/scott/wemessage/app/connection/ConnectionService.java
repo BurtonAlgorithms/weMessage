@@ -35,7 +35,7 @@ public class ConnectionService extends Service {
             LocalBroadcastManager.getInstance(this).sendBroadcast(serviceClosedIntent);
 
             getConnectionHandler().endConnection();
-            weMessage.get().dumpMessageManager();
+            weMessage.get().setOfflineMode(true);
         }
         super.onDestroy();
     }

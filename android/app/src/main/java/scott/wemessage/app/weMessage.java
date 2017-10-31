@@ -59,6 +59,7 @@ public final class weMessage extends Application implements Constants {
     public static final String BUNDLE_ALERT_TITLE = IDENTIFIER_PREFIX + "bundleAlertTitle";
     public static final String BUNDLE_FAST_CONNECT = IDENTIFIER_PREFIX + "bundleFastConnect";
     public static final String BUNDLE_ALERT_MESSAGE = IDENTIFIER_PREFIX + "bundleAlertMessage";
+    public static final String BUNDLE_ALERT_POSITIVE_BUTTON = IDENTIFIER_PREFIX + "bundleAlertPositiveButton";
     public static final String BUNDLE_DIALOG_ANIMATION = IDENTIFIER_PREFIX + "bundleDialogAnimation";
     public static final String BUNDLE_IS_LAUNCHER_STILL_CONNECTING = IDENTIFIER_PREFIX + "bundleIsLauncherStillConnecting";
     public static final String BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE = IDENTIFIER_PREFIX + "bundleDisconnectReasonAlternateMessage";
@@ -129,6 +130,7 @@ public final class weMessage extends Application implements Constants {
     private File chatIconsFolder;
     private NotificationCallbacks notificationCallbacks;
 
+    private AtomicBoolean isOfflineMode = new AtomicBoolean(true);
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
 
     public static weMessage get(){
@@ -211,6 +213,14 @@ public final class weMessage extends Application implements Constants {
         return !sharedPreferences.getBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
     }
 
+    public boolean isOfflineMode(){
+        return isOfflineMode.get();
+    }
+
+    public void setOfflineMode(boolean value){
+        isOfflineMode.set(value);
+    }
+
     public boolean isEmojiCompatInitialized(){
         return isEmojiInitialized.get();
     }
@@ -237,6 +247,7 @@ public final class weMessage extends Application implements Constants {
         editor.apply();
 
         dumpMessageManager();
+        setCurrentAccount(null);
     }
 
     public synchronized void setCurrentAccount(Account account){
@@ -268,7 +279,7 @@ public final class weMessage extends Application implements Constants {
         }
     }
 
-    public synchronized void dumpMessageManager(){
+    private synchronized void dumpMessageManager(){
         messageManager.dumpAll(this);
         messageManager = null;
     }
