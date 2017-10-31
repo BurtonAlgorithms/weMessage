@@ -9,8 +9,12 @@ import android.support.text.emoji.EmojiCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Spannable;
+import android.text.method.LinkMovementMethod;
+import android.util.Patterns;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -270,6 +274,25 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
             isSelectionMode = false;
             selectedBubble.setVisibility(View.GONE);
         }
+    }
+
+    @Override
+    protected void configureLinksBehavior(TextView text) {
+        text.setLinksClickable(false);
+
+        text.setMovementMethod(new LinkMovementMethod(){
+            @Override
+            public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {
+                if (isSelectionMode) return true;
+
+                if (Patterns.WEB_URL.matcher(buffer.toString()).matches()) {
+                    getParentFragment().launchWebView(buffer.toString());
+                    return true;
+                }
+                itemView.onTouchEvent(event);
+                return false;
+            }
+        });
     }
 
     private void toggleEmojiView(boolean value){

@@ -533,8 +533,15 @@ public final class ConnectionHandler extends Thread {
         while (isRunning.get()){
             try {
                 MessageDatabase database = weMessage.get().getMessageDatabase();
+                final Object incomingObject;
 
-                final Object incomingObject = getInputStream().readObject();
+                try {
+                    incomingObject = getInputStream().readObject();
+                }catch (OutOfMemoryError oom){
+                    System.gc();
+                    weMessage.get().getMessageManager().alertAttachmentReceiveFailure(FailReason.MEMORY);
+                    continue;
+                }
 
                 if (incomingObject instanceof Heartbeat) continue;
 
@@ -542,6 +549,13 @@ public final class ConnectionHandler extends Thread {
                     EncryptedFile encryptedFile = (EncryptedFile) incomingObject;
 
                     if (fileAttachmentsMap.get(encryptedFile.getUuid()) == null && database.getAttachmentByUuid(encryptedFile.getUuid()) == null) {
+
+                        if (!AndroidUtils.hasMemoryForOperation(encryptedFile.getEncryptedData().length)){
+                            weMessage.get().getMessageManager().alertAttachmentReceiveFailure(FailReason.MEMORY);
+                            encryptedFile = null;
+                            continue;
+                        }
+
                         String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
 
                         Attachment attachment = new Attachment(UUID.fromString(encryptedFile.getUuid()), null, encryptedFile.getTransferName(),
@@ -560,7 +574,9 @@ public final class ConnectionHandler extends Thread {
                         if (decryptedBytes.length == 1){
                             if (decryptedBytes[0] == weMessage.CRYPTO_ERROR_MEMORY) {
                                 weMessage.get().getMessageManager().alertAttachmentReceiveFailure(FailReason.MEMORY);
+
                                 cryptoFile = null;
+                                encryptedFile = null;
                                 continue;
                             }else {
                                 attachment.getFileLocation().writeBytesToFile(decryptedBytes);

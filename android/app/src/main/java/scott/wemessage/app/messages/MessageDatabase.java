@@ -1179,6 +1179,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public void deleteMessageByUuid(String uuid){
+        if (getMessageByUuid(uuid) == null) return;
+
         String whereClause = MessageTable.UUID + " = ?";
 
         List<Attachment> attachments = getMessageByUuid(uuid).getAttachments();
@@ -1193,6 +1195,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public void deleteMessageByMacGuid(String macGuid){
+        if (getMessageByUuid(macGuid) == null) return;
+
         String whereClause = MessageTable.MAC_GUID + " = ?";
 
         for (Attachment a : getMessageByMacGuid(macGuid).getAttachments()){

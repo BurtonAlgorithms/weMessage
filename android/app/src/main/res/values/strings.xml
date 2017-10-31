@@ -183,5 +183,8 @@
     <string name="video_gallery_save">Video saved to your video library!</string>
     <string name="video_gallery_exists">This video already exists in your video library.</string>
     <string name="video_gallery_error">An error occurred while saving this to your video library.</string>
+    <string name="webview_copy_message">Copied To Clipboard</string>
+    <string name="webview_share_via">Share Via</string>
+    <string name="webview_open_with">Open With</string>
 
 </resources>

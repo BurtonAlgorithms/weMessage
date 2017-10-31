@@ -12,6 +12,9 @@
     <color name="heavyBlue">#055cff</color>
     <color name="heavierBlue">#053bff</color>
     <color name="superHeavyBlue">#0013e2</color>
+    <color name="webViewBlueDark">#048BFE</color>
+    <color name="webViewBlue">#2199FF</color>
+    <color name="webViewBlueLight">#BADFFF</color>
 
     <color name="brightRedText">#ff0f00</color>
     <color name="brightRedTextPressed">#d20c00</color>

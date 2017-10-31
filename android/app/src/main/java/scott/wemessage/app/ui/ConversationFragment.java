@@ -15,6 +15,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
@@ -23,6 +24,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -45,6 +47,7 @@ import com.stfalcon.chatkit.messages.MessageInput;
 import com.stfalcon.chatkit.messages.MessagesList;
 import com.stfalcon.chatkit.messages.MessagesListAdapter;
 import com.stfalcon.chatkit.utils.DateFormatter;
+import com.thefinestartist.finestwebview.FinestWebView;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -56,6 +59,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
@@ -93,6 +97,7 @@ import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.media.AudioAttachmentMediaPlayer;
 import scott.wemessage.app.utils.media.MediaDownloadCallbacks;
+import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
@@ -140,6 +145,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     private ConcurrentHashMap<String, Message> messageMapIntegrity = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, ActionMessage> actionMessageMapIntegrity = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, String> downloadTasks = new ConcurrentHashMap<>();
+    private WeakHashMap<String, Long> webViewClicks = new WeakHashMap<>();
 
     private BroadcastReceiver messageListBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -989,6 +995,40 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     conversationBottomSheet.dismissSheet();
                 }
             });
+        }
+    }
+
+    public void launchWebView(String url){
+        if (getActivity() != null) {
+            Long previousClickTimestamp = webViewClicks.get(callbackUuid);
+            long currentTimestamp = SystemClock.uptimeMillis();
+
+            webViewClicks.put(callbackUuid, currentTimestamp);
+
+            if(previousClickTimestamp == null || (currentTimestamp - previousClickTimestamp.longValue() > 1000L)) {
+                
+                new FinestWebView.Builder(getActivity())
+                        .statusBarColorRes(R.color.webViewBlueDark)
+                        .toolbarColorRes(R.color.webViewBlue)
+                        .titleColorRes(R.color.finestWhite)
+                        .urlColorRes(R.color.webViewBlueLight)
+                        .iconDefaultColorRes(R.color.finestWhite)
+                        .progressBarColorRes(R.color.finestWhite)
+                        .stringResCopiedToClipboard(R.string.webview_copy_message)
+                        .stringResShareVia(R.string.webview_share_via)
+                        .stringResOpenWith(R.string.webview_open_with)
+                        .swipeRefreshColorRes(R.color.webViewBlueDark)
+                        .titleSize(DisplayUtils.convertSpToPixel(16, getContext()))
+                        .menuTextSize(DisplayUtils.convertSpToPixel(14, getContext()))
+                        .urlSize(DisplayUtils.convertSpToPixel(12, getContext()))
+                        .menuSelector(R.drawable.selector_light_theme)
+                        .menuTextGravity(Gravity.CENTER)
+                        .menuTextPaddingRightRes(R.dimen.defaultMenuTextPaddingLeft)
+                        .dividerHeight(0)
+                        .gradientDivider(false)
+                        .setCustomAnimations(R.anim.slide_up, R.anim.hold, R.anim.hold, R.anim.slide_down)
+                        .show(url);
+            }
         }
     }
 
