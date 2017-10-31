@@ -10,9 +10,13 @@ import android.support.text.emoji.EmojiCompat;
 import android.support.text.emoji.FontRequestEmojiCompatConfig;
 import android.support.v4.provider.FontRequest;
 
+import com.crashlytics.android.Crashlytics;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import io.fabric.sdk.android.Fabric;
 
 import scott.wemessage.R;
 import scott.wemessage.app.messages.MessageDatabase;
@@ -134,6 +138,10 @@ public final class weMessage extends Application implements Constants {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        if (AppLogger.USE_CRASHLYTICS){
+            Fabric.with(this, new Crashlytics());
+        }
 
         AndroidBase64Wrapper base64Wrapper = new AndroidBase64Wrapper();
         ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(base64Wrapper);

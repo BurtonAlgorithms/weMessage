@@ -50,6 +50,8 @@ import com.stfalcon.chatkit.utils.DateFormatter;
 import com.thefinestartist.finestwebview.FinestWebView;
 
 import java.io.File;
+import java.io.InputStream;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -61,6 +63,8 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
@@ -1027,7 +1031,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                         .dividerHeight(0)
                         .gradientDivider(false)
                         .setCustomAnimations(R.anim.slide_up, R.anim.hold, R.anim.hold, R.anim.slide_down)
-                        .show(url);
+                        .show(parseURL(url));
             }
         }
     }
@@ -1666,6 +1670,28 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private boolean isChatThis(Chat c){
         return c.getUuid().toString().equals(getChat().getUuid().toString());
+    }
+
+    private String parseURL(String urlString){
+        if (!urlString.toLowerCase().startsWith("http://") && !urlString.toLowerCase().startsWith("https://")){
+            String https = "https://" + urlString;
+
+            try {
+                URL url = new URL(urlString);
+
+                HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+                InputStream inputStream = urlConnection.getInputStream();
+
+                inputStream.close();
+                urlConnection.disconnect();
+
+                return https;
+            }catch (Exception ex){
+                return "http://" + urlString;
+            }
+        }else {
+            return urlString;
+        }
     }
 
     private void goToLauncher(){

@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'io.fabric'
 apply from: '../../Commons/version.gradle'
 
 android {
@@ -36,7 +37,6 @@ dependencies {
     implementation 'com.android.support:support-v13:27.0.0'
     implementation "com.android.support:support-emoji:27.0.0"
     implementation 'com.google.firebase:firebase-core:11.4.2'
-    implementation 'com.google.firebase:firebase-crash:11.4.2'
     implementation 'com.google.firebase:firebase-messaging:11.4.2'
     implementation 'com.github.bumptech.glide:glide:4.2.0'
     implementation 'com.github.stfalcon:chatkit:0.2.2'
@@ -47,14 +47,12 @@ dependencies {
     implementation 'com.daimajia.swipelayout:library:1.2.0@aar'
     implementation 'com.thefinestartist:finestwebview:1.2.7'
     implementation 'com.vdurmont:emoji-java:4.0.0'
+    implementation('com.crashlytics.sdk.android:crashlytics:2.7.1@aar'){
+        transitive = true
+    }
 
     testImplementation 'junit:junit:4.12'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.2.0'
 }
 
-repositories {
-    maven {
-        url 'https://maven.google.com'
-    }
-}
 apply plugin: 'com.google.gms.google-services'

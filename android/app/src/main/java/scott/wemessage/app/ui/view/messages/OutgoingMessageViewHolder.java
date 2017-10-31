@@ -318,6 +318,8 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
 
     @Override
     protected void configureLinksBehavior(TextView text) {
+        text.setLinksClickable(false);
+
         text.setMovementMethod(new LinkMovementMethod(){
             @Override
             public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {

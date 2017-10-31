@@ -2,12 +2,12 @@ package scott.wemessage.app;
 
 import android.util.Log;
 
-import com.google.firebase.crash.FirebaseCrash;
+import com.crashlytics.android.Crashlytics;
 
 public final class AppLogger {
 
+    public static final boolean USE_CRASHLYTICS = false;
     private static final String DEFAULT_TAG = "weMessage";
-    private static final boolean USE_FIREBASE = true;
 
     private AppLogger() { }
 
@@ -52,16 +52,16 @@ public final class AppLogger {
         if(tag == null) {
             Log.e(DEFAULT_TAG, message, ex);
 
-            if (USE_FIREBASE) {
-                FirebaseCrash.log(message);
-                FirebaseCrash.report(ex);
+            if (USE_CRASHLYTICS) {
+                Crashlytics.log(message);
+                Crashlytics.logException(ex);
             }
         }else {
             Log.e(tag, message, ex);
 
-            if (USE_FIREBASE) {
-                FirebaseCrash.log(tag + "  " + message);
-                FirebaseCrash.report(ex);
+            if (USE_CRASHLYTICS) {
+                Crashlytics.log(tag + "  " + message);
+                Crashlytics.logException(ex);
             }
         }
     }

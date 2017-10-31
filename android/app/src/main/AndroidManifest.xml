@@ -61,6 +61,8 @@
             </intent-filter>
         </service>
 
+        <meta-data android:name="firebase_crashlytics_collection_enabled" android:value="false" />
+
     </application>
 
 </manifest>
