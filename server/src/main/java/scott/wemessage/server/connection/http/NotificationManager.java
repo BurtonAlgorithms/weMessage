@@ -87,7 +87,12 @@ public class NotificationManager {
 
                         response.close();
                     } catch (Exception ex) {
-                        ServerLogger.error("An error occurred while trying to send a notification to Device with Token: " + registrationToken, ex);
+                        try {
+                            ServerLogger.error("An error occurred while trying to send a notification to Device: " +
+                                    messageServer.getDatabaseManager().getDeviceIdByName(messageServer.getDatabaseManager().getDeviceIdByRegistrationToken(registrationToken)), ex);
+                        }catch (Exception exc){
+                            ServerLogger.error("An error occurred while trying to send a notification to a device.", ex);
+                        }
                     }
                 }
             }).start();
