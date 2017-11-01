@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.media.MediaPlayer;
@@ -170,9 +171,7 @@ public class LaunchFragment extends Fragment {
             }
         }
 
-        if (!weMessage.get().isOfflineMode() && weMessage.get().isSignedIn()){
-            startChatListActivity();
-        }else {
+        if (isServiceRunning(ServiceConnection.class)){
             serviceConnection.scheduleTask(new Runnable() {
                 @Override
                 public void run() {
@@ -461,6 +460,11 @@ public class LaunchFragment extends Fragment {
             public void onWaitClick(View v) {
                 clearEditTexts();
 
+                if (weMessage.get().hasRecentSession()){
+                    startChatListActivity();
+                    return;
+                }
+
                 String email = emailEditText.getText().toString();
                 String password = passwordEditText.getText().toString();
 
@@ -505,16 +509,10 @@ public class LaunchFragment extends Fragment {
                 resetEditText(emailEditText);
                 resetEditText(passwordEditText);
 
-                float currentTextSize = DisplayUtils.convertPixelsToSp(offlineButton.getTextSize(), getActivity());
-                float finalTextSize = DisplayUtils.convertPixelsToSp(offlineButton.getTextSize(), getActivity()) + 2;
-
                 int currentTextColor = getResources().getColor(R.color.brightRed);
                 int finalTextColor = getResources().getColor(R.color.brightRedTextPressed);
 
-                startTextSizeAnimation(offlineButton, 0L, 75L, currentTextSize, finalTextSize);
                 startTextColorAnimation(offlineButton, 0L, 75L, currentTextColor, finalTextColor);
-
-                startTextSizeAnimation(offlineButton, 75L, 75L, finalTextSize, currentTextSize);
                 startTextColorAnimation(offlineButton, 75L, 75L, finalTextColor, currentTextColor);
 
                 signInOffline(email, password);
@@ -629,43 +627,39 @@ public class LaunchFragment extends Fragment {
     }
 
     private void signInOffline(String email, String password){
-        if (weMessage.get().isSignedIn()){
-            startChatListActivity();
-        }else {
-            MessageDatabase database = weMessage.get().getMessageDatabase();
+        MessageDatabase database = weMessage.get().getMessageDatabase();
 
-            if (database.getAccounts().isEmpty()){
-                invalidateField(emailEditText);
-                generateInvalidSnackBar(getView(), getString(R.string.offline_mode_no_accounts)).show();
-                return;
-            }
-
-            Account account = database.getAccountByEmail(email);
-
-            if (account == null){
-                invalidateField(emailEditText);
-                generateInvalidSnackBar(getView(), getString(R.string.offline_mode_no_email, email)).show();
-                return;
-            }
-
-            if (!BCrypt.checkPassword(password, account.getEncryptedPassword())){
-                invalidateField(passwordEditText);
-                generateInvalidSnackBar(getView(), getString(R.string.offline_mode_incorrect_password)).show();
-                return;
-            }
-
-            SharedPreferences.Editor editor = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
-            editor.putString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, email);
-            editor.putString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, password);
-
-            editor.apply();
-
-            weMessage.get().signIn();
-            weMessage.get().setCurrentAccount(account);
-            weMessage.get().setOfflineMode(true);
-
-            startChatListActivity();
+        if (database.getAccounts().isEmpty()){
+            invalidateField(emailEditText);
+            generateInvalidSnackBar(getView(), getString(R.string.offline_mode_no_accounts)).show();
+            return;
         }
+
+        Account account = database.getAccountByEmail(email);
+
+        if (account == null){
+            invalidateField(emailEditText);
+            generateInvalidSnackBar(getView(), getString(R.string.offline_mode_no_email, email)).show();
+            return;
+        }
+
+        if (!BCrypt.checkPassword(password, account.getEncryptedPassword())){
+            invalidateField(passwordEditText);
+            generateInvalidSnackBar(getView(), getString(R.string.offline_mode_incorrect_password)).show();
+            return;
+        }
+
+        SharedPreferences.Editor editor = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+        editor.putString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, email);
+        editor.putString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, password);
+
+        editor.apply();
+
+        weMessage.get().setCurrentAccount(account);
+        weMessage.get().signIn();
+        weMessage.get().setOfflineMode(true);
+
+        startChatListActivity();
     }
 
     private void invalidateField(final EditText editText){

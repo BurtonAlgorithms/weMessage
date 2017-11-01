@@ -105,6 +105,7 @@ public class DialogDisplayer {
 
             String title = args.getString(weMessage.BUNDLE_ALERT_TITLE);
             String message = args.getString(weMessage.BUNDLE_ALERT_MESSAGE);
+            String positiveButton;
 
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
             AlertDialogLayout alertDialogLayout = (AlertDialogLayout) getActivity().getLayoutInflater().inflate(R.layout.alert_dialog_layout, null);
@@ -115,20 +116,17 @@ public class DialogDisplayer {
             builder.setView(alertDialogLayout);
 
             if (!StringUtils.isEmpty(args.getString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON))){
-                builder.setPositiveButton(args.getString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
+                positiveButton = args.getString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON);
             }else {
-                builder.setPositiveButton(R.string.ok_button, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
+                positiveButton = getString(R.string.ok_button);
             }
+
+            builder.setPositiveButton(positiveButton, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                }
+            });
 
             return builder.create();
         }

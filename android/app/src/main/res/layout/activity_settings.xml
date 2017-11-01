@@ -94,12 +94,40 @@
                 </RelativeLayout>
 
                 <LinearLayout
-                    android:id="@+id/settingsSignInOut"
+                    android:id="@+id/settingsConnectToServer"
                     android:background="?android:attr/selectableItemBackground"
                     android:orientation="horizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_below="@id/settingsBlockedContacts"
+                    android:padding="8dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:src="@drawable/ic_sync"
+                        android:layout_marginStart="-4dp"
+                        android:layout_marginEnd="-4dp"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:tint="@color/heavyBlue"/>
+
+                    <scott.wemessage.app.ui.view.font.FontTextView
+                        android:text="@string/connect_to_server"
+                        android:textSize="18sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        app:fontName="OrkneyLight"/>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/settingsSignInOut"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/settingsConnectToServer"
                     android:padding="8dp"
                     android:gravity="center_vertical">
 
@@ -111,7 +139,6 @@
                         android:layout_height="42dp"/>
 
                     <scott.wemessage.app.ui.view.font.FontTextView
-                        android:id="@+id/settingsSignInOutTextView"
                         android:text="@string/sign_out"
                         android:textSize="18sp"
                         android:layout_width="wrap_content"

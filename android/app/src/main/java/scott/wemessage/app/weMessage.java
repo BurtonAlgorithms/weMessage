@@ -132,6 +132,7 @@ public final class weMessage extends Application implements Constants {
 
     private AtomicBoolean isOfflineMode = new AtomicBoolean(true);
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
+    private AtomicBoolean hasRecentSession = new AtomicBoolean(false);
 
     public static weMessage get(){
         return instance;
@@ -178,14 +179,6 @@ public final class weMessage extends Application implements Constants {
         instance = this;
     }
 
-    public synchronized File getAttachmentFolder(){
-        return attachmentFolder;
-    }
-
-    public synchronized File getChatIconsFolder(){
-        return chatIconsFolder;
-    }
-
     public synchronized MessageDatabase getMessageDatabase(){
         return messageDatabase;
     }
@@ -207,6 +200,14 @@ public final class weMessage extends Application implements Constants {
         return currentAccount;
     }
 
+    public synchronized File getAttachmentFolder(){
+        return attachmentFolder;
+    }
+
+    public synchronized File getChatIconsFolder(){
+        return chatIconsFolder;
+    }
+
     public synchronized boolean isSignedIn(){
         SharedPreferences sharedPreferences = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
 
@@ -217,8 +218,8 @@ public final class weMessage extends Application implements Constants {
         return isOfflineMode.get();
     }
 
-    public void setOfflineMode(boolean value){
-        isOfflineMode.set(value);
+    public boolean hasRecentSession(){
+        return hasRecentSession.get();
     }
 
     public boolean isEmojiCompatInitialized(){
@@ -232,6 +233,8 @@ public final class weMessage extends Application implements Constants {
     }
 
     public synchronized void signIn(){
+        hasRecentSession.set(true);
+
         SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
 
         editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
@@ -239,6 +242,8 @@ public final class weMessage extends Application implements Constants {
     }
 
     public synchronized void signOut(){
+        hasRecentSession.set(false);
+
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
 
@@ -252,6 +257,10 @@ public final class weMessage extends Application implements Constants {
 
     public synchronized void setCurrentAccount(Account account){
         this.currentAccount = account;
+    }
+
+    public void setOfflineMode(boolean value){
+        isOfflineMode.set(value);
     }
 
     public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){

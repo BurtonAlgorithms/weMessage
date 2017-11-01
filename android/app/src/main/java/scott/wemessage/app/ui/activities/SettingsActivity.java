@@ -14,6 +14,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import scott.wemessage.R;
@@ -111,11 +112,28 @@ public class SettingsActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         TextView settingsVersionText = findViewById(R.id.settingsVersionText);
-        TextView signInOutTextView = findViewById(R.id.settingsSignInOutTextView);
         ViewGroup settingsBlockedContacts = findViewById(R.id.settingsBlockedContacts);
+        ViewGroup settingsConnectToServer = findViewById(R.id.settingsConnectToServer);
         ViewGroup settingsSignInOut = findViewById(R.id.settingsSignInOut);
 
+        if (isServiceRunning(ConnectionService.class)){
+            RelativeLayout.LayoutParams signInOutLayoutParams = (RelativeLayout.LayoutParams) settingsSignInOut.getLayoutParams();
+            signInOutLayoutParams.removeRule(RelativeLayout.BELOW);
+            signInOutLayoutParams.addRule(RelativeLayout.BELOW, R.id.settingsBlockedContacts);
+
+            settingsSignInOut.setLayoutParams(signInOutLayoutParams);
+            settingsConnectToServer.setVisibility(View.GONE);
+        }else {
+            RelativeLayout.LayoutParams signInOutLayoutParams = (RelativeLayout.LayoutParams) settingsSignInOut.getLayoutParams();
+            signInOutLayoutParams.removeRule(RelativeLayout.BELOW);
+            signInOutLayoutParams.addRule(RelativeLayout.BELOW, R.id.settingsConnectToServer);
+
+            settingsSignInOut.setLayoutParams(signInOutLayoutParams);
+            settingsConnectToServer.setVisibility(View.VISIBLE);
+        }
+
         settingsVersionText.setText(getString(R.string.settings_version, weMessage.WEMESSAGE_VERSION));
+
         settingsBlockedContacts.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -126,11 +144,15 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        if (isServiceRunning(ConnectionService.class)){
-            signInOutTextView.setText(R.string.sign_out);
-        }else {
-            signInOutTextView.setText(R.string.connect_to_server);
-        }
+        settingsConnectToServer.setOnClickListener(new OnClickWaitListener(1000L) {
+            @Override
+            public void onWaitClick(View v) {
+                Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
+
+                startActivity(launcherIntent);
+                finish();
+            }
+        });
 
         settingsSignInOut.setOnClickListener(new OnClickWaitListener(1000L) {
             @Override
@@ -139,10 +161,8 @@ public class SettingsActivity extends AppCompatActivity {
                     serviceConnection.getConnectionService().getConnectionHandler().disconnect();
                     weMessage.get().signOut();
                 } else {
-                    Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-                    startActivity(launcherIntent);
-                    finish();
+                    weMessage.get().signOut();
+                    goToLauncher();
                 }
             }
         });

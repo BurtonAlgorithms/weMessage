@@ -191,12 +191,12 @@
     <string name="offline_mode_no_accounts">You have no accounts to sign in with.</string>
     <string name="offline_mode_no_email">No login history for %1$s was found.</string>
     <string name="offline_mode_incorrect_password">The password entered was not correct. Please try again.</string>
-    <string name="offline_mode_message_send">You cannot send messages in Offline Mode! \n\nConnect to your weServer in order to text.</string>
-    <string name="offline_mode_action_rename">You cannot rename group chats while in Offline Mode! \n\nConnect to your weServer in order to do this.</string>
-    <string name="offline_mode_action_leave">You cannot leave a group chat while in Offline Mode! \n\nConnect to your weServer in order to do this.</string>
-    <string name="offline_mode_action_remove">You cannot remove people in group chats while in Offline Mode! \n\nConnect to your weServer in order to do this.</string>
-    <string name="offline_mode_action_create_chat">You cannot create a group chat while in Offline Mode! \n\nConnect to your weServer in order to do this.</string>
-    <string name="offline_mode_action_add">You cannot add people to group chats while in Offline Mode! \n\nConnect to your weServer in order to do this.</string>
+    <string name="offline_mode_message_send">You cannot send messages in Offline Mode! Connect to your weServer in order to text.</string>
+    <string name="offline_mode_action_rename">You cannot rename group chats while in Offline Mode! Connect to your weServer in order to do this.</string>
+    <string name="offline_mode_action_leave">You cannot leave a group chat while in Offline Mode! Connect to your weServer in order to do this.</string>
+    <string name="offline_mode_action_remove">You cannot remove people in group chats while in Offline Mode! Connect to your weServer in order to do this.</string>
+    <string name="offline_mode_action_create_chat">You cannot create a group chat while in Offline Mode! Connect to your weServer in order to do this.</string>
+    <string name="offline_mode_action_add">You cannot add people to group chats while in Offline Mode! Connect to your weServer in order to do this.</string>
     <string name="connect_to_server">Connect to weServer</string>
 
 </resources>
