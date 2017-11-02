@@ -50,7 +50,7 @@ public class MessagesDatabaseListener extends Listener {
                         databaseManager.queueMessage(message.getGuid(), false);
 
                         for (String token : databaseManager.getAllRegistrationTokens()){
-                            if (databaseManager.getLastEmailByDeviceId(databaseManager.getDeviceIdByRegistrationToken(token)).equals(event.getMessageServer().getConfiguration().getAccountEmail())) {
+                            if (databaseManager.getLastEmailByDeviceId(databaseManager.getDeviceIdByRegistrationToken(token)).equalsIgnoreCase(event.getMessageServer().getConfiguration().getAccountEmail())) {
                                 event.getMessageServer().getNotificationManager().sendNotification(token, message);
                             }
                         }

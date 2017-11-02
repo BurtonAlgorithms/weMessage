@@ -289,7 +289,7 @@ public final class MessageServer {
                     ServerLogger.emptyLine();
                     command.execute(commandArgs);
 
-                    if (!command.getName().equals("stop") && !command.getName().equals("disconnect") && !command.getName().equals("disconnectall")) {
+                    if (!command.getName().equalsIgnoreCase("stop") && !command.getName().equalsIgnoreCase("disconnect") && !command.getName().equalsIgnoreCase("disconnectall")) {
                         ServerLogger.emptyLine();
                     }
                 }catch(Exception ex){
@@ -312,7 +312,7 @@ public final class MessageServer {
             return false;
         }
 
-        if(!Locale.getDefault().getDisplayLanguage().equals("English")){
+        if(!Locale.getDefault().getDisplayLanguage().equalsIgnoreCase("English")){
             ServerLogger.log(ServerLogger.Level.INFO, TAG, "Currently, weServer only works if English is your default language.");
             ServerLogger.log(ServerLogger.Level.INFO, TAG, "Please set your system language to English in order to use your weServer.");
             shutdown(-1, false);

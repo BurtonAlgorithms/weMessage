@@ -472,7 +472,7 @@ public class Device extends Thread {
                         return;
                     }
 
-                    if (!email.equals(configuration.getConfigJSON().getConfig().getAccountInfo().getEmail())){
+                    if (!email.equalsIgnoreCase(configuration.getConfigJSON().getConfig().getAccountInfo().getEmail())){
                         ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because the wrong email address was provided.");
                         ServerLogger.emptyLine();
                         hasTriedVerifying.set(true);

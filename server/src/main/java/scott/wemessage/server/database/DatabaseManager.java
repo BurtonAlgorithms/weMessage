@@ -393,7 +393,7 @@ public final class DatabaseManager extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectAwaitingDevicesStatement.getResultSet();
                 while(resultSet.next()) {
-                    if (resultSet.getString(COLUMN_QUEUE_ACTION_ACCOUNT).equals(messageServer.getConfiguration().getAccountEmail())) {
+                    if (resultSet.getString(COLUMN_QUEUE_ACTION_ACCOUNT).equalsIgnoreCase(messageServer.getConfiguration().getAccountEmail())) {
                         String actionJSON = resultSet.getString(COLUMN_QUEUE_ACTION_JSON);
                         JSONAction jsonAction = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().fromJson(actionJSON, JSONAction.class);
                         actionQueue.add(jsonAction);
