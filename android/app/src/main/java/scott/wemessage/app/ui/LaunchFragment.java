@@ -654,7 +654,7 @@ public class LaunchFragment extends Fragment {
 
         SharedPreferences.Editor editor = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
         editor.putString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, email);
-        editor.putString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, password);
+        editor.putString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, account.getEncryptedPassword());
 
         editor.apply();
 
