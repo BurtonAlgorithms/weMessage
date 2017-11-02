@@ -289,7 +289,9 @@ public final class weMessage extends Application implements Constants {
     }
 
     private synchronized void dumpMessageManager(){
-        messageManager.dumpAll(this);
-        messageManager = null;
+        if (messageManager != null) {
+            messageManager.dumpAll(this);
+            messageManager = null;
+        }
     }
 }

@@ -460,11 +460,6 @@ public class LaunchFragment extends Fragment {
             public void onWaitClick(View v) {
                 clearEditTexts();
 
-                if (weMessage.get().hasRecentSession()){
-                    startChatListActivity();
-                    return;
-                }
-
                 String email = emailEditText.getText().toString();
                 String password = passwordEditText.getText().toString();
 
@@ -477,6 +472,12 @@ public class LaunchFragment extends Fragment {
                 if (!AuthenticationUtils.isValidEmailFormat(email)) {
                     invalidateField(emailEditText);
                     generateInvalidSnackBar(view, getString(R.string.invalid_email_format)).show();
+                    return;
+                }
+
+                if (weMessage.get().hasRecentSession() && weMessage.get().getCurrentAccount() != null
+                        && weMessage.get().getCurrentAccount().getEmail().equalsIgnoreCase(emailEditText.getText().toString())){
+                    startChatListActivity();
                     return;
                 }
 
@@ -627,6 +628,8 @@ public class LaunchFragment extends Fragment {
     }
 
     private void signInOffline(String email, String password){
+        weMessage.get().signOut();
+
         MessageDatabase database = weMessage.get().getMessageDatabase();
 
         if (database.getAccounts().isEmpty()){

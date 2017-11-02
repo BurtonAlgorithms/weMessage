@@ -398,7 +398,7 @@ public final class ConnectionHandler extends Thread {
         }
 
         SharedPreferences sharedPref = getParentService().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
-        fastConnect = (sharedPref.getString(weMessage.SHARED_PREFERENCES_LAST_HOST, "").equals(hostToCheck) && sharedPref.getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, "").equals(emailPlainText));
+        fastConnect = (sharedPref.getString(weMessage.SHARED_PREFERENCES_LAST_HOST, "").equals(hostToCheck) && sharedPref.getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, "").equalsIgnoreCase(emailPlainText));
 
         if (!fastConnect) {
             try {
@@ -606,7 +606,9 @@ public final class ConnectionHandler extends Thread {
                 if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)) {
                     isConnected.set(true);
 
-                    Account currentAccount = new Account().setEmail(emailPlainText).setEncryptedPassword(passwordHashedText);
+                    if (weMessage.get().hasRecentSession()) weMessage.get().signOut();
+
+                    Account currentAccount = new Account().setEmail(emailPlainText.toLowerCase()).setEncryptedPassword(passwordHashedText);
 
                     if (database.getAccountByEmail(emailPlainText) == null) {
                         currentAccount.setUuid(UUID.randomUUID());
@@ -1011,7 +1013,7 @@ public final class ConnectionHandler extends Thread {
         }
 
         for (String s : jsonChat.getParticipants()){
-            if (!existingChatParticipantList.contains(s) && !s.equals(weMessage.get().getCurrentAccount().getEmail())){
+            if (!existingChatParticipantList.contains(s) && !s.equalsIgnoreCase(weMessage.get().getCurrentAccount().getEmail())){
                 messageManager.addParticipantToGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), executionTime, false);
             }
         }

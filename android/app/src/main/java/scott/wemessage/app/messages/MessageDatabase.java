@@ -473,7 +473,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         values.put(AccountTable.UUID, account.getUuid().toString());
-        values.put(AccountTable.ACCOUNT_EMAIL, account.getEmail());
+        values.put(AccountTable.ACCOUNT_EMAIL, account.getEmail().toLowerCase());
         values.put(AccountTable.ACCOUNT_PASSWORD_CRYPTO, account.getEncryptedPassword());
 
         return values;
@@ -498,7 +498,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase();
         String selectQuery = "SELECT * FROM " + AccountTable.TABLE_NAME + " WHERE " + AccountTable.ACCOUNT_EMAIL + " = ?";
 
-        Cursor cursor = db.rawQuery(selectQuery, new String[] {email});
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {email.toLowerCase()});
         Account account = null;
 
         if (cursor.getCount() > 0){
