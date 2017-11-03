@@ -426,6 +426,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                         }
                     }
                     dialogsListAdapter.sortByLastMessageDate();
+                    toggleNoConversations(dialogsListAdapter.isEmpty());
                 }
             }
         });

@@ -132,7 +132,7 @@ public final class weMessage extends Application implements Constants {
 
     private AtomicBoolean isOfflineMode = new AtomicBoolean(true);
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
-    private AtomicBoolean hasRecentSession = new AtomicBoolean(false);
+    private AtomicBoolean isSessionRecent = new AtomicBoolean(false);
 
     public static weMessage get(){
         return instance;
@@ -218,8 +218,8 @@ public final class weMessage extends Application implements Constants {
         return isOfflineMode.get();
     }
 
-    public boolean hasRecentSession(){
-        return hasRecentSession.get();
+    public boolean isSessionRecent(){
+        return isSessionRecent.get();
     }
 
     public boolean isEmojiCompatInitialized(){
@@ -232,8 +232,11 @@ public final class weMessage extends Application implements Constants {
         return notificationCallbacks.onNotification(macGuid);
     }
 
-    public synchronized void signIn(){
-        hasRecentSession.set(true);
+    public synchronized void signIn(Account account, boolean offlineMode){
+        setCurrentAccount(account);
+        setOfflineMode(offlineMode);
+
+        isSessionRecent.set(true);
 
         SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
 
@@ -242,7 +245,7 @@ public final class weMessage extends Application implements Constants {
     }
 
     public synchronized void signOut(){
-        hasRecentSession.set(false);
+        isSessionRecent.set(false);
 
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
@@ -253,10 +256,6 @@ public final class weMessage extends Application implements Constants {
 
         dumpMessageManager();
         setCurrentAccount(null);
-    }
-
-    public synchronized void setCurrentAccount(Account account){
-        this.currentAccount = account;
     }
 
     public void setOfflineMode(boolean value){
@@ -286,6 +285,10 @@ public final class weMessage extends Application implements Constants {
         }else {
             notificationManager.cancelAll();
         }
+    }
+
+    private synchronized void setCurrentAccount(Account account){
+        this.currentAccount = account;
     }
 
     private synchronized void dumpMessageManager(){

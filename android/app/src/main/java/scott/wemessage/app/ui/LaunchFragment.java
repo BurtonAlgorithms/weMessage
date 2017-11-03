@@ -9,7 +9,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.media.MediaPlayer;
@@ -171,7 +170,7 @@ public class LaunchFragment extends Fragment {
             }
         }
 
-        if (isServiceRunning(ServiceConnection.class)){
+        if (isServiceRunning(ConnectionService.class)){
             serviceConnection.scheduleTask(new Runnable() {
                 @Override
                 public void run() {
@@ -475,7 +474,7 @@ public class LaunchFragment extends Fragment {
                     return;
                 }
 
-                if (weMessage.get().hasRecentSession() && weMessage.get().getCurrentAccount() != null
+                if (weMessage.get().isSessionRecent() && weMessage.get().getCurrentAccount() != null
                         && weMessage.get().getCurrentAccount().getEmail().equalsIgnoreCase(emailEditText.getText().toString())){
                     startChatListActivity();
                     return;
@@ -658,10 +657,7 @@ public class LaunchFragment extends Fragment {
 
         editor.apply();
 
-        weMessage.get().setCurrentAccount(account);
-        weMessage.get().signIn();
-        weMessage.get().setOfflineMode(true);
-
+        weMessage.get().signIn(account, true);
         startChatListActivity();
     }
 

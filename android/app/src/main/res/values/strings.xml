@@ -92,6 +92,10 @@
     <string name="media_fetch_error">An error occurred while trying to get media from the device.</string>
     <string name="single_attachment_added_toast">Attachment added to the message.</string>
     <string name="attachments_added_toast">%1$d Attachments added to the message.</string>
+    <string name="single_attachment_removed_toast">Attachment removed from the message.</string>
+    <string name="attachments_removed_toast">%1$d Attachments removed from the message.</string>
+    <string name="generic_attachments_added_and_removed_toast">Attachments were added and removed from the message.</string>
+    <string name="attachments_added_and_removed_toast">%1$d Attachments were added to the message and %2$d Attachments were removed from it.</string>
     <string name="max_file_size_alert_title">Files Too Large</string>
     <string name="max_file_chat_size_alert_title">Picture Too Large</string>
     <string name="max_file_size_alert_message">You have exceeded the maximum attachment size (%1$s). \n\nThe attachments selected are too large to be sent.</string>

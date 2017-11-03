@@ -5,6 +5,7 @@ import android.support.design.widget.Snackbar;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.View;
+import android.widget.TextView;
 
 import scott.wemessage.R;
 
@@ -45,6 +46,10 @@ public class DisplayUtils {
         });
         snackbar.setActionTextColor(context.getResources().getColor(R.color.colorHeader));
 
+        View snackbarView = snackbar.getView();
+        TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+        textView.setMaxLines(5);
+
         snackbar.show();
     }
 
@@ -58,6 +63,10 @@ public class DisplayUtils {
             }
         });
         snackbar.setActionTextColor(context.getResources().getColor(R.color.brightRedText));
+
+        View snackbarView = snackbar.getView();
+        TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+        textView.setMaxLines(5);
 
         snackbar.show();
     }

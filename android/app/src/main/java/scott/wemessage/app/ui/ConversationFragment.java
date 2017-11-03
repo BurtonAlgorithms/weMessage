@@ -884,13 +884,42 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     @Override
     public void setAttachmentsInput(List<String> attachments, String cameraAttachmentFile, String audioFile) {
         if (isResumed()){
-            if (attachments.size() > 0 && attachments.size() != attachmentsInput.size()){
-                if (attachments.size() == 1) {
-                    Toast.makeText(getActivity(), getString(R.string.single_attachment_added_toast), Toast.LENGTH_SHORT).show();
-                }else {
-                    Toast.makeText(getActivity(), getString(R.string.attachments_added_toast, attachments.size()), Toast.LENGTH_SHORT).show();
+
+            int attachmentsAdded = 0;
+            int attachmentsRemoved = 0;
+
+            for (String s : attachmentsInput){
+                if (!attachments.contains(s)){
+                    attachmentsRemoved++;
                 }
             }
+
+            for (String s : attachments){
+                if (!attachmentsInput.contains(s)){
+                    attachmentsAdded++;
+                }
+            }
+
+            if (attachmentsAdded > 0 && attachmentsRemoved > 0){
+                if (attachmentsAdded == 1 || attachmentsRemoved == 1){
+                    Toast.makeText(getActivity(), getString(R.string.generic_attachments_added_and_removed_toast), Toast.LENGTH_SHORT).show();
+                }else {
+                    Toast.makeText(getActivity(), getString(R.string.attachments_added_and_removed_toast, attachmentsAdded, attachmentsRemoved), Toast.LENGTH_SHORT).show();
+                }
+            }else if (attachmentsAdded > 0 && attachmentsRemoved == 0){
+                if (attachmentsAdded == 1) {
+                    Toast.makeText(getActivity(), getString(R.string.single_attachment_added_toast), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getActivity(), getString(R.string.attachments_added_toast, attachmentsAdded), Toast.LENGTH_SHORT).show();
+                }
+            }else if (attachmentsRemoved > 0 && attachmentsAdded == 0){
+                if (attachmentsRemoved == 1) {
+                    Toast.makeText(getActivity(), getString(R.string.single_attachment_removed_toast), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getActivity(), getString(R.string.attachments_removed_toast, attachmentsRemoved), Toast.LENGTH_SHORT).show();
+                }
+            }
+
             attachmentsInput = new ArrayList<>(attachments);
 
             if (audioFile != null && !audioFile.equals(voiceMessageInput)){
@@ -1327,9 +1356,9 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         clipboard.setPrimaryClip(clip);
 
         if (messages.size() == 1) {
-            Toast.makeText(getActivity(), getString(R.string.copy_message_success_single), Toast.LENGTH_SHORT).show();
+            showPositiveSnackbar(3, getString(R.string.copy_message_success_single));
         }else {
-            Toast.makeText(getActivity(), getString(R.string.copy_message_success_multiple), Toast.LENGTH_SHORT).show();
+            showPositiveSnackbar(3, getString(R.string.copy_message_success_multiple));
         }
     }
 
@@ -1670,6 +1699,29 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
                     snackbar.show();
                 }
+            }
+        });
+    }
+
+    private void showPositiveSnackbar(final int duration, final String message){
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                final Snackbar snackbar = Snackbar.make(getView(), message, duration * 1000);
+
+                snackbar.setAction(getString(R.string.ok_button), new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        snackbar.dismiss();
+                    }
+                });
+                snackbar.setActionTextColor(getResources().getColor(R.color.colorHeader));
+
+                View snackbarView = snackbar.getView();
+                TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+                textView.setMaxLines(5);
+
+                snackbar.show();
             }
         });
     }

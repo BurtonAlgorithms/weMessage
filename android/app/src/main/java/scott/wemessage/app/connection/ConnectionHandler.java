@@ -606,17 +606,14 @@ public final class ConnectionHandler extends Thread {
                 if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)) {
                     isConnected.set(true);
 
-                    if (weMessage.get().hasRecentSession()) weMessage.get().signOut();
+                    if (weMessage.get().isSessionRecent()) weMessage.get().signOut();
 
                     Account currentAccount = new Account().setEmail(emailPlainText.toLowerCase()).setEncryptedPassword(passwordHashedText);
 
                     if (database.getAccountByEmail(emailPlainText) == null) {
                         currentAccount.setUuid(UUID.randomUUID());
 
-                        weMessage.get().setCurrentAccount(currentAccount);
-                        weMessage.get().signIn();
-                        weMessage.get().setOfflineMode(false);
-
+                        weMessage.get().signIn(currentAccount, false);
                         database.addAccount(currentAccount);
 
                         Handle meHandle = database.getHandleByAccount(weMessage.get().getCurrentAccount());
@@ -628,10 +625,7 @@ public final class ConnectionHandler extends Thread {
                         UUID oldUUID = database.getAccountByEmail(emailPlainText).getUuid();
                         currentAccount.setUuid(oldUUID);
 
-                        weMessage.get().setCurrentAccount(currentAccount);
-                        weMessage.get().signIn();
-                        weMessage.get().setOfflineMode(false);
-
+                        weMessage.get().signIn(currentAccount, false);
                         database.updateAccount(oldUUID.toString(), currentAccount);
                     }
 
