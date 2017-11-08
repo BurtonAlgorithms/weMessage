@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorHeader">#056dff</color>
+    <color name="colorHeader">#057dff</color>
     <color name="colorAccent">#058fff</color>
     <color name="outgoingBubbleColor">#2096fe</color>
     <color name="outgoingBubbleColorPressed">#0087fd</color>
@@ -8,7 +8,7 @@
     <color name="videoPlayerDark">#1976D2</color>
     <color name="borderColor">#c0058fff</color>
     <color name="unreadBubble">#037aff</color>
-    <color name="colorStatusBar">#054cff</color>
+    <color name="colorStatusBar">#055cff</color>
     <color name="heavyBlue">#055cff</color>
     <color name="heavierBlue">#053bff</color>
     <color name="superHeavyBlue">#0013e2</color>

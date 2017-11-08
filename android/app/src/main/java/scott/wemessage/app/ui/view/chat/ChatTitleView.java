@@ -73,6 +73,10 @@ public class ChatTitleView extends LinearLayout {
             setLayoutParams(layoutParams);
             setOrientation(VERTICAL);
 
+            if (url.equals(IOUtils.getDefaultContactUri(IOUtils.IconSize.NORMAL))) {
+                imageView.setBorderWidth(4);
+                imageView.setBorderColor(Color.WHITE);
+            }
             imageView.setLayoutParams(new LayoutParams(DisplayUtils.convertDpToRoundedPixel(SINGLE_IMAGE_SIZE, getContext()),
                     DisplayUtils.convertDpToRoundedPixel(SINGLE_IMAGE_SIZE, getContext())));
 
@@ -102,6 +106,10 @@ public class ChatTitleView extends LinearLayout {
             setLayoutParams(layoutParams);
             setOrientation(HORIZONTAL);
 
+            if (url.equals(IOUtils.getDefaultChatUri(IOUtils.IconSize.NORMAL))) {
+                imageView.setBorderWidth(4);
+                imageView.setBorderColor(Color.WHITE);
+            }
             imageView.setLayoutParams(new LayoutParams(DisplayUtils.convertDpToRoundedPixel(GROUP_IMAGE_SIZE, getContext()),
                     DisplayUtils.convertDpToRoundedPixel(GROUP_IMAGE_SIZE, getContext())));
 
