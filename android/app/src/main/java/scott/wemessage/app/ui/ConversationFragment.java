@@ -70,6 +70,7 @@ import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.connection.IConnectionBinder;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
@@ -111,7 +112,7 @@ import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ConversationFragment extends MessagingFragment implements MessageCallbacks, NotificationCallbacks, MediaDownloadCallbacks,
+public class ConversationFragment extends MessagingFragment implements MessageCallbacks, NotificationCallbacks, MediaDownloadCallbacks, IConnectionBinder,
         AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
 
     private final String TAG = "ConversationFragment";
@@ -212,7 +213,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-        if (isServiceRunning(ConnectionService.class)){
+        if (isConnectionServiceRunning()){
             bindService();
         }
 
@@ -353,17 +354,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         messageListAdapter.setDateHeadersFormatter(new DateFormatter.Formatter() {
             @Override
             public String format(Date date) {
-                if (DateFormatter.isToday(date)){
-                    return getString(R.string.word_today);
-                }else if (DateFormatter.isYesterday(date)){
-                    return getString(R.string.word_yesterday);
-                }else {
-                    if (DateFormatter.isCurrentYear(date)){
-                        return DateFormatter.format(date, "MMMM d");
-                    }else {
-                        return DateFormatter.format(date, "MMMM d, yyyy");
-                    }
-                }
+                return AndroidUtils.processDate(getContext(), date, false);
             }
         });
 
@@ -954,6 +945,21 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         return !getChat().getMacGuid().equals(macGuid);
     }
 
+    @Override
+    public void bindService(){
+        Intent intent = new Intent(getActivity(), ConnectionService.class);
+        getActivity().bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
+        isBoundToConnectionService = true;
+    }
+
+    @Override
+    public void unbindService(){
+        if (isBoundToConnectionService) {
+            getActivity().unbindService(serviceConnection);
+            isBoundToConnectionService = false;
+        }
+    }
+
     public synchronized AudioAttachmentMediaPlayer getAudioAttachmentMediaPlayer(){
         if (audioAttachmentMediaPlayer == null){
             audioAttachmentMediaPlayer = new AudioAttachmentMediaPlayer();
@@ -1097,6 +1103,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             });
 
             alertDialogFragment.show(getFragmentManager(), "OfflineModeAlertDialog");
+            return false;
+        }
+
+        if (isStillConnecting()){
+            showErroredSnackbar(getString(R.string.still_connecting_send_message));
             return false;
         }
 
@@ -1328,7 +1339,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     private void copyMessages(List<MessageView> messages){
-        String fullMessage = "";
+        StringBuilder fullMessage = new StringBuilder("");
 
         Collections.sort(messages, new Comparator<MessageView>() {
             @Override
@@ -1337,8 +1348,32 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             }
         });
 
+        boolean showDetails = false;
+
+        String initSender = null;
+
+        if (messages.size() == 1){
+            showDetails = true;
+        }else {
+            for (MessageView message : messages) {
+                if (initSender == null) {
+                    initSender = message.getUser().getId();
+                }
+
+                if (!initSender.equals(message.getUser().getId())) {
+                    showDetails = true;
+                    break;
+                }
+            }
+        }
+
         for (MessageView message : messages){
             if (!StringUtils.isEmpty(message.getText())) {
+                if (!showDetails){
+                    fullMessage.append(message.getText()).append("\n");
+                    continue;
+                }
+
                 String createdAt;
 
                 if (DateFormatter.isCurrentYear(message.getCreatedAt())) {
@@ -1347,12 +1382,14 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     createdAt = new SimpleDateFormat("EEEE, MMMM d, yyyy 'at' h:mm a", Locale.getDefault()).format(message.getCreatedAt());
                 }
 
-                fullMessage += String.format(Locale.getDefault(), "%s: %s (%s)", message.getUser().getName(), message.getText(), createdAt) + "\n";
+                fullMessage.append(String.format(Locale.getDefault(), "%s: %s (%s)", message.getUser().getName(), message.getText(), createdAt)).append("\n");
             }
         }
 
+        String finalMessage = fullMessage.toString();
+
         ClipboardManager clipboard = (ClipboardManager) getActivity().getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText(fullMessage, fullMessage);
+        ClipData clip = ClipData.newPlainText(finalMessage, finalMessage);
         clipboard.setPrimaryClip(clip);
 
         if (messages.size() == 1) {
@@ -1403,6 +1440,10 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     messageList.setLayoutParams(layoutParams);
                     messageSelectionModeBar.setVisibility(View.GONE);
                 }
+            }
+
+            if (!value){
+                selectedMessages.clear();
             }
 
             for (int childCount = messageList.getChildCount(), i = 0; i < childCount; ++i) {
@@ -1640,19 +1681,6 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         return (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
     }
 
-    private void bindService(){
-        Intent intent = new Intent(getActivity(), ConnectionService.class);
-        getActivity().bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
-        isBoundToConnectionService = true;
-    }
-
-    private void unbindService(){
-        if (isBoundToConnectionService) {
-            getActivity().unbindService(serviceConnection);
-            isBoundToConnectionService = false;
-        }
-    }
-
     private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
         DialogDisplayer.showDisconnectReasonDialog(getContext(), getFragmentManager(), bundledIntent, defaultMessage, runnable);
     }
@@ -1728,6 +1756,10 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private boolean isChatThis(Chat c){
         return c.getUuid().toString().equals(getChat().getUuid().toString());
+    }
+
+    private boolean isStillConnecting(){
+        return serviceConnection.getConnectionService() == null || !serviceConnection.getConnectionService().getConnectionHandler().isConnected().get();
     }
 
     private String parseURL(String urlString){

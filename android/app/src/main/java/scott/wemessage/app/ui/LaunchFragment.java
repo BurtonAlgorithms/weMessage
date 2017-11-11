@@ -266,8 +266,9 @@ public class LaunchFragment extends Fragment {
             ipEditText.setText(host);
             emailEditText.setText(email);
 
-            if ((weMessage.get().isSignedIn() && weMessage.get().isOfflineMode())
-                    || (!weMessage.get().isSignedIn() && weMessage.get().isOfflineMode()) || ((canStartConversationActivity() && weMessage.get().isOfflineMode()))) {
+            if (isServiceRunning(ConnectionService.class) && loginProgressDialog == null){
+                showProgressDialog(view, getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
+            }else if (weMessage.get().isSignedIn() && !isServiceRunning(ConnectionService.class)) {
                 if (!(getActivity().getIntent().getExtras() != null && getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false))) {
                     if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
                         startConnectionService(view, ipAddress, port, email, hashedPass, true);

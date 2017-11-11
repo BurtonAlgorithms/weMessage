@@ -2,6 +2,8 @@ package scott.wemessage.app.ui;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.view.View;
@@ -9,6 +11,8 @@ import android.widget.TextView;
 
 import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
+import scott.wemessage.app.connection.IConnectionBinder;
+import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.ActionType;
@@ -19,7 +23,14 @@ public abstract class MessagingFragment extends Fragment {
 
     private final int ERROR_SNACKBAR_DURATION = 5;
 
-    protected void showMessageSendFailureSnackbar(JSONMessage jsonMessage,  ReturnType returnType){
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        startConnectionServiceSilently();
+    }
+
+    protected void showMessageSendFailureSnackbar(JSONMessage jsonMessage, ReturnType returnType){
         switch (returnType) {
             case INVALID_NUMBER:
                 showErroredSnackbar(getString(R.string.message_delivery_failure_invalid_number));
@@ -186,7 +197,11 @@ public abstract class MessagingFragment extends Fragment {
         }
     }
 
-    protected boolean isServiceRunning(Class<?> serviceClass) {
+    protected boolean isConnectionServiceRunning(){
+        return isServiceRunning(ConnectionService.class);
+    }
+
+    private boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
             if (serviceClass.getName().equals(service.service.getClassName())) {
@@ -196,10 +211,38 @@ public abstract class MessagingFragment extends Fragment {
         return false;
     }
 
-    protected boolean isConnectionServiceRunning(){
-        return isServiceRunning(ConnectionService.class);
-    }
+    private void startConnectionServiceSilently(){
+        if (!isConnectionServiceRunning()){
+            SharedPreferences sharedPreferences = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
+            Intent startServiceIntent = new Intent(getActivity(), ConnectionService.class);
 
+            String host = sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_HOST, "");
+            String ipAddress;
+            int port;
+
+            if (host.contains(":")) {
+                String[] split = host.split(":");
+
+                port = Integer.parseInt(split[1]);
+                ipAddress = split[0];
+            } else {
+                ipAddress = host;
+                port = weMessage.DEFAULT_PORT;
+            }
+
+            startServiceIntent.putExtra(weMessage.ARG_HOST, ipAddress);
+            startServiceIntent.putExtra(weMessage.ARG_PORT, port);
+            startServiceIntent.putExtra(weMessage.ARG_EMAIL, sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, ""));
+            startServiceIntent.putExtra(weMessage.ARG_PASSWORD, sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, ""));
+            startServiceIntent.putExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, true);
+
+            getActivity().startService(startServiceIntent);
+
+            if (this instanceof IConnectionBinder) {
+                ((IConnectionBinder) this).bindService();
+            }
+        }
+    }
 
     private void showErroredSnackbar(String message){
         if (getView() != null) {

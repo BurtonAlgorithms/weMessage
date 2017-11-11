@@ -37,8 +37,10 @@ import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentUndefinedView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentVideoView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentView;
+import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
+import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessageViewHolder<MessageView> implements MessageViewHolder {
@@ -249,6 +251,9 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
                 deliveryMessageTimeView.setText(DateFormatter.format(date, " h:mm a"));
             }else if (DateFormatter.isYesterday(date)){
                 String dateString = " " + itemView.getContext().getString(R.string.word_yesterday) + DateFormatter.format(date, " h:mm a");
+                deliveryMessageTimeView.setText(dateString);
+            }else if (DateUtils.isSameWeek(date)){
+                String dateString = " " + AndroidUtils.getDayFromDate(itemView.getContext(), date) + DateFormatter.format(date, " h:mm a");
                 deliveryMessageTimeView.setText(dateString);
             }else {
                 if (DateFormatter.isCurrentYear(date)){

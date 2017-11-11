@@ -52,6 +52,13 @@
     <string name="result_process_error">An error occurred while trying to process a result returned from a message.</string>
     <string name="word_yesterday">Yesterday</string>
     <string name="word_today">Today</string>
+    <string name="word_sunday">Sunday</string>
+    <string name="word_monday">Monday</string>
+    <string name="word_tuesday">Tuesday</string>
+    <string name="word_wednesday">Wednesday</string>
+    <string name="word_thursday">Thursday</string>
+    <string name="word_friday">Friday</string>
+    <string name="word_saturday">Saturday</string>
     <string name="word_conversations">Conversations</string>
     <string name="word_delete">Delete</string>
     <string name="word_remove">Remove</string>
@@ -202,5 +209,7 @@
     <string name="offline_mode_action_create_chat">You cannot create a group chat while in Offline Mode! Connect to your weServer in order to do this.</string>
     <string name="offline_mode_action_add">You cannot add people to group chats while in Offline Mode! Connect to your weServer in order to do this.</string>
     <string name="connect_to_server">Connect to weServer</string>
+    <string name="still_connecting_send_message">Currently trying to connect to your weServer. Please wait before trying to send any messages.</string>
+    <string name="still_connecting_perform_action">Currently trying to connect to your weServer. Please wait before trying to perform this action.</string>
 
 </resources>

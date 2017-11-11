@@ -56,6 +56,7 @@ import java.util.UUID;
 import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.connection.IConnectionBinder;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.objects.ActionMessage;
@@ -83,7 +84,7 @@ import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class CreateChatFragment extends MessagingFragment implements MessageCallbacks {
+public class CreateChatFragment extends MessagingFragment implements MessageCallbacks, IConnectionBinder {
 
     private String callbackUuid;
     private int oldEditTextColor;
@@ -152,7 +153,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (isServiceRunning(ConnectionService.class)){
+        if (isConnectionServiceRunning()){
             bindService();
         }
 
@@ -492,24 +493,26 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         });
     }
 
-    public void goToChatList(){
-        Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
-
-        startActivity(returnIntent);
-        getActivity().finish();
-    }
-
-    private void bindService(){
+    @Override
+    public void bindService(){
         Intent intent = new Intent(getActivity(), ConnectionService.class);
         getActivity().bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
         isBoundToConnectionService = true;
     }
 
-    private void unbindService(){
+    @Override
+    public void unbindService(){
         if (isBoundToConnectionService) {
             getActivity().unbindService(serviceConnection);
             isBoundToConnectionService = false;
         }
+    }
+
+    public void goToChatList(){
+        Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
+
+        startActivity(returnIntent);
+        getActivity().finish();
     }
 
     private boolean processMessage(String text, List<SelectedNameView> selectedNameViews){
@@ -549,6 +552,11 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 return false;
             }
 
+            if (isStillConnecting()){
+                showErroredSnackbar(getString(R.string.still_connecting_perform_action), 5);
+                return false;
+            }
+
             String groupName;
             List<String> participants = new ArrayList<>();
 
@@ -580,6 +588,11 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     private boolean sendMessage(String input, Chat chat){
         if (!isConnectionServiceRunning()){
             showOfflineActionDialog(getString(R.string.offline_mode_message_send));
+            return false;
+        }
+
+        if (isStillConnecting()){
+            showErroredSnackbar(getString(R.string.still_connecting_send_message), 5);
             return false;
         }
 
@@ -760,6 +773,10 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             }
         }
         return result;
+    }
+
+    private boolean isStillConnecting(){
+        return serviceConnection.getConnectionService() == null || !serviceConnection.getConnectionService().getConnectionHandler().isConnected().get();
     }
 
     private class ContactHolder extends RecyclerView.ViewHolder implements View.OnClickListener {

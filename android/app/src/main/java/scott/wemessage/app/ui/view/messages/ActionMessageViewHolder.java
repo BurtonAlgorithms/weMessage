@@ -9,6 +9,8 @@ import com.stfalcon.chatkit.utils.DateFormatter;
 import java.util.Date;
 
 import scott.wemessage.R;
+import scott.wemessage.app.utils.AndroidUtils;
+import scott.wemessage.commons.utils.DateUtils;
 
 public class ActionMessageViewHolder extends MessageHolders.BaseMessageViewHolder<ActionMessageView> {
 
@@ -34,6 +36,8 @@ public class ActionMessageViewHolder extends MessageHolders.BaseMessageViewHolde
             actionMessageDayTextView.setText(itemView.getContext().getString(R.string.word_today));
         }else if (DateFormatter.isYesterday(date)){
             actionMessageDayTextView.setText(itemView.getContext().getString(R.string.word_yesterday));
+        }else if (DateUtils.isSameWeek(date)){
+            actionMessageDayTextView.setText(AndroidUtils.getDayFromDate(itemView.getContext(), date));
         }else {
             if (DateFormatter.isCurrentYear(date)){
                 actionMessageDayTextView.setText(DateFormatter.format(date, "MMMM d"));

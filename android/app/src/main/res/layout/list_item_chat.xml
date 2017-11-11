@@ -106,7 +106,7 @@
                             android:layout_height="wrap_content"
                             android:gravity="end"
                             android:ellipsize="end"
-                            android:maxLines="2"
+                            android:maxLines="1"
                             android:text="8:00 AM" />
                     </LinearLayout>
 

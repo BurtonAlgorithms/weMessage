@@ -48,6 +48,7 @@ import scott.wemessage.app.ui.view.chat.ChatDialogView;
 import scott.wemessage.app.ui.view.chat.ChatDialogViewHolder;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.messages.MessageView;
+import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
@@ -184,17 +185,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         dialogsListAdapter.setDatesFormatter(new DateFormatter.Formatter() {
             @Override
             public String format(Date date) {
-                if (DateFormatter.isToday(date)){
-                    return DateFormatter.format(date, "h:mm a");
-                }else if (DateFormatter.isYesterday(date)){
-                    return getString(R.string.word_yesterday);
-                }else {
-                    if (DateFormatter.isCurrentYear(date)){
-                        return DateFormatter.format(date, "MMMM d");
-                    }else {
-                        return DateFormatter.format(date, "MMMM d, yyyy");
-                    }
-                }
+                return AndroidUtils.processDate(getContext(), date, true);
             }
         });
 

@@ -61,6 +61,7 @@ import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.connection.IConnectionBinder;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.objects.ActionMessage;
@@ -91,7 +92,7 @@ import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ChatViewFragment extends MessagingFragment implements MessageCallbacks {
+public class ChatViewFragment extends MessagingFragment implements MessageCallbacks, IConnectionBinder {
 
     private final int ERROR_SNACKBAR_DURATION = 5;
     private final int TYPE_HEADER = 0;
@@ -183,7 +184,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (isServiceRunning(ConnectionService.class)){
+        if (isConnectionServiceRunning()){
             bindService();
         }
 
@@ -601,6 +602,21 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         });
     }
 
+    @Override
+    public void bindService(){
+        Intent intent = new Intent(getActivity(), ConnectionService.class);
+        getActivity().bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
+        isBoundToConnectionService = true;
+    }
+
+    @Override
+    public void unbindService(){
+        if (isBoundToConnectionService) {
+            getActivity().unbindService(serviceConnection);
+            isBoundToConnectionService = false;
+        }
+    }
+
     public void returnToConversationScreen() {
         Intent launcherIntent = new Intent(weMessage.get(), ConversationActivity.class);
 
@@ -640,6 +656,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     if (editedName != null && !editedName.equals(oldVal.getDisplayName())) {
                         if (!isConnectionServiceRunning()){
                             showOfflineActionDialog(getString(R.string.offline_mode_action_rename));
+                        }else if (isStillConnecting()){
+                            showErroredSnackBar(getString(R.string.still_connecting_perform_action));
                         }else {
                             serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingRenameGroupAction(oldVal, editedName);
                         }
@@ -905,19 +923,6 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         return images;
     }
 
-    private void bindService(){
-        Intent intent = new Intent(getActivity(), ConnectionService.class);
-        getActivity().bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
-        isBoundToConnectionService = true;
-    }
-
-    private void unbindService(){
-        if (isBoundToConnectionService) {
-            getActivity().unbindService(serviceConnection);
-            isBoundToConnectionService = false;
-        }
-    }
-
     private void goToLauncher(){
         if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
             Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
@@ -961,6 +966,10 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     private boolean isGranted(int[] grantResults){
         return (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
+    }
+
+    private boolean isStillConnecting(){
+        return serviceConnection.getConnectionService() == null || !serviceConnection.getConnectionService().getConnectionHandler().isConnected().get();
     }
 
     private void showErroredSnackBar(String message){
@@ -1295,6 +1304,11 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                             return;
                         }
 
+                        if (isStillConnecting()){
+                            showErroredSnackBar(getString(R.string.still_connecting_perform_action));
+                            return;
+                        }
+
                         if (chat.getParticipants().size() > 2) {
                             serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingLeaveGroupAction(chat);
                         }else {
@@ -1339,6 +1353,11 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
                     if (!isConnectionServiceRunning()){
                         showOfflineActionDialog(getString(R.string.offline_mode_action_remove));
+                        return;
+                    }
+
+                    if (isStillConnecting()){
+                        showErroredSnackBar(getString(R.string.still_connecting_perform_action));
                         return;
                     }
 

@@ -1,10 +1,18 @@
 package scott.wemessage.app.utils;
 
 import android.bluetooth.BluetoothAdapter;
+import android.content.Context;
 import android.os.Build;
 import android.webkit.MimeTypeMap;
 
+import com.stfalcon.chatkit.utils.DateFormatter;
+
+import java.util.Calendar;
+import java.util.Date;
+
+import scott.wemessage.R;
 import scott.wemessage.commons.types.MimeType;
+import scott.wemessage.commons.utils.DateUtils;
 
 public class AndroidUtils {
 
@@ -38,6 +46,56 @@ public class AndroidUtils {
 
     public static String getMimeTypeStringFromPath(String path){
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(path).toLowerCase());
+    }
+
+    public static String processDate(Context context, Date date, boolean shortDate){
+        if (DateFormatter.isToday(date)){
+            return DateFormatter.format(date, "h:mm a");
+        }else if (DateFormatter.isYesterday(date)){
+            return context.getString(R.string.word_yesterday);
+        }else if (DateUtils.isSameWeek(date)){
+            return getDayFromDate(context, date);
+        } else {
+            if (DateFormatter.isCurrentYear(date)){
+                if (shortDate) {
+                    return DateFormatter.format(date, "M/d/yy");
+                }else {
+                    return DateFormatter.format(date, "MMMM d");
+                }
+            }else {
+                if (shortDate){
+                    return DateFormatter.format(date, "M/d/yy");
+                }else {
+                    return DateFormatter.format(date, "MMMM d, yyyy");
+                }
+            }
+        }
+    }
+
+    public static String getDayFromDate(Context context, Date date){
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+
+        int day = c.get(Calendar.DAY_OF_WEEK);
+
+        switch (day){
+            case Calendar.SUNDAY:
+                return context.getString(R.string.word_sunday);
+            case Calendar.MONDAY:
+                return context.getString(R.string.word_monday);
+            case Calendar.TUESDAY:
+                return context.getString(R.string.word_tuesday);
+            case Calendar.WEDNESDAY:
+                return context.getString(R.string.word_wednesday);
+            case Calendar.THURSDAY:
+                return context.getString(R.string.word_thursday);
+            case Calendar.FRIDAY:
+                return context.getString(R.string.word_friday);
+            case Calendar.SATURDAY:
+                return context.getString(R.string.word_saturday);
+            default:
+                return DateFormatter.format(date, "MMMM d");
+        }
     }
 
     private static String getInternalDeviceName() {
