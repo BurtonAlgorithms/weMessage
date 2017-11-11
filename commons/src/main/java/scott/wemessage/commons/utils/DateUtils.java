@@ -1,5 +1,8 @@
 package scott.wemessage.commons.utils;
 
+import org.joda.time.DateTime;
+import org.joda.time.Weeks;
+
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -37,34 +40,8 @@ public class DateUtils {
         return df.format(date);
     }
 
-    public static boolean isSameDay(Date dateOne, Date dateTwo) {
-        if (dateOne == null || dateTwo == null) {
-            throw new IllegalArgumentException("The dates must not be null");
-        }
-        Calendar calOne = Calendar.getInstance();
-        calOne.setTime(dateOne);
-        Calendar calTwo = Calendar.getInstance();
-        calTwo.setTime(dateTwo);
-
-        return (calOne.get(Calendar.ERA) == calTwo.get(Calendar.ERA) &&
-                calOne.get(Calendar.YEAR) == calTwo.get(Calendar.YEAR) &&
-                calOne.get(Calendar.DAY_OF_YEAR) == calTwo.get(Calendar.DAY_OF_YEAR));
-    }
-
-    public static boolean wasDateYesterday(Date yesterday, Date today){
-        Calendar calendarOne = Calendar.getInstance();
-        calendarOne.setTime(today);
-        calendarOne.add(Calendar.DAY_OF_YEAR, -1);
-
-        Calendar calendarTwo = Calendar.getInstance();
-        calendarTwo.setTime(yesterday);
-
-        return (calendarOne.get(Calendar.YEAR) == calendarTwo.get(Calendar.YEAR)
-                && calendarOne.get(Calendar.DAY_OF_YEAR) == calendarTwo.get(Calendar.DAY_OF_YEAR));
-    }
-
-    public static boolean isSameHour(Date dateNow, Date dateBefore){
-        return (dateNow.getTime() - dateBefore.getTime()) <= 60*60*1000;
+    public static boolean isSameWeek(Date date){
+        return Weeks.weeksBetween(new DateTime(date), new DateTime(Calendar.getInstance().getTime())).getWeeks() == 0;
     }
 
     private static long get2001Time() throws ParseException {
