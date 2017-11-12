@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 public class DateUtils {
 
-    public static Date getDateUsing2001(int time) {
+    public static Date getDateUsing2001(Long time) {
         try {
             return new Date(get2001Time() + TimeUnit.SECONDS.toMillis(time));
         }catch(Exception ex){
@@ -22,12 +22,12 @@ public class DateUtils {
         }
     }
 
-    public static int convertDateTo2001Time(Date date){
+    public static Long convertDateTo2001Time(Date date){
         try {
-            return (int) (TimeUnit.MILLISECONDS.toSeconds(date.getTime()) - TimeUnit.MILLISECONDS.toSeconds(get2001Time()));
+            return TimeUnit.MILLISECONDS.toSeconds(date.getTime()) - TimeUnit.MILLISECONDS.toSeconds(get2001Time());
         }catch(Exception ex){
             ex.printStackTrace();
-            return -1;
+            return -1L;
         }
     }
 

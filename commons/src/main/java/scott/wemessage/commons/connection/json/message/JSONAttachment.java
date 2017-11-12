@@ -6,9 +6,9 @@ public class JSONAttachment {
     private String macGuid;
     private String transferName;
     private String fileType;
-    private int totalBytes;
+    private long totalBytes;
 
-    public JSONAttachment(String uuid, String macGuid, String transferName, String fileType, int totalBytes){
+    public JSONAttachment(String uuid, String macGuid, String transferName, String fileType, long totalBytes){
         this.uuid = uuid;
         this.macGuid = macGuid;
         this.transferName = transferName;
@@ -32,7 +32,7 @@ public class JSONAttachment {
         return fileType;
     }
 
-    public int getTotalBytes() {
+    public long getTotalBytes() {
         return totalBytes;
     }
 
@@ -52,7 +52,7 @@ public class JSONAttachment {
         this.fileType = fileType;
     }
 
-    public void setTotalBytes(int totalBytes) {
+    public void setTotalBytes(long totalBytes) {
         this.totalBytes = totalBytes;
     }
 }

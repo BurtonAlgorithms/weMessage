@@ -9,12 +9,12 @@ public class JSONMessage {
     private String macGuid;
     private JSONChat chat;
     private String handle;
-    private List<scott.wemessage.commons.connection.json.message.JSONAttachment> attachments;
+    private List<JSONAttachment> attachments;
     private EncryptedText encryptedText;
-    private Integer dateSent, dateDelivered, dateRead;
+    private Long dateSent, dateDelivered, dateRead;
     private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe;
 
-    public JSONMessage(String macGuid, JSONChat chat, String handle, List<scott.wemessage.commons.connection.json.message.JSONAttachment> attachments, EncryptedText encryptedText, Integer dateSent, Integer dateDelivered, Integer dateRead,
+    public JSONMessage(String macGuid, JSONChat chat, String handle, List<JSONAttachment> attachments, EncryptedText encryptedText, Long dateSent, Long dateDelivered, Long dateRead,
                        Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe){
         this.macGuid = macGuid;
         this.chat = chat;
@@ -45,7 +45,7 @@ public class JSONMessage {
         return handle;
     }
 
-    public List<scott.wemessage.commons.connection.json.message.JSONAttachment> getAttachments() {
+    public List<JSONAttachment> getAttachments() {
         return attachments;
     }
 
@@ -53,15 +53,15 @@ public class JSONMessage {
         return encryptedText;
     }
 
-    public Integer getDateSent() {
+    public Long getDateSent() {
         return dateSent;
     }
 
-    public Integer getDateDelivered() {
+    public Long getDateDelivered() {
         return dateDelivered;
     }
 
-    public Integer getDateRead() {
+    public Long getDateRead() {
         return dateRead;
     }
 
@@ -101,7 +101,7 @@ public class JSONMessage {
         this.handle = handle;
     }
 
-    public void setAttachments(List<scott.wemessage.commons.connection.json.message.JSONAttachment> attachments) {
+    public void setAttachments(List<JSONAttachment> attachments) {
         this.attachments = attachments;
     }
 
@@ -109,15 +109,15 @@ public class JSONMessage {
         this.encryptedText = encryptedText;
     }
 
-    public void setDateSent(Integer dateSent) {
+    public void setDateSent(Long dateSent) {
         this.dateSent = dateSent;
     }
 
-    public void setDateDelivered(Integer dateDelivered) {
+    public void setDateDelivered(Long dateDelivered) {
         this.dateDelivered = dateDelivered;
     }
 
-    public void setDateRead(Integer dateRead) {
+    public void setDateRead(Long dateRead) {
         this.dateRead = dateRead;
     }
 
