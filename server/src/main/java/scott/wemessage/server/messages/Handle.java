@@ -3,14 +3,14 @@ package scott.wemessage.server.messages;
 public class Handle {
 
     private String handleID;
-    private int rowID;
+    private long rowID;
     private String country;
 
     public Handle(){
-        this(null, -1, null);
+        this(null, -1L, null);
     }
 
-    public Handle(String handleID, int rowID, String country){
+    public Handle(String handleID, long rowID, String country){
         this.handleID = handleID;
         this.rowID = rowID;
         this.country = country;
@@ -20,7 +20,7 @@ public class Handle {
         return handleID;
     }
 
-    public int getRowID() {
+    public long getRowID() {
         return rowID;
     }
 
@@ -33,7 +33,7 @@ public class Handle {
         return this;
     }
 
-    public Handle setRowID(int rowID) {
+    public Handle setRowID(long rowID) {
         this.rowID = rowID;
         return this;
     }

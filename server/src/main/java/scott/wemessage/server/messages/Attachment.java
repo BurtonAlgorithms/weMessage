@@ -6,19 +6,19 @@ import scott.wemessage.commons.utils.DateUtils;
 
 public class Attachment  {
 
-    private int rowID;
+    private long rowID;
     private String guid;
-    private int createdDate;
+    private long createdDate;
     private String fileLocation;
     private String transferName;
     private String fileType;
-    private int totalBytes;
+    private long totalBytes;
     
     public Attachment(){
-        this(null, -1, -1, null, null, null, -1);
+        this(null, -1L, -1L, null, null, null, -1L);
     }
 
-    public Attachment(String guid, int rowID, int createdDate, String fileLocation, String transferName, String fileType, int totalBytes){
+    public Attachment(String guid, long rowID, long createdDate, String fileLocation, String transferName, String fileType, long totalBytes){
         this.rowID = rowID;
         this.guid = guid;
         this.createdDate = createdDate;
@@ -32,11 +32,11 @@ public class Attachment  {
         return guid;
     }
 
-    public int getRowID() {
+    public long getRowID() {
         return rowID;
     }
 
-    public int getCreatedDate() {
+    public long getCreatedDate() {
         return createdDate;
     }
 
@@ -52,7 +52,7 @@ public class Attachment  {
         return fileType;
     }
 
-    public int getTotalBytes() {
+    public long getTotalBytes() {
         return totalBytes;
     }
 
@@ -65,12 +65,12 @@ public class Attachment  {
         return this;
     }
 
-    public Attachment setRowID(int rowID) {
+    public Attachment setRowID(long rowID) {
         this.rowID = rowID;
         return this;
     }
 
-    public Attachment setCreatedDate(int createdDate) {
+    public Attachment setCreatedDate(long createdDate) {
         this.createdDate = createdDate;
         return this;
     }
@@ -90,7 +90,7 @@ public class Attachment  {
         return this;
     }
 
-    public Attachment setTotalBytes(int totalBytes) {
+    public Attachment setTotalBytes(long totalBytes) {
         this.totalBytes = totalBytes;
         return this;
     }

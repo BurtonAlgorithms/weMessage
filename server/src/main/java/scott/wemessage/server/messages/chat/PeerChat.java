@@ -7,10 +7,10 @@ public class PeerChat extends ChatBase {
     private Handle peer;
 
     public PeerChat(){
-        this(null, -1, null, null, null);
+        this(null, -1L, null, null, null);
     }
 
-    public PeerChat(String guid, int rowID, String groupID, String chatIdentifier, Handle peer){
+    public PeerChat(String guid, long rowID, String groupID, String chatIdentifier, Handle peer){
         super(guid, rowID, groupID, chatIdentifier);
         this.peer = peer;
     }

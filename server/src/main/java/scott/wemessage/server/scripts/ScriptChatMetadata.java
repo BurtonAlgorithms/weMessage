@@ -17,12 +17,12 @@ public class ScriptChatMetadata {
         this.chat = chat;
     }
 
-    public int getAlgorithmicRow(MessagesDatabase messagesDatabase){
+    public long getAlgorithmicRow(MessagesDatabase messagesDatabase){
         try {
             return messagesDatabase.getChatRowPositionByRowId(chat.getRowID());
         }catch (Exception ex){
             ServerLogger.error("An error occurred while fetching chat data from the database", ex);
-            return -1;
+            return -1L;
         }
     }
 

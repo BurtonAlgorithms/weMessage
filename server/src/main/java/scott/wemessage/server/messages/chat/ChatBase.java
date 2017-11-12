@@ -2,12 +2,12 @@ package scott.wemessage.server.messages.chat;
 
 public abstract class ChatBase {
 
-    private int rowID;
+    private long rowID;
     private String guid;
     private String chatIdentifier;
     private String groupID;
 
-    public ChatBase(String guid, int rowID, String groupID, String chatIdentifier){
+    public ChatBase(String guid, long rowID, String groupID, String chatIdentifier){
         this.rowID = rowID;
         this.guid = guid;
         this.groupID = groupID;
@@ -18,7 +18,7 @@ public abstract class ChatBase {
         return guid;
     }
 
-    public int getRowID() {
+    public long getRowID() {
         return rowID;
     }
 
@@ -35,7 +35,7 @@ public abstract class ChatBase {
         return this;
     }
 
-    public ChatBase setRowID(int rowID) {
+    public ChatBase setRowID(long rowID) {
         this.rowID = rowID;
         return this;
     }

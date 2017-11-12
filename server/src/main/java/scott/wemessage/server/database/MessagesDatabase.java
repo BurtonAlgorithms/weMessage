@@ -16,11 +16,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.server.MessageServer;
@@ -48,7 +46,7 @@ public final class MessagesDatabase extends Thread {
 
     private DatabaseSnapshot lastDatabaseSnapshot;
 
-    public final int MESSAGE_COUNT_LIMIT = 200;
+    public final long MESSAGE_COUNT_LIMIT = 200;
 
     public final String ATTACHMENT_TABLE = "attachment";
     public final String CHAT_TABLE = "chat";
@@ -171,8 +169,8 @@ public final class MessagesDatabase extends Thread {
         }
     }
 
-    public Integer getChatRowPositionByRowId(int rowId) throws SQLException {
-        Integer rowIdReturn = null;
+    public long getChatRowPositionByRowId(long rowId) throws SQLException {
+        Long rowIdReturn = null;
 
         String selectChatStatementString = "SELECT " + COLUMN_CHAT_MESSAGE_CHAT_ID + ", MAX(" + COLUMN_CHAT_MESSAGE_MESSAGE_ID + ") FROM " + CHAT_MESSAGE_JOIN_TABLE
                 + " INNER JOIN " + MESSAGE_TABLE + " ON " + CHAT_MESSAGE_JOIN_TABLE + "." + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " = " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_ROWID
@@ -183,13 +181,13 @@ public final class MessagesDatabase extends Thread {
         PreparedStatement selectChatStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatStatementString);
 
         boolean isResultSet = selectChatStatement.execute();
-        int i = 0;
+        long i = 0L;
 
         while(true) {
             if(isResultSet) {
                 ResultSet resultSet = selectChatStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_CHAT_MESSAGE_CHAT_ID);
+                    long resultInt = resultSet.getLong(COLUMN_CHAT_MESSAGE_CHAT_ID);
 
                     if (rowId == resultInt){
                         rowIdReturn = i;
@@ -211,8 +209,8 @@ public final class MessagesDatabase extends Thread {
     }
 
 
-    public Integer getChatRowPositionByGuid(String guid) throws SQLException {
-        Integer rowIdReturn = null;
+    public long getChatRowPositionByGuid(String guid) throws SQLException {
+        Long rowIdReturn = null;
 
         String selectChatStatementString = "SELECT " + CHAT_TABLE + "." + COLUMN_CHAT_GUID + ", " + COLUMN_CHAT_MESSAGE_CHAT_ID + ", MAX(" + COLUMN_CHAT_MESSAGE_MESSAGE_ID + ")"
                 + " FROM " + CHAT_MESSAGE_JOIN_TABLE
@@ -225,7 +223,7 @@ public final class MessagesDatabase extends Thread {
         PreparedStatement selectChatStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatStatementString);
 
         boolean isResultSet = selectChatStatement.execute();
-        int i = 0;
+        long i = 0L;
 
         while(true) {
             if(isResultSet) {
@@ -252,8 +250,8 @@ public final class MessagesDatabase extends Thread {
         return rowIdReturn;
     }
 
-    public HashMap<Integer, Integer> getSortedChatsWithRow() throws SQLException {
-        HashMap<Integer, Integer> positionRowIdPair = new HashMap<>();
+    public HashMap<Long, Long> getSortedChatsWithRow() throws SQLException {
+        HashMap<Long, Long> positionRowIdPair = new HashMap<>();
 
         String selectChatStatementString = "SELECT " + COLUMN_CHAT_MESSAGE_CHAT_ID + ", MAX(" + COLUMN_CHAT_MESSAGE_MESSAGE_ID + ") FROM " + CHAT_MESSAGE_JOIN_TABLE
                 + " INNER JOIN " + MESSAGE_TABLE + " ON " + CHAT_MESSAGE_JOIN_TABLE + "." + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " = " + MESSAGE_TABLE + "." + COLUMN_MESSAGE_ROWID
@@ -264,13 +262,13 @@ public final class MessagesDatabase extends Thread {
         PreparedStatement selectChatStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatStatementString);
 
         boolean isResultSet = selectChatStatement.execute();
-        int i = 0;
+        long i = 0L;
 
         while(true) {
             if(isResultSet) {
                 ResultSet resultSet = selectChatStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_CHAT_MESSAGE_CHAT_ID);
+                    long resultInt = resultSet.getLong(COLUMN_CHAT_MESSAGE_CHAT_ID);
                     positionRowIdPair.put(i, resultInt);
                     i++;
                 }
@@ -287,8 +285,8 @@ public final class MessagesDatabase extends Thread {
         return positionRowIdPair;
     }
 
-    public HashMap<Integer, String> getSortedChatsWithGuid() throws SQLException {
-        HashMap<Integer, String> chatRowGuidPair = new HashMap<>();
+    public HashMap<Long, String> getSortedChatsWithGuid() throws SQLException {
+        HashMap<Long, String> chatRowGuidPair = new HashMap<>();
 
         String selectChatStatementString = "SELECT " + CHAT_TABLE + "." + COLUMN_CHAT_GUID + ", " + COLUMN_CHAT_MESSAGE_CHAT_ID + ", MAX(" + COLUMN_CHAT_MESSAGE_MESSAGE_ID + ")"
                 + " FROM " + CHAT_MESSAGE_JOIN_TABLE
@@ -301,7 +299,7 @@ public final class MessagesDatabase extends Thread {
         PreparedStatement selectChatStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatStatementString);
 
         boolean isResultSet = selectChatStatement.execute();
-        int i = 0;
+        long i = 0L;
 
         while(true) {
             if(isResultSet) {
@@ -328,7 +326,7 @@ public final class MessagesDatabase extends Thread {
         String selectStatementString = "SELECT * FROM " + MESSAGE_TABLE + " ORDER BY " + COLUMN_MESSAGE_ROWID + " DESC LIMIT 1";
         Statement selectStatement = getDatabaseManager().getChatDatabaseConnection().createStatement();
         ResultSet resultSet = selectStatement.executeQuery(selectStatementString);
-        int rowID = resultSet.getInt(COLUMN_MESSAGE_ROWID);
+        long rowID = resultSet.getLong(COLUMN_MESSAGE_ROWID);
 
         resultSet.close();
         selectStatement.close();
@@ -339,7 +337,7 @@ public final class MessagesDatabase extends Thread {
     public Message getLastMessageFromChat(ChatBase chat) throws SQLException {
         String selectStatementString = "SELECT * FROM " + CHAT_MESSAGE_JOIN_TABLE + " WHERE " + COLUMN_CHAT_MESSAGE_CHAT_ID + " = ? ORDER BY " + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " DESC LIMIT 1";
         PreparedStatement selectStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectStatementString);
-        selectStatement.setInt(1, chat.getRowID());
+        selectStatement.setLong(1, chat.getRowID());
 
         ResultSet resultSet = selectStatement.executeQuery();
 
@@ -348,7 +346,7 @@ public final class MessagesDatabase extends Thread {
             selectStatement.close();
             return null;
         }
-        int rowID = resultSet.getInt(COLUMN_CHAT_MESSAGE_MESSAGE_ID);
+        long rowID = resultSet.getLong(COLUMN_CHAT_MESSAGE_MESSAGE_ID);
         Message message = getMessageByRow(rowID);
 
         resultSet.close();
@@ -365,7 +363,7 @@ public final class MessagesDatabase extends Thread {
                 + " ORDER BY " + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " DESC LIMIT 1";
 
         PreparedStatement selectStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectStatementString);
-        selectStatement.setInt(1, chat.getRowID());
+        selectStatement.setLong(1, chat.getRowID());
 
         ResultSet resultSet = selectStatement.executeQuery();
 
@@ -374,7 +372,7 @@ public final class MessagesDatabase extends Thread {
             selectStatement.close();
             return null;
         }
-        int rowID = resultSet.getInt(COLUMN_CHAT_MESSAGE_MESSAGE_ID);
+        long rowID = resultSet.getLong(COLUMN_CHAT_MESSAGE_MESSAGE_ID);
         Message message = getMessageByRow(rowID);
 
         resultSet.close();
@@ -383,12 +381,12 @@ public final class MessagesDatabase extends Thread {
         return message;
     }
 
-    public List<Message> getMessagesByAmount(int amount) throws SQLException {
+    public List<Message> getMessagesByAmount(long amount) throws SQLException {
         List<Message> messages = new ArrayList<>();
 
         String selectMessagesStatementString = "SELECT * FROM (SELECT * FROM " + MESSAGE_TABLE + " ORDER BY " + COLUMN_MESSAGE_ROWID + " DESC LIMIT ?) ORDER BY " + COLUMN_MESSAGE_ROWID + " ASC";
         PreparedStatement selectMessagesStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectMessagesStatementString);
-        selectMessagesStatement.setInt(1, amount);
+        selectMessagesStatement.setLong(1, amount);
 
         boolean isResultSet = selectMessagesStatement.execute();
 
@@ -396,7 +394,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectMessagesStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_MESSAGE_ROWID);
+                    long resultInt = resultSet.getLong(COLUMN_MESSAGE_ROWID);
                     Message message = getMessageByRow(resultInt);
 
                     if (message != null) {
@@ -416,12 +414,12 @@ public final class MessagesDatabase extends Thread {
         return messages;
     }
 
-    public List<Message> getMessagesByStartRow(int startRowID) throws SQLException {
+    public List<Message> getMessagesByStartRow(long startRowID) throws SQLException {
         List<Message> messages = new ArrayList<>();
 
         String selectMessagesStatementString = "SELECT * FROM " + MESSAGE_TABLE + " WHERE " + COLUMN_MESSAGE_ROWID + " >= ?";
         PreparedStatement selectMessagesStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectMessagesStatementString);
-        selectMessagesStatement.setInt(1, startRowID);
+        selectMessagesStatement.setLong(1, startRowID);
 
         boolean isResultSet = selectMessagesStatement.execute();
 
@@ -429,7 +427,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectMessagesStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_MESSAGE_ROWID);
+                    long resultInt = resultSet.getLong(COLUMN_MESSAGE_ROWID);
                     Message message = getMessageByRow(resultInt);
 
                     if(message != null) {
@@ -453,7 +451,7 @@ public final class MessagesDatabase extends Thread {
         String selectStatementString = "SELECT * FROM " + HANDLE_TABLE + " ORDER BY " + COLUMN_HANDLE_ROWID + " DESC LIMIT 1";
         Statement selectStatement = getDatabaseManager().getChatDatabaseConnection().createStatement();
         ResultSet resultSet = selectStatement.executeQuery(selectStatementString);
-        int rowID = resultSet.getInt(COLUMN_HANDLE_ROWID);
+        long rowID = resultSet.getLong(COLUMN_HANDLE_ROWID);
 
         resultSet.close();
         selectStatement.close();
@@ -482,12 +480,12 @@ public final class MessagesDatabase extends Thread {
         }
     }
 
-    public List<Handle> getHandlesByAmount(int amount) throws SQLException {
+    public List<Handle> getHandlesByAmount(long amount) throws SQLException {
         List<Handle> handles = new ArrayList<>();
 
         String selectHandlesStatementString = "SELECT * FROM (SELECT * FROM " + HANDLE_TABLE + " ORDER BY " + COLUMN_HANDLE_ROWID + " DESC LIMIT ?) ORDER BY " + COLUMN_HANDLE_ROWID + " ASC";
         PreparedStatement selectHandlesStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectHandlesStatementString);
-        selectHandlesStatement.setInt(1, amount);
+        selectHandlesStatement.setLong(1, amount);
 
         boolean isResultSet = selectHandlesStatement.execute();
 
@@ -495,7 +493,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectHandlesStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_HANDLE_ROWID);
+                    long resultInt = resultSet.getLong(COLUMN_HANDLE_ROWID);
                     Handle handle = getHandleByRow(resultInt);
 
                     if(handle != null) {
@@ -515,12 +513,12 @@ public final class MessagesDatabase extends Thread {
         return handles;
     }
 
-    public List<Handle> getHandlesByStartRow(int startRowID) throws SQLException {
+    public List<Handle> getHandlesByStartRow(long startRowID) throws SQLException {
         List<Handle> handles = new ArrayList<>();
 
         String selectHandlesStatementString = "SELECT * FROM " + HANDLE_TABLE + " WHERE " + COLUMN_HANDLE_ROWID + " >= ?";
         PreparedStatement selectHandlesStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectHandlesStatementString);
-        selectHandlesStatement.setInt(1, startRowID);
+        selectHandlesStatement.setLong(1, startRowID);
 
         boolean isResultSet = selectHandlesStatement.execute();
 
@@ -528,7 +526,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectHandlesStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_HANDLE_ROWID);
+                    long resultInt = resultSet.getLong(COLUMN_HANDLE_ROWID);
                     Handle handle = getHandleByRow(resultInt);
 
                     if (handle != null) {
@@ -552,7 +550,7 @@ public final class MessagesDatabase extends Thread {
         String selectStatementString = "SELECT * FROM " + CHAT_TABLE + " ORDER BY " + COLUMN_CHAT_ROWID + " DESC LIMIT 1";
         Statement selectStatement = getDatabaseManager().getChatDatabaseConnection().createStatement();
         ResultSet resultSet = selectStatement.executeQuery(selectStatementString);
-        int rowID = resultSet.getInt(COLUMN_CHAT_ROWID);
+        long rowID = resultSet.getLong(COLUMN_CHAT_ROWID);
 
         resultSet.close();
         selectStatement.close();
@@ -625,12 +623,12 @@ public final class MessagesDatabase extends Thread {
         return chats;
     }
 
-    public List<ChatBase> getChatsByAmount(int amount) throws SQLException {
+    public List<ChatBase> getChatsByAmount(long amount) throws SQLException {
         List<ChatBase> chats = new ArrayList<>();
 
         String selectChatsStatementString = "SELECT * FROM (SELECT * FROM " + CHAT_TABLE + " ORDER BY " + COLUMN_CHAT_ROWID + " DESC LIMIT ?) ORDER BY " + COLUMN_CHAT_ROWID + " ASC";
         PreparedStatement selectChatsStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatsStatementString);
-        selectChatsStatement.setInt(1, amount);
+        selectChatsStatement.setLong(1, amount);
 
         boolean isResultSet = selectChatsStatement.execute();
 
@@ -638,7 +636,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectChatsStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_CHAT_ROWID);
+                    long resultInt = resultSet.getLong(COLUMN_CHAT_ROWID);
                     ChatBase chat = getChatByRow(resultInt);
 
                     if (chat != null) {
@@ -658,12 +656,12 @@ public final class MessagesDatabase extends Thread {
         return chats;
     }
 
-    public List<ChatBase> getChatsByStartRow(int startRowID) throws SQLException {
+    public List<ChatBase> getChatsByStartRow(long startRowID) throws SQLException {
         List<ChatBase> chats = new ArrayList<>();
 
         String selectChatsStatementString = "SELECT * FROM " + CHAT_TABLE + " WHERE " + COLUMN_CHAT_ROWID + " >= ?";
         PreparedStatement selectChatsStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatsStatementString);
-        selectChatsStatement.setInt(1, startRowID);
+        selectChatsStatement.setLong(1, startRowID);
 
         boolean isResultSet = selectChatsStatement.execute();
 
@@ -671,7 +669,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectChatsStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_CHAT_ROWID);
+                    long resultInt = resultSet.getLong(COLUMN_CHAT_ROWID);
                     ChatBase chat = getChatByRow(resultInt);
 
                     if (chat != null) {
@@ -692,17 +690,17 @@ public final class MessagesDatabase extends Thread {
     }
 
     public Attachment buildAttachment(ResultSet resultSet) throws SQLException {
-        Attachment attachment = new Attachment().setGuid(resultSet.getString(COLUMN_ATTACHMENT_GUID)).setRowID(resultSet.getInt(COLUMN_ATTACHMENT_ROWID))
+        Attachment attachment = new Attachment().setGuid(resultSet.getString(COLUMN_ATTACHMENT_GUID)).setRowID(resultSet.getLong(COLUMN_ATTACHMENT_ROWID))
                 .setCreatedDate(processTime(resultSet.getDouble(COLUMN_ATTACHMENT_CREATED_DATE))).setFileLocation(resultSet.getString(COLUMN_ATTACHMENT_FILENAME))
                 .setTransferName(resultSet.getString(COLUMN_ATTACHMENT_TRANSFER_NAME)).setFileType(resultSet.getString(COLUMN_ATTACHMENT_FILETYPE))
-                .setTotalBytes(resultSet.getInt(COLUMN_ATTACHMENT_BYTES));
+                .setTotalBytes(resultSet.getLong(COLUMN_ATTACHMENT_BYTES));
         return attachment;
     }
 
-    public Attachment getAttachmentByRow(int rowID) throws SQLException {
+    public Attachment getAttachmentByRow(long rowID) throws SQLException {
         String selectStatementString = "SELECT * FROM " + ATTACHMENT_TABLE + " WHERE " + COLUMN_ATTACHMENT_ROWID + " = ?";
         PreparedStatement selectStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectStatementString);
-        selectStatement.setInt(1, rowID);
+        selectStatement.setLong(1, rowID);
 
         ResultSet resultSet = selectStatement.executeQuery();
 
@@ -738,15 +736,15 @@ public final class MessagesDatabase extends Thread {
     }
 
     public Handle buildHandle(ResultSet resultSet) throws SQLException {
-        Handle handle = new Handle().setRowID(resultSet.getInt(COLUMN_HANDLE_ROWID)).setHandleID(resultSet.getString(COLUMN_HANDLE_HANDLE_ID))
+        Handle handle = new Handle().setRowID(resultSet.getLong(COLUMN_HANDLE_ROWID)).setHandleID(resultSet.getString(COLUMN_HANDLE_HANDLE_ID))
                 .setCountry(resultSet.getString(COLUMN_HANDLE_COUNTRY));
         return handle;
     }
 
-    public Handle getHandleByRow(int rowID) throws SQLException {
+    public Handle getHandleByRow(long rowID) throws SQLException {
         String selectStatementString = "SELECT * FROM " + HANDLE_TABLE + " WHERE " + COLUMN_HANDLE_ROWID + " = ?";
         PreparedStatement selectStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectStatementString);
-        selectStatement.setInt(1, rowID);
+        selectStatement.setLong(1, rowID);
 
         ResultSet resultSet = selectStatement.executeQuery();
 
@@ -798,20 +796,20 @@ public final class MessagesDatabase extends Thread {
 
         if (chatResultSet.getString(COLUMN_CHAT_ROOMNAME) == null){
             chat = new PeerChat().setPeer(handles.get(0))
-                    .setGuid(chatResultSet.getString(COLUMN_CHAT_GUID)).setRowID(chatResultSet.getInt(COLUMN_CHAT_ROWID))
+                    .setGuid(chatResultSet.getString(COLUMN_CHAT_GUID)).setRowID(chatResultSet.getLong(COLUMN_CHAT_ROWID))
                     .setGroupID(chatResultSet.getString(COLUMN_CHAT_GROUP_ID)).setChatIdentifier(chatResultSet.getString(COLUMN_CHAT_IDENTIFIER));
         }else {
             chat = new GroupChat().setParticipants(handles).setDisplayName(chatResultSet.getString(COLUMN_CHAT_DISPLAY_NAME))
-                    .setGuid(chatResultSet.getString(COLUMN_CHAT_GUID)).setRowID(chatResultSet.getInt(COLUMN_CHAT_ROWID))
+                    .setGuid(chatResultSet.getString(COLUMN_CHAT_GUID)).setRowID(chatResultSet.getLong(COLUMN_CHAT_ROWID))
                     .setGroupID(chatResultSet.getString(COLUMN_CHAT_GROUP_ID)).setChatIdentifier(chatResultSet.getString(COLUMN_CHAT_IDENTIFIER));
         }
         return chat;
     }
 
-    public ChatBase getChatByRow(int rowID) throws SQLException {
+    public ChatBase getChatByRow(long rowID) throws SQLException {
         String selectChatStatementString = "SELECT * FROM " + CHAT_TABLE + " WHERE " + COLUMN_CHAT_ROWID + " = ?";
         PreparedStatement selectChatStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatStatementString);
-        selectChatStatement.setInt(1, rowID);
+        selectChatStatement.setLong(1, rowID);
 
         ResultSet chatResultSet = selectChatStatement.executeQuery();
 
@@ -824,7 +822,7 @@ public final class MessagesDatabase extends Thread {
         List<Handle> handles = new ArrayList<>();
         String selectChatHandleStatementString = "SELECT * FROM " + CHAT_HANDLES_TABLE + " WHERE " + COLUMN_CHAT_HANDLE_CHAT_ID + " = ?";
         PreparedStatement selectChatHandleStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatHandleStatementString);
-        selectChatHandleStatement.setInt(1, rowID);
+        selectChatHandleStatement.setLong(1, rowID);
 
         boolean isResultSet = selectChatHandleStatement.execute();
 
@@ -832,7 +830,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectChatHandleStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_CHAT_HANDLE_HANDLE_ID);
+                    long resultInt = resultSet.getLong(COLUMN_CHAT_HANDLE_HANDLE_ID);
                     handles.add(getHandleByRow(resultInt));
                 }
                 resultSet.close();
@@ -869,7 +867,7 @@ public final class MessagesDatabase extends Thread {
         List<Handle> handles = new ArrayList<>();
         String selectChatHandleStatementString = "SELECT * FROM " + CHAT_HANDLES_TABLE + " WHERE " + COLUMN_CHAT_HANDLE_CHAT_ID + " = ?";
         PreparedStatement selectChatHandleStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatHandleStatementString);
-        selectChatHandleStatement.setInt(1, chatResultSet.getInt(COLUMN_CHAT_ROWID));
+        selectChatHandleStatement.setLong(1, chatResultSet.getLong(COLUMN_CHAT_ROWID));
 
         boolean isResultSet = selectChatHandleStatement.execute();
 
@@ -877,7 +875,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectChatHandleStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_CHAT_HANDLE_HANDLE_ID);
+                    long resultInt = resultSet.getLong(COLUMN_CHAT_HANDLE_HANDLE_ID);
                     handles.add(getHandleByRow(resultInt));
                 }
                 resultSet.close();
@@ -914,7 +912,7 @@ public final class MessagesDatabase extends Thread {
         List<Handle> handles = new ArrayList<>();
         String selectChatHandleStatementString = "SELECT * FROM " + CHAT_HANDLES_TABLE + " WHERE " + COLUMN_CHAT_HANDLE_CHAT_ID + " = ?";
         PreparedStatement selectChatHandleStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatHandleStatementString);
-        selectChatHandleStatement.setInt(1, chatResultSet.getInt(COLUMN_CHAT_ROWID));
+        selectChatHandleStatement.setLong(1, chatResultSet.getLong(COLUMN_CHAT_ROWID));
 
         boolean isResultSet = selectChatHandleStatement.execute();
 
@@ -922,7 +920,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectChatHandleStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_CHAT_HANDLE_HANDLE_ID);
+                    long resultInt = resultSet.getLong(COLUMN_CHAT_HANDLE_HANDLE_ID);
                     handles.add(getHandleByRow(resultInt));
                 }
                 resultSet.close();
@@ -959,7 +957,7 @@ public final class MessagesDatabase extends Thread {
         List<Handle> handles = new ArrayList<>();
         String selectChatHandleStatementString = "SELECT * FROM " + CHAT_HANDLES_TABLE + " WHERE " + COLUMN_CHAT_HANDLE_CHAT_ID + " = ?";
         PreparedStatement selectChatHandleStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatHandleStatementString);
-        selectChatHandleStatement.setInt(1, chatResultSet.getInt(COLUMN_CHAT_ROWID));
+        selectChatHandleStatement.setLong(1, chatResultSet.getLong(COLUMN_CHAT_ROWID));
 
         boolean isResultSet = selectChatHandleStatement.execute();
 
@@ -967,7 +965,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet resultSet = selectChatHandleStatement.getResultSet();
                 while(resultSet.next()) {
-                    int resultInt = resultSet.getInt(COLUMN_CHAT_HANDLE_HANDLE_ID);
+                    long resultInt = resultSet.getLong(COLUMN_CHAT_HANDLE_HANDLE_ID);
                     handles.add(getHandleByRow(resultInt));
                 }
                 resultSet.close();
@@ -1017,9 +1015,9 @@ public final class MessagesDatabase extends Thread {
         boolean isRead = resultSet.getInt(COLUMN_MESSAGE_IS_READ) == 1;
         boolean isFinished = resultSet.getInt(COLUMN_MESSAGE_IS_FINISHED) == 1;
         boolean isFromMe = resultSet.getInt(COLUMN_MESSAGE_IS_FROM_ME) == 1;
-        Integer dateSent = processTime(resultSet.getDouble(COLUMN_MESSAGE_DATE_SENT));
-        Integer dateDelivered = processTime(resultSet.getDouble(COLUMN_MESSAGE_DATE_DELIVERED));
-        Integer dateRead = processTime(resultSet.getDouble(COLUMN_MESSAGE_DATE_READ));
+        Long dateSent = processTime(resultSet.getDouble(COLUMN_MESSAGE_DATE_SENT));
+        Long dateDelivered = processTime(resultSet.getDouble(COLUMN_MESSAGE_DATE_DELIVERED));
+        Long dateRead = processTime(resultSet.getDouble(COLUMN_MESSAGE_DATE_READ));
 
         if (dateSent == 0){
             dateSent = null;
@@ -1031,7 +1029,7 @@ public final class MessagesDatabase extends Thread {
             dateRead = null;
         }
 
-        message.setGuid(resultSet.getString(COLUMN_MESSAGE_GUID)).setRowID(resultSet.getInt(COLUMN_MESSAGE_ROWID))
+        message.setGuid(resultSet.getString(COLUMN_MESSAGE_GUID)).setRowID(resultSet.getLong(COLUMN_MESSAGE_ROWID))
                 .setText(resultSet.getString(COLUMN_MESSAGE_TEXT)).setDateSent(dateSent).setDateDelivered(dateDelivered)
                 .setDateRead(dateRead).setErrored(isErrored).setSent(isSent).setDelivered(isDelivered).setRead(isRead)
                 .setFinished(isFinished).setFromMe(isFromMe);
@@ -1039,10 +1037,10 @@ public final class MessagesDatabase extends Thread {
         return message;
     }
 
-    public Message getMessageByRow(int rowID) throws SQLException {
+    public Message getMessageByRow(long rowID) throws SQLException {
         String selectStatementString = "SELECT * FROM " + MESSAGE_TABLE + " WHERE " + COLUMN_MESSAGE_ROWID + " = ?";
         PreparedStatement selectStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectStatementString);
-        selectStatement.setInt(1, rowID);
+        selectStatement.setLong(1, rowID);
 
         ResultSet resultSet = selectStatement.executeQuery();
 
@@ -1051,18 +1049,18 @@ public final class MessagesDatabase extends Thread {
             selectStatement.close();
             return null;
         }
-        Handle handle = getHandleByRow(resultSet.getInt(COLUMN_MESSAGE_HANDLE_ID));
-        int messageRow = resultSet.getInt(COLUMN_MESSAGE_ROWID);
+        Handle handle = getHandleByRow(resultSet.getLong(COLUMN_MESSAGE_HANDLE_ID));
+        long messageRow = resultSet.getLong(COLUMN_MESSAGE_ROWID);
 
         String selectChatMessageStatementString = "SELECT * FROM " + CHAT_MESSAGE_JOIN_TABLE + " WHERE " + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " = ?";
         PreparedStatement selectChatMessageStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatMessageStatementString);
-        selectChatMessageStatement.setInt(1, messageRow);
+        selectChatMessageStatement.setLong(1, messageRow);
 
         ResultSet resultChatMessageSet = selectChatMessageStatement.executeQuery();
 
         ChatBase chat;
         try {
-            int theResultInt = resultChatMessageSet.getInt(COLUMN_CHAT_MESSAGE_CHAT_ID);
+            long theResultInt = resultChatMessageSet.getLong(COLUMN_CHAT_MESSAGE_CHAT_ID);
             chat = getChatByRow(theResultInt);
         }catch(Exception ex){
             return null;
@@ -1071,7 +1069,7 @@ public final class MessagesDatabase extends Thread {
         List<Attachment> attachments = new ArrayList<>();
         String selectMessageAttachmentString = "SELECT * FROM " + MESSAGE_ATTACHMENT_TABLE + " WHERE " + COLUMN_MESSAGE_ATTACHMENT_MESSAGE_ID + " = ?";
         PreparedStatement selectMessageAttachmentStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectMessageAttachmentString);
-        selectMessageAttachmentStatement.setInt(1, messageRow);
+        selectMessageAttachmentStatement.setLong(1, messageRow);
 
         boolean isResultSet = selectMessageAttachmentStatement.execute();
 
@@ -1079,7 +1077,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet theResultSet = selectMessageAttachmentStatement.getResultSet();
                 while(theResultSet.next()) {
-                    int resultInt = theResultSet.getInt(COLUMN_MESSAGE_ATTACHMENT_ATTACHMENT_ID);
+                    long resultInt = theResultSet.getLong(COLUMN_MESSAGE_ATTACHMENT_ATTACHMENT_ID);
                     attachments.add(getAttachmentByRow(resultInt));
                 }
                 theResultSet.close();
@@ -1114,18 +1112,18 @@ public final class MessagesDatabase extends Thread {
             selectStatement.close();
             return null;
         }
-        Handle handle = getHandleByRow(resultSet.getInt(COLUMN_MESSAGE_HANDLE_ID));
-        int messageRow = resultSet.getInt(COLUMN_MESSAGE_ROWID);
+        Handle handle = getHandleByRow(resultSet.getLong(COLUMN_MESSAGE_HANDLE_ID));
+        long messageRow = resultSet.getLong(COLUMN_MESSAGE_ROWID);
 
         String selectChatMessageStatementString = "SELECT * FROM " + CHAT_MESSAGE_JOIN_TABLE + " WHERE " + COLUMN_CHAT_MESSAGE_MESSAGE_ID + " = ?";
         PreparedStatement selectChatMessageStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectChatMessageStatementString);
-        selectChatMessageStatement.setInt(1, messageRow);
+        selectChatMessageStatement.setLong(1, messageRow);
 
         ResultSet resultChatMessageSet = selectChatMessageStatement.executeQuery();
 
         ChatBase chat;
         try {
-            int theResultInt = resultChatMessageSet.getInt(COLUMN_CHAT_MESSAGE_CHAT_ID);
+            long theResultInt = resultChatMessageSet.getLong(COLUMN_CHAT_MESSAGE_CHAT_ID);
             chat = getChatByRow(theResultInt);
         }catch(Exception ex){
             return null;
@@ -1134,7 +1132,7 @@ public final class MessagesDatabase extends Thread {
         List<Attachment> attachments = new ArrayList<>();
         String selectMessageAttachmentString = "SELECT * FROM " + MESSAGE_ATTACHMENT_TABLE + " WHERE " + COLUMN_MESSAGE_ATTACHMENT_MESSAGE_ID + " = ?";
         PreparedStatement selectMessageAttachmentStatement = getDatabaseManager().getChatDatabaseConnection().prepareStatement(selectMessageAttachmentString);
-        selectMessageAttachmentStatement.setInt(1, messageRow);
+        selectMessageAttachmentStatement.setLong(1, messageRow);
 
         boolean isResultSet = selectMessageAttachmentStatement.execute();
 
@@ -1142,7 +1140,7 @@ public final class MessagesDatabase extends Thread {
             if(isResultSet) {
                 ResultSet theResultSet = selectMessageAttachmentStatement.getResultSet();
                 while(theResultSet.next()) {
-                    int resultInt = theResultSet.getInt(COLUMN_MESSAGE_ATTACHMENT_ATTACHMENT_ID);
+                    long resultInt = theResultSet.getLong(COLUMN_MESSAGE_ATTACHMENT_ATTACHMENT_ID);
                     attachments.add(getAttachmentByRow(resultInt));
                 }
                 theResultSet.close();
@@ -1165,23 +1163,13 @@ public final class MessagesDatabase extends Thread {
         return message;
     }
 
-    public Integer getHighestIntOfMap(ConcurrentHashMap<Integer, String> map){
-        ArrayList<Integer> theInts = new ArrayList<>();
-
-        for (Integer integer : map.keySet()){
-            theInts.add(integer);
-        }
-
-        return Collections.max(theInts);
-    }
-
-    private static int processTime(double time){
-        int unpacked = (int) Math.floor(time / Math.pow(10, 9));
+    private static long processTime(double time){
+        long unpacked = (long) Math.floor(time / Math.pow(10, 9));
 
         if (unpacked > 0){
             return unpacked;
         }
 
-        return (int) time;
+        return (long) time;
     }
 }

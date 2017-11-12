@@ -150,7 +150,7 @@ public final class ConversationGenerator {
     private ArrayList<JSONMessage> parseFromMap(int chatId){
         ArrayList<JSONMessage> messages = new ArrayList<>();
 
-        int date = DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime());
+        long date = DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime());
         int minVal = 60;
         int secVal = 1;
 

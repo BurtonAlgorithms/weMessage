@@ -35,19 +35,19 @@ import scott.wemessage.server.weMessage;
 public class Message {
 
     private String guid;
-    private int rowID;
+    private long rowID;
     private ChatBase chat;
     private Handle handle;
     private String text;
     private List<Attachment> attachments;
-    private Integer dateSent, dateDelivered, dateRead;
+    private Long dateSent, dateDelivered, dateRead;
     private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe;
 
     public Message(){
-        this(null, -1, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        this(null, -1L, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
-    public Message(String guid, int rowID, ChatBase chat, Handle handle, List<Attachment> attachments, String text, Integer dateSent, Integer dateDelivered, Integer dateRead,
+    public Message(String guid, long rowID, ChatBase chat, Handle handle, List<Attachment> attachments, String text, Long dateSent, Long dateDelivered, Long dateRead,
                    Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe){
         this.guid = guid;
         this.rowID = rowID;
@@ -70,7 +70,7 @@ public class Message {
         return guid;
     }
 
-    public int getRowID() {
+    public long getRowID() {
         return rowID;
     }
 
@@ -90,15 +90,15 @@ public class Message {
         return attachments;
     }
 
-    public Integer getDateSent() {
+    public Long getDateSent() {
         return dateSent;
     }
 
-    public Integer getDateDelivered() {
+    public Long getDateDelivered() {
         return dateDelivered;
     }
 
-    public Integer getDateRead() {
+    public Long getDateRead() {
         return dateRead;
     }
 
@@ -153,7 +153,7 @@ public class Message {
         return this;
     }
 
-    public Message setRowID(int rowID) {
+    public Message setRowID(long rowID) {
         this.rowID = rowID;
         return this;
     }
@@ -178,17 +178,17 @@ public class Message {
         return this;
     }
 
-    public Message setDateSent(Integer dateSent) {
+    public Message setDateSent(Long dateSent) {
         this.dateSent = dateSent;
         return this;
     }
 
-    public Message setDateDelivered(Integer dateDelivered) {
+    public Message setDateDelivered(Long dateDelivered) {
         this.dateDelivered = dateDelivered;
         return this;
     }
 
-    public Message setDateRead(Integer dateRead) {
+    public Message setDateRead(Long dateRead) {
         this.dateRead = dateRead;
         return this;
     }
@@ -319,7 +319,7 @@ public class Message {
                             attachment.getGuid(),
                             outputName,
                             MimeType.MimeExtension.WEBM.getTypeString(),
-                            Math.round(encodedFile.length())
+                            encodedFile.length()
                     );
 
                     attachments.add(jsonAttachment);

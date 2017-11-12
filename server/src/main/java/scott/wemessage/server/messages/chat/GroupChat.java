@@ -10,10 +10,10 @@ public class GroupChat extends ChatBase {
     private String displayName;
 
     public GroupChat(){
-        this(null, -1, null, null, null, null);
+        this(null, -1L, null, null, null, null);
     }
 
-    public GroupChat(String guid, int rowID, String groupID, String chatIdentifier, String displayName, List<Handle> participants){
+    public GroupChat(String guid, long rowID, String groupID, String chatIdentifier, String displayName, List<Handle> participants){
         super(guid, rowID, groupID, chatIdentifier);
         this.participants = participants;
         this.displayName = displayName;
