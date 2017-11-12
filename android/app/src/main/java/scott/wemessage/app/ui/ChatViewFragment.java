@@ -1139,7 +1139,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     ArrayList<String> allUris = new ArrayList<>();
 
                     try {
-                        for (Attachment a : weMessage.get().getMessageDatabase().getReversedAttachmentsInChat(groupChat.getUuid().toString(), 0, Integer.MAX_VALUE)) {
+                        for (Attachment a : weMessage.get().getMessageDatabase().getReversedAttachmentsInChat(groupChat.getUuid().toString(), 0L, Long.MAX_VALUE)) {
                             String fileLoc = a.getFileLocation().getFileLocation();
 
                             if (!StringUtils.isEmpty(fileLoc) && !allUris.contains(fileLoc)) {

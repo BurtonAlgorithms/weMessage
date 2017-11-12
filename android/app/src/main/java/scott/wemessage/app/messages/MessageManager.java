@@ -257,7 +257,7 @@ public final class MessageManager {
         }
     }
 
-    public void queueMessages(final Chat chat, final int startIndex, final int requestAmount, boolean threaded){
+    public void queueMessages(final Chat chat, final long startIndex, final long requestAmount, boolean threaded){
         if (threaded) {
             createThreadedTask(new Runnable() {
                 @Override
@@ -518,7 +518,7 @@ public final class MessageManager {
         }
     }
 
-    private void queueMessagesTask(Chat chat, int startIndex, int requestAmount){
+    private void queueMessagesTask(Chat chat, long startIndex, long requestAmount){
         List<ActionMessage> actionMessageList = weMessage.get().getMessageDatabase().getReversedActionMessagesByTime(chat, startIndex, requestAmount);
         List<Message> messageList = weMessage.get().getMessageDatabase().getReversedMessagesByTime(chat, startIndex, requestAmount);
 

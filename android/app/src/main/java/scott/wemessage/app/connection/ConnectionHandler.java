@@ -83,7 +83,7 @@ import scott.wemessage.commons.utils.StringUtils;
 public final class ConnectionHandler extends Thread {
 
     private final String TAG = ConnectionService.TAG;
-    private final int UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
+    private final long UPDATE_MESSAGES_ATTEMPT_QUEUE = 20;
     private final int TIME_TO_CONNECT = 1;
 
     private final Object serviceLock = new Object();
@@ -561,7 +561,7 @@ public final class ConnectionHandler extends Thread {
                         Attachment attachment = new Attachment(UUID.fromString(encryptedFile.getUuid()), null, encryptedFile.getTransferName(),
                                 new FileLocationContainer(
                                         new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + encryptedFile.getTransferName())),
-                                null, -1);
+                                null, -1L);
 
 
                         CryptoFile cryptoFile = new CryptoFile(encryptedFile.getEncryptedData(), encryptedFile.getKey(), encryptedFile.getIvParams());
@@ -804,7 +804,7 @@ public final class ConnectionHandler extends Thread {
                                     String decryptedText = textDecryptionTask.getDecryptedText();
 
                                     List<Message> messageCandidates = messageDatabase.getReversedMessagesWithSearchParameters(
-                                            messageDatabase.getChatByMacGuid(jsonMessage.getChat().getMacGuid()), decryptedText, jsonMessage.isFromMe(), 0, UPDATE_MESSAGES_ATTEMPT_QUEUE);
+                                            messageDatabase.getChatByMacGuid(jsonMessage.getChat().getMacGuid()), decryptedText, jsonMessage.isFromMe(), 0L, UPDATE_MESSAGES_ATTEMPT_QUEUE);
 
                                     boolean updated = false;
 

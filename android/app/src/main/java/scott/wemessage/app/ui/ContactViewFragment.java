@@ -586,7 +586,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
                     String previousChatId = handleChat.getUuid().toString();
 
-                    for (Attachment a : weMessage.get().getMessageDatabase().getReversedAttachmentsInChat(previousChatId, 0, Integer.MAX_VALUE)) {
+                    for (Attachment a : weMessage.get().getMessageDatabase().getReversedAttachmentsInChat(previousChatId, 0L, Long.MAX_VALUE)) {
                         String fileLoc = a.getFileLocation().getFileLocation();
 
                         if (!StringUtils.isEmpty(fileLoc) && !allUris.contains(fileLoc)) {

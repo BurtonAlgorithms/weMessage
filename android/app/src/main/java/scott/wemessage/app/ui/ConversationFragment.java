@@ -117,7 +117,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private final String TAG = "ConversationFragment";
     private final Object chatLock = new Object();
-    private final int MESSAGE_QUEUE_AMOUNT = 25;
+    private final long MESSAGE_QUEUE_AMOUNT = 25;
     private final int ERROR_SNACKBAR_DURATION = 5;
     private final byte CONTENT_TYPE_ACTION = 22;
 
@@ -361,7 +361,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         messageListAdapter.setLoadMoreListener(new MessagesListAdapter.OnLoadMoreListener() {
             @Override
             public void onLoadMore(int page, int totalItemsCount) {
-                weMessage.get().getMessageManager().queueMessages(getChat(), totalItemsCount, MESSAGE_QUEUE_AMOUNT, true);
+                weMessage.get().getMessageManager().queueMessages(getChat(), (long) totalItemsCount, MESSAGE_QUEUE_AMOUNT, true);
             }
         });
 
@@ -477,7 +477,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             }
         });
 
-        messageManager.queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
+        messageManager.queueMessages(getChat(), 0L, MESSAGE_QUEUE_AMOUNT, true);
         messageManager.setHasUnreadMessages(getChat(), false, true);
 
         if (savedInstanceState != null) {
@@ -788,7 +788,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         messageListAdapter.clear();
         messageMapIntegrity.clear();
         actionMessageMapIntegrity.clear();
-        weMessage.get().getMessageManager().queueMessages(getChat(), 0, MESSAGE_QUEUE_AMOUNT, true);
+        weMessage.get().getMessageManager().queueMessages(getChat(), 0L, MESSAGE_QUEUE_AMOUNT, true);
     }
 
     @Override
@@ -1164,7 +1164,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                         copiedFile.createNewFile();
                         FileUtils.copy(new File(s), copiedFile);
 
-                        int totalBytes = Math.round(copiedFile.length());
+                        long totalBytes = copiedFile.length();
                         Attachment a = new Attachment(
                                 UUID.randomUUID(),
                                 null,
@@ -1185,7 +1185,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     File inputFile = new File(unprocessedMessage.getCameraInput());
 
                     if (inputFile.exists()) {
-                        int totalBytes = Math.round(inputFile.length());
+                        long totalBytes = inputFile.length();
                         Attachment a = new Attachment(
                                 UUID.randomUUID(),
                                 null,
@@ -1201,7 +1201,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                 if (unprocessedMessage.getVoiceInput() != null){
                     File inputFile = new File(unprocessedMessage.getVoiceInput());
                     if (inputFile.exists()) {
-                        int totalBytes = Math.round(inputFile.length());
+                        long totalBytes = inputFile.length();
                         Attachment a = new Attachment(
                                 UUID.randomUUID(),
                                 null,
@@ -1349,7 +1349,6 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         });
 
         boolean showDetails = false;
-
         String initSender = null;
 
         if (messages.size() == 1){

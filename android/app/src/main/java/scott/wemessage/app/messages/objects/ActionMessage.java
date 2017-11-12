@@ -11,13 +11,13 @@ public class ActionMessage extends MessageBase {
     private UUID uuid;
     private Chat chat;
     private String actionText;
-    private Integer date;
+    private Long date;
 
     public ActionMessage(){
 
     }
 
-    public ActionMessage(UUID uuid, Chat chat, String actionText, Integer date){
+    public ActionMessage(UUID uuid, Chat chat, String actionText, Long date){
         this.uuid = uuid;
         this.chat = chat;
         this.actionText = actionText;
@@ -36,12 +36,12 @@ public class ActionMessage extends MessageBase {
         return actionText;
     }
 
-    public Integer getDate() {
+    public Long getDate() {
         return date;
     }
 
     @Override
-    public Integer getTimeIdentifier() {
+    public Long getTimeIdentifier() {
         return date;
     }
 
@@ -66,7 +66,7 @@ public class ActionMessage extends MessageBase {
         return this;
     }
 
-    public ActionMessage setDate(Integer date) {
+    public ActionMessage setDate(Long date) {
         this.date = date;
         return this;
     }

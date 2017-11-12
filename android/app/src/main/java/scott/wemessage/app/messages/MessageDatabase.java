@@ -291,11 +291,11 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return null;
     }
 
-    public List<ActionMessage> getReversedActionMessages(Chat chat, int startIndex, int numberToFetch){
+    public List<ActionMessage> getReversedActionMessages(Chat chat, long startIndex, long numberToFetch){
         List<ActionMessage> actionMessages = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        int finalRow = getMaxIdFromTable(ActionMessageTable.TABLE_NAME, MessageTable._ID);
+        long finalRow = getMaxIdFromTable(ActionMessageTable.TABLE_NAME, MessageTable._ID);
         long start = finalRow - startIndex;
 
         String selectQuery = "SELECT * FROM " + ActionMessageTable.TABLE_NAME + " WHERE " + ActionMessageTable._ID + " <= ? AND "
@@ -317,11 +317,11 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return actionMessages;
     }
 
-    public List<ActionMessage> getReversedActionMessagesByTime(Chat chat, int startIndex, int numberToFetch){
+    public List<ActionMessage> getReversedActionMessagesByTime(Chat chat, long startIndex, long numberToFetch){
         List<ActionMessage> actionMessages = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        int finalRow = getMaxIdFromTable(ActionMessageTable.TABLE_NAME, MessageTable._ID);
+        long finalRow = getMaxIdFromTable(ActionMessageTable.TABLE_NAME, MessageTable._ID);
         long start = finalRow - startIndex;
 
         String selectQuery = "SELECT * FROM " + ActionMessageTable.TABLE_NAME + " WHERE " + ActionMessageTable._ID + " <= ? AND "
@@ -343,11 +343,11 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return actionMessages;
     }
 
-    public List<Attachment> getReversedAttachmentsInChat(String chatUuid, int startIndex, int numberToFetch){
+    public List<Attachment> getReversedAttachmentsInChat(String chatUuid, long startIndex, long numberToFetch){
         List<Attachment> attachments = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        int finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
+        long finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
         long start = finalRow - startIndex;
 
         String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
@@ -367,11 +367,11 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return attachments;
     }
 
-    public List<Message> getReversedMessages(Chat chat, int startIndex, int numberToFetch){
+    public List<Message> getReversedMessages(Chat chat, long startIndex, long numberToFetch){
         List<Message> messages = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        int finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
+        long finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
         long start = finalRow - startIndex;
 
         String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
@@ -393,11 +393,11 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return messages;
     }
 
-    public List<Message> getReversedMessagesByTime(Chat chat, int startIndex, int numberToFetch){
+    public List<Message> getReversedMessagesByTime(Chat chat, long startIndex, long numberToFetch){
         List<Message> messages = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        int finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
+        long finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
         long start = finalRow - startIndex;
 
         String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
@@ -419,11 +419,11 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return messages;
     }
 
-    public List<Message> getReversedMessagesWithSearchParameters(Chat chat, String matchingText, boolean isFromMe, int startIndex, int numberToFetch){
+    public List<Message> getReversedMessagesWithSearchParameters(Chat chat, String matchingText, boolean isFromMe, long startIndex, long numberToFetch){
         List<Message> messages = new ArrayList<>();
 
         SQLiteDatabase db = getWritableDatabase();
-        int finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
+        long finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
         long start = finalRow - startIndex;
 
         String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable._ID + " <= ? AND "
@@ -564,7 +564,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         ActionMessage actionMessage = new ActionMessage().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ActionMessageTable.UUID))))
                 .setChat(getChatByUuid(cursor.getString(cursor.getColumnIndex(ActionMessageTable.CHAT_UUID)))).setActionText(cursor.getString(cursor.getColumnIndex(ActionMessageTable.ACTION_TEXT)))
-                .setDate(cursor.getInt(cursor.getColumnIndex(ActionMessageTable.DATE)));
+                .setDate(cursor.getLong(cursor.getColumnIndex(ActionMessageTable.DATE)));
 
         return actionMessage;
     }
@@ -622,7 +622,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         Attachment attachment = new Attachment().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(AttachmentTable.UUID))))
                 .setMacGuid(cursor.getString(cursor.getColumnIndex(AttachmentTable.MAC_GUID))).setTransferName(cursor.getString(cursor.getColumnIndex(AttachmentTable.TRANSFER_NAME)))
                 .setFileLocation(new FileLocationContainer(cursor.getString(cursor.getColumnIndex(AttachmentTable.FILE_LOCATION))))
-                .setFileType(cursor.getString(cursor.getColumnIndex(AttachmentTable.FILE_TYPE))).setTotalBytes(cursor.getInt(cursor.getColumnIndex(AttachmentTable.TOTAL_BYTES)));
+                .setFileType(cursor.getString(cursor.getColumnIndex(AttachmentTable.FILE_TYPE))).setTotalBytes(cursor.getLong(cursor.getColumnIndex(AttachmentTable.TOTAL_BYTES)));
         return attachment;
     }
 
@@ -1042,10 +1042,10 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         new Thread(){
             @Override
             public void run() {
-                for (Message message : getReversedMessages(chat, 0, Integer.MAX_VALUE)){
+                for (Message message : getReversedMessages(chat, 0L, Long.MAX_VALUE)){
                     deleteMessageByUuid(message.getUuid().toString());
                 }
-                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0, Integer.MAX_VALUE)){
+                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0L, Long.MAX_VALUE)){
                     deleteActionMessage(actionMessage.getUuid().toString());
                 }
             }
@@ -1061,10 +1061,10 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         new Thread(){
             @Override
             public void run() {
-                for (Message message : getReversedMessages(chat, 0, Integer.MAX_VALUE)){
+                for (Message message : getReversedMessages(chat, 0L, Long.MAX_VALUE)){
                     deleteMessageByUuid(message.getUuid().toString());
                 }
-                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0, Integer.MAX_VALUE)){
+                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0L, Long.MAX_VALUE)){
                     deleteActionMessage(actionMessage.getUuid().toString());
                 }
             }
@@ -1080,10 +1080,10 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         new Thread(){
             @Override
             public void run() {
-                for (Message message : getReversedMessages(chat, 0, Integer.MAX_VALUE)){
+                for (Message message : getReversedMessages(chat, 0L, Long.MAX_VALUE)){
                     deleteMessageByUuid(message.getUuid().toString());
                 }
-                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0, Integer.MAX_VALUE)){
+                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0L, Long.MAX_VALUE)){
                     deleteActionMessage(actionMessage.getUuid().toString());
                 }
             }
@@ -1098,10 +1098,10 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         new Thread(){
             @Override
             public void run() {
-                for (Message message : getReversedMessages(chat, 0, Integer.MAX_VALUE)){
+                for (Message message : getReversedMessages(chat, 0L, Long.MAX_VALUE)){
                     deleteMessageByUuid(message.getUuid().toString());
                 }
-                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0, Integer.MAX_VALUE)){
+                for (ActionMessage actionMessage : getReversedActionMessages(chat, 0L, Long.MAX_VALUE)){
                     deleteActionMessage(actionMessage.getUuid().toString());
                 }
             }
@@ -1118,8 +1118,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 .setMacGuid(cursor.getString(cursor.getColumnIndex(MessageTable.MAC_GUID))).setChat(getChatByUuid(cursor.getString(cursor.getColumnIndex(MessageTable.CHAT_UUID))))
                 .setSender(getContactByUuid(cursor.getString(cursor.getColumnIndex(MessageTable.SENDER_UUID))))
                 .setAttachments(stringListToAttachments(Arrays.asList(cursor.getString(cursor.getColumnIndex(MessageTable.ATTACHMENTS)).split(", "))))
-                .setText(cursor.getString(cursor.getColumnIndex(MessageTable.TEXT))).setDateSent(cursor.getInt(cursor.getColumnIndex(MessageTable.DATE_SENT)))
-                .setDateDelivered(cursor.getInt(cursor.getColumnIndex(MessageTable.DATE_DELIVERED))).setDateRead(cursor.getInt(cursor.getColumnIndex(MessageTable.DATE_READ)))
+                .setText(cursor.getString(cursor.getColumnIndex(MessageTable.TEXT))).setDateSent(cursor.getLong(cursor.getColumnIndex(MessageTable.DATE_SENT)))
+                .setDateDelivered(cursor.getLong(cursor.getColumnIndex(MessageTable.DATE_DELIVERED))).setDateRead(cursor.getLong(cursor.getColumnIndex(MessageTable.DATE_READ)))
                 .setHasErrored(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.ERRORED)))).setIsSent(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_SENT))))
                 .setDelivered(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_DELIVERED)))).setRead(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_READ))))
                 .setFinished(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_FINISHED)))).setFromMe(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_FROM_ME))));
@@ -1272,16 +1272,16 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return attachments;
     }
 
-    private Integer getMaxIdFromTable(String tableName, String idRow){
+    private Long getMaxIdFromTable(String tableName, String idRow){
         SQLiteDatabase db = getWritableDatabase();
         String selectQuery = "SELECT MAX(" + idRow + ") FROM " + tableName;
 
         Cursor cursor = db.rawQuery(selectQuery, null);
 
-        Integer result = null;
+        Long result = null;
         if (cursor.getCount() > 0){
             cursor.moveToFirst();
-            result = cursor.getInt(0);
+            result = cursor.getLong(0);
         }
         cursor.close();
         return result;

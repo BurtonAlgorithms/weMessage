@@ -11,13 +11,13 @@ public class Attachment {
     private String transferName;
     private FileLocationContainer fileLocation;
     private String fileType;
-    private int totalBytes;
+    private long totalBytes;
 
     public Attachment(){
 
     }
 
-    public Attachment(UUID uuid, String macGuid, String transferName, FileLocationContainer fileLocation, String fileType, int totalBytes){
+    public Attachment(UUID uuid, String macGuid, String transferName, FileLocationContainer fileLocation, String fileType, long totalBytes){
         this.uuid = uuid;
         this.macGuid = macGuid;
         this.transferName = transferName;
@@ -46,7 +46,7 @@ public class Attachment {
         return fileType;
     }
 
-    public int getTotalBytes() {
+    public long getTotalBytes() {
         return totalBytes;
     }
 
@@ -75,7 +75,7 @@ public class Attachment {
         return this;
     }
 
-    public Attachment setTotalBytes(int totalBytes) {
+    public Attachment setTotalBytes(long totalBytes) {
         this.totalBytes = totalBytes;
         return this;
     }

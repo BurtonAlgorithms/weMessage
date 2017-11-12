@@ -34,7 +34,7 @@ public class Message extends MessageBase {
     private Contact sender;
     private List<Attachment> attachments;
     private String text;
-    private Integer dateSent, dateDelivered, dateRead;
+    private Long dateSent, dateDelivered, dateRead;
     private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe;
     private HashMap<Attachment, FailReason> failedAttachments = new HashMap<>();
 
@@ -42,7 +42,7 @@ public class Message extends MessageBase {
 
     }
 
-    public Message(UUID uuid, String macGuid, Chat chat, Contact sender, List<Attachment> attachments, String text, Integer dateSent, Integer dateDelivered, Integer dateRead,
+    public Message(UUID uuid, String macGuid, Chat chat, Contact sender, List<Attachment> attachments, String text, Long dateSent, Long dateDelivered, Long dateRead,
                    Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe){
         this.uuid = uuid;
         this.macGuid = macGuid;
@@ -89,20 +89,20 @@ public class Message extends MessageBase {
         return text;
     }
 
-    public Integer getDateSent() {
+    public Long getDateSent() {
         return dateSent;
     }
 
-    public Integer getDateDelivered() {
+    public Long getDateDelivered() {
         return dateDelivered;
     }
 
-    public Integer getDateRead() {
+    public Long getDateRead() {
         return dateRead;
     }
 
     @Override
-    public Integer getTimeIdentifier() {
+    public Long getTimeIdentifier() {
         return dateSent;
     }
 
@@ -178,17 +178,17 @@ public class Message extends MessageBase {
         return this;
     }
 
-    public Message setDateSent(Integer dateSent) {
+    public Message setDateSent(Long dateSent) {
         this.dateSent = dateSent;
         return this;
     }
 
-    public Message setDateDelivered(Integer dateDelivered) {
+    public Message setDateDelivered(Long dateDelivered) {
         this.dateDelivered = dateDelivered;
         return this;
     }
 
-    public Message setDateRead(Integer dateRead) {
+    public Message setDateRead(Long dateRead) {
         this.dateRead = dateRead;
         return this;
     }
