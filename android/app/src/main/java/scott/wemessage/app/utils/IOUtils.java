@@ -4,16 +4,22 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.AnyRes;
 import android.support.annotation.NonNull;
 import android.view.View;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
@@ -213,6 +219,52 @@ public class IOUtils {
                 }
             }.execute(attachmentUri);
         }
+    }
+
+    public static void setDeviceName(){
+        new AsyncTask<Void, Void, Void>(){
+            @Override
+            protected Void doInBackground(Void... voids) {
+                String deviceInfo = weMessage.get().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).getString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, "");
+
+                if (!StringUtils.isEmpty(deviceInfo)) {
+                    Device device = Device.fromString(deviceInfo);
+
+                    if (device.getManufacturer().equalsIgnoreCase(Build.MANUFACTURER) && device.getModel().equalsIgnoreCase(Build.MODEL)) return null;
+                }
+
+                try {
+                    URL url = new URL("http://storage.googleapis.com/play_public/supported_devices.csv");
+                    URLConnection connection = url.openConnection();
+
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-16"))) {
+                        reader.readLine();
+                        String line;
+
+                        while ((line = reader.readLine()) != null) {
+                            String[] records = line.split(",");
+                            if (records.length == 4) {
+                                String manufacturer = records[0];
+                                String name = records[1];
+                                String model = records[3];
+
+                                if (manufacturer.equalsIgnoreCase(Build.MANUFACTURER) && model.equalsIgnoreCase(Build.MODEL)) {
+                                    Device device = new Device(manufacturer, name, model);
+                                    SharedPreferences.Editor editor = weMessage.get().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+
+                                    editor.putString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, device.parse());
+                                    editor.apply();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }catch (Exception ex){
+                    AppLogger.error("An error occurred while fetching the device's name", ex);
+                }
+                return null;
+            }
+        }.execute();
     }
 
     private enum GallerySaveResult {

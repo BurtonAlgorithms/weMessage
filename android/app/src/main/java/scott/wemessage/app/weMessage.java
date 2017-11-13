@@ -25,6 +25,7 @@ import scott.wemessage.app.messages.firebase.NotificationCallbacks;
 import scott.wemessage.app.messages.objects.Account;
 import scott.wemessage.app.security.util.AesPrngHelper;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
+import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.commons.Constants;
 import scott.wemessage.commons.connection.ClientMessage;
 import scott.wemessage.commons.connection.ServerMessage;
@@ -121,6 +122,7 @@ public final class weMessage extends Application implements Constants {
     public static final String SHARED_PREFERENCES_LAST_EMAIL = IDENTIFIER_PREFIX + "lastEmail";
     public static final String SHARED_PREFERENCES_LAST_HASHED_PASSWORD = IDENTIFIER_PREFIX + "lastHashedPassword";
     public static final String SHARED_PREFERENCES_SIGNED_OUT = IDENTIFIER_PREFIX + "signedOut";
+    public static final String SHARED_PREFERENCES_DEVICE_INFO = IDENTIFIER_PREFIX + "deviceInfo";
 
     private static weMessage instance;
     private MessageDatabase messageDatabase;
@@ -177,6 +179,8 @@ public final class weMessage extends Application implements Constants {
         this.messageDatabase = new MessageDatabase(this);
 
         instance = this;
+
+        IOUtils.setDeviceName();
     }
 
     public synchronized MessageDatabase getMessageDatabase(){

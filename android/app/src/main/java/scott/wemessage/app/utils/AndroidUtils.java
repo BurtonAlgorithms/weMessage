@@ -11,8 +11,10 @@ import java.util.Calendar;
 import java.util.Date;
 
 import scott.wemessage.R;
+import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.utils.DateUtils;
+import scott.wemessage.commons.utils.StringUtils;
 
 public class AndroidUtils {
 
@@ -29,6 +31,16 @@ public class AndroidUtils {
     }
 
     public static String getDeviceName(){
+        String deviceInfo = weMessage.get().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).getString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, "");
+
+        if (!StringUtils.isEmpty(deviceInfo)) {
+            Device device = Device.fromString(deviceInfo);
+
+            if (device.getManufacturer().equalsIgnoreCase(Build.MANUFACTURER) && device.getModel().equalsIgnoreCase(Build.MODEL)){
+                return device.getName();
+            }
+        }
+
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         String deviceName;
 
