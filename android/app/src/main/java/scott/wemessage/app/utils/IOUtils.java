@@ -18,8 +18,10 @@ import android.view.View;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
@@ -259,6 +261,8 @@ public class IOUtils {
                             }
                         }
                     }
+                }catch (UnknownHostException | MalformedURLException ex) {
+
                 }catch (Exception ex){
                     AppLogger.error("An error occurred while fetching the device's name", ex);
                 }
