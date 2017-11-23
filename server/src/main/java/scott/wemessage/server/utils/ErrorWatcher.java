@@ -95,33 +95,6 @@ public final class ErrorWatcher extends Thread {
         }
     }
 
-    private static class ScriptError {
-
-        public String callScript;
-        public String error;
-
-        public ScriptError(String callScript, String error){
-            this.callScript = callScript;
-            this.error = error;
-        }
-
-        public String getCallScript() {
-            return callScript;
-        }
-
-        public String getError() {
-            return error;
-        }
-
-        public void setCallScript(String callScript) {
-            this.callScript = callScript;
-        }
-
-        public void setError(String error) {
-            this.error = error;
-        }
-    }
-
     enum ErrorFileType {
         SCRIPT
     }

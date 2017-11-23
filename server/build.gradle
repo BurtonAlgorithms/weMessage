@@ -12,25 +12,65 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    dependency
+    compile.extendsFrom dependency
+}
+
 dependencies {
-    compile project(':Commons')
-    compile 'commons-codec:commons-codec:1.11'
-    compile 'com.squareup.okhttp3:okhttp:3.9.0'
-    compile 'org.slf4j:slf4j-nop:1.7.25'
-    compile 'org.xerial:sqlite-jdbc:3.20.1'
-    compile 'net.bramp.ffmpeg:ffmpeg:0.6.2'
+    compile (project(':Commons')){
+        transitive = false
+    }
+
+    dependency 'com.google.code.gson:gson:2.8.2'
+    dependency 'com.googlecode.libphonenumber:libphonenumber:8.8.5'
+    dependency 'joda-time:joda-time:2.9.9'
+
+    dependency 'commons-codec:commons-codec:1.11'
+    dependency 'com.squareup.okhttp3:okhttp:3.9.0'
+    dependency 'org.slf4j:slf4j-nop:1.7.25'
+    dependency 'org.xerial:sqlite-jdbc:3.20.1'
+    dependency 'net.bramp.ffmpeg:ffmpeg:0.6.2'
+    dependency 'io.sentry:sentry:1.6.3'
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
 jar {
-    destinationDir = file("$rootDir/build")
+    destinationDir = file("$rootDir/build/obfuscate")
+
     manifest {
         attributes "Main-Class": "scott.wemessage.server.ServerLauncher"
+        attributes "Class-Path": "bin/dependencies.jar"
     }
 
     from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+        (configurations.compile - configurations.dependency).collect { it.isDirectory() ? it : zipTree(it) }
     }
+
     archiveName 'weServer.jar'
+}
+
+task dependencyJar(type: Jar){
+    destinationDir = file("$rootDir/build")
+
+    from {
+        (configurations.dependency).collect { it.isDirectory() ? it : zipTree(it) }
+    }
+
+    archiveName 'dependencies.jar'
+}
+
+task proguard {
+    doLast {
+        javaexec {
+            main = "-jar"
+            args = [
+                    "$rootDir/buildtools/proguard.jar",
+                    "@$rootDir/buildtools/rules.pro"
+            ]
+        }
+
+        file("$rootDir/build/obfuscate").deleteDir()
+    }
 }

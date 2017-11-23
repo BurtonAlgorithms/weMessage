@@ -1,14 +1,31 @@
 package scott.wemessage.server.configuration.json;
 
+import com.google.gson.annotations.SerializedName;
+
 public class ConfigJSONData {
 
+    @SerializedName("configVersion")
     private Integer configVersion;
+
+    @SerializedName("port")
     private Integer port;
+
+    @SerializedName("createLogFiles")
     private Boolean createLogFiles;
+
+    @SerializedName("checkForUpdates")
     private Boolean checkForUpdates;
+
+    @SerializedName("sendNotifications")
     private Boolean sendNotifications;
+
+    @SerializedName("transcodeVideos")
     private Boolean transcodeVideos;
+
+    @SerializedName("ffmpegLocation")
     private String ffmpegLocation;
+
+    @SerializedName("accountInfo")
     private ConfigAccountJSON accountInfo;
 
     public ConfigJSONData(){

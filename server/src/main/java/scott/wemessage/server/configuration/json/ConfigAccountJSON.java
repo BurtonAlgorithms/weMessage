@@ -1,9 +1,16 @@
 package scott.wemessage.server.configuration.json;
 
+import com.google.gson.annotations.SerializedName;
+
 public class ConfigAccountJSON {
 
+    @SerializedName("email")
     private String email;
+
+    @SerializedName("password")
     private String password;
+
+    @SerializedName("secret")
     private String secret;
 
     public ConfigAccountJSON(String email, String password, String secret){

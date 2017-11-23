@@ -1,7 +1,10 @@
 package scott.wemessage.server.configuration.json;
 
+import com.google.gson.annotations.SerializedName;
+
 public class ConfigJSON {
 
+    @SerializedName("config")
     private ConfigJSONData config;
 
     public ConfigJSON(ConfigJSONData config){
