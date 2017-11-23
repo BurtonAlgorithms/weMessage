@@ -1,15 +1,30 @@
 package scott.wemessage.commons.connection;
 
+import com.google.gson.annotations.SerializedName;
+
 import scott.wemessage.commons.connection.security.EncryptedText;
 
 public class InitConnect {
 
+    @SerializedName("buildVersion")
     private int buildVersion;
+
+    @SerializedName("deviceId")
     private String deviceId;
+
+    @SerializedName("email")
     private EncryptedText email;
+
+    @SerializedName("password")
     private EncryptedText password;
+
+    @SerializedName("deviceType")
     private String deviceType;
+
+    @SerializedName("deviceName")
     private String deviceName;
+
+    @SerializedName("registrationToken")
     private String registrationToken;
 
     public InitConnect(int buildVersion, String deviceId, EncryptedText email, EncryptedText password, String deviceType, String deviceName, String registrationToken){

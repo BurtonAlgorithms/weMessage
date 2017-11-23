@@ -1,8 +1,13 @@
 package scott.wemessage.commons.connection;
 
+import com.google.gson.annotations.SerializedName;
+
 public class FirebaseVersionMessage {
 
+    @SerializedName("latestVersion")
     private String latestVersion;
+
+    @SerializedName("latestBuildVersion")
     private String latestBuildVersion;
 
     public FirebaseVersionMessage(String latestVersion, String latestBuildVersion){

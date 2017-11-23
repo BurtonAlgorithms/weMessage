@@ -1,8 +1,13 @@
 package scott.wemessage.commons.connection.json.action;
 
+import com.google.gson.annotations.SerializedName;
+
 public class JSONAction {
 
+    @SerializedName("actionType")
     private Integer actionType;
+
+    @SerializedName("args")
     private String[] args;
 
     public JSONAction(Integer actionType, String[] args){

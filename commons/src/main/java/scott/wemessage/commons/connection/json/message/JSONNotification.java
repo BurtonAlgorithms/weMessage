@@ -1,14 +1,31 @@
 package scott.wemessage.commons.connection.json.message;
 
+import com.google.gson.annotations.SerializedName;
+
 public class JSONNotification {
 
+    @SerializedName("notificationVersion")
     private String notificationVersion;
+
+    @SerializedName("registrationToken")
     private String registrationToken;
+
+    @SerializedName("encryptedText")
     private String encryptedText;
+
+    @SerializedName("key")
     private String key;
+
+    @SerializedName("handleId")
     private String handleId;
+
+    @SerializedName("chatId")
     private String chatId;
+
+    @SerializedName("chatName")
     private String chatName;
+
+    @SerializedName("attachmentNumber")
     private String attachmentNumber;
 
     public JSONNotification(){

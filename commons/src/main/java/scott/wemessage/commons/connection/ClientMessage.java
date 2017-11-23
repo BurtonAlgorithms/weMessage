@@ -1,6 +1,7 @@
 package scott.wemessage.commons.connection;
 
 import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
@@ -11,6 +12,7 @@ public class ClientMessage extends ConnectionMessage {
 
     private static ByteArrayAdapter byteArrayAdapter;
 
+    @SerializedName("incomingJson")
     private String incomingJson;
 
     public ClientMessage(String messageUuid, String incomingJson){

@@ -1,13 +1,24 @@
 package scott.wemessage.commons.connection.json.message;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.util.List;
 
 public class JSONChat {
 
+    @SerializedName("macGuid")
     private String macGuid;
+
+    @SerializedName("macGroupID")
     private String macGroupID;
+
+    @SerializedName("macChatIdentifier")
     private String macChatIdentifier;
+
+    @SerializedName("displayName")
     private String displayName;
+
+    @SerializedName("participants")
     private List<String> participants;
     
     public JSONChat(String macGuid, String macGroupID, String macChatIdentifier, String displayName, List<String> participants){

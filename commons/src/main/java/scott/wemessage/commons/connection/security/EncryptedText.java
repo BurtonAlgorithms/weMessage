@@ -1,8 +1,13 @@
 package scott.wemessage.commons.connection.security;
 
+import com.google.gson.annotations.SerializedName;
+
 public class EncryptedText {
 
+    @SerializedName("encryptedText")
     private String encryptedText;
+
+    @SerializedName("key")
     private String key;
 
     public EncryptedText(String encryptedText, String key){

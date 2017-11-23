@@ -1,7 +1,10 @@
 package scott.wemessage.commons.connection;
 
+import com.google.gson.annotations.SerializedName;
+
 public abstract class ConnectionMessage {
 
+    @SerializedName("messageUuid")
     private String messageUuid;
 
     public ConnectionMessage(String messageUuid){

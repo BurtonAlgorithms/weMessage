@@ -1,18 +1,54 @@
 package scott.wemessage.commons.connection.json.message;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.util.List;
 
 import scott.wemessage.commons.connection.security.EncryptedText;
 
 public class JSONMessage {
 
+    @SerializedName("macGuid")
     private String macGuid;
+
+    @SerializedName("chat")
     private JSONChat chat;
+
+    @SerializedName("handle")
     private String handle;
+
+    @SerializedName("attachments")
     private List<JSONAttachment> attachments;
+
+    @SerializedName("encryptedText")
     private EncryptedText encryptedText;
-    private Long dateSent, dateDelivered, dateRead;
-    private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe;
+
+    @SerializedName("dateSent")
+    private Long dateSent;
+
+    @SerializedName("dateDelivered")
+    private Long dateDelivered;
+
+    @SerializedName("dateRead")
+    private Long dateRead;
+
+    @SerializedName("errored")
+    private Boolean errored;
+
+    @SerializedName("isSent")
+    private Boolean isSent;
+
+    @SerializedName("isDelivered")
+    private Boolean isDelivered;
+
+    @SerializedName("isRead")
+    private Boolean isRead;
+
+    @SerializedName("isFinished")
+    private Boolean isFinished;
+
+    @SerializedName("isFromMe")
+    private Boolean isFromMe;
 
     public JSONMessage(String macGuid, JSONChat chat, String handle, List<JSONAttachment> attachments, EncryptedText encryptedText, Long dateSent, Long dateDelivered, Long dateRead,
                        Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe){

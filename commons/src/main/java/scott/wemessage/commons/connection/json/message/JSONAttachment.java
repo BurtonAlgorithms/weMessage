@@ -1,11 +1,22 @@
 package scott.wemessage.commons.connection.json.message;
 
+import com.google.gson.annotations.SerializedName;
+
 public class JSONAttachment {
 
+    @SerializedName("uuid")
     private String uuid;
+
+    @SerializedName("macGuid")
     private String macGuid;
+
+    @SerializedName("transferName")
     private String transferName;
+
+    @SerializedName("fileType")
     private String fileType;
+
+    @SerializedName("totalBytes")
     private long totalBytes;
 
     public JSONAttachment(String uuid, String macGuid, String transferName, String fileType, long totalBytes){
