@@ -232,7 +232,7 @@ public class IOUtils {
                 if (!StringUtils.isEmpty(deviceInfo)) {
                     Device device = Device.fromString(deviceInfo);
 
-                    if (device.getManufacturer().equalsIgnoreCase(Build.MANUFACTURER) && device.getModel().equalsIgnoreCase(Build.MODEL)) return null;
+                    if (device != null && device.getManufacturer().equalsIgnoreCase(Build.MANUFACTURER) && device.getModel().equalsIgnoreCase(Build.MODEL)) return null;
                 }
 
                 try {

@@ -185,7 +185,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         dialogsListAdapter.setDatesFormatter(new DateFormatter.Formatter() {
             @Override
             public String format(Date date) {
-                return AndroidUtils.processDate(getContext(), date, true);
+                return AndroidUtils.processDate(getContext(), date, true, true);
             }
         });
 
@@ -271,7 +271,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     public void onDestroy() {
         MessageManager messageManager = weMessage.get().getMessageManager();
 
-        dialogsListAdapter.clear();
+        if (dialogsListAdapter != null) dialogsListAdapter.clear();
         messageManager.unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(chatListBroadcastReceiver);
 

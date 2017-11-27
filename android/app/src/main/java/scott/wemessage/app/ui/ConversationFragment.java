@@ -354,7 +354,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         messageListAdapter.setDateHeadersFormatter(new DateFormatter.Formatter() {
             @Override
             public String format(Date date) {
-                return AndroidUtils.processDate(getContext(), date, false);
+                return AndroidUtils.processDate(getContext(), date, false, false);
             }
         });
 

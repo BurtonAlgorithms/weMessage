@@ -36,7 +36,7 @@ public class AndroidUtils {
         if (!StringUtils.isEmpty(deviceInfo)) {
             Device device = Device.fromString(deviceInfo);
 
-            if (device.getManufacturer().equalsIgnoreCase(Build.MANUFACTURER) && device.getModel().equalsIgnoreCase(Build.MODEL)){
+            if (device != null && device.getManufacturer().equalsIgnoreCase(Build.MANUFACTURER) && device.getModel().equalsIgnoreCase(Build.MODEL)){
                 return device.getName();
             }
         }
@@ -60,9 +60,13 @@ public class AndroidUtils {
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(path).toLowerCase());
     }
 
-    public static String processDate(Context context, Date date, boolean shortDate){
+    public static String processDate(Context context, Date date, boolean shortDate, boolean showTime){
         if (DateFormatter.isToday(date)){
-            return DateFormatter.format(date, "h:mm a");
+            if (showTime){
+                return DateFormatter.format(date, "h:mm a");
+            }else {
+                return context.getString(R.string.word_today);
+            }
         }else if (DateFormatter.isYesterday(date)){
             return context.getString(R.string.word_yesterday);
         }else if (DateUtils.isSameWeek(date)){

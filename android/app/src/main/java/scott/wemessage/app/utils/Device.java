@@ -37,8 +37,12 @@ class Device {
     }
 
     static Device fromString(String s){
-        String[] strings = s.split(",");
+        try {
+            String[] strings = s.split(",");
 
-        return new Device(strings[0], strings[1], strings[2]);
+            return new Device(strings[0], strings[1], strings[2]);
+        }catch (Exception ex){
+            return null;
+        }
     }
 }
