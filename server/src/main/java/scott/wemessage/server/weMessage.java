@@ -25,4 +25,5 @@ public final class weMessage implements Constants {
 
     public static final String GET_VERSION_FUNCTION_URL = "https://us-central1-wemessage-app.cloudfunctions.net/getVersion";
     public static final String NOTIFICATION_FUNCTION_URL = "https://us-central1-wemessage-app.cloudfunctions.net/sendNotification";
+    public static final String SENTRY_DSN = "https://b57de61f5e5d4898999fb49408675ae5:32185c3f6298464fab810ffa40a54b74@sentry.io/250857";
 }

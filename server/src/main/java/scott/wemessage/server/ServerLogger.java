@@ -8,13 +8,36 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
+import io.sentry.Sentry;
+import io.sentry.event.Event;
+import io.sentry.event.EventBuilder;
+import io.sentry.event.interfaces.ExceptionInterface;
+
+import scott.wemessage.commons.utils.StringUtils;
+import scott.wemessage.server.utils.SentryConfig;
+import scott.wemessage.server.utils.SentryEventHelper;
+
 public final class ServerLogger {
 
+    private static boolean USE_SENTRY = true;
+
     private static MessageServer messageServer;
+    private static boolean isSentryInitialized = false;
 
     private ServerLogger() { }
 
-    public static void setServerHook(MessageServer server){
+    static void setServerHook(MessageServer server){
+        if (USE_SENTRY) {
+            try {
+                Sentry.init(new SentryConfig(weMessage.SENTRY_DSN, weMessage.WEMESSAGE_VERSION, "production").build());
+                Sentry.getStoredClient().addBuilderHelper(new SentryEventHelper());
+
+                isSentryInitialized = true;
+            }catch (Exception ex){
+                isSentryInitialized = false;
+            }
+        }
+
         messageServer = server;
     }
 
@@ -53,6 +76,14 @@ public final class ServerLogger {
     }
 
     public static void error(String prefix, String message, Exception ex){
+        error(prefix, message, ex, true);
+    }
+
+    public static void error(String message, Exception ex, boolean withSentry){
+        error(null, message, ex, withSentry);
+    }
+
+    public static void error(String prefix, String message, Exception ex, boolean withSentry){
         if(prefix == null) {
             System.out.println(Level.ERROR.getPrefix() + " " + message);
             System.out.println(" ");
@@ -63,6 +94,10 @@ public final class ServerLogger {
             logToFile(" ");
             logToFile(getStackTrace(ex));
             logToFile(" ");
+
+            if (withSentry) {
+                logToSentry(message, ex);
+            }
         }else {
             System.out.println(Level.ERROR.getPrefix() + " [" + prefix + "] " + message);
             System.out.println(" ");
@@ -73,6 +108,10 @@ public final class ServerLogger {
             logToFile(" ");
             logToFile(getStackTrace(ex));
             logToFile(" ");
+
+            if (withSentry) {
+                logToSentry(prefix, message, ex);
+            }
         }
     }
 
@@ -100,6 +139,46 @@ public final class ServerLogger {
                 }
             }
         }
+    }
+
+    private static void logToSentry(Level level, String message){
+        logToSentry(level, null, message, null);
+    }
+
+    private static void logToSentry(String message, Exception ex){
+        logToSentry(null, null, message, ex);
+    }
+
+    private static void logToSentry(Level level, String message, Exception ex){
+        logToSentry(level, null, message, ex);
+    }
+
+    private static void logToSentry(String tag, String message, Exception ex){
+        logToSentry(null, tag, message, ex);
+    }
+
+    private static void logToSentry(Level level, String tag, String message, Exception ex){
+        if (!isSentryInitialized) return;
+
+        EventBuilder eventBuilder = new EventBuilder();
+
+        if (level != null){
+            eventBuilder.withLevel(level.sentryLevel());
+        }
+
+        if (!StringUtils.isEmpty(tag)){
+            eventBuilder.withLogger(tag);
+        }
+
+        if (!StringUtils.isEmpty(message)){
+            eventBuilder.withMessage(message);
+        }
+
+        if (ex != null) {
+            eventBuilder.withSentryInterface(new ExceptionInterface(ex));
+        }
+
+        Sentry.capture(eventBuilder);
     }
 
     private static String getCurrentTimeStamp(){
@@ -140,6 +219,21 @@ public final class ServerLogger {
                     return "[!!! ERROR !!!]";
                 default:
                     return "[LOG]";
+            }
+        }
+
+        public Event.Level sentryLevel(){
+            switch (value){
+                case 0:
+                    return Event.Level.INFO;
+                case 1:
+                    return Event.Level.WARNING;
+                case 2:
+                    return Event.Level.ERROR;
+                case 3:
+                    return Event.Level.ERROR;
+                default:
+                    return Event.Level.DEBUG;
             }
         }
     }
