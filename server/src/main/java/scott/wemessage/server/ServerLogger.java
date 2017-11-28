@@ -14,6 +14,7 @@ import io.sentry.event.EventBuilder;
 import io.sentry.event.interfaces.ExceptionInterface;
 
 import scott.wemessage.commons.utils.StringUtils;
+import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.utils.SentryConfig;
 import scott.wemessage.server.utils.SentryEventHelper;
 
@@ -26,16 +27,16 @@ public final class ServerLogger {
 
     private ServerLogger() { }
 
-    static void setServerHook(MessageServer server){
-        if (USE_SENTRY) {
-            try {
+    static void setServerHook(MessageServer server, ServerConfiguration serverConfiguration){
+        try {
+            if (USE_SENTRY && serverConfiguration.getConfigJSON().getConfig().getSendCrashReports()) {
                 Sentry.init(new SentryConfig(weMessage.SENTRY_DSN, weMessage.WEMESSAGE_VERSION, "production").build());
                 Sentry.getStoredClient().addBuilderHelper(new SentryEventHelper());
 
                 isSentryInitialized = true;
-            }catch (Exception ex){
-                isSentryInitialized = false;
             }
+        } catch (Exception ex){
+            isSentryInitialized = false;
         }
 
         messageServer = server;

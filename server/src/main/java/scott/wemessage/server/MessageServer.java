@@ -64,15 +64,16 @@ public final class MessageServer {
     protected MessageServer() {
         if (init()) {
             try {
+                this.serverConfiguration = new ServerConfiguration(this);
+
                 ServerBase64Wrapper base64Wrapper = new ServerBase64Wrapper();
                 ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(base64Wrapper);
 
-                ServerLogger.setServerHook(this);
+                ServerLogger.setServerHook(this, serverConfiguration);
                 AESCrypto.setBase64Wrapper(base64Wrapper);
                 ClientMessage.setByteArrayAdapter(byteArrayAdapter);
                 ServerMessage.setByteArrayAdapter(byteArrayAdapter);
 
-                this.serverConfiguration = new ServerConfiguration(this);
                 this.authenticator = new Authenticator(this, serverConfiguration);
                 this.appleScriptExecutor = new AppleScriptExecutor(this, serverConfiguration);
                 this.databaseManager = new DatabaseManager(this, serverConfiguration);

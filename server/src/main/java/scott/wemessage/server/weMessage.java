@@ -13,6 +13,7 @@ public final class weMessage implements Constants {
 
     public static final boolean DEFAULT_CREATE_LOG_FILES = true;
     public static final boolean DEFAULT_CHECK_FOR_UPDATES = true;
+    public static final boolean DEFAULT_SEND_CRASH_REPORTS = true;
     public static final boolean DEFAULT_SEND_NOTIFICATIONS = true;
     public static final boolean DEFAULT_TRANSCODE_VIDEO = true;
 

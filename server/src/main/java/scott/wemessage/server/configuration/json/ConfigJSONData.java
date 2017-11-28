@@ -16,6 +16,9 @@ public class ConfigJSONData {
     @SerializedName("checkForUpdates")
     private Boolean checkForUpdates;
 
+    @SerializedName("sendCrashReports")
+    private Boolean sendCrashReports;
+
     @SerializedName("sendNotifications")
     private Boolean sendNotifications;
 
@@ -33,12 +36,13 @@ public class ConfigJSONData {
     }
 
     public ConfigJSONData(Integer configVersion, Integer port, Boolean createLogFiles,
-                          Boolean checkForUpdates, Boolean sendNotifications, Boolean transcodeVideos,
+                          Boolean checkForUpdates, Boolean sendCrashReports, Boolean sendNotifications, Boolean transcodeVideos,
                           String ffmpegLocation, ConfigAccountJSON accountInfo){
         this.configVersion = configVersion;
         this.port = port;
         this.createLogFiles = createLogFiles;
         this.checkForUpdates = checkForUpdates;
+        this.sendCrashReports = sendCrashReports;
         this.sendNotifications = sendNotifications;
         this.transcodeVideos = transcodeVideos;
         this.ffmpegLocation = ffmpegLocation;
@@ -59,6 +63,10 @@ public class ConfigJSONData {
 
     public Boolean getCheckForUpdates() {
         return checkForUpdates;
+    }
+
+    public Boolean getSendCrashReports() {
+        return sendCrashReports;
     }
 
     public Boolean getSendNotifications() {
@@ -91,6 +99,10 @@ public class ConfigJSONData {
 
     public void setCheckForUpdates(Boolean checkForUpdates) {
         this.checkForUpdates = checkForUpdates;
+    }
+
+    public void setSendCrashReports(Boolean sendCrashReports) {
+        this.sendCrashReports = sendCrashReports;
     }
 
     public void setSendNotifications(Boolean sendNotifications) {
