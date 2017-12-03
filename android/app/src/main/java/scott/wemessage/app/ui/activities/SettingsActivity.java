@@ -115,6 +115,7 @@ public class SettingsActivity extends AppCompatActivity {
         ViewGroup settingsBlockedContacts = findViewById(R.id.settingsBlockedContacts);
         ViewGroup settingsConnectToServer = findViewById(R.id.settingsConnectToServer);
         ViewGroup settingsSignInOut = findViewById(R.id.settingsSignInOut);
+        ViewGroup settingsAbout = findViewById(R.id.settingsAbout);
 
         if (isServiceRunning(ConnectionService.class)){
             RelativeLayout.LayoutParams signInOutLayoutParams = (RelativeLayout.LayoutParams) settingsSignInOut.getLayoutParams();
@@ -164,6 +165,16 @@ public class SettingsActivity extends AppCompatActivity {
                     weMessage.get().signOut();
                     goToLauncher();
                 }
+            }
+        });
+
+        settingsAbout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent launchIntent = new Intent(weMessage.get(), AboutActivity.class);
+
+                startActivity(launchIntent);
+                finish();
             }
         });
     }

@@ -148,6 +148,35 @@
 
                 </LinearLayout>
 
+                <LinearLayout
+                    android:id="@+id/settingsAbout"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/settingsSignInOut"
+                    android:paddingTop="8dp"
+                    android:layout_marginBottom="24dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:src="@drawable/ic_info_filled"
+                        android:tint="@color/lighterBlack"
+                        android:layout_marginStart="5dp"
+                        android:layout_marginEnd="-4dp"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"/>
+
+                    <scott.wemessage.app.ui.view.font.FontTextView
+                        android:text="@string/word_about"
+                        android:textSize="18sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        app:fontName="OrkneyLight"/>
+
+                </LinearLayout>
+
             </RelativeLayout>
 
             <scott.wemessage.app.ui.view.font.FontTextView

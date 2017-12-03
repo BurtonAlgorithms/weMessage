@@ -25,6 +25,7 @@
     <color name="invalidRedLight">#3bff0544</color>
 
     <color name="lightBlack">#252525</color>
+    <color name="lighterBlack">#393939</color>
     <color name="lightGray">#787878</color>
     <color name="dialogDivider">#a6a6a6</color>
     <color name="lighterGray">#cac9ce</color>
