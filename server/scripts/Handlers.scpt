@@ -33,6 +33,7 @@ end init
 
 on sendMessage(phoneNumber, fileLocation, targetMessage)
 	set returnSet to {}
+	set finalSet to {}
 
 	set handle to missing value
 
@@ -59,7 +60,19 @@ on sendMessage(phoneNumber, fileLocation, targetMessage)
 		set end of returnSet to NULL_MESSAGE
 	end if
 
-	return returnSet
+	if (item 1 of returnSet) is equal to INVALID_NUMBER then
+		set end of finalSet to UNKNOWN_ERROR
+	else
+		set end of finalSet to (item 1 of returnSet)
+	end if
+
+	if (item 2 of returnSet) is equal to INVALID_NUMBER then
+		set end of finalSet to sendTextMessageUI(handle, targetMessage)
+	else
+		set end of finalSet to (item 2 of returnSet)
+	end if
+
+	return finalSet
 end sendMessage
 
 
@@ -479,6 +492,66 @@ on sendTextMessage(phoneNumber, targetMessage)
 		end try
 	end tell
 end sendTextMessage
+
+
+
+on sendTextMessageUI(phoneNumber, targetMessage)
+	set uiPreconditionsVal to UIPreconditions()
+	if (uiPreconditionsVal is not equal to ACTION_PERFORMED) then return uiPreconditionsVal
+
+	foregroundApp("Messages", "Messages", true)
+
+	try
+		tell application "System Events" to tell process "Messages"
+			keystroke "n" using command down
+
+			set theTextField to missing value
+
+			try
+				set theTextField to text field 1 of scroll area 3 of splitter group 1 of window 1
+			on error
+				set theTextField to text field 1 of scroll area 4 of splitter group 1 of window 1
+			end try
+
+			tell window 1
+				tell theTextField
+					set value to phoneNumber
+					keystroke ","
+				end tell
+
+				set theTextArea to missing value
+
+				try
+					set theTextArea to text area 1 of scroll area 4 of splitter group 1
+				on error
+					set theTextArea to text area 1 of scroll area 3 of splitter group 1
+				end try
+
+				tell theTextArea
+					select
+					set value to targetMessage
+					keystroke return
+					keystroke return
+				end tell
+				delay 1.2
+
+				if my createGroupErrorHelper() is equal to true then
+					select row 1 in table 1 of scroll area 1 of splitter group 1
+					key code 51 using {command down}
+					delay 0.1
+					key code 51 using {command down}
+					delay 0.1
+					return NUMBER_NOT_IMESSAGE
+				else
+					return SENT
+				end if
+			end tell
+		end tell
+	on error errorMessage
+		my logError("SendMessage.scpt", errorMessage)
+		return UI_ERROR
+	end try
+end sendTextMessageUI
 
 
 
@@ -942,9 +1015,13 @@ end foregroundApp
 
 
 on isAppRunning(targetApp)
+	set processExists to missing value
+
 	tell application "System Events"
 		set processExists to exists process targetApp
 	end tell
+
+	return processExists as boolean
 end isAppRunning
 
 

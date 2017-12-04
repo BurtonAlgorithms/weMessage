@@ -19,10 +19,6 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.StringUtils;
@@ -331,46 +327,54 @@ public final class AppleScriptExecutor extends Thread {
         }
     }
 
-    public void startMessagesApp() throws ScriptException {
-        String startScript = "on run\n" +
-                "\tif isAppRunning(\"Messages\") is not equal to true then\n" +
-                "\t\ttell application \"Messages\" to activate\n" +
-                "\tend if\n" +
-                "end run\n" +
-                "\n" +
-                "on isAppRunning(targetApp)\n" +
-                "\ttell application \"System Events\"\n" +
-                "\t\tset processExists to exists process targetApp\n" +
-                "\tend tell\n" +
-                "end isAppRunning";
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName("AppleScriptEngine");
-        engine.eval(startScript);
+    public void startMessagesApp() {
+        File helperScriptFile;
+
+        try {
+            File[] scriptFiles = getScriptsFolder().listFiles(new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return name.startsWith("Helpers");
+                }
+            });
+            helperScriptFile = scriptFiles[0];
+        }catch(Exception ex){
+            ServerLogger.error(TAG, "The script Helpers.scpt does not exist!", new NullPointerException());
+            return;
+        }
+
+        try {
+            new ProcessBuilder("osascript", helperScriptFile.getAbsolutePath(), String.valueOf(1)).start();
+        }catch(Exception ex){
+            ServerLogger.error("An error occurred while starting the Messages app.", ex);
+        }
     }
 
-    public void killMessagesApp(boolean respring) throws ScriptException {
-        String killScript = "on run\n" +
-                "\tif isAppRunning(\"Messages\") then\n" +
-                "\t\ttell application \"Messages\" to quit\n" +
-                "\tend if\n" +
-                "end run\n" +
-                "\n" +
-                "on isAppRunning(targetApp)\n" +
-                "\ttell application \"System Events\"\n" +
-                "\t\tset processExists to exists process targetApp\n" +
-                "\tend tell\n" +
-                "end isAppRunning";
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName("AppleScriptEngine");
-        engine.eval(killScript);
+    public void killMessagesApp(boolean respring) {
+        File helperScriptFile;
+
+        try {
+            File[] scriptFiles = getScriptsFolder().listFiles(new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return name.startsWith("Helpers");
+                }
+            });
+            helperScriptFile = scriptFiles[0];
+        }catch(Exception ex){
+            ServerLogger.error(TAG, "The script Helpers.scpt does not exist!", new NullPointerException());
+            return;
+        }
+
+        try {
+            new ProcessBuilder("osascript", helperScriptFile.getAbsolutePath(), String.valueOf(2)).start();
+        }catch(Exception ex){
+            ServerLogger.error("An error occurred while closing the Messages app.", ex);
+        }
 
         if (respring){
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    try {
-                        startMessagesApp();
-                    }catch(ScriptException ex){
-                        ServerLogger.error(TAG, "An error occurred while executing the script to restart Messages.", ex);
-                    }
+                    startMessagesApp();
                 }
             }, 200);
         }
