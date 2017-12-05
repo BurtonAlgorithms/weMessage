@@ -17,7 +17,7 @@ import scott.wemessage.server.weMessage;
 public class CommandResetLoginInfo extends CoreCommand {
 
     public CommandResetLoginInfo(CommandManager manager){
-        super(manager, "resetlogininfo", "Resets the login information needed for weMessage Clients to connect to Server.", new String[]{ "newpassword", "resetpassword", "resetlogin", "resetpass", "resetaccountinfo", "newlogin" });
+        super(manager, "resetlogininfo", "Resets the login information needed for weMessage Clients to connect to your weServer.", new String[]{ "newpassword", "resetpassword", "resetlogin", "resetpass", "resetaccountinfo", "newlogin" });
     }
 
     public void execute(String[] args){

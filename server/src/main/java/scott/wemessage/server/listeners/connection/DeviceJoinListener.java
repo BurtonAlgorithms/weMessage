@@ -76,7 +76,7 @@ public class DeviceJoinListener extends Listener {
             resultSet.close();
             findStatement.close();
         }catch(Exception ex){
-            ServerLogger.error("An error occurred while connecting Device: " + event.getDevice().getAddress() + " to the server. \nPlease disconnect it or it will not work as expected.", ex);
+            ServerLogger.error("An error occurred while connecting Device: " + event.getDevice().getAddress() + " to the weServer. \nPlease disconnect it or it will not work as expected.", ex);
         }
     }
 }

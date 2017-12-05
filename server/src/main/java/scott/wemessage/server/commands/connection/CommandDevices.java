@@ -7,7 +7,7 @@ import scott.wemessage.server.connection.Device;
 public class CommandDevices extends ConnectionCommand {
 
     public CommandDevices(CommandManager manager){
-        super(manager, "devices", "Lists all devices connected to the server", new String[]{ "connections" });
+        super(manager, "devices", "Lists all devices connected to the weServer", new String[]{ "connections" });
     }
 
     public void execute(String[] args){

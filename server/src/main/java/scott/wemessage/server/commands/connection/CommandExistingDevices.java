@@ -9,7 +9,7 @@ import scott.wemessage.server.connection.Device;
 public class CommandExistingDevices extends ConnectionCommand {
 
     public CommandExistingDevices(CommandManager manager){
-        super(manager, "existingdevices", "Lists all devices that have ever connected to the server", new String[]{ "alldevices", "allconnections", "previousdevices" });
+        super(manager, "existingdevices", "Lists all devices that have ever connected to the weServer", new String[]{ "alldevices", "allconnections", "previousdevices" });
     }
 
     public void execute(String[] args) {

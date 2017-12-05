@@ -465,7 +465,7 @@ public class Device extends Thread {
                     String password = AESCrypto.decryptString(initConnect.getPassword().getEncryptedText(), initConnect.getPassword().getKey());
 
                     if (initConnect.getBuildVersion() != configuration.getBuildVersion()){
-                        ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because it's version does not match the server's.");
+                        ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device with IP Address: " + getAddress() + " could not join because it's version does not match the weServer's.");
                         ServerLogger.log(ServerLogger.Level.INFO, TAG, "Device Version: " + initConnect.getBuildVersion() + "   Server Version: " + configuration.getBuildVersion());
                         ServerLogger.emptyLine();
                         killDevice(DisconnectReason.INCORRECT_VERSION);

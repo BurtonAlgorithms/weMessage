@@ -74,7 +74,3 @@ task proguard {
         file("$rootDir/build/obfuscate").deleteDir()
     }
 }
-
-task assembleRelease {
-
-}

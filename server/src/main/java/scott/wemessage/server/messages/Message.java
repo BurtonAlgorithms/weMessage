@@ -265,7 +265,7 @@ public class Message {
                     String outputName = FilenameUtils.removeExtension(attachment.getTransferName()) + ".webm";
 
                     ServerLogger.log(ServerLogger.Level.INFO, "An encoding process has just started for file: " + outputName + ". This allows videos to be played on Android devices.");
-                    ServerLogger.log(ServerLogger.Level.INFO, "Please do not turn off the server, or the message will not send.");
+                    ServerLogger.log(ServerLogger.Level.INFO, "Please do not turn off your weServer, or the message will not send.");
                     ServerLogger.emptyLine();
 
                     FFmpegBuilder ffmpegBuilder = new FFmpegBuilder()
