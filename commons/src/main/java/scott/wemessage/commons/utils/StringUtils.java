@@ -65,4 +65,8 @@ public class StringUtils {
     public static boolean isEmpty(String string){
         return (string == null) || string.equals("");
     }
+
+    public static boolean containsIgnoreCase(String one, String two){
+        return one.toLowerCase().contains(two.toLowerCase());
+    }
 }
