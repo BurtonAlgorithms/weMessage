@@ -305,6 +305,60 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         newChatMessageInputView.setInputListener(new MessageInput.InputListener() {
             @Override
             public boolean onSubmit(CharSequence input) {
+                if (!StringUtils.isEmpty(searchContactEditText.getText().toString().trim())) {
+                    String text = searchContactEditText.getText().toString().trim();
+
+                    Contact attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
+
+                    if (attemptedSearchContact != null){
+                        addContactToSelectedView(attemptedSearchContact);
+                        clearEditText(searchContactEditText, true);
+                    }else {
+                        if (text.contains(" ")) {
+                            boolean finish = true;
+
+                            String[] textParticipants = text.split(" ");
+
+                            for (String s : textParticipants){
+                                if (!AuthenticationUtils.isValidEmailFormat(s)
+                                        && !PhoneNumberUtil.getInstance().isPossibleNumber(text, Resources.getSystem().getConfiguration().locale.getCountry())){
+                                    finish = false;
+                                    break;
+                                }
+                            }
+
+                            if (finish){
+                                for (String s : textParticipants) {
+                                    addUnknownContactToSelectedView(s);
+                                }
+                                clearEditText(searchContactEditText, true);
+                            }else {
+                                closeKeyboard();
+                                invalidateField(searchContactEditText);
+                                showErroredSnackbar(getString(R.string.invalid_contact_format), 5);
+                                return false;
+                            }
+                        } else {
+                            if (AuthenticationUtils.isValidEmailFormat(text)) {
+                                addUnknownContactToSelectedView(text);
+                                clearEditText(searchContactEditText, true);
+                            } else {
+                                PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
+
+                                if (phoneNumberUtil.isPossibleNumber(text, Resources.getSystem().getConfiguration().locale.getCountry())) {
+                                    addUnknownContactToSelectedView(text);
+                                    clearEditText(searchContactEditText, true);
+                                } else {
+                                    closeKeyboard();
+                                    invalidateField(searchContactEditText);
+                                    showErroredSnackbar(getString(R.string.invalid_contact_format), 5);
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 String text = input.toString().trim();
                 ArrayList<SelectedNameView> selectedNameViews = new ArrayList<>();
 
@@ -879,7 +933,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             int index = Collections.binarySearch(contacts, new SearchableContact(null).setSearchName(search), new Comparator<SearchableContact>() {
                 @Override
                 public int compare(SearchableContact c1, SearchableContact c2) {
-                    return c1.getSearchName().compareTo(c2.getSearchName());
+                    return c1.getSearchName().compareToIgnoreCase(c2.getSearchName());
                 }
             });
 
@@ -907,7 +961,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
                     IPredicate<Contact> contactPredicate = new IPredicate<Contact>() {
                         public boolean apply(Contact contact) {
-                            return contact.getUIDisplayName().contains(strings[0]);
+                            return StringUtils.containsIgnoreCase(contact.getUIDisplayName(), strings[0]);
                         }
                     };
                     return filter(originalList, contactPredicate);

@@ -48,10 +48,15 @@ public class DisplayWebViewActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 if (!loaded){
-                    loaded = true;
                     return super.shouldOverrideUrlLoading(view, request);
                 }
                 return true;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                loaded = true;
+                super.onPageFinished(view, url);
             }
         });
     }

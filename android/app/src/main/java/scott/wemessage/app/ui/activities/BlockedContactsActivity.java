@@ -526,7 +526,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
                     IPredicate<Contact> contactPredicate = new IPredicate<Contact>() {
                         public boolean apply(Contact contact) {
-                            return contact.getUIDisplayName().contains(strings[0]);
+                            return StringUtils.containsIgnoreCase(contact.getUIDisplayName(), strings[0]);
                         }
                     };
                     return filter(originalList, contactPredicate);

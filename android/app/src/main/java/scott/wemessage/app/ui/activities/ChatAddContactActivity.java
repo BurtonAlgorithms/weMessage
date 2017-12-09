@@ -598,7 +598,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             int index = Collections.binarySearch(contacts, new SearchableContact(null).setSearchName(search), new Comparator<SearchableContact>() {
                 @Override
                 public int compare(SearchableContact c1, SearchableContact c2) {
-                    return c1.getSearchName().compareTo(c2.getSearchName());
+                    return c1.getSearchName().compareToIgnoreCase(c2.getSearchName());
                 }
             });
 
@@ -626,7 +626,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
 
                     IPredicate<Contact> contactPredicate = new IPredicate<Contact>() {
                         public boolean apply(Contact contact) {
-                            return contact.getUIDisplayName().contains(strings[0]);
+                            return StringUtils.containsIgnoreCase(contact.getUIDisplayName(), strings[0]);
                         }
                     };
                     return filter(originalList, contactPredicate);
