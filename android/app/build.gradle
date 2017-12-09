@@ -6,7 +6,7 @@ def debugProguard = false
 
 android {
     compileSdkVersion 27
-    buildToolsVersion '27.0.1'
+    buildToolsVersion '27.0.2'
     defaultConfig {
         applicationId "scott.wemessage"
         minSdkVersion 21
@@ -52,7 +52,9 @@ dependencies {
     implementation 'com.flipboard:bottomsheet-core:1.5.3'
     implementation 'com.daimajia.swipelayout:library:1.2.0@aar'
     implementation 'com.thefinestartist:finestwebview:1.2.7'
-    implementation 'com.vdurmont:emoji-java:4.0.0'
+    implementation ('com.vdurmont:emoji-java:4.0.0'){
+        exclude group: 'org.json', module: 'json'
+    }
     implementation('com.crashlytics.sdk.android:crashlytics:2.8.0@aar'){
         transitive = true
     }
