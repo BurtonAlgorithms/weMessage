@@ -30,6 +30,8 @@ public class ConnectionService extends Service {
 
     @Override
     public void onDestroy() {
+        if (getConnectionHandler() == null) return;
+
         if (getConnectionHandler().isRunning().get()){
             Intent serviceClosedIntent = new Intent(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED);
             LocalBroadcastManager.getInstance(this).sendBroadcast(serviceClosedIntent);

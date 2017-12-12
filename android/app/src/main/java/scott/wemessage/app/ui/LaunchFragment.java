@@ -865,6 +865,7 @@ public class LaunchFragment extends Fragment {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
+                    if (dialogLayout == null) return;
                     dialogLayout.getVideoView().setZOrderOnTop(true);
                     dialogLayout.startAnimation();
                 }

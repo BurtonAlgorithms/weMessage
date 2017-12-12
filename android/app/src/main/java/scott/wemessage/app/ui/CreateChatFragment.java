@@ -234,6 +234,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 timer.schedule(new TimerTask() {
                     @Override
                     public void run() {
+                        if (getActivity() == null) return;
                         getActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -1097,7 +1098,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
                 @Override
                 protected void onPostExecute(Void aVoid) {
-                    if (!getActivity().isFinishing() && !getActivity().isDestroyed()) {
+                    if (getActivity() != null && !getActivity().isFinishing() && !getActivity().isDestroyed()) {
                         notifyDataSetChanged();
                     }
                 }
