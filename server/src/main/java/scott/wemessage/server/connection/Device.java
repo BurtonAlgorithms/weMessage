@@ -493,7 +493,7 @@ public class Device extends Thread {
                     boolean result = getDeviceManager().getDeviceByAddress(getAddress()) != null;
 
                     if (result) {
-                        ServerLogger.error(TAG, "Device with IP Address: " + getAddress() + " could not join because it already connected!", new Exception());
+                        ServerLogger.log(ServerLogger.Level.ERROR, TAG, "Device with IP Address: " + getAddress() + " could not join because it already connected!");
                         ServerLogger.emptyLine();
                         killDevice(DisconnectReason.ALREADY_CONNECTED);
                         return;

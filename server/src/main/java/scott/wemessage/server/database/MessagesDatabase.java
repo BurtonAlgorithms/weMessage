@@ -781,13 +781,31 @@ public final class MessagesDatabase extends Thread {
 
     public ChatBase buildChat(ResultSet chatResultSet, List<Handle> handles) throws SQLException {
         String accountLogin = chatResultSet.getString(COLUMN_CHAT_ACCOUNT);
-        String accountEmail = accountLogin.split(":")[1];
+        String accountEmail;
+        boolean useContains = false;
+
+        try {
+            accountEmail = accountLogin.split(":")[1];
+        }catch (Exception ex){
+            useContains = true;
+            try {
+                accountEmail = accountLogin.split(":")[0];
+            }catch (Exception exc){
+                accountEmail = accountLogin;
+            }
+        }
 
         try {
             if (!accountEmail.equalsIgnoreCase(messageServer.getConfiguration().getConfigJSON().getConfig().getAccountInfo().getEmail())){
-                return null;
+                if (useContains){
+                    if (!accountEmail.toLowerCase().contains(messageServer.getConfiguration().getConfigJSON().getConfig().getAccountInfo().getEmail().toLowerCase())){
+                        return null;
+                    }
+                } else {
+                    return null;
+                }
             }
-        }catch(IOException ex){
+        } catch(IOException ex){
             ServerLogger.error(TAG, "An error occurred while fetching the server configuration", ex);
             return null;
         }
@@ -989,16 +1007,32 @@ public final class MessagesDatabase extends Thread {
     public Message buildMessage(ResultSet resultSet, ChatBase chat, Handle handle, List<Attachment> attachments) throws SQLException {
         String accountLogin = resultSet.getString(COLUMN_MESSAGE_ACCOUNT);
         String accountEmail;
+        boolean useContains = false;
 
         if (accountLogin == null){
             accountEmail = "nullLogin";
         }else {
-            accountEmail = accountLogin.split(":")[1];
+            try {
+                accountEmail = accountLogin.split(":")[1];
+            }catch (Exception ex){
+                useContains = true;
+                try {
+                    accountEmail = accountLogin.split(":")[0];
+                }catch (Exception exc){
+                    accountEmail = accountLogin;
+                }
+            }
         }
 
         try {
             if (!accountEmail.equalsIgnoreCase(messageServer.getConfiguration().getConfigJSON().getConfig().getAccountInfo().getEmail())){
-                return null;
+                if (useContains){
+                    if (!accountEmail.toLowerCase().contains(messageServer.getConfiguration().getConfigJSON().getConfig().getAccountInfo().getEmail().toLowerCase())){
+                        return null;
+                    }
+                } else {
+                    return null;
+                }
             }
         }catch(IOException ex){
             ServerLogger.error(TAG, "An error occurred while fetching the server configuration", ex);

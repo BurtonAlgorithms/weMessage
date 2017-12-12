@@ -1,6 +1,7 @@
 package scott.wemessage.server.connection;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.ServerSocket;
 import java.util.Map;
 import java.util.Objects;
@@ -136,7 +137,10 @@ public final class DeviceManager extends Thread {
                     }
                 }
             }
-        }catch(IOException ex){
+        }catch (BindException ex){
+            ServerLogger.log(ServerLogger.Level.ERROR, "Cannot bind to port " + PORT + " because it is already in use! (You already have a running weServer)");
+            getMessageServer().shutdown(-1, false);
+        }catch (IOException ex){
             ServerLogger.error(TAG, "An error has occurred in initializing the Device Manager. Shutting down.", ex);
             getMessageServer().shutdown(-1, false);
         }

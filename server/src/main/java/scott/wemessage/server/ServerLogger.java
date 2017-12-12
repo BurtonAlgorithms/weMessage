@@ -21,9 +21,11 @@ import scott.wemessage.server.utils.SentryEventHelper;
 public final class ServerLogger {
 
     private static boolean USE_SENTRY = true;
+    private static final long MINIMUM_INTERVAL = 30 * 60 * 1000;
 
     private static MessageServer messageServer;
     private static boolean isSentryInitialized = false;
+    private static Long lastSentryExecution;
 
     private ServerLogger() { }
 
@@ -161,25 +163,32 @@ public final class ServerLogger {
     private static void logToSentry(Level level, String tag, String message, Exception ex){
         if (!isSentryInitialized) return;
 
-        EventBuilder eventBuilder = new EventBuilder();
+        Long previousTime = lastSentryExecution;
+        long currentTimestamp = System.currentTimeMillis();
 
-        if (level != null){
-            eventBuilder.withLevel(level.sentryLevel());
+        lastSentryExecution = currentTimestamp;
+
+        if (previousTime == null || (currentTimestamp - previousTime > MINIMUM_INTERVAL)){
+            EventBuilder eventBuilder = new EventBuilder();
+
+            if (level != null){
+                eventBuilder.withLevel(level.sentryLevel());
+            }
+
+            if (!StringUtils.isEmpty(tag)){
+                eventBuilder.withLogger(tag);
+            }
+
+            if (!StringUtils.isEmpty(message)){
+                eventBuilder.withMessage(message);
+            }
+
+            if (ex != null) {
+                eventBuilder.withSentryInterface(new ExceptionInterface(ex));
+            }
+
+            Sentry.capture(eventBuilder);
         }
-
-        if (!StringUtils.isEmpty(tag)){
-            eventBuilder.withLogger(tag);
-        }
-
-        if (!StringUtils.isEmpty(message)){
-            eventBuilder.withMessage(message);
-        }
-
-        if (ex != null) {
-            eventBuilder.withSentryInterface(new ExceptionInterface(ex));
-        }
-
-        Sentry.capture(eventBuilder);
     }
 
     private static String getCurrentTimeStamp(){

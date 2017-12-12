@@ -272,6 +272,11 @@ public final class MessageServer {
         Scanner scanner = new Scanner(System.in);
 
         while(isRunning.get()){
+
+            if (!scanner.hasNextLine()){
+                scanner = new Scanner(System.in);
+            }
+
             String commandString = scanner.nextLine();
             Command command;
             String[] commandArgs = {};

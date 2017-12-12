@@ -21,15 +21,33 @@ import scott.wemessage.server.weMessage;
 
 public class NotificationManager {
 
+    private final long MINIMUM_INTERVAL = 2000;
+
     private MessageServer messageServer;
     private AtomicBoolean unsupportedNotificationVersion = new AtomicBoolean(false);
     private AtomicBoolean hasErrored = new AtomicBoolean(false);
+    private Long lastExecution;
 
     public NotificationManager(MessageServer messageServer){
         this.messageServer = messageServer;
     }
 
     public void sendNotification(final String registrationToken, final Message message){
+        boolean run = false;
+
+        Long previousTime = lastExecution;
+        long currentTimestamp = System.currentTimeMillis();
+
+        lastExecution = currentTimestamp;
+
+        if (previousTime == null || (currentTimestamp - previousTime > MINIMUM_INTERVAL)){
+            run = true;
+        }else {
+            run = false;
+        }
+
+        if (!run) return;
+
         if (!StringUtils.isEmpty(registrationToken) && !unsupportedNotificationVersion.get()) {
             new Thread(new Runnable() {
                 public void run() {
