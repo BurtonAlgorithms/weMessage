@@ -79,6 +79,7 @@ import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
+import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.DateUtils;
@@ -666,7 +667,9 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 false,
                 false,
                 true,
-                true
+                true,
+                MessageEffect.NONE,
+                false
         );
         serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
         return true;

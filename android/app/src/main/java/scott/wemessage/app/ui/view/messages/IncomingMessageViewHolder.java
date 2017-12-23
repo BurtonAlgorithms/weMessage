@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.support.text.emoji.EmojiCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -16,10 +17,14 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.google.android.flexbox.FlexboxLayout;
 import com.stfalcon.chatkit.messages.MessageHolders;
 import com.stfalcon.chatkit.utils.DateFormatter;
 import com.vdurmont.emoji.EmojiParser;
@@ -37,6 +42,7 @@ import scott.wemessage.app.ui.view.messages.media.AttachmentUndefinedView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentVideoView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentView;
 import scott.wemessage.app.weMessage;
+import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.utils.StringUtils;
 
@@ -54,6 +60,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
     private LinearLayout attachmentsContainer;
     private TextView senderName;
     private ImageView selectedBubble;
+    private WebView invisibleInkView;
 
     public IncomingMessageViewHolder(View itemView) {
         super(itemView);
@@ -61,11 +68,25 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         attachmentsContainer = itemView.findViewById(R.id.attachmentsContainer);
         senderName = itemView.findViewById(R.id.senderName);
         selectedBubble = itemView.findViewById(R.id.selectedMessageBubble);
+
+        WebView invisibleInkView = new WebView(getActivity());
+        invisibleInkView.getSettings().setJavaScriptEnabled(true);
+        invisibleInkView.setBackgroundColor(Color.TRANSPARENT);
+        invisibleInkView.addJavascriptInterface(this, "weMessage");
+        invisibleInkView.setVerticalScrollBarEnabled(false);
+        invisibleInkView.setHorizontalScrollBarEnabled(false);
+
+        bubble.addView(invisibleInkView);
+        this.invisibleInkView = invisibleInkView;
     }
 
     @Override
     public void onBind(MessageView message) {
         super.onBind(message);
+
+        invisibleInkView.setVisibility(View.GONE);
+        text.setVisibility(View.VISIBLE);
+        time.setVisibility(View.VISIBLE);
 
         if (!areDefaultsSet){
             areDefaultsSet = true;
@@ -213,6 +234,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         toggleEmojiView(isStringEmojis(message.getText()));
         toggleSelectionMode(getParentFragment().isInSelectionMode());
         setSelected(getParentFragment().getSelectedMessages().containsKey(message.getId()));
+        performEffect(message.getMessage().getMessageEffect(), message.getMessage().getEffectFinished(), false);
     }
 
     @Override
@@ -295,6 +317,18 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         });
     }
 
+    @JavascriptInterface
+    public void resizeInvisibleInk(final float height){
+        if (getActivity() == null) return;
+
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                invisibleInkView.setLayoutParams(new FlexboxLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, (int) (height * getActivity().getResources().getDisplayMetrics().density * 1.2)));
+            }
+        });
+    }
+
     private void toggleEmojiView(boolean value){
         if (value){
             if (bubble != null) {
@@ -316,6 +350,35 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
             if (text != null){
                 text.setTextSize(TypedValue.COMPLEX_UNIT_PX, defaultTextSizePx);
             }
+        }
+    }
+
+    //TODO: Replay button; don't do if anim going
+
+    private void performEffect(MessageEffect effect, boolean alreadyPerformed, boolean override){
+        switch (effect){
+            case GENTLE:
+                if (alreadyPerformed && !override) return;
+
+                MessageEffects.performGentle(getActivity(), bubble, text, time);
+                break;
+            case LOUD:
+                if (alreadyPerformed && !override) return;
+
+                MessageEffects.performLoud(getActivity(), bubble, text, time);
+                break;
+            case INVISIBLE_INK:
+                MessageEffects.toggleInvisibleInk(invisibleInkView, bubble, text, time);
+                break;
+            case CONFETTI:
+                if (alreadyPerformed && !override) return;
+
+                MessageEffects.performConfetti(getActivity(), getParentFragment().getToolbar(), getParentFragment().getAnimationLayout(), getParentFragment().getConversationLayout());
+                break;
+            case NONE:
+                break;
+            default:
+                break;
         }
     }
 

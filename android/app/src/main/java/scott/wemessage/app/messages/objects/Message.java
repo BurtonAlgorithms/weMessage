@@ -24,6 +24,7 @@ import scott.wemessage.commons.connection.json.message.JSONChat;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.connection.security.EncryptedFile;
 import scott.wemessage.commons.types.FailReason;
+import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.utils.DateUtils;
 
 public class Message extends MessageBase {
@@ -35,15 +36,16 @@ public class Message extends MessageBase {
     private List<Attachment> attachments;
     private String text;
     private Long dateSent, dateDelivered, dateRead;
-    private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe;
+    private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe, isEffectFinished;
     private HashMap<Attachment, FailReason> failedAttachments = new HashMap<>();
+    private MessageEffect messageEffect = MessageEffect.NONE;
 
     public Message(){
 
     }
 
     public Message(UUID uuid, String macGuid, Chat chat, Contact sender, List<Attachment> attachments, String text, Long dateSent, Long dateDelivered, Long dateRead,
-                   Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe){
+                   Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe, MessageEffect messageEffect, Boolean isEffectFinished){
         this.uuid = uuid;
         this.macGuid = macGuid;
         this.chat = chat;
@@ -59,6 +61,8 @@ public class Message extends MessageBase {
         this.isRead = isRead;
         this.isFinished = isFinished;
         this.isFromMe = isFromMe;
+        this.messageEffect = messageEffect;
+        this.isEffectFinished = isEffectFinished;
     }
 
     public UUID getUuid() {
@@ -148,6 +152,14 @@ public class Message extends MessageBase {
         return isFromMe;
     }
 
+    public MessageEffect getMessageEffect() {
+        return messageEffect;
+    }
+
+    public Boolean getEffectFinished() {
+        return isEffectFinished;
+    }
+
     public Message setUuid(UUID uuid) {
         this.uuid = uuid;
         return this;
@@ -220,6 +232,16 @@ public class Message extends MessageBase {
 
     public Message setFromMe(Boolean fromMe) {
         isFromMe = fromMe;
+        return this;
+    }
+
+    public Message setMessageEffect(MessageEffect messageEffect) {
+        this.messageEffect = messageEffect;
+        return this;
+    }
+
+    public Message setEffectFinished(Boolean effectFinished) {
+        isEffectFinished = effectFinished;
         return this;
     }
 
@@ -310,7 +332,8 @@ public class Message extends MessageBase {
                 isDelivered(),
                 isRead(),
                 isFinished(),
-                isFromMe()
+                isFromMe(),
+                getMessageEffect().getEffectName()
         );
     }
 }

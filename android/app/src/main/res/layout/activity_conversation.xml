@@ -1,18 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".app.ui.activities.ConversationActivity"
-    android:orientation="vertical">
+    tools:context=".app.ui.activities.ConversationActivity">
 
-    <include
-        layout="@layout/toolbar_conversation_info"/>
-
-    <FrameLayout
-        android:layout_height="match_parent"
+    <RelativeLayout
+        android:id="@+id/animationLayout"
+        android:visibility="gone"
         android:layout_width="match_parent"
-        android:id="@+id/conversationFragmentContainer">
-    </FrameLayout>
+        android:layout_height="match_parent">
 
-</LinearLayout>
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/conversationLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <include
+            layout="@layout/toolbar_conversation_info"/>
+
+        <FrameLayout
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:id="@+id/conversationFragmentContainer">
+        </FrameLayout>
+
+    </LinearLayout>
+
+</RelativeLayout>

@@ -34,6 +34,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -107,6 +108,7 @@ import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
+import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
@@ -142,6 +144,9 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     private BottomSheetLayout conversationBottomSheet;
     private FrameLayout galleryFragmentContainer;
     private RelativeLayout messageSelectionModeBar;
+    private LinearLayout conversationLayout;
+    private RelativeLayout animationLayout;
+    private Toolbar toolbar;
 
     private AudioAttachmentMediaPlayer audioAttachmentMediaPlayer;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
@@ -310,6 +315,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         toolbar.setTitle(null);
         ((AppCompatActivity)getActivity()).setSupportActionBar(toolbar);
+        this.toolbar = toolbar;
 
         chatTitleView = toolbar.findViewById(R.id.chatTitleView);
         messageList = view.findViewById(R.id.messagesList);
@@ -319,6 +325,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         conversationBottomSheet = view.findViewById(R.id.conversationBottomSheetLayout);
         galleryFragmentContainer = view.findViewById(R.id.galleryFragmentContainer);
         messageSelectionModeBar = view.findViewById(R.id.messageSelectionModeBar);
+        conversationLayout = getActivity().findViewById(R.id.conversationLayout);
+        animationLayout = getActivity().findViewById(R.id.animationLayout);
 
         ImageLoader imageLoader;
         final MessageManager messageManager = weMessage.get().getMessageManager();
@@ -972,6 +980,18 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         return selectedMessages;
     }
 
+    public synchronized ViewGroup getConversationLayout(){
+        return conversationLayout;
+    }
+
+    public synchronized RelativeLayout getAnimationLayout(){
+        return animationLayout;
+    }
+
+    public synchronized Toolbar getToolbar(){
+        return toolbar;
+    }
+
     public synchronized boolean playAudio(Attachment a){
         try {
             if (getAudioAttachmentMediaPlayer().hasAudio()) {
@@ -1229,7 +1249,9 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                         false,
                         false,
                         true,
-                        true
+                        true,
+                        MessageEffect.NONE,
+                        false
                 );
                 serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
 

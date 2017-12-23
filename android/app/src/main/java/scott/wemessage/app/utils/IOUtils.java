@@ -17,8 +17,10 @@ import android.view.View;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
@@ -236,39 +238,49 @@ public class IOUtils {
                 }
 
                 try {
-                    URL url = new URL("http://storage.googleapis.com/play_public/supported_devices.csv");
-                    URLConnection connection = url.openConnection();
+                    fetchDeviceData("https://storage.googleapis.com/play_public/supported_devices.csv");
+                }catch (UnknownHostException | MalformedURLException | SocketException exc){
+                    try {
+                        fetchDeviceData("http://storage.googleapis.com/play_public/supported_devices.csv");
+                    }catch (UnknownHostException | MalformedURLException ex) {
 
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-16"))) {
-                        reader.readLine();
-                        String line;
-
-                        while ((line = reader.readLine()) != null) {
-                            String[] records = line.split(",");
-                            if (records.length == 4) {
-                                String manufacturer = records[0];
-                                String name = records[1];
-                                String model = records[3];
-
-                                if (manufacturer.equalsIgnoreCase(Build.MANUFACTURER) && model.equalsIgnoreCase(Build.MODEL)) {
-                                    Device device = new Device(manufacturer, name, model);
-                                    SharedPreferences.Editor editor = weMessage.get().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
-
-                                    editor.putString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, device.parse());
-                                    editor.apply();
-                                    break;
-                                }
-                            }
-                        }
+                    }catch (Exception ex){
+                        AppLogger.error("An error occurred while fetching the device's name", ex);
                     }
-                }catch (UnknownHostException | MalformedURLException ex) {
-
                 }catch (Exception ex){
                     AppLogger.error("An error occurred while fetching the device's name", ex);
                 }
                 return null;
             }
         }.execute();
+    }
+
+    private static void fetchDeviceData(String urlString) throws IOException {
+        URL url = new URL(urlString);
+        URLConnection connection = url.openConnection();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-16"))) {
+            reader.readLine();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                String[] records = line.split(",");
+                if (records.length == 4) {
+                    String manufacturer = records[0];
+                    String name = records[1];
+                    String model = records[3];
+
+                    if (manufacturer.equalsIgnoreCase(Build.MANUFACTURER) && model.equalsIgnoreCase(Build.MODEL)) {
+                        Device device = new Device(manufacturer, name, model);
+                        SharedPreferences.Editor editor = weMessage.get().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+
+                        editor.putString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, device.parse());
+                        editor.apply();
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private enum GallerySaveResult {

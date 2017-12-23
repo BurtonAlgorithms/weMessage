@@ -325,6 +325,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
+            if (getActivity() == null) return;
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -584,6 +585,10 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     }
 
     private boolean isChatBlocked(Chat chat){
-        return chat instanceof PeerChat && (weMessage.get().getMessageDatabase().getContactByHandle(((PeerChat) chat).getContact().getHandle()).isBlocked());
+        try {
+            return chat instanceof PeerChat && (weMessage.get().getMessageDatabase().getContactByHandle(((PeerChat) chat).getContact().getHandle()).isBlocked());
+        }catch (NullPointerException ex){
+            return false;
+        }
     }
 }

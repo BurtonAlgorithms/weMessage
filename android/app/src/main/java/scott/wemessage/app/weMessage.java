@@ -35,7 +35,7 @@ import scott.wemessage.commons.utils.StringUtils;
 
 public final class weMessage extends Application implements Constants {
 
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2;
     public static final int CONNECTION_TIMEOUT_WAIT = 7;
     public static final int MAX_CHAT_ICON_SIZE = 26214400;
 

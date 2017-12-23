@@ -12,11 +12,13 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Type;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -75,6 +77,7 @@ import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.DeviceType;
 import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.types.FailReason;
+import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.DateUtils;
@@ -418,7 +421,7 @@ public final class ConnectionHandler extends Thread {
             synchronized (inputStreamLock) {
                 inputStream = new ObjectInputStream(getConnectionSocket().getInputStream());
             }
-        }catch (ConnectException ex){
+        }catch (UnknownHostException | ConnectException ex){
             if (isRunning.get()){
                 sendLocalBroadcast(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR, null);
                 getParentService().endService();
@@ -430,16 +433,24 @@ public final class ConnectionHandler extends Thread {
                 getParentService().endService();
             }
             return;
-        }catch (UnknownHostException ex){
-            if (isRunning.get()){
-                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR, null);
-                getParentService().endService();
-            }
-            return;
         }catch (SocketTimeoutException ex){
             if (isRunning.get()) {
                 sendLocalBroadcast(weMessage.BROADCAST_LOGIN_TIMEOUT, null);
                 getParentService().endService();
+            }
+            return;
+        }catch (SocketException ex){
+            if (isRunning.get()) {
+                String stacktrace = getStackTrace(ex);
+
+                if (stacktrace.contains("Connection reset") || stacktrace.contains("Software caused connection abort")) {
+                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR, null);
+                    getParentService().endService();
+                }else {
+                    AppLogger.error(TAG, "An error occurred while connecting to the weServer.", ex);
+                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_ERROR, null);
+                    getParentService().endService();
+                }
             }
             return;
         }catch(IOException ex){
@@ -763,7 +774,7 @@ public final class ConnectionHandler extends Thread {
 
                                 Message message = new Message(UUID.randomUUID(), jsonMessage.getMacGuid(), messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, attachments,
                                         textDecryptionTask.getDecryptedText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(), jsonMessage.getDateRead(), jsonMessage.getErrored(),
-                                        jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe());
+                                        jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe(), MessageEffect.from(jsonMessage.getMessageEffect()), false);
 
                                 messageManager.addMessage(message, false);
                             } catch (Exception ex) {
@@ -825,7 +836,7 @@ public final class ConnectionHandler extends Thread {
                                                         messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, new ArrayList<Attachment>(),
                                                         textDecryptionTask.getDecryptedText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(),
                                                         jsonMessage.getDateRead(), jsonMessage.getErrored(), jsonMessage.isSent(), jsonMessage.isDelivered(),
-                                                        jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe());
+                                                        jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe(), MessageEffect.from(jsonMessage.getMessageEffect()), false);
                                                 messageManager.addMessage(message, false);
                                             } else {
                                                 sendLocalBroadcast(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR, null);
@@ -888,6 +899,14 @@ public final class ConnectionHandler extends Thread {
                         return;
                     }
                 }else {
+                    if (getStackTrace(ex).contains("Connection reset")){
+                        Bundle extras = new Bundle();
+                        extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_socket_closed));
+                        sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
+                        getParentService().endService();
+                        return;
+                    }
+
                     boolean socketOpenCheck = false;
 
                     try {
@@ -1362,7 +1381,8 @@ public final class ConnectionHandler extends Thread {
         MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
         Message newData = new Message().setUuid(existingMessage.getUuid()).setAttachments(existingMessage.getAttachments()).setText(existingMessage.getText())
                 .setDateSent(jsonMessage.getDateSent()).setDateDelivered(jsonMessage.getDateDelivered()).setDateRead(jsonMessage.getDateRead()).setHasErrored(jsonMessage.getErrored())
-                .setIsSent(jsonMessage.isSent()).setDelivered(jsonMessage.isDelivered()).setRead(jsonMessage.isRead()).setFinished(jsonMessage.isFinished()).setFromMe(existingMessage.isFromMe());
+                .setIsSent(jsonMessage.isSent()).setDelivered(jsonMessage.isDelivered()).setRead(jsonMessage.isRead()).setFinished(jsonMessage.isFinished()).setFromMe(existingMessage.isFromMe())
+                .setMessageEffect(MessageEffect.from(jsonMessage.getMessageEffect())).setEffectFinished(existingMessage.getEffectFinished());
 
         if (overrideAll){
             Contact sender;
@@ -1403,6 +1423,14 @@ public final class ConnectionHandler extends Thread {
         }
 
         return returnList;
+    }
+
+    private String getStackTrace(Exception ex){
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream(outputStream);
+        ex.printStackTrace(printStream);
+        printStream.close();
+        return outputStream.toString();
     }
 
     private class HeartbeatThread extends Thread {

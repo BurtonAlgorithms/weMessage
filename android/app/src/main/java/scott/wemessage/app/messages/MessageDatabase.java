@@ -23,6 +23,7 @@ import scott.wemessage.app.messages.objects.chats.GroupChat;
 import scott.wemessage.app.messages.objects.chats.PeerChat;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
+import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.utils.StringUtils;
 
 @SuppressWarnings("WeakerAccess")
@@ -109,7 +110,9 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + MessageTable.IS_DELIVERED + " INTEGER, "
                 + MessageTable.IS_READ + " INTEGER, "
                 + MessageTable.IS_FINISHED + " INTEGER, "
-                + MessageTable.IS_FROM_ME + " INTEGER );";
+                + MessageTable.IS_FROM_ME + " INTEGER, "
+                + MessageTable.MESSAGE_EFFECT + " TEXT, "
+                + MessageTable.EFFECT_PERFORMED + " INTEGER );";
 
         db.execSQL(createAccountTable);
         db.execSQL(createActionMessageTable);
@@ -122,12 +125,42 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
+        if (oldVersion < 2){
+            String alterAddMessageEffects = "ALTER TABLE " + MessageTable.TABLE_NAME + " ADD COLUMN " + MessageTable.MESSAGE_EFFECT + " TEXT DEFAULT \"" + MessageEffect.NONE.getEffectName() + "\";";
+            String alterAddMessageEffectPerformed = "ALTER TABLE " + MessageTable.TABLE_NAME + " ADD COLUMN " + MessageTable.EFFECT_PERFORMED + " INTEGER DEFAULT 1";
+            db.execSQL(alterAddMessageEffects);
+            db.execSQL(alterAddMessageEffectPerformed);
+        }
     }
 
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (newVersion == 1){
+            String values = MessageTable._ID + ", " + MessageTable.UUID + ", " + MessageTable.ACCOUNT_UUID + ", "
+                    + MessageTable.MAC_GUID + ", " + MessageTable.CHAT_UUID + ", " + MessageTable.SENDER_UUID + ", " + MessageTable.ATTACHMENTS + ", " + MessageTable.TEXT + ", "
+                    + MessageTable.DATE_SENT + ", " + MessageTable.DATE_DELIVERED + ", " + MessageTable.DATE_READ + ", " + MessageTable.ERRORED + ", " + MessageTable.IS_SENT + ", "
+                    + MessageTable.IS_DELIVERED + ", " + MessageTable.IS_READ + ", " + MessageTable.IS_FINISHED + ", " + MessageTable.IS_FROM_ME;
 
+            String createMessageTempTable = "CREATE TABLE messageTempTable (" + values + ");";
+            String insertIntoTemp = "INSERT INTO messageTempTable SELECT " + values + " FROM " + MessageTable.TABLE_NAME + ";";
+            String dropTable = "DROP TABLE " + MessageTable.TABLE_NAME + ";";
+
+            String createMessageTable = "CREATE TABLE " + MessageTable.TABLE_NAME + " (" + MessageTable._ID + " INTEGER PRIMARY KEY, " + MessageTable.UUID + " TEXT, "
+                    + MessageTable.ACCOUNT_UUID + " TEXT, " + MessageTable.MAC_GUID + " TEXT, " + MessageTable.CHAT_UUID + " TEXT, " + MessageTable.SENDER_UUID + " TEXT, "
+                    + MessageTable.ATTACHMENTS + " TEXT, " + MessageTable.TEXT + " TEXT, " + MessageTable.DATE_SENT + " INTEGER, " + MessageTable.DATE_DELIVERED + " INTEGER, "
+                    + MessageTable.DATE_READ + " INTEGER, " + MessageTable.ERRORED + " INTEGER, " + MessageTable.IS_SENT + " INTEGER, " + MessageTable.IS_DELIVERED + " INTEGER, "
+                    + MessageTable.IS_READ + " INTEGER, " + MessageTable.IS_FINISHED + " INTEGER, " + MessageTable.IS_FROM_ME + " INTEGER );";
+
+            String insertIntoPerm = "INSERT INTO " + MessageTable.TABLE_NAME + " SELECT " + values + " FROM messageTempTable;";
+            String dropTempTable = "DROP TABLE messageTempTable;";
+
+            db.execSQL(createMessageTempTable);
+            db.execSQL(insertIntoTemp);
+            db.execSQL(dropTable);
+            db.execSQL(createMessageTable);
+            db.execSQL(insertIntoPerm);
+            db.execSQL(dropTempTable);
+        }
     }
 
     public List<Account> getAccounts(){
@@ -1122,7 +1155,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 .setDateDelivered(cursor.getLong(cursor.getColumnIndex(MessageTable.DATE_DELIVERED))).setDateRead(cursor.getLong(cursor.getColumnIndex(MessageTable.DATE_READ)))
                 .setHasErrored(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.ERRORED)))).setIsSent(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_SENT))))
                 .setDelivered(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_DELIVERED)))).setRead(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_READ))))
-                .setFinished(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_FINISHED)))).setFromMe(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_FROM_ME))));
+                .setFinished(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_FINISHED)))).setFromMe(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_FROM_ME))))
+                .setMessageEffect(MessageEffect.from(cursor.getString(cursor.getColumnIndex(MessageTable.MESSAGE_EFFECT)))).setEffectFinished(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.EFFECT_PERFORMED))));
         return message;
     }
 
@@ -1145,6 +1179,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         values.put(MessageTable.IS_READ, booleanToInteger(message.isRead()));
         values.put(MessageTable.IS_FINISHED, booleanToInteger(message.isFinished()));
         values.put(MessageTable.IS_FROM_ME, booleanToInteger(message.isFromMe()));
+        values.put(MessageTable.MESSAGE_EFFECT, message.getMessageEffect().getEffectName());
+        values.put(MessageTable.EFFECT_PERFORMED, booleanToInteger(message.getEffectFinished()));
 
         return values;
     }
@@ -1387,6 +1423,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         public static final String IS_READ = "is_read";
         public static final String IS_FINISHED = "is_finished";
         public static final String IS_FROM_ME = "is_from_me";
+        public static final String MESSAGE_EFFECT = "message_effect";
+        public static final String EFFECT_PERFORMED = "effect_performed";
     }
 
     public static class AccountNotLoggedInException extends NullPointerException { }

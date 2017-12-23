@@ -36,4 +36,13 @@
     <color name="attachmentPopupWindowBackground">#d6d6da</color>
     <color name="outgoingDateColor">#ebebef</color>
     <color name="defaultBackgroundColor">#FAFAFA</color>
+
+    <color name="konfetti_yellow">#fce18a</color>
+    <color name="konfetti_orange">#ff726d</color>
+    <color name="konfetti_purple">#b48def</color>
+    <color name="konfetti_pink">#f4306d</color>
+    <color name="konfetti_cyan">#3aaab8</color>
+    <color name="konfetti_green">#38ba9e</color>
+    <color name="konfetti_red">#bb3d72</color>
+    <color name="konfetti_blue">#006ded</color>
 </resources>
