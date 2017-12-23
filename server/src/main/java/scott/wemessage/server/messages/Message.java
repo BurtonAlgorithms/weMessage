@@ -20,6 +20,7 @@ import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.connection.security.EncryptedFile;
 import scott.wemessage.commons.connection.security.EncryptedText;
 import scott.wemessage.commons.crypto.AESCrypto;
+import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
@@ -42,13 +43,14 @@ public class Message {
     private List<Attachment> attachments;
     private Long dateSent, dateDelivered, dateRead;
     private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe;
+    private MessageEffect messageEffect;
 
     public Message(){
-        this(null, -1L, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        this(null, -1L, null, null, null, null, null, null, null, null, null, null, null, null, null, MessageEffect.NONE);
     }
 
     public Message(String guid, long rowID, ChatBase chat, Handle handle, List<Attachment> attachments, String text, Long dateSent, Long dateDelivered, Long dateRead,
-                   Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe){
+                   Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe, MessageEffect messageEffect){
         this.guid = guid;
         this.rowID = rowID;
         this.chat = chat;
@@ -64,6 +66,7 @@ public class Message {
         this.isRead = isRead;
         this.isFinished = isFinished;
         this.isFromMe = isFromMe;
+        this.messageEffect = messageEffect;
     }
 
     public String getGuid() {
@@ -148,6 +151,10 @@ public class Message {
         return !attachments.isEmpty();
     }
 
+    public MessageEffect getMessageEffect() {
+        return messageEffect;
+    }
+
     public Message setGuid(String guid) {
         this.guid = guid;
         return this;
@@ -220,6 +227,11 @@ public class Message {
 
     public Message setFromMe(boolean fromMe) {
         isFromMe = fromMe;
+        return this;
+    }
+
+    public Message setMessageEffect(MessageEffect messageEffect) {
+        this.messageEffect = messageEffect;
         return this;
     }
 
@@ -381,7 +393,8 @@ public class Message {
                 isDelivered(),
                 isRead(),
                 isFinished(),
-                isFromMe()
+                isFromMe(),
+                getMessageEffect().getEffectName()
         );
     }
 }

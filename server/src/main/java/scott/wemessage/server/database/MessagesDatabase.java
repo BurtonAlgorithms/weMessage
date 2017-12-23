@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.events.EventManager;
@@ -96,6 +97,7 @@ public final class MessagesDatabase extends Thread {
     public final String COLUMN_MESSAGE_IS_FINISHED = "is_finished";
     public final String COLUMN_MESSAGE_IS_FROM_ME = "is_from_me";
     public final String COLUMN_MESSAGE_ACCOUNT = "account";
+    public final String COLUMN_MESSAGE_STYLE_ID = "expressive_send_style_id";
 
     public final String COLUMN_CHAT_MESSAGE_CHAT_ID = "chat_id";
     public final String COLUMN_CHAT_MESSAGE_MESSAGE_ID = "message_id";
@@ -1061,6 +1063,12 @@ public final class MessagesDatabase extends Thread {
         }
         if (dateRead == 0){
             dateRead = null;
+        }
+
+        try {
+            message.setMessageEffect(MessageEffect.from(resultSet.getString(COLUMN_MESSAGE_STYLE_ID)));
+        }catch (Exception ex){
+            message.setMessageEffect(MessageEffect.NONE);
         }
 
         message.setGuid(resultSet.getString(COLUMN_MESSAGE_GUID)).setRowID(resultSet.getLong(COLUMN_MESSAGE_ROWID))
