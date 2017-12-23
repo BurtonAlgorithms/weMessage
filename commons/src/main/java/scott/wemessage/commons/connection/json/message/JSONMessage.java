@@ -50,8 +50,11 @@ public class JSONMessage {
     @SerializedName("isFromMe")
     private Boolean isFromMe;
 
+    @SerializedName("effect")
+    private String messageEffect;
+
     public JSONMessage(String macGuid, JSONChat chat, String handle, List<JSONAttachment> attachments, EncryptedText encryptedText, Long dateSent, Long dateDelivered, Long dateRead,
-                       Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe){
+                       Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe, String messageEffect){
         this.macGuid = macGuid;
         this.chat = chat;
         this.handle = handle;
@@ -67,6 +70,7 @@ public class JSONMessage {
         this.isRead = isRead;
         this.isFinished = isFinished;
         this.isFromMe = isFromMe;
+        this.messageEffect = messageEffect;
     }
 
     public String getMacGuid() {
@@ -125,6 +129,10 @@ public class JSONMessage {
         return isFromMe;
     }
 
+    public String getMessageEffect() {
+        return messageEffect;
+    }
+
     public void setMacGuid(String macGuid) {
         this.macGuid = macGuid;
     }
@@ -179,5 +187,9 @@ public class JSONMessage {
 
     public void setFromMe(Boolean fromMe) {
         isFromMe = fromMe;
+    }
+
+    public void setMessageEffect(String messageEffect) {
+        this.messageEffect = messageEffect;
     }
 }
