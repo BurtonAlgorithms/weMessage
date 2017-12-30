@@ -19,9 +19,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.commons.types.MessageEffect;
+import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.MessageServer;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.events.EventManager;
@@ -122,6 +125,32 @@ public final class MessagesDatabase extends Thread {
             synchronized (lastDatabaseSnapshotLock) {
                 lastDatabaseSnapshot = new DatabaseSnapshot(getMessagesByAmount(MESSAGE_COUNT_LIMIT));
             }
+
+            final List<String> accounts = getAccounts();
+            final String account = messageServer.getConfiguration().getAccountEmail().toLowerCase();
+
+            if (!accounts.contains(account)){
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        ServerLogger.emptyLine();
+                        ServerLogger.log("There are no recent messages that are associated with iMessage account: " + account);
+                        ServerLogger.log("Are you sure you entered the right e-mail address? If not, you will not be able to receive messages.");
+                        ServerLogger.emptyLine();
+                        ServerLogger.log("Recently Used iMessage Accounts:");
+                        ServerLogger.emptyLine();
+
+                        int i = 0;
+
+                        for (String s : accounts){
+                            i++;
+                            ServerLogger.log("Account " + i + ". " + s);
+                        }
+                        ServerLogger.emptyLine();
+                    }
+                }, 1000L);
+            }
+
         }catch(Exception ex){
             ServerLogger.error(TAG, "An error occurred while connecting to the Messages Database. Shutting down", ex);
             messageServer.shutdown(-1, false);
@@ -322,6 +351,50 @@ public final class MessagesDatabase extends Thread {
         selectChatStatement.close();
 
         return chatRowGuidPair;
+    }
+
+    public List<String> getAccounts() throws SQLException {
+        List<String> accounts = new ArrayList<>();
+
+        String selectAccountsStatementString = "SELECT " + COLUMN_MESSAGE_ACCOUNT + ", " + COLUMN_MESSAGE_ROWID + " FROM (SELECT " + COLUMN_MESSAGE_ACCOUNT + ", " + COLUMN_MESSAGE_ROWID + " FROM " + MESSAGE_TABLE + " ORDER BY " + COLUMN_MESSAGE_ROWID + " DESC LIMIT 500) ORDER BY " + COLUMN_MESSAGE_ROWID + " ASC";
+        Statement selectAccounts = getDatabaseManager().getChatDatabaseConnection().createStatement();
+
+        boolean isResultSet = selectAccounts.execute(selectAccountsStatementString);
+
+        while(true) {
+            if(isResultSet) {
+                ResultSet resultSet = selectAccounts.getResultSet();
+                while(resultSet.next()) {
+                    String accountLogin = resultSet.getString(COLUMN_MESSAGE_ACCOUNT);
+                    String account;
+                    boolean useContains = false;
+
+                    try {
+                        account = accountLogin.split(":")[1];
+                    }catch (Exception ex){
+                        useContains = true;
+                        try {
+                            account = accountLogin.split(":")[0];
+                        }catch (Exception exc){
+                            account = accountLogin;
+                        }
+                    }
+
+                    if (!StringUtils.isEmpty(account) && !accounts.contains(account.toLowerCase())){
+                        accounts.add(account.toLowerCase());
+                    }
+                }
+                resultSet.close();
+            } else {
+                if(selectAccounts.getUpdateCount() == -1) {
+                    break;
+                }
+            }
+            isResultSet = selectAccounts.getMoreResults();
+        }
+        selectAccounts.close();
+
+        return accounts;
     }
 
     public Message getLastMessageSent() throws SQLException {

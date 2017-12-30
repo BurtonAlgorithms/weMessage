@@ -8,6 +8,8 @@ version weMessageVersion.versionName
 targetCompatibility = '1.7'
 sourceCompatibility = '1.7'
 
+boolean proguardEnabled = true
+
 repositories {
     mavenCentral()
 }
@@ -62,15 +64,17 @@ task dependencyJar(type: Jar){
 }
 
 task proguard {
-    doLast {
-        javaexec {
-            main = "-jar"
-            args = [
-                    "$rootDir/buildtools/proguard.jar",
-                    "@$rootDir/buildtools/rules.pro"
-            ]
-        }
+    if (proguardEnabled){
+        doLast {
+            javaexec {
+                main = "-jar"
+                args = [
+                        "$rootDir/buildtools/proguard.jar",
+                        "@$rootDir/buildtools/rules.pro"
+                ]
+            }
 
-        file("$rootDir/build/obfuscate").deleteDir()
+            file("$rootDir/build/obfuscate").deleteDir()
+        }
     }
 }
