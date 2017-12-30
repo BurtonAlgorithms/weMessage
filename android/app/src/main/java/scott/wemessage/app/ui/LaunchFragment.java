@@ -211,6 +211,11 @@ public class LaunchFragment extends Fragment {
     public View onCreateView(final LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_launch, container, false);
 
+        if (true){
+            signInOffline("wemessage.flash@gmail.com", "testpassword");
+            return view;
+        }
+
         launchConstraintLayout = view.findViewById(R.id.launchConstraintLayout);
         ipEditText = view.findViewById(R.id.launchIpEditText);
         emailEditText = view.findViewById(R.id.launchEmailEditText);

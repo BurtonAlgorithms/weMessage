@@ -34,6 +34,7 @@ import java.io.File;
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.objects.Attachment;
+import scott.wemessage.app.messages.objects.Message;
 import scott.wemessage.app.messages.objects.chats.Chat;
 import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
@@ -41,6 +42,7 @@ import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentUndefinedView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentVideoView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentView;
+import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.types.MimeType;
@@ -58,6 +60,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
     private Drawable defaultBackgroundDrawable;
 
     private LinearLayout attachmentsContainer;
+    private LinearLayout replayButton;
     private TextView senderName;
     private ImageView selectedBubble;
     private WebView invisibleInkView;
@@ -68,6 +71,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         attachmentsContainer = itemView.findViewById(R.id.attachmentsContainer);
         senderName = itemView.findViewById(R.id.senderName);
         selectedBubble = itemView.findViewById(R.id.selectedMessageBubble);
+        replayButton = itemView.findViewById(R.id.replayButton);
 
         WebView invisibleInkView = new WebView(getActivity());
         invisibleInkView.getSettings().setJavaScriptEnabled(true);
@@ -85,6 +89,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         super.onBind(message);
 
         invisibleInkView.setVisibility(View.GONE);
+        replayButton.setVisibility(View.GONE);
         text.setVisibility(View.VISIBLE);
         time.setVisibility(View.VISIBLE);
 
@@ -231,10 +236,26 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
             senderName.setVisibility(View.GONE);
         }
 
+        if (message.getMessage().getMessageEffect() != MessageEffect.NONE && message.getMessage().getMessageEffect() != MessageEffect.INVISIBLE_INK){
+            time.setVisibility(View.GONE);
+            replayButton.setVisibility(View.VISIBLE);
+
+            final Message msg = message.getMessage();
+            final MessageEffect messageEffect = message.getMessage().getMessageEffect();
+            final boolean effectFinished = message.getMessage().getEffectFinished();
+
+            replayButton.setOnClickListener(new OnClickWaitListener(500) {
+                @Override
+                public void onWaitClick(View v) {
+                    performEffect(msg, messageEffect, effectFinished, true);
+                }
+            });
+        }
+
         toggleEmojiView(isStringEmojis(message.getText()));
         toggleSelectionMode(getParentFragment().isInSelectionMode());
         setSelected(getParentFragment().getSelectedMessages().containsKey(message.getId()));
-        performEffect(message.getMessage().getMessageEffect(), message.getMessage().getEffectFinished(), false);
+        performEffect(message.getMessage(), message.getMessage().getMessageEffect(), message.getMessage().getEffectFinished(), false);
     }
 
     @Override
@@ -353,27 +374,42 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         }
     }
 
-    //TODO: Replay button; don't do if anim going
+    private void performEffect(Message message, MessageEffect effect, boolean alreadyPerformed, boolean override){
+        if (!alreadyPerformed) {
+            weMessage.get().getMessageManager().updateMessage(message.getUuid().toString(), message.setEffectFinished(true), true);
+        }
 
-    private void performEffect(MessageEffect effect, boolean alreadyPerformed, boolean override){
         switch (effect){
             case GENTLE:
                 if (alreadyPerformed && !override) return;
 
-                MessageEffects.performGentle(getActivity(), bubble, text, time);
+                MessageEffects.performGentle(getParentFragment(), message, getActivity(), bubble, text, replayButton);
                 break;
             case LOUD:
                 if (alreadyPerformed && !override) return;
 
-                MessageEffects.performLoud(getActivity(), bubble, text, time);
+                MessageEffects.performLoud(getParentFragment(), message, getActivity(), bubble, text, (TextView) replayButton.findViewById(R.id.replayButtonText), (ImageView) replayButton.findViewById(R.id.replayButtonImage));
                 break;
             case INVISIBLE_INK:
-                MessageEffects.toggleInvisibleInk(invisibleInkView, bubble, text, time);
+                MessageEffects.toggleInvisibleInk(invisibleInkView, bubble, text, replayButton);
                 break;
             case CONFETTI:
                 if (alreadyPerformed && !override) return;
 
-                MessageEffects.performConfetti(getActivity(), getParentFragment().getToolbar(), getParentFragment().getAnimationLayout(), getParentFragment().getConversationLayout());
+                MessageEffects.performConfetti(getParentFragment(), getActivity(),
+                        getParentFragment().getToolbar(), getParentFragment().getAnimationLayout(), getParentFragment().getConversationLayout());
+                break;
+            case FIREWORKS:
+                if (alreadyPerformed && !override) return;
+
+                MessageEffects.performFireworks(getParentFragment(), getActivity(),
+                        getParentFragment().getToolbar(), getParentFragment().getAnimationLayout(), getParentFragment().getConversationLayout());
+                break;
+            case SHOOTING_STAR:
+                if (alreadyPerformed && !override) return;
+
+                MessageEffects.performShootingStar(getParentFragment(), getActivity(),
+                        getParentFragment().getToolbar(), getParentFragment().getAnimationLayout(), getParentFragment().getConversationLayout());
                 break;
             case NONE:
                 break;

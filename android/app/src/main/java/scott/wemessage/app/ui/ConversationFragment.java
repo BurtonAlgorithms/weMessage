@@ -64,6 +64,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -95,6 +96,7 @@ import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.messages.ActionMessageView;
 import scott.wemessage.app.ui.view.messages.ActionMessageViewHolder;
 import scott.wemessage.app.ui.view.messages.IncomingMessageViewHolder;
+import scott.wemessage.app.ui.view.messages.MessageEffects;
 import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.ui.view.messages.MessageViewHolder;
 import scott.wemessage.app.ui.view.messages.OutgoingMessageViewHolder;
@@ -115,7 +117,9 @@ import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ConversationFragment extends MessagingFragment implements MessageCallbacks, NotificationCallbacks, MediaDownloadCallbacks, IConnectionBinder,
-        AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener {
+        AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener, MessageEffects.AnimationCallbacks {
+
+    private AtomicBoolean isGlobalAnimationPlaying = new AtomicBoolean(false);
 
     private final String TAG = "ConversationFragment";
     private final Object chatLock = new Object();
@@ -155,6 +159,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     private ConcurrentHashMap<String, Message> messageMapIntegrity = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, ActionMessage> actionMessageMapIntegrity = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, String> downloadTasks = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Message> messageAnimations = new ConcurrentHashMap<>();
     private WeakHashMap<String, Long> webViewClicks = new WeakHashMap<>();
 
     private BroadcastReceiver messageListBroadcastReceiver = new BroadcastReceiver() {
@@ -966,6 +971,21 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             getActivity().unbindService(serviceConnection);
             isBoundToConnectionService = false;
         }
+    }
+
+    @Override
+    public ConcurrentHashMap<String, Message> getAnimatedMessages(){
+        return messageAnimations;
+    }
+
+    @Override
+    public boolean isGlobalEffectPlaying() {
+        return isGlobalAnimationPlaying.get();
+    }
+
+    @Override
+    public void setGlobalEffectPlaying(boolean value) {
+        isGlobalAnimationPlaying.set(value);
     }
 
     public synchronized AudioAttachmentMediaPlayer getAudioAttachmentMediaPlayer(){

@@ -79,6 +79,34 @@
                 android:layout_marginStart="8dp"
                 app:layout_alignSelf="center" />
 
+            <LinearLayout
+                android:id="@+id/replayButton"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/messageText"
+                android:layout_marginStart="8dp"
+                app:layout_alignSelf="center">
+
+                <ImageView
+                    android:id="@+id/replayButtonImage"
+                    android:tint="@color/colorHeader"
+                    android:src="@drawable/ic_reset"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"/>
+
+                <TextView
+                    android:id="@+id/replayButtonText"
+                    android:layout_marginStart="3dp"
+                    android:text="@string/word_replay"
+                    android:textSize="14sp"
+                    android:textColor="@color/colorHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
         </com.google.android.flexbox.FlexboxLayout>
 
     </RelativeLayout>
