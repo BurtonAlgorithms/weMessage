@@ -7,12 +7,9 @@ public enum MessageEffect {
     INVISIBLE_INK("invisibleink"),
     GENTLE("gentle"),
     LOUD("loud"),
-    BALLOONS("birthday"),
     CONFETTI("confetti"),
-    LASER("laser"),
     FIREWORKS("fireworks"),
     SHOOTING_STAR("star"),
-    CELEBRATION("sparkles"),
     NONE("NONE");
 
     private String effectName;

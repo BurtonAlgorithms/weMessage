@@ -22,6 +22,8 @@ public interface Constants {
     String JSON_ACTION = "ACTION - ";
     String JSON_MESSAGE_UPDATED = "MESSAGE UPDATED - ";
     String JSON_RETURN_RESULT = "RETURN RESULT - ";
+    String JSON_CONTACT_SYNC = "CONTACT SYNC - ";
+    String JSON_CONTACT_SYNC_FAILED = "FAILED";
 
     int CRYPTO_ERROR_MEMORY = -1;
 
