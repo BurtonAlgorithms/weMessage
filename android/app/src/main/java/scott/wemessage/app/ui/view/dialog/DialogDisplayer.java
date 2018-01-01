@@ -94,6 +94,27 @@ public class DialogDisplayer {
         alertDialogFragmentDouble.show(fragmentManager, LAUNCH_ALERT_DIALOG_TAG);
     }
 
+    public static void showContactSyncDialog(Context context, FragmentManager fragmentManager, Runnable runnable){
+        Bundle bundle = new Bundle();
+        AlertDialogFragmentDouble alertDialogFragmentDouble = new AlertDialogFragmentDouble();
+
+        bundle.putString(weMessage.BUNDLE_ALERT_TITLE, context.getString(R.string.sync_contacts_title));
+        bundle.putString(weMessage.BUNDLE_ALERT_MESSAGE, context.getString(R.string.sync_contacts_message));
+        bundle.putString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON, context.getString(R.string.start_process));
+        alertDialogFragmentDouble.setArguments(bundle);
+
+        alertDialogFragmentDouble.setOnDismiss(runnable);
+        alertDialogFragmentDouble.show(fragmentManager, LAUNCH_ALERT_DIALOG_TAG);
+    }
+
+    public static void showContactSyncResult(boolean success, Context context, FragmentManager fragmentManager){
+        if (success){
+            generateAlertDialog(context.getString(R.string.contact_sync_success), context.getString(R.string.contact_sync_success_message)).show(fragmentManager, "ContactSyncResultAlert");
+        }else {
+            generateAlertDialog(context.getString(R.string.contact_sync_fail), context.getString(R.string.contact_sync_fail_message)).show(fragmentManager, "ContactSyncResultAlert");
+        }
+    }
+
     public static class AlertDialogFragment extends DialogFragment {
 
         private Runnable runnable;

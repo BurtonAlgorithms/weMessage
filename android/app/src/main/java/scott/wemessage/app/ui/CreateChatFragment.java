@@ -146,6 +146,10 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
                 showErroredSnackbar(getString(R.string.result_process_error), 5);
+            }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_FAILED)){
+                DialogDisplayer.showContactSyncResult(false, getActivity(), getFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
+                DialogDisplayer.showContactSyncResult(true, getActivity(), getFragmentManager());
             }
         }
     };
@@ -169,6 +173,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         broadcastIntentFilter.addAction(weMessage.BROADCAST_SEND_MESSAGE_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
 
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(createChatBroadcastReceiver, broadcastIntentFilter);
         weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);

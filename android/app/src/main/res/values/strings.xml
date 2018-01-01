@@ -177,7 +177,6 @@
     <string name="participants">%1$d Participants</string>
     <string name="no_attachments_found_chat">No attachments have been sent to this chat.</string>
     <string name="return_chat_list_chat_deleted">This chat has been deleted.</string>
-    <string name="settings_created_by">Created by Roman Scott</string>
     <string name="settings_version">Version: %1$s</string>
     <string name="blocked_contacts">Blocked Contacts</string>
     <string name="sign_out">Sign Out</string>
@@ -189,6 +188,7 @@
     <string name="word_faq">FAQ</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="word_terms">Terms</string>
+    <string name="word_credits">Credits</string>
     <string name="offline_mode">Offline Mode</string>
     <string name="notification_channel_name">New Messages</string>
     <string name="notification_attachments">%1$s Attachments</string>
@@ -214,7 +214,19 @@
     <string name="offline_mode_action_create_chat">You cannot create a group chat while in Offline Mode! Connect to your weServer in order to do this.</string>
     <string name="offline_mode_action_add">You cannot add people to group chats while in Offline Mode! Connect to your weServer in order to do this.</string>
     <string name="connect_to_server">Connect to weServer</string>
+    <string name="sync_contacts">Sync Contacts</string>
+    <string name="sync_contacts_title">Perform Contact Sync</string>
+    <string name="sync_contacts_message">Contact Sync will transfer the contacts on your computer to your weMessage Contacts List. \n\nThis process will take a while if you have a lot
+        of contacts, so do not get disconnected from your weServer during the sync.</string>
+    <string name="start_process">Start Process</string>
     <string name="still_connecting_send_message">Currently trying to connect to your weServer. Please wait before trying to send any messages.</string>
     <string name="still_connecting_perform_action">Currently trying to connect to your weServer. Please wait before trying to perform this action.</string>
+    <string name="update_log">Update Log</string>
+    <string name="version_11_update">weMessage Version 1.1 adds Contact Sync! To sync the contacts on your computer with weMessage, go into your Settings.
+        \n\nIn addition, you are now able to view certain message effects.</string>
+    <string name="contact_sync_success">Contact Sync Success</string>
+    <string name="contact_sync_success_message">Your contacts have been imported from your computer to your weMessage Contact List.</string>
+    <string name="contact_sync_fail">Contact Sync Failed</string>
+    <string name="contact_sync_fail_message">An error occurred while performing a Contact Sync. Please check your weServer logs for issues.</string>
 
 </resources>

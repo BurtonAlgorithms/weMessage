@@ -94,7 +94,7 @@
                 </RelativeLayout>
 
                 <LinearLayout
-                    android:id="@+id/settingsConnectToServer"
+                    android:id="@+id/settingsSync"
                     android:background="?android:attr/selectableItemBackground"
                     android:orientation="horizontal"
                     android:layout_width="match_parent"
@@ -112,6 +112,7 @@
                         android:tint="@color/heavyBlue"/>
 
                     <scott.wemessage.app.ui.view.font.FontTextView
+                        android:id="@+id/syncText"
                         android:text="@string/connect_to_server"
                         android:textSize="18sp"
                         android:layout_width="wrap_content"
@@ -127,7 +128,7 @@
                     android:orientation="horizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_below="@id/settingsConnectToServer"
+                    android:layout_below="@id/settingsSync"
                     android:padding="8dp"
                     android:gravity="center_vertical">
 
@@ -178,16 +179,6 @@
                 </LinearLayout>
 
             </RelativeLayout>
-
-            <scott.wemessage.app.ui.view.font.FontTextView
-                android:text="@string/settings_created_by"
-                android:textSize="16sp"
-                android:layout_marginBottom="8dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:layout_alignParentBottom="true"
-                app:fontName="OrkneyLight"/>
 
         </RelativeLayout>
 

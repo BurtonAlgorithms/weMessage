@@ -14,7 +14,6 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import scott.wemessage.R;
@@ -28,12 +27,14 @@ public class SettingsActivity extends AppCompatActivity {
 
     private boolean isBoundToConnectionService = false;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
+    private ViewGroup settingsSync;
 
     private BroadcastReceiver settingsBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED)){
                 unbindService();
+                toggleSync(true);
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
@@ -72,6 +73,12 @@ public class SettingsActivity extends AppCompatActivity {
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
                 showErroredSnackbar(getString(R.string.result_process_error), 5);
+            }else if(intent.getAction().equals(weMessage.BROADCAST_LOGIN_SUCCESSFUL)){
+                toggleSync(false);
+            }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_FAILED)){
+                DialogDisplayer.showContactSyncResult(false, SettingsActivity.this, getSupportFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
+                DialogDisplayer.showContactSyncResult(true, SettingsActivity.this, getSupportFragmentManager());
             }
         }
     };
@@ -95,6 +102,9 @@ public class SettingsActivity extends AppCompatActivity {
         broadcastIntentFilter.addAction(weMessage.BROADCAST_SEND_MESSAGE_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_LOGIN_SUCCESSFUL);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
 
         LocalBroadcastManager.getInstance(this).registerReceiver(settingsBroadcastReceiver, broadcastIntentFilter);
 
@@ -111,26 +121,16 @@ public class SettingsActivity extends AppCompatActivity {
         toolbar.setTitle("");
         setSupportActionBar(toolbar);
 
+        settingsSync = findViewById(R.id.settingsSync);
         TextView settingsVersionText = findViewById(R.id.settingsVersionText);
         ViewGroup settingsBlockedContacts = findViewById(R.id.settingsBlockedContacts);
-        ViewGroup settingsConnectToServer = findViewById(R.id.settingsConnectToServer);
         ViewGroup settingsSignInOut = findViewById(R.id.settingsSignInOut);
         ViewGroup settingsAbout = findViewById(R.id.settingsAbout);
 
-        if (isServiceRunning(ConnectionService.class)){
-            RelativeLayout.LayoutParams signInOutLayoutParams = (RelativeLayout.LayoutParams) settingsSignInOut.getLayoutParams();
-            signInOutLayoutParams.removeRule(RelativeLayout.BELOW);
-            signInOutLayoutParams.addRule(RelativeLayout.BELOW, R.id.settingsBlockedContacts);
-
-            settingsSignInOut.setLayoutParams(signInOutLayoutParams);
-            settingsConnectToServer.setVisibility(View.GONE);
+        if (isServiceRunning(ConnectionService.class) && !isStillConnecting()){
+            toggleSync(false);
         }else {
-            RelativeLayout.LayoutParams signInOutLayoutParams = (RelativeLayout.LayoutParams) settingsSignInOut.getLayoutParams();
-            signInOutLayoutParams.removeRule(RelativeLayout.BELOW);
-            signInOutLayoutParams.addRule(RelativeLayout.BELOW, R.id.settingsConnectToServer);
-
-            settingsSignInOut.setLayoutParams(signInOutLayoutParams);
-            settingsConnectToServer.setVisibility(View.VISIBLE);
+            toggleSync(true);
         }
 
         settingsVersionText.setText(getString(R.string.settings_version, weMessage.WEMESSAGE_VERSION));
@@ -141,16 +141,6 @@ public class SettingsActivity extends AppCompatActivity {
                 Intent launchIntent = new Intent(weMessage.get(), BlockedContactsActivity.class);
 
                 startActivity(launchIntent);
-                finish();
-            }
-        });
-
-        settingsConnectToServer.setOnClickListener(new OnClickWaitListener(1000L) {
-            @Override
-            public void onWaitClick(View v) {
-                Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-                startActivity(launcherIntent);
                 finish();
             }
         });
@@ -256,6 +246,36 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
+    private void toggleSync(boolean offline){
+        if (offline){
+            ((TextView) settingsSync.findViewById(R.id.syncText)).setText(R.string.connect_to_server);
+
+            settingsSync.setOnClickListener(new OnClickWaitListener(1000L) {
+                @Override
+                public void onWaitClick(View v) {
+                    Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
+
+                    startActivity(launcherIntent);
+                    finish();
+                }
+            });
+        }else {
+            ((TextView) settingsSync.findViewById(R.id.syncText)).setText(R.string.sync_contacts);
+
+            settingsSync.setOnClickListener(new OnClickWaitListener(1000L) {
+                @Override
+                public void onWaitClick(View v) {
+                    DialogDisplayer.showContactSyncDialog(SettingsActivity.this, getSupportFragmentManager(), new Runnable() {
+                        @Override
+                        public void run() {
+                            serviceConnection.getConnectionService().getConnectionHandler().requestContactSync();
+                        }
+                    });
+                }
+            });
+        }
+    }
+
     private boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -264,5 +284,9 @@ public class SettingsActivity extends AppCompatActivity {
             }
         }
         return false;
+    }
+
+    private boolean isStillConnecting(){
+        return serviceConnection.getConnectionService() == null || !serviceConnection.getConnectionService().getConnectionHandler().isConnected().get();
     }
 }

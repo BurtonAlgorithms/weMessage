@@ -176,6 +176,10 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
                 showErroredSnackBar(getString(R.string.result_process_error));
+            }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_FAILED)){
+                DialogDisplayer.showContactSyncResult(false, getActivity(), getFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
+                DialogDisplayer.showContactSyncResult(true, getActivity(), getFragmentManager());
             }
         }
     };
@@ -201,6 +205,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         broadcastIntentFilter.addAction(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
 
         callbackUuid = UUID.randomUUID().toString();
         messageManager.hookCallbacks(callbackUuid, this);

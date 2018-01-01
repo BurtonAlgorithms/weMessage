@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -59,6 +60,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     private final String TAG = "ChatListFragment";
     private final String GO_BACK_REASON_ALERT_TAG = "GoBackReasonAlert";
+    private final String UPDATE_LOG_ALERT_TAG = "UpdateLogAlert";
     private final int ERROR_SNACKBAR_DURATION = 5000;
 
     private String callbackUuid;
@@ -123,6 +125,10 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                 if (getView() != null) {
                     showErroredSnackbar(getString(R.string.result_process_error));
                 }
+            }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_FAILED)){
+                DialogDisplayer.showContactSyncResult(false, getActivity(), getFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
+                DialogDisplayer.showContactSyncResult(true, getActivity(), getFragmentManager());
             }
         }
     };
@@ -143,6 +149,8 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         broadcastIntentFilter.addAction(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
 
         callbackUuid = UUID.randomUUID().toString();
         messageManager.hookCallbacks(callbackUuid, this);
@@ -249,6 +257,16 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
         if (getActivity().getIntent() != null && getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON) != null){
             DialogDisplayer.generateAlertDialog(getString(R.string.word_error), getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON)).show(getFragmentManager(), GO_BACK_REASON_ALERT_TAG);
+        }
+
+        SharedPreferences preferences = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
+
+        if (preferences.getBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false)){
+            int lastVersion = preferences.getInt(weMessage.SHARED_PREFERENCES_LAST_VERSION, -1);
+
+            if (lastVersion == 10){
+                DialogDisplayer.generateAlertDialog(getString(R.string.update_log), getString(R.string.version_11_update)).show(getFragmentManager(), UPDATE_LOG_ALERT_TAG);
+            }
         }
 
         return view;

@@ -119,6 +119,10 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                 }
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
                 showErroredSnackbar(getString(R.string.result_process_error), 5);
+            }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_FAILED)){
+                DialogDisplayer.showContactSyncResult(false, ChatAddContactActivity.this, getSupportFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
+                DialogDisplayer.showContactSyncResult(true, ChatAddContactActivity.this, getSupportFragmentManager());
             }
         }
     };
@@ -148,6 +152,8 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
         broadcastIntentFilter.addAction(weMessage.BROADCAST_SEND_MESSAGE_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_ACTION_PERFORM_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
 
         callbackUuid = UUID.randomUUID().toString();
         weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);

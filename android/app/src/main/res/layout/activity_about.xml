@@ -130,6 +130,43 @@
 
             </RelativeLayout>
 
+            <RelativeLayout
+                android:id="@+id/aboutCredits"
+                android:background="?android:attr/selectableItemBackground"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:layout_below="@id/aboutTerms">
+
+                <ImageView
+                    android:id="@+id/aboutCreditsImage"
+                    android:src="@drawable/ic_favorite_heart"
+                    android:tint="@color/colorHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"/>
+
+                <scott.wemessage.app.ui.view.font.FontTextView
+                    android:text="@string/word_credits"
+                    android:textSize="18sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@+id/aboutCreditsArrow"
+                    android:layout_toEndOf="@id/aboutCreditsImage"
+                    app:fontName="OrkneyLight"/>
+
+                <ImageView
+                    android:id="@+id/aboutCreditsArrow"
+                    android:src="@drawable/ic_arrow_right"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true"/>
+
+            </RelativeLayout>
+
         </RelativeLayout>
 
     </ScrollView>

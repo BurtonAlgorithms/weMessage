@@ -53,6 +53,13 @@ public class AboutActivity extends AppCompatActivity {
                 launchWebView("https://wemessageapp.com/terms");
             }
         });
+
+        findViewById(R.id.aboutCredits).setOnClickListener(new OnClickWaitListener(1000L) {
+            @Override
+            public void onWaitClick(View v) {
+                launchWebView("file:///android_asset/html/credits.html");
+            }
+        });
     }
 
     @Override

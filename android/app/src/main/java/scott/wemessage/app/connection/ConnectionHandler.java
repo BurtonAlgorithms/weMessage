@@ -63,6 +63,7 @@ import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.ClientMessage;
 import scott.wemessage.commons.connection.ConnectionMessage;
+import scott.wemessage.commons.connection.ContactBatch;
 import scott.wemessage.commons.connection.Heartbeat;
 import scott.wemessage.commons.connection.InitConnect;
 import scott.wemessage.commons.connection.ServerMessage;
@@ -70,6 +71,7 @@ import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.action.JSONResult;
 import scott.wemessage.commons.connection.json.message.JSONAttachment;
 import scott.wemessage.commons.connection.json.message.JSONChat;
+import scott.wemessage.commons.connection.json.message.JSONContact;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.connection.security.EncryptedFile;
 import scott.wemessage.commons.connection.security.EncryptedText;
@@ -81,6 +83,7 @@ import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.DateUtils;
+import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
 public final class ConnectionHandler extends Thread {
@@ -98,6 +101,7 @@ public final class ConnectionHandler extends Thread {
     private AtomicBoolean isRunning = new AtomicBoolean(false);
     private AtomicBoolean hasTriedAuthenticating = new AtomicBoolean(false);
     private AtomicBoolean isConnected = new AtomicBoolean(false);
+    private AtomicBoolean isSyncingContacts = new AtomicBoolean(false);
 
     private ConcurrentHashMap<String, ConnectionMessage>connectionMessagesMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, String>messageAndConnectionMessageMap = new ConcurrentHashMap<>();
@@ -383,6 +387,23 @@ public final class ConnectionHandler extends Thread {
                 }
             }).run();
         }
+    }
+
+    public void requestContactSync(){
+        if (isSyncingContacts.get()) return;
+        isSyncingContacts.set(true);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    sendOutgoingObject(weMessage.JSON_CONTACT_SYNC + "START");
+                }catch (Exception ex){
+                    sendLocalBroadcast(weMessage.BROADCAST_CONTACT_SYNC_FAILED, null);
+                    AppLogger.error(TAG, "An error occurred while trying to sync contacts.", ex);
+                }
+            }
+        }).start();
     }
 
     public void run(){
@@ -884,6 +905,109 @@ public final class ConnectionHandler extends Thread {
                             }
                         }
                     }).start();
+                } else if (incoming.startsWith(weMessage.JSON_CONTACT_SYNC)) {
+                    final ServerMessage message = getIncomingMessage(weMessage.JSON_CONTACT_SYNC, incoming);
+
+                    if (!message.isJsonOfType(ContactBatch.class)){
+                        String s = (String) message.getOutgoing(String.class);
+
+                        if (s.equals(weMessage.BROADCAST_CONTACT_SYNC_FAILED)){
+                            isSyncingContacts.set(false);
+                            sendLocalBroadcast(weMessage.BROADCAST_CONTACT_SYNC_FAILED, null);
+                        }
+                    } else {
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    ContactBatch contactBatch = (ContactBatch) message.getOutgoing(ContactBatch.class);
+                                    MessageDatabase database = weMessage.get().getMessageDatabase();
+
+                                    for (JSONContact jsonContact : contactBatch.getContacts()) {
+                                        boolean contactExists = false;
+
+                                        Handle handle = database.getHandleByHandleID(jsonContact.getHandleId());
+                                        Contact contact = null;
+
+                                        if (handle != null) {
+                                            Contact dbContact = database.getContactByHandle(handle);
+
+                                            if (dbContact != null) {
+                                                contactExists = true;
+                                                contact = dbContact;
+                                            }
+                                        }
+
+                                        if (contactExists) {
+                                            String contactName = jsonContact.getName();
+
+                                            Contact updatedContact = contact;
+
+                                            if (contactName.contains(" ")) {
+                                                int i = contactName.lastIndexOf(" ");
+                                                String[] names = {contactName.substring(0, i), contactName.substring(i + 1)};
+                                                updatedContact.setFirstName(names[0]).setLastName(names[1]);
+                                            } else {
+                                                updatedContact.setFirstName(contactName).setLastName("");
+                                            }
+
+                                            if (fileAttachmentsMap.get(jsonContact.getId()) != null) {
+                                                Attachment attachment = fileAttachmentsMap.get(jsonContact.getId());
+
+                                                File srcFile = attachment.getFileLocation().getFile();
+
+                                                if (srcFile.length() < weMessage.MAX_CHAT_ICON_SIZE) {
+                                                    File newFile = new File(weMessage.get().getChatIconsFolder(), jsonContact.getId() + srcFile.getName());
+
+                                                    FileUtils.copy(srcFile, newFile);
+
+                                                    if (contact.getContactPictureFileLocation() != null && !StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())) {
+                                                        contact.getContactPictureFileLocation().getFile().delete();
+                                                    }
+                                                    updatedContact.setContactPictureFileLocation(new FileLocationContainer(newFile));
+                                                }
+                                            }
+                                            weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), updatedContact, false);
+                                        } else {
+                                            Handle newHandle = new Handle(UUID.randomUUID(), jsonContact.getHandleId(), Handle.HandleType.IMESSAGE);
+                                            database.addHandle(newHandle);
+
+                                            contact = new Contact().setUuid(UUID.randomUUID()).setHandle(newHandle).setBlocked(false).setDoNotDisturb(false);
+                                            String contactName = jsonContact.getName();
+
+                                            if (contactName.contains(" ")) {
+                                                int i = contactName.lastIndexOf(" ");
+                                                String[] names = {contactName.substring(0, i), contactName.substring(i + 1)};
+                                                contact.setFirstName(names[0]).setLastName(names[1]);
+                                            } else {
+                                                contact.setFirstName(contactName).setLastName("");
+                                            }
+
+                                            if (fileAttachmentsMap.get(jsonContact.getId()) != null) {
+                                                Attachment attachment = fileAttachmentsMap.get(jsonContact.getId());
+
+                                                File srcFile = attachment.getFileLocation().getFile();
+
+                                                if (srcFile.length() < weMessage.MAX_CHAT_ICON_SIZE) {
+                                                    File newFile = new File(weMessage.get().getChatIconsFolder(), jsonContact.getId() + srcFile.getName());
+                                                    FileUtils.copy(srcFile, newFile);
+
+                                                    contact.setContactPictureFileLocation(new FileLocationContainer(newFile));
+                                                }
+                                            }
+                                            weMessage.get().getMessageManager().addContact(contact, false);
+                                        }
+                                    }
+
+                                    isSyncingContacts.set(false);
+                                    sendLocalBroadcast(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS, null);
+                                } catch (Exception ex) {
+                                    isSyncingContacts.set(false);
+                                    sendLocalBroadcast(weMessage.BROADCAST_CONTACT_SYNC_FAILED, null);
+                                }
+                            }
+                        }).start();
+                    }
                 }
             }catch(EOFException ex){
                 sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED, null);
@@ -971,6 +1095,7 @@ public final class ConnectionHandler extends Thread {
                             getConnectionSocket().close();
                         }catch (IOException ex){ }
 
+                        isSyncingContacts.set(false);
                         connectionMessagesMap.clear();
                         messageAndConnectionMessageMap.clear();
                         fileAttachmentsMap.clear();

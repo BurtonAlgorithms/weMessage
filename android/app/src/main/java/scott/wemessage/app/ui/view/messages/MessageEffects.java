@@ -47,7 +47,7 @@ public final class MessageEffects {
 
         String invisibleInk = "<html><head><style type='text/css' rel='stylesheet'> html { margin: 0; padding: 0em; }</style></head><body><span class='ink'>" + text.getText() + "</span> <script src='jquery.js' type='text/javascript'></script> <script src='invisibleink.js' type='text/javascript'></script></body></html>";
 
-        invisibleInkView.loadDataWithBaseURL("file:///android_asset/js/", invisibleInk, "text/html", "UTF-8", null);
+        invisibleInkView.loadDataWithBaseURL("file:///android_asset/html/", invisibleInk, "text/html", "UTF-8", null);
         invisibleInkView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(WebView view, String url) {

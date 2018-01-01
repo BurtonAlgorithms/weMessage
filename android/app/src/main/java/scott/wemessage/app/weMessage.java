@@ -115,9 +115,15 @@ public final class weMessage extends Application implements Constants {
     public static final String BROADCAST_LOAD_ATTACHMENT_ERROR = IDENTIFIER_PREFIX + "LoadAttachmentError";
     public static final String BROADCAST_PLAY_AUDIO_ATTACHMENT_ERROR = IDENTIFIER_PREFIX + "PlayAudioAttachmentError";
 
+    public static final String BROADCAST_CONTACT_SYNC_SUCCESS = IDENTIFIER_PREFIX + "ContactSyncSuccess";
+    public static final String BROADCAST_CONTACT_SYNC_FAILED = IDENTIFIER_PREFIX + "ContactSyncFailed";
+
     public static final String BROADCAST_IMAGE_FULLSCREEN_ACTIVITY_START = IDENTIFIER_PREFIX + "ImageFullScreenActivityStart";
     public static final String BROADCAST_VIDEO_FULLSCREEN_ACTIVITY_START = IDENTIFIER_PREFIX + "VideoFullScreenActivityStart";
 
+    public static final String SHARED_PREFERENCES_VERSION = IDENTIFIER_PREFIX + "version";
+    public static final String SHARED_PREFERENCES_LAST_VERSION = IDENTIFIER_PREFIX + "lastVersion";
+    public static final String SHARED_PREFERENCES_SHOW_UPDATE_DIALOG = IDENTIFIER_PREFIX + "showUpdateDialog";
     public static final String SHARED_PREFERENCES_LAST_HOST = IDENTIFIER_PREFIX + "lastHost";
     public static final String SHARED_PREFERENCES_LAST_EMAIL = IDENTIFIER_PREFIX + "lastEmail";
     public static final String SHARED_PREFERENCES_LAST_HASHED_PASSWORD = IDENTIFIER_PREFIX + "lastHashedPassword";
@@ -173,6 +179,34 @@ public final class weMessage extends Application implements Constants {
 
         attachmentFolder.mkdir();
         chatIconsFolder.mkdir();
+
+        SharedPreferences preferences = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
+        int prefVersion = preferences.getInt(weMessage.SHARED_PREFERENCES_VERSION, -1);
+
+        if (prefVersion != -1 && prefVersion != weMessage.WEMESSAGE_BUILD_VERSION){
+            SharedPreferences.Editor editor = preferences.edit();
+
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, true);
+            editor.putInt(weMessage.SHARED_PREFERENCES_LAST_VERSION, prefVersion);
+            editor.putInt(weMessage.SHARED_PREFERENCES_VERSION, weMessage.WEMESSAGE_BUILD_VERSION);
+            editor.apply();
+        }else if (prefVersion == -1){
+            if (!StringUtils.isEmpty(preferences.getString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, ""))) {
+                SharedPreferences.Editor editor = preferences.edit();
+
+                editor.putBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, true);
+                editor.putInt(weMessage.SHARED_PREFERENCES_LAST_VERSION, 10);
+                editor.putInt(weMessage.SHARED_PREFERENCES_VERSION, weMessage.WEMESSAGE_BUILD_VERSION);
+                editor.apply();
+            }else {
+                SharedPreferences.Editor editor = preferences.edit();
+
+                editor.putBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false);
+                editor.putInt(weMessage.SHARED_PREFERENCES_LAST_VERSION, weMessage.WEMESSAGE_BUILD_VERSION);
+                editor.putInt(weMessage.SHARED_PREFERENCES_VERSION, weMessage.WEMESSAGE_BUILD_VERSION);
+                editor.apply();
+            }
+        }
 
         this.attachmentFolder = attachmentFolder;
         this.chatIconsFolder = chatIconsFolder;
