@@ -379,4 +379,58 @@ public final class AppleScriptExecutor extends Thread {
             }, 200);
         }
     }
+
+    public boolean runContactSync() {
+        UUID uuid = UUID.randomUUID();
+        AtomicBoolean shouldLoop = new AtomicBoolean(true);
+        queue.add(uuid);
+
+        while (shouldLoop.get()){
+            if (queue.get(0).equals(uuid)){
+                queue.remove(uuid);
+                shouldLoop.set(false);
+            }
+        }
+
+        File contactSyncFile;
+        ServerConfiguration serverConfiguration = getMessageServer().getConfiguration();
+
+        new File(serverConfiguration.getParentDirectoryPath(), "contacts").mkdir();
+
+        try {
+            File[] scriptFiles = getScriptsFolder().listFiles(new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return name.startsWith("ContactSync");
+                }
+            });
+            contactSyncFile = scriptFiles[0];
+        }catch(Exception ex){
+            ServerLogger.error(TAG, "The script ContactSync.scpt does not exist!", new NullPointerException());
+            return false;
+        }
+
+        try {
+            Process process = new ProcessBuilder("osascript", contactSyncFile.getAbsolutePath(), String.valueOf(serverConfiguration.getConfigJSON().getConfig().getSyncContactPhotos())).start();
+
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            int returnCode = -1;
+
+            while ((line = bufferedReader.readLine()) != null){
+                returnCode = Integer.parseInt(line);
+            }
+            bufferedReader.close();
+
+            if(returnCode == ReturnType.ACTION_PERFORMED.getCode()){
+                return true;
+            }else {
+                ServerLogger.log("An error occurred while performing a contact sync.");
+                return false;
+            }
+
+        }catch(Exception ex){
+            ServerLogger.error("An error occurred while attempting to sync your contacts.", ex);
+            return false;
+        }
+    }
 }

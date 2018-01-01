@@ -142,7 +142,8 @@ public final class ServerConfiguration {
                 new ConfigJSONData(weMessage.WEMESSAGE_CONFIG_VERSION, weMessage.DEFAULT_PORT,
                         weMessage.DEFAULT_CREATE_LOG_FILES, weMessage.DEFAULT_CHECK_FOR_UPDATES,
                         weMessage.DEFAULT_SEND_CRASH_REPORTS, weMessage.DEFAULT_SEND_NOTIFICATIONS,
-                        weMessage.DEFAULT_TRANSCODE_VIDEO, weMessage.DEFAULT_FFMPEG_LOCATION,
+                        weMessage.DEFAULT_SYNC_CONTACT_PHOTOS, weMessage.DEFAULT_TRANSCODE_VIDEO,
+                        weMessage.DEFAULT_FFMPEG_LOCATION,
                         new ConfigAccountJSON(
                                 weMessage.DEFAULT_EMAIL,
                                 weMessage.DEFAULT_PASSWORD,
@@ -180,6 +181,8 @@ public final class ServerConfiguration {
             newJson.setSendCrashReports(weMessage.DEFAULT_SEND_CRASH_REPORTS);
             newJson.setSendNotifications(weMessage.DEFAULT_SEND_NOTIFICATIONS);
             newJson.setTranscodeVideos(weMessage.DEFAULT_TRANSCODE_VIDEO);
+
+            newJson.setSyncContactPhotos(weMessage.DEFAULT_SYNC_CONTACT_PHOTOS);
         }
 
         if (oldVersion >= 2){
@@ -187,6 +190,12 @@ public final class ServerConfiguration {
             newJson.setSendCrashReports(oldJson.getSendCrashReports());
             newJson.setSendNotifications(oldJson.getSendNotifications());
             newJson.setTranscodeVideos(oldJson.getTranscodeVideos());
+
+            newJson.setSyncContactPhotos(weMessage.DEFAULT_SYNC_CONTACT_PHOTOS);
+        }
+
+        if (oldVersion >= 3){
+            newJson.setSyncContactPhotos(oldJson.getSyncContactPhotos());
         }
 
         configFile.delete();
@@ -209,6 +218,10 @@ public final class ServerConfiguration {
             newJson.setSendCrashReports(oldJson.getSendCrashReports());
             newJson.setSendNotifications(oldJson.getSendNotifications());
             newJson.setTranscodeVideos(oldJson.getTranscodeVideos());
+        }
+
+        if (newVersion >= 3){
+            newJson.setSyncContactPhotos(oldJson.getSyncContactPhotos());
         }
 
         configFile.delete();

@@ -27,6 +27,7 @@ public final class DeviceManager extends Thread {
     private AtomicBoolean isRunning = new AtomicBoolean(false);
     private ServerSocket socketListener;
     private ConcurrentHashMap<String, Device> devices = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Device> deviceContactQueue = new ConcurrentHashMap<>();
 
     public DeviceManager(MessageServer server){
         this.messageServer = server;
@@ -101,6 +102,14 @@ public final class DeviceManager extends Thread {
             return true;
         }
         return false;
+    }
+
+    public void performContactSync(Device request){
+        if (getMessageServer().getScriptExecutor().runContactSync()){
+            request.syncContacts();
+        }else {
+            request.sendOutgoingMessage(weMessage.JSON_CONTACT_SYNC, weMessage.JSON_CONTACT_SYNC_FAILED, String.class);
+        }
     }
 
     public void stopService() {

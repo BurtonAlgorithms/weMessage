@@ -34,6 +34,7 @@ dependencies {
     dependency 'org.slf4j:slf4j-nop:1.7.25'
     dependency 'org.xerial:sqlite-jdbc:3.20.1'
     dependency 'net.bramp.ffmpeg:ffmpeg:0.6.2'
+    dependency 'com.github.jai-imageio:jai-imageio-core:1.3.1'
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }

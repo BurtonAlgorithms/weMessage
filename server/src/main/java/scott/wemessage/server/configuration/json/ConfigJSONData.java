@@ -22,6 +22,9 @@ public class ConfigJSONData {
     @SerializedName("sendNotifications")
     private Boolean sendNotifications;
 
+    @SerializedName("syncContactPhotos")
+    private Boolean syncContactPhotos;
+
     @SerializedName("transcodeVideos")
     private Boolean transcodeVideos;
 
@@ -36,14 +39,15 @@ public class ConfigJSONData {
     }
 
     public ConfigJSONData(Integer configVersion, Integer port, Boolean createLogFiles,
-                          Boolean checkForUpdates, Boolean sendCrashReports, Boolean sendNotifications, Boolean transcodeVideos,
-                          String ffmpegLocation, ConfigAccountJSON accountInfo){
+                          Boolean checkForUpdates, Boolean sendCrashReports, Boolean sendNotifications, Boolean syncContactPhotos,
+                          Boolean transcodeVideos, String ffmpegLocation, ConfigAccountJSON accountInfo){
         this.configVersion = configVersion;
         this.port = port;
         this.createLogFiles = createLogFiles;
         this.checkForUpdates = checkForUpdates;
         this.sendCrashReports = sendCrashReports;
         this.sendNotifications = sendNotifications;
+        this.syncContactPhotos = syncContactPhotos;
         this.transcodeVideos = transcodeVideos;
         this.ffmpegLocation = ffmpegLocation;
         this.accountInfo = accountInfo;
@@ -71,6 +75,10 @@ public class ConfigJSONData {
 
     public Boolean getSendNotifications() {
         return sendNotifications;
+    }
+
+    public Boolean getSyncContactPhotos() {
+        return syncContactPhotos;
     }
 
     public Boolean getTranscodeVideos() {
@@ -107,6 +115,10 @@ public class ConfigJSONData {
 
     public void setSendNotifications(Boolean sendNotifications) {
         this.sendNotifications = sendNotifications;
+    }
+
+    public void setSyncContactPhotos(Boolean syncContactPhotos) {
+        this.syncContactPhotos = syncContactPhotos;
     }
 
     public void setTranscodeVideos(Boolean transcodeVideos) {

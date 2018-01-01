@@ -4,6 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
+import org.apache.commons.io.FilenameUtils;
+
+import java.awt.image.BufferedImage;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
@@ -19,13 +22,17 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.imageio.ImageIO;
+
 import scott.wemessage.commons.connection.ClientMessage;
+import scott.wemessage.commons.connection.ContactBatch;
 import scott.wemessage.commons.connection.Heartbeat;
 import scott.wemessage.commons.connection.InitConnect;
 import scott.wemessage.commons.connection.ServerMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.action.JSONResult;
 import scott.wemessage.commons.connection.json.message.JSONAttachment;
+import scott.wemessage.commons.connection.json.message.JSONContact;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.connection.security.EncryptedFile;
 import scott.wemessage.commons.connection.security.EncryptedText;
@@ -249,6 +256,78 @@ public class Device extends Thread {
                 ServerLogger.error(TAG, "An error occurred while trying to parse a message to JSON", ex);
             }
         }
+    }
+
+    public void syncContacts(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Gson gson = new Gson();
+                    List<JSONContact> finalList = new ArrayList<>();
+
+                    File contactsFolder = new File(getDeviceManager().getMessageServer().getConfiguration().getParentDirectoryPath(), "contacts");
+                    String contactsPath =  contactsFolder.getAbsolutePath();
+                    String jsonString = FileUtils.readFile(contactsPath + "/contact.json");
+
+                    JSONContact[] contacts = gson.fromJson(jsonString, JSONContact[].class);
+                    MessagesDatabase messagesDatabase = getDeviceManager().getMessageServer().getMessagesDatabase();
+
+                    for (File file : new File(contactsPath).listFiles()){
+                        if (FilenameUtils.getExtension(file.getName()).equalsIgnoreCase("tif")) {
+                            BufferedImage tif = ImageIO.read(file);
+                            ImageIO.write(tif, "png", new File(contactsPath, FilenameUtils.removeExtension(file.getName()) + ".png"));
+                        }
+                    }
+
+                    for (File file : new File(contactsPath).listFiles()){
+                        if (FilenameUtils.getExtension(file.getName()).equalsIgnoreCase("png")) {
+                            String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
+                            AESCrypto.CipherByteArrayIv byteArrayIv = AESCrypto.encryptFile(file, keys);
+
+                            EncryptedFile encryptedFile = new EncryptedFile(
+                                    FilenameUtils.removeExtension(file.getName()),
+                                    file.getName(),
+                                    byteArrayIv.getCipherBytes(),
+                                    keys,
+                                    byteArrayIv.getIv()
+                            );
+
+                            sendOutgoingFile(encryptedFile);
+                        }
+                    }
+
+                    for (JSONContact contact : contacts) {
+                        String[] emails = contact.getEmails().split(",");
+                        String[] phoneNumbers = contact.getNumbers().split(",");
+
+                        for (String number : phoneNumbers){
+                            if (messagesDatabase.getHandleByAccount(number) != null){
+                                contact.setHandleId(number);
+                                finalList.add(contact);
+                                break;
+                            }
+                        }
+
+                        if (!finalList.contains(contact)){
+                            for (String email : emails){
+                                if (messagesDatabase.getHandleByAccount(email) != null){
+                                    contact.setHandleId(email);
+                                    finalList.add(contact);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    sendOutgoingMessage(weMessage.JSON_CONTACT_SYNC, new ContactBatch(finalList), ContactBatch.class);
+                    contactsFolder.delete();
+                }catch (Exception ex){
+                    sendOutgoingMessage(weMessage.JSON_CONTACT_SYNC, weMessage.JSON_CONTACT_SYNC_FAILED, String.class);
+                    ServerLogger.error("An error occurred while performing a contact sync", ex);
+                }
+            }
+        }).start();
     }
 
     public List<Integer> relayIncomingMessage(JSONMessage message){
@@ -608,6 +687,8 @@ public class Device extends Thread {
 
                             sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, jsonResult, JSONResult.class);
                             eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, wasRight));
+                        }else if (input.startsWith(weMessage.JSON_CONTACT_SYNC)){
+                            getDeviceManager().performContactSync(this);
                         }
                     }
                 }catch(EOFException ex){

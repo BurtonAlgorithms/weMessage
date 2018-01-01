@@ -1,4 +1,4 @@
-property WEMESSAGE_APPLESCRIPT_VERSION : 10
+property WEMESSAGE_APPLESCRIPT_VERSION : 11
 property WEMESSAGE_JAVASCRIPT_VERSION : 10
 
 property VERSION_MISMATCH : 998
@@ -874,6 +874,73 @@ on isNumberIMessage(phoneNumber)
 		return UI_ERROR
 	end try
 end isNumberIMessage
+
+
+
+on syncContacts(savePictures)
+	tell application "Contacts"
+		try
+			set contactOutput to "["
+
+			repeat with x from 1 to the count of people
+				set thePerson to person x
+				set theId to my generateRandom(16)
+				set theName to name of thePerson
+				set thePicture to ""
+				set theEmails to ""
+				set phoneNumbers to ""
+
+				if syncContacts as boolean is equal to true and thePerson's image is not equal to missing value then
+					my saveContactImage(theId, thePerson's image)
+				end if
+
+				repeat with theEmail in the email of thePerson
+					if theEmails is equal to "" then
+						set theEmails to the value of theEmail
+					else
+						set theEmails to theEmails & "," & the value of theEmail
+					end if
+				end repeat
+
+				repeat with theNumber in the phone of thePerson
+					if phoneNumbers is equal to "" then
+						set phoneNumbers to the value of theNumber
+					else
+						set phoneNumbers to phoneNumbers & "," & the value of theNumber
+					end if
+				end repeat
+
+				set contactJSON to "{\"id\":\"" & theId & "\", \"handleId\":\"\", \"name\":\"" & theName & "\", \"emails\":\"" & theEmails & "\", \"numbers\":\"" & phoneNumbers & "\"}"
+
+				if x is equal to 1 then
+					set contactOutput to contactOutput & contactJSON
+				else
+					set contactOutput to contactOutput & "," & contactJSON
+				end if
+			end repeat
+
+			set contactOutput to contactOutput & "]"
+			set outputFile to ((POSIX path of my getProjectRoot()) & "contacts/contacts.json")
+			do shell script "echo " & quoted form of contactOutput & " > " & quoted form of outputFile
+
+			return ACTION_PERFORMED
+		on error errorMessage
+			my logError("ContactSync.scpt", errorMessage)
+			return UNKNOWN_ERROR
+		end try
+	end tell
+end syncContacts
+
+
+
+on saveContactImage(personId, personImage)
+	set filePath to (my getProjectRoot() & "contacts:" & personId & ".tif")
+	set theFile to open for access file filePath with write permission
+
+	set eof of theFile to 0
+	write personImage to theFile
+	close access theFile
+end saveContactImage
 
 
 
