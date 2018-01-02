@@ -15,6 +15,7 @@ import java.io.ObjectOutputStream;
 import java.lang.reflect.Type;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -188,6 +189,26 @@ public class Device extends Thread {
         sendOutgoingObject(prefix + outgoingJson);
     }
 
+    public void sendOutgoingMessageWithCrypto(String prefix, Object outgoingData, Class<?> outgoingDataClass){
+        try {
+            sendOutgoingMessageWithCryptoWithThrow(prefix, outgoingData, outgoingDataClass);
+        }catch(Exception ex){
+            ServerLogger.error(TAG, "An error occurred while sending a message to Device: " + getAddress(), ex);
+        }
+    }
+
+    public void sendOutgoingMessageWithCryptoWithThrow(String prefix, Object outgoingData, Class<?> outgoingDataClass) throws IOException, GeneralSecurityException {
+        Type type = TypeToken.get(outgoingDataClass).getType();
+        String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().toJson(outgoingData, type);
+        ServerMessage serverMessage = new ServerMessage(UUID.randomUUID().toString(), outgoingDataJson);
+        String outgoingJson = new Gson().toJson(serverMessage);
+
+        String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
+        String encryptedText = AESCrypto.encryptString(prefix + outgoingJson, keys);
+
+        sendOutgoingObject(new EncryptedText(encryptedText, keys));
+    }
+
     public void sendOutgoingMessage(final Message message){
         if (message.getAttachments() != null && message.getAttachments().size() > 0){
             new Thread(new Runnable() {
@@ -320,7 +341,7 @@ public class Device extends Thread {
                         }
                     }
 
-                    sendOutgoingMessage(weMessage.JSON_CONTACT_SYNC, new ContactBatch(finalList), ContactBatch.class);
+                    sendOutgoingMessageWithCrypto(weMessage.JSON_CONTACT_SYNC, new ContactBatch(finalList), ContactBatch.class);
                     org.apache.commons.io.FileUtils.deleteDirectory(contactsFolder);
                 }catch (Exception ex){
                     sendOutgoingMessage(weMessage.JSON_CONTACT_SYNC, weMessage.JSON_CONTACT_SYNC_FAILED, String.class);
@@ -446,7 +467,7 @@ public class Device extends Thread {
     }
 
     public void sendOutgoingAction(JSONAction action){
-        sendOutgoingMessage(weMessage.JSON_ACTION, action, JSONAction.class);
+        sendOutgoingMessageWithCrypto(weMessage.JSON_ACTION, action, JSONAction.class);
     }
 
     public void killDevice(DisconnectReason reason){
@@ -653,43 +674,51 @@ public class Device extends Thread {
 
                         bytes = null;
                         decryptedBytes = null;
-                    } else {
-                        String input = (String) object;
+                        continue;
+                    }
 
-                        if (input.startsWith(weMessage.JSON_CONNECTION_TERMINATED)) {
-                            getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);
-                            return;
+                    String input;
+
+                    if (object instanceof EncryptedText){
+                        EncryptedText encryptedText = (EncryptedText) object;
+                        input = AESCrypto.decryptString(encryptedText.getEncryptedText(), encryptedText.getKey());
+                    }else {
+                        input = (String) object;
+                    }
+
+                    if (input.startsWith(weMessage.JSON_CONNECTION_TERMINATED)) {
+                        getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);
+                        return;
+                    }
+                    if (input.startsWith(weMessage.JSON_REGISTRATION_TOKEN)) {
+                        ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_REGISTRATION_TOKEN, input);
+                        String token = (String) clientMessage.getIncoming(String.class);
+
+                        synchronized (registrationTokenLock) {
+                            this.registrationToken = token;
                         }
-                        if (input.startsWith(weMessage.JSON_REGISTRATION_TOKEN)) {
-                            ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_REGISTRATION_TOKEN, input);
-                            String token = (String) clientMessage.getIncoming(String.class);
+                        eventManager.callEvent(new DeviceUpdateEvent(eventManager, getDeviceManager(), this));
+                        continue;
+                    }
+                    if (input.startsWith(weMessage.JSON_NEW_MESSAGE)) {
+                        ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_NEW_MESSAGE, input);
+                        JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class);
+                        List<Integer> returnedResult = relayIncomingMessage(jsonMessage);
 
-                            synchronized (registrationTokenLock) {
-                                this.registrationToken = token;
-                            }
-                            eventManager.callEvent(new DeviceUpdateEvent(eventManager, getDeviceManager(), this));
-                            continue;
-                        }
-                        if (input.startsWith(weMessage.JSON_NEW_MESSAGE)) {
-                            ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_NEW_MESSAGE, input);
-                            JSONMessage jsonMessage = (JSONMessage) clientMessage.getIncoming(JSONMessage.class);
-                            List<Integer> returnedResult = relayIncomingMessage(jsonMessage);
+                        sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
+                        eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, null));
 
-                            sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, new JSONResult(clientMessage.getMessageUuid(), returnedResult), JSONResult.class);
-                            eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, null));
+                    } else if (input.startsWith(weMessage.JSON_ACTION)) {
+                        ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_ACTION, input);
+                        JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class);
+                        List<Integer> returnedResult = performIncomingAction(jsonAction);
+                        JSONResult jsonResult = new JSONResult(clientMessage.getMessageUuid(), returnedResult);
+                        boolean wasRight = jsonResult.getResult().get(0).equals(ReturnType.ACTION_PERFORMED.getCode());
 
-                        } else if (input.startsWith(weMessage.JSON_ACTION)) {
-                            ClientMessage clientMessage = getIncomingMessage(weMessage.JSON_ACTION, input);
-                            JSONAction jsonAction = (JSONAction) clientMessage.getIncoming(JSONAction.class);
-                            List<Integer> returnedResult = performIncomingAction(jsonAction);
-                            JSONResult jsonResult = new JSONResult(clientMessage.getMessageUuid(), returnedResult);
-                            boolean wasRight = jsonResult.getResult().get(0).equals(ReturnType.ACTION_PERFORMED.getCode());
-
-                            sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, jsonResult, JSONResult.class);
-                            eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, wasRight));
-                        }else if (input.startsWith(weMessage.JSON_CONTACT_SYNC)){
-                            getDeviceManager().performContactSync(this);
-                        }
+                        sendOutgoingMessage(weMessage.JSON_RETURN_RESULT, jsonResult, JSONResult.class);
+                        eventManager.callEvent(new ClientMessageReceivedEvent(eventManager, getDeviceManager(), this, clientMessage, wasRight));
+                    }else if (input.startsWith(weMessage.JSON_CONTACT_SYNC)){
+                        getDeviceManager().performContactSync(this);
                     }
                 }catch(EOFException ex){
                     getDeviceManager().removeDevice(this, DisconnectReason.CLIENT_DISCONNECTED, null);
