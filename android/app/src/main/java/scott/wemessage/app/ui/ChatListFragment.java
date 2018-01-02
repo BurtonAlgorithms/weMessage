@@ -267,6 +267,10 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             if (lastVersion == 10){
                 DialogDisplayer.generateAlertDialog(getString(R.string.update_log), getString(R.string.version_11_update)).show(getFragmentManager(), UPDATE_LOG_ALERT_TAG);
             }
+
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false);
+            editor.apply();
         }
 
         return view;

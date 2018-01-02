@@ -113,7 +113,6 @@
 
                     <scott.wemessage.app.ui.view.font.FontTextView
                         android:id="@+id/syncText"
-                        android:text="@string/connect_to_server"
                         android:textSize="18sp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

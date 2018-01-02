@@ -94,7 +94,7 @@ public class DialogDisplayer {
         alertDialogFragmentDouble.show(fragmentManager, LAUNCH_ALERT_DIALOG_TAG);
     }
 
-    public static void showContactSyncDialog(Context context, FragmentManager fragmentManager, Runnable runnable){
+    public static void showContactSyncDialog(final Context context, final FragmentManager fragmentManager, final Runnable runnable){
         Bundle bundle = new Bundle();
         AlertDialogFragmentDouble alertDialogFragmentDouble = new AlertDialogFragmentDouble();
 
@@ -103,7 +103,29 @@ public class DialogDisplayer {
         bundle.putString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON, context.getString(R.string.start_process));
         alertDialogFragmentDouble.setArguments(bundle);
 
-        alertDialogFragmentDouble.setOnDismiss(runnable);
+        if (context.getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).getBoolean(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW, true)) {
+            alertDialogFragmentDouble.setOnDismiss(new Runnable() {
+                @Override
+                public void run() {
+                    if (context == null || fragmentManager == null) return;
+
+                    context.getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit().putBoolean(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW, false).apply();
+
+                    Bundle bundle = new Bundle();
+                    AlertDialogFragmentDouble alertDialogFragmentDouble = new AlertDialogFragmentDouble();
+
+                    bundle.putString(weMessage.BUNDLE_ALERT_TITLE, context.getString(R.string.sync_contacts_title));
+                    bundle.putString(weMessage.BUNDLE_ALERT_MESSAGE, context.getString(R.string.sync_contacts_message_permission));
+                    bundle.putString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON, context.getString(R.string.ok_button));
+                    alertDialogFragmentDouble.setArguments(bundle);
+
+                    alertDialogFragmentDouble.setOnDismiss(runnable);
+                    alertDialogFragmentDouble.show(fragmentManager, LAUNCH_ALERT_DIALOG_TAG + "Permission");
+                }
+            });
+        }else {
+            alertDialogFragmentDouble.setOnDismiss(runnable);
+        }
         alertDialogFragmentDouble.show(fragmentManager, LAUNCH_ALERT_DIALOG_TAG);
     }
 

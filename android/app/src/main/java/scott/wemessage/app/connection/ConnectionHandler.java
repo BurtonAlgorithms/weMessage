@@ -400,6 +400,7 @@ public final class ConnectionHandler extends Thread {
                     sendOutgoingObject(weMessage.JSON_CONTACT_SYNC + "START");
                 }catch (Exception ex){
                     sendLocalBroadcast(weMessage.BROADCAST_CONTACT_SYNC_FAILED, null);
+                    isSyncingContacts.set(false);
                     AppLogger.error(TAG, "An error occurred while trying to sync contacts.", ex);
                 }
             }
@@ -911,7 +912,7 @@ public final class ConnectionHandler extends Thread {
                     if (!message.isJsonOfType(ContactBatch.class)){
                         String s = (String) message.getOutgoing(String.class);
 
-                        if (s.equals(weMessage.BROADCAST_CONTACT_SYNC_FAILED)){
+                        if (s.equals(weMessage.JSON_CONTACT_SYNC_FAILED)){
                             isSyncingContacts.set(false);
                             sendLocalBroadcast(weMessage.BROADCAST_CONTACT_SYNC_FAILED, null);
                         }

@@ -129,6 +129,7 @@ public final class weMessage extends Application implements Constants {
     public static final String SHARED_PREFERENCES_LAST_HASHED_PASSWORD = IDENTIFIER_PREFIX + "lastHashedPassword";
     public static final String SHARED_PREFERENCES_SIGNED_OUT = IDENTIFIER_PREFIX + "signedOut";
     public static final String SHARED_PREFERENCES_DEVICE_INFO = IDENTIFIER_PREFIX + "deviceInfo";
+    public static final String SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW = IDENTIFIER_PREFIX + "contactSyncPermissionShow";
 
     private static weMessage instance;
     private MessageDatabase messageDatabase;
@@ -206,6 +207,13 @@ public final class weMessage extends Application implements Constants {
                 editor.putInt(weMessage.SHARED_PREFERENCES_VERSION, weMessage.WEMESSAGE_BUILD_VERSION);
                 editor.apply();
             }
+        }
+
+        if (!preferences.contains(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW)){
+            SharedPreferences.Editor editor = preferences.edit();
+
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW, true);
+            editor.apply();
         }
 
         this.attachmentFolder = attachmentFolder;

@@ -127,8 +127,13 @@ public class SettingsActivity extends AppCompatActivity {
         ViewGroup settingsSignInOut = findViewById(R.id.settingsSignInOut);
         ViewGroup settingsAbout = findViewById(R.id.settingsAbout);
 
-        if (isServiceRunning(ConnectionService.class) && !isStillConnecting()){
-            toggleSync(false);
+        if (isServiceRunning(ConnectionService.class)){
+            serviceConnection.scheduleTask(new Runnable() {
+                @Override
+                public void run() {
+                    toggleSync(!serviceConnection.getConnectionService().getConnectionHandler().isConnected().get());
+                }
+            });
         }else {
             toggleSync(true);
         }
@@ -248,7 +253,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void toggleSync(boolean offline){
         if (offline){
-            ((TextView) settingsSync.findViewById(R.id.syncText)).setText(R.string.connect_to_server);
+            ((TextView) findViewById(R.id.syncText)).setText(R.string.connect_to_server);
 
             settingsSync.setOnClickListener(new OnClickWaitListener(1000L) {
                 @Override
@@ -260,7 +265,7 @@ public class SettingsActivity extends AppCompatActivity {
                 }
             });
         }else {
-            ((TextView) settingsSync.findViewById(R.id.syncText)).setText(R.string.sync_contacts);
+            ((TextView) findViewById(R.id.syncText)).setText(R.string.sync_contacts);
 
             settingsSync.setOnClickListener(new OnClickWaitListener(1000L) {
                 @Override
@@ -284,9 +289,5 @@ public class SettingsActivity extends AppCompatActivity {
             }
         }
         return false;
-    }
-
-    private boolean isStillConnecting(){
-        return serviceConnection.getConnectionService() == null || !serviceConnection.getConnectionService().getConnectionHandler().isConnected().get();
     }
 }

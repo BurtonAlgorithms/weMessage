@@ -218,10 +218,11 @@
     <string name="sync_contacts_title">Perform Contact Sync</string>
     <string name="sync_contacts_message">Contact Sync will transfer the contacts on your computer to your weMessage Contacts List. \n\nThis process will take a while if you have a lot
         of contacts, so do not get disconnected from your weServer during the sync.</string>
+    <string name="sync_contacts_message_permission">Make sure that Terminal has access to your Contacts (like Accessibility) in System Preferences, or the Sync will not work.</string>
     <string name="start_process">Start Process</string>
     <string name="still_connecting_send_message">Currently trying to connect to your weServer. Please wait before trying to send any messages.</string>
     <string name="still_connecting_perform_action">Currently trying to connect to your weServer. Please wait before trying to perform this action.</string>
-    <string name="update_log">Update Log</string>
+    <string name="update_log">What\'s New</string>
     <string name="version_11_update">weMessage Version 1.1 adds Contact Sync! To sync the contacts on your computer with weMessage, go into your Settings.
         \n\nIn addition, you are now able to view certain message effects.</string>
     <string name="contact_sync_success">Contact Sync Success</string>
