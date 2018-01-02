@@ -28,6 +28,7 @@
 
 -keep class scott.wemessage.commons.connection.Heartbeat { *; }
 -keep class scott.wemessage.commons.connection.security.EncryptedFile { *; }
+-keep class scott.wemessage.commons.connection.security.EncryptedText { *; }
 
 ##--------------------------------------------------------
 

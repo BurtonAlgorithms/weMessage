@@ -203,6 +203,23 @@ public final class ConnectionHandler extends Thread {
         connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
     }
 
+    private void sendOutgoingMessageWithCrypto(String prefix, Object outgoingData, Class<?> dataClass) throws IOException {
+        Type type = TypeToken.get(dataClass).getType();
+        String outgoingDataJson = new GsonBuilder().registerTypeHierarchyAdapter(byte[].class, byteArrayAdapter).create().toJson(outgoingData, type);
+        ClientMessage clientMessage = new ClientMessage(UUID.randomUUID().toString(), outgoingDataJson);
+        String outgoingJson = new Gson().toJson(clientMessage);
+
+        if (dataClass == JSONAction.class){
+            currentOutgoingActionsMap.put(clientMessage.getMessageUuid(), (JSONAction) outgoingData);
+        }
+
+        EncryptionTask encryptionTask = new EncryptionTask(prefix + outgoingJson, null, CryptoType.AES);
+        encryptionTask.runEncryptTask();
+
+        sendOutgoingObject(KeyTextPair.toEncryptedText(encryptionTask.getEncryptedText()));
+        connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
+    }
+
     private void sendOutgoingGenericAction(final ActionType actionType, final String... args){
         try {
             JSONAction jsonAction;
@@ -243,7 +260,7 @@ public final class ConnectionHandler extends Thread {
            }
 
            if (!isActionQueued) {
-               sendOutgoingMessage(weMessage.JSON_ACTION, jsonAction, JSONAction.class);
+               sendOutgoingMessageWithCrypto(weMessage.JSON_ACTION, jsonAction, JSONAction.class);
            }
         }catch(Exception ex){
             sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, null);
@@ -634,7 +651,19 @@ public final class ConnectionHandler extends Thread {
                     continue;
                 }
 
-                final String incoming = (String) incomingObject;
+                String theObject;
+
+                if (incomingObject instanceof EncryptedText){
+                    EncryptedText encryptedText = (EncryptedText) incomingObject;
+                    DecryptionTask textDecryptionTask = new DecryptionTask(new KeyTextPair(encryptedText.getEncryptedText(), encryptedText.getKey()), CryptoType.AES);
+
+                    textDecryptionTask.runDecryptTask();
+                    theObject = textDecryptionTask.getDecryptedText();
+                }else {
+                    theObject = (String) incomingObject;
+                }
+
+                final String incoming = theObject;
 
                 if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)) {
                     isConnected.set(true);
