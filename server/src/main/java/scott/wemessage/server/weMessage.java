@@ -16,7 +16,7 @@ public final class weMessage implements Constants {
     public static final boolean DEFAULT_SEND_CRASH_REPORTS = true;
     public static final boolean DEFAULT_SEND_NOTIFICATIONS = true;
     public static final boolean DEFAULT_TRANSCODE_VIDEO = true;
-    public static final boolean DEFAULT_SYNC_CONTACT_PHOTOS = false;
+    public static final boolean DEFAULT_SYNC_CONTACT_PHOTOS = true;
 
     public static final String CONFIG_FILE_NAME = "config.json";
     public static final String LOG_FILE_NAME = "latest.log";

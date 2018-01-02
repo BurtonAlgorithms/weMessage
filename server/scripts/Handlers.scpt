@@ -878,19 +878,19 @@ end isNumberIMessage
 
 
 on syncContacts(savePictures)
-	tell application "Contacts"
-		try
+	try
+	    tell application "Contacts"
 			set contactOutput to "["
 
 			repeat with x from 1 to the count of people
 				set thePerson to person x
-				set theId to my generateRandom(16)
+				set theId to do shell script "uuidgen"
 				set theName to name of thePerson
 				set thePicture to ""
 				set theEmails to ""
 				set phoneNumbers to ""
 
-				if syncContacts as boolean is equal to true and thePerson's image is not equal to missing value then
+				if savePictures as boolean is equal to true and thePerson's image is not equal to missing value then
 					my saveContactImage(theId, thePerson's image)
 				end if
 
@@ -924,11 +924,11 @@ on syncContacts(savePictures)
 			do shell script "echo " & quoted form of contactOutput & " > " & quoted form of outputFile
 
 			return ACTION_PERFORMED
-		on error errorMessage
-			my logError("ContactSync.scpt", errorMessage)
-			return UNKNOWN_ERROR
-		end try
-	end tell
+	    end tell
+	on error errorMessage
+    	my logError("ContactSync.scpt", errorMessage)
+    	return UNKNOWN_ERROR
+    end try
 end syncContacts
 
 

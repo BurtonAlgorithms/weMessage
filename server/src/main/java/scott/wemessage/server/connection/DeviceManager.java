@@ -27,7 +27,6 @@ public final class DeviceManager extends Thread {
     private AtomicBoolean isRunning = new AtomicBoolean(false);
     private ServerSocket socketListener;
     private ConcurrentHashMap<String, Device> devices = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, Device> deviceContactQueue = new ConcurrentHashMap<>();
 
     public DeviceManager(MessageServer server){
         this.messageServer = server;

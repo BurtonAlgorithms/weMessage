@@ -7,10 +7,10 @@
 # Input jars, output, and library jars
 
 -libraryjars <java.home>/lib/rt.jar
--libraryjars ../build/dependencies.jar
+-libraryjars ../../build/dependencies.jar
 
--injars ../build/obfuscate/weServer.jar
--outjars ../build/weServer.jar
+-injars ../../build/obfuscate/weServer.jar
+-outjars ../../build/weServer.jar
 
 # Metadata for the Release Jar
 -target 1.7

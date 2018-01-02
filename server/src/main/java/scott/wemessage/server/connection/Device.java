@@ -268,7 +268,7 @@ public class Device extends Thread {
 
                     File contactsFolder = new File(getDeviceManager().getMessageServer().getConfiguration().getParentDirectoryPath(), "contacts");
                     String contactsPath =  contactsFolder.getAbsolutePath();
-                    String jsonString = FileUtils.readFile(contactsPath + "/contact.json");
+                    String jsonString = FileUtils.readFile(contactsPath + "/contacts.json");
 
                     JSONContact[] contacts = gson.fromJson(jsonString, JSONContact[].class);
                     MessagesDatabase messagesDatabase = getDeviceManager().getMessageServer().getMessagesDatabase();
@@ -321,7 +321,7 @@ public class Device extends Thread {
                     }
 
                     sendOutgoingMessage(weMessage.JSON_CONTACT_SYNC, new ContactBatch(finalList), ContactBatch.class);
-                    contactsFolder.delete();
+                    org.apache.commons.io.FileUtils.deleteDirectory(contactsFolder);
                 }catch (Exception ex){
                     sendOutgoingMessage(weMessage.JSON_CONTACT_SYNC, weMessage.JSON_CONTACT_SYNC_FAILED, String.class);
                     ServerLogger.error("An error occurred while performing a contact sync", ex);
