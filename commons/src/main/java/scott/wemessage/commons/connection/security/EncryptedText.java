@@ -2,7 +2,9 @@ package scott.wemessage.commons.connection.security;
 
 import com.google.gson.annotations.SerializedName;
 
-public class EncryptedText {
+import java.io.Serializable;
+
+public class EncryptedText implements Serializable {
 
     @SerializedName("encryptedText")
     private String encryptedText;
