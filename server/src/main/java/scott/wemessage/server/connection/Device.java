@@ -284,7 +284,6 @@ public class Device extends Thread {
             @Override
             public void run() {
                 try {
-                    Gson gson = new Gson();
                     List<JSONContact> contacts = new ArrayList<>();
                     List<JSONContact> finalList = new ArrayList<>();
                     MessagesDatabase messagesDatabase = getDeviceManager().getMessageServer().getMessagesDatabase();
@@ -292,8 +291,11 @@ public class Device extends Thread {
                     String contactsPath =  contactsFolder.getAbsolutePath();
 
                     for (File file : contactsFolder.listFiles()){
-                        if (FilenameUtils.getExtension(file.getName()).equalsIgnoreCase("json")){
-                            JSONContact contact = gson.fromJson(FileUtils.readFile(file.getAbsolutePath()), JSONContact.class);
+                        if (FilenameUtils.getExtension(file.getName()).equalsIgnoreCase("info")){
+                            String contactOutput = FileUtils.readFile(file.getAbsolutePath());
+                            String[] info = contactOutput.split("<CONTACT_INFORMATION_SPLIT>");
+
+                            JSONContact contact = new JSONContact(info[0], "", removeLastChar(info[1]), removeLastChar(info[2]), removeLastChar(info[3]));
                             contacts.add(contact);
                         }
                     }
@@ -753,6 +755,10 @@ public class Device extends Thread {
             throw new ClassCastException("The result returned from running the script is not a valid return type");
         }
         return intResults;
+    }
+
+    private String removeLastChar(String str) {
+        return str.substring(0, str.length() - 1);
     }
 
     private class HeartbeatThread extends Thread {

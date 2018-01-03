@@ -908,9 +908,11 @@ on syncContacts(savePictures)
 					end if
 				end repeat
 
-				set contactJSON to "{\"id\":\"" & theId & "\", \"handleId\":\"\", \"name\":\"" & theName & "\", \"emails\":\"" & theEmails & "\", \"numbers\":\"" & phoneNumbers & "\"}"
-				set outputFile to ((POSIX path of my getProjectRoot()) & "contacts/" & theId & ".json")
-				do shell script "echo " & quoted form of contactJSON & " > " & quoted form of outputFile
+				set split to "<CONTACT_INFORMATION_SPLIT>"
+
+				set contactOutput to theId & split & theName & " " & split & theEmails & " " & split & phoneNumbers & " "
+				set outputFile to ((POSIX path of my getProjectRoot()) & "contacts/" & theId & ".info")
+				do shell script "echo " & quoted form of contactOutput & " > " & quoted form of outputFile
 			end repeat
 
 			return ACTION_PERFORMED
