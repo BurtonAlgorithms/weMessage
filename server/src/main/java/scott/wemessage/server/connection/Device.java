@@ -285,23 +285,27 @@ public class Device extends Thread {
             public void run() {
                 try {
                     Gson gson = new Gson();
+                    List<JSONContact> contacts = new ArrayList<>();
                     List<JSONContact> finalList = new ArrayList<>();
-
+                    MessagesDatabase messagesDatabase = getDeviceManager().getMessageServer().getMessagesDatabase();
                     File contactsFolder = new File(getDeviceManager().getMessageServer().getConfiguration().getParentDirectoryPath(), "contacts");
                     String contactsPath =  contactsFolder.getAbsolutePath();
-                    String jsonString = FileUtils.readFile(contactsPath + "/contacts.json");
 
-                    JSONContact[] contacts = gson.fromJson(jsonString, JSONContact[].class);
-                    MessagesDatabase messagesDatabase = getDeviceManager().getMessageServer().getMessagesDatabase();
+                    for (File file : contactsFolder.listFiles()){
+                        if (FilenameUtils.getExtension(file.getName()).equalsIgnoreCase("json")){
+                            JSONContact contact = gson.fromJson(FileUtils.readFile(file.getAbsolutePath()), JSONContact.class);
+                            contacts.add(contact);
+                        }
+                    }
 
-                    for (File file : new File(contactsPath).listFiles()){
+                    for (File file : contactsFolder.listFiles()){
                         if (FilenameUtils.getExtension(file.getName()).equalsIgnoreCase("tif")) {
                             BufferedImage tif = ImageIO.read(file);
                             ImageIO.write(tif, "png", new File(contactsPath, FilenameUtils.removeExtension(file.getName()) + ".png"));
                         }
                     }
 
-                    for (File file : new File(contactsPath).listFiles()){
+                    for (File file : contactsFolder.listFiles()){
                         if (FilenameUtils.getExtension(file.getName()).equalsIgnoreCase("png")) {
                             String keys = AESCrypto.keysToString(AESCrypto.generateKeys());
                             AESCrypto.CipherByteArrayIv byteArrayIv = AESCrypto.encryptFile(file, keys);

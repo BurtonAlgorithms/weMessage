@@ -879,9 +879,7 @@ end isNumberIMessage
 
 on syncContacts(savePictures)
 	try
-	    tell application "Contacts"
-			set contactOutput to "["
-
+		tell application "Contacts"
 			repeat with x from 1 to the count of people
 				set thePerson to person x
 				set theId to do shell script "uuidgen"
@@ -911,24 +909,16 @@ on syncContacts(savePictures)
 				end repeat
 
 				set contactJSON to "{\"id\":\"" & theId & "\", \"handleId\":\"\", \"name\":\"" & theName & "\", \"emails\":\"" & theEmails & "\", \"numbers\":\"" & phoneNumbers & "\"}"
-
-				if x is equal to 1 then
-					set contactOutput to contactOutput & contactJSON
-				else
-					set contactOutput to contactOutput & "," & contactJSON
-				end if
+				set outputFile to ((POSIX path of my getProjectRoot()) & "contacts/" & theId & ".json")
+				do shell script "echo " & quoted form of contactJSON & " > " & quoted form of outputFile
 			end repeat
 
-			set contactOutput to contactOutput & "]"
-			set outputFile to ((POSIX path of my getProjectRoot()) & "contacts/contacts.json")
-			do shell script "echo " & quoted form of contactOutput & " > " & quoted form of outputFile
-
 			return ACTION_PERFORMED
-	    end tell
+		end tell
 	on error errorMessage
-    	my logError("ContactSync.scpt", errorMessage)
-    	return UNKNOWN_ERROR
-    end try
+		my logError("ContactSync.scpt", errorMessage)
+		return UNKNOWN_ERROR
+	end try
 end syncContacts
 
 
