@@ -5,7 +5,7 @@ import com.stfalcon.chatkit.commons.models.MessageContentType;
 
 import java.util.Date;
 
-import scott.wemessage.app.messages.objects.ActionMessage;
+import scott.wemessage.app.messages.models.ActionMessage;
 
 public class ActionMessageView implements MessageContentType {
 

@@ -47,12 +47,14 @@ import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageCallbacks;
-import scott.wemessage.app.messages.objects.ActionMessage;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.MessageBase;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
+import scott.wemessage.app.messages.models.ActionMessage;
+import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.messages.models.MessageBase;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.GroupChat;
+import scott.wemessage.app.messages.models.users.Contact;
+import scott.wemessage.app.messages.models.users.ContactInfo;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;
@@ -61,22 +63,24 @@ import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.AuthenticationUtils;
+import scott.wemessage.commons.utils.ListUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ChatAddContactActivity extends AppCompatActivity implements MessageCallbacks {
+public class ContactSelectActivity extends AppCompatActivity implements MessageCallbacks {
 
     private int oldEditTextColor;
     private boolean isBoundToConnectionService = false;
 
     private String callbackUuid;
     private String chatUuid;
+    private String[] handleChatUuidMap;
 
     private EditText searchContactEditText;
     private RecyclerView contactsRecyclerView;
     private ContactAdapter contactAdapter;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
 
-    private BroadcastReceiver addContactBroadcastReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver contactSelectBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED)){
@@ -120,9 +124,9 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
                 showErroredSnackbar(getString(R.string.result_process_error), 5);
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_FAILED)){
-                DialogDisplayer.showContactSyncResult(false, ChatAddContactActivity.this, getSupportFragmentManager());
+                DialogDisplayer.showContactSyncResult(false, ContactSelectActivity.this, getSupportFragmentManager());
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
-                DialogDisplayer.showContactSyncResult(true, ChatAddContactActivity.this, getSupportFragmentManager());
+                DialogDisplayer.showContactSyncResult(true, ContactSelectActivity.this, getSupportFragmentManager());
             }
         }
     };
@@ -130,7 +134,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_chat_add_contact);
+        setContentView(R.layout.activity_contact_select);
 
         if (isServiceRunning(ConnectionService.class)){
             bindService();
@@ -138,8 +142,10 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
 
         if (savedInstanceState != null){
             chatUuid = savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT);
+            handleChatUuidMap = savedInstanceState.getStringArray(weMessage.BUNDLE_HANDLE_UUID);
         }else {
             chatUuid = getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT);
+            handleChatUuidMap = getIntent().getStringArrayExtra(weMessage.BUNDLE_HANDLE_UUID);
         }
 
         IntentFilter broadcastIntentFilter = new IntentFilter();
@@ -157,16 +163,16 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
 
         callbackUuid = UUID.randomUUID().toString();
         weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
-        LocalBroadcastManager.getInstance(this).registerReceiver(addContactBroadcastReceiver, broadcastIntentFilter);
+        LocalBroadcastManager.getInstance(this).registerReceiver(contactSelectBroadcastReceiver, broadcastIntentFilter);
 
         searchContactEditText = findViewById(R.id.searchContactEditText);
         contactsRecyclerView = findViewById(R.id.contactsRecyclerView);
         oldEditTextColor = searchContactEditText.getCurrentTextColor();
 
-        findViewById(R.id.chatAddContactCancelButton).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.contactSelectCancelButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                goToChatView();
+                goToPreviousView();
             }
         });
 
@@ -229,24 +235,39 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                         return true;
                     }
 
-                    Contact attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
+                    if (!StringUtils.isEmpty(handleChatUuidMap[0])){
+                        ContactInfo attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
+
+                        if (attemptedSearchContact != null){
+                            clearEditText(searchContactEditText, true);
+                            performAction(attemptedSearchContact.findRoot().getUuid().toString());
+                            return true;
+                        }else {
+                            closeKeyboard();
+                            invalidateField(searchContactEditText);
+                            showErroredSnackbar(getString(R.string.contact_not_found), 5);
+                            return true;
+                        }
+                    }
+
+                    ContactInfo attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
 
                     if (attemptedSearchContact != null){
                         clearEditText(searchContactEditText, true);
-                        performAddParticipantAction(attemptedSearchContact.getHandle().getHandleID());
+                        performAction(attemptedSearchContact.pullHandle(true).getHandleID());
                         return true;
                     }
 
                     if (AuthenticationUtils.isValidEmailFormat(text)){
                         clearEditText(searchContactEditText, true);
-                        performAddParticipantAction(text);
+                        performAction(text);
                         return true;
                     }else {
                         PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
 
                         if (phoneNumberUtil.isPossibleNumber(text, Resources.getSystem().getConfiguration().locale.getCountry())){
                             clearEditText(searchContactEditText, true);
-                            performAddParticipantAction(text);
+                            performAction(text);
                             return true;
                         } else {
                             closeKeyboard();
@@ -260,7 +281,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             }
         });
 
-        ArrayList<Contact> contacts = new ArrayList<>(weMessage.get().getMessageManager().getContacts().values());
+        ArrayList<ContactInfo> contacts = new ArrayList<>(weMessage.get().getMessageManager().getContacts().values());
 
         contactAdapter.refreshList(contacts);
         contactAdapter.setOriginalList(contacts);
@@ -269,6 +290,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, chatUuid);
+        outState.putStringArray(weMessage.BUNDLE_HANDLE_UUID, handleChatUuidMap);
 
         super.onSaveInstanceState(outState);
     }
@@ -276,7 +298,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
     @Override
     public void onDestroy() {
         weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(addContactBroadcastReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(contactSelectBroadcastReceiver);
 
         if (isBoundToConnectionService){
             unbindService();
@@ -287,42 +309,43 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
 
     @Override
     public void onBackPressed() {
-        goToChatView();
+        goToPreviousView();
     }
 
     @Override
-    public void onContactCreate(final Contact contact) {
+    public void onContactCreate(final ContactInfo contact) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
-                    contactAdapter.addContact(contact);
-                    contactAdapter.addContactToOriginal(contact);
+                    contactAdapter.addContact(contact.findRoot());
+                    contactAdapter.addContactToOriginal(contact.findRoot());
+                }
+            }
+        });
+
+    }
+
+    @Override
+    public void onContactUpdate(final ContactInfo oldData, final ContactInfo newData) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (contactAdapter != null){
+                    contactAdapter.updateContact(oldData, newData.findRoot());
+                    contactAdapter.updateContactToOriginal(oldData, newData.findRoot());
                 }
             }
         });
     }
 
     @Override
-    public void onContactUpdate(Contact oldData, final Contact newData) {
+    public void onContactListRefresh(final List<? extends ContactInfo> contacts) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
-                    contactAdapter.updateContact(newData);
-                    contactAdapter.updateContactToOriginal(newData);
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onContactListRefresh(final List<Contact> contacts) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (contactAdapter != null){
-                    contactAdapter.refreshList(contacts);
+                    contactAdapter.refreshList(new ArrayList<>(contacts));
                     contactAdapter.setOriginalList(new ArrayList<>(contacts));
                 }
             }
@@ -342,10 +365,10 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
     public void onChatRename(Chat chat, String displayName) { }
 
     @Override
-    public void onParticipantAdd(Chat chat, Contact contact) { }
+    public void onParticipantAdd(Chat chat, Handle handle) { }
 
     @Override
-    public void onParticipantRemove(Chat chat, Contact contact) { }
+    public void onParticipantRemove(Chat chat, Handle handle) { }
 
     @Override
     public void onLeaveGroup(Chat chat) { }
@@ -386,6 +409,14 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
     @Override
     public void onAttachmentReceiveFailure(FailReason failReason) { }
 
+    private void performAction(String arg){
+        if (!StringUtils.isEmpty(chatUuid)){
+            performAddParticipantAction(arg);
+        }else if (!StringUtils.isEmpty(handleChatUuidMap[0])){
+            addHandleToContact(arg);
+        }
+    }
+
     private void performAddParticipantAction(String participant){
         if (!isServiceRunning(ConnectionService.class)){
             DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment =
@@ -407,14 +438,36 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                goToChatView();
+                goToPreviousView();
             }
         }, 100L);
     }
 
-    private void goToChatView(){
-        Intent launcherIntent = new Intent(weMessage.get(), ChatViewActivity.class);
-        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chatUuid);
+    private void addHandleToContact(String contactUuid){
+        Contact contact = weMessage.get().getMessageDatabase().getContactByUuid(contactUuid);
+        ArrayList<Handle> handles = new ArrayList<>(contact.getHandles());
+
+        handles.add(weMessage.get().getMessageDatabase().getHandleByUuid(handleChatUuidMap[0]));
+        weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), contact.setHandles(handles), true);
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                goToPreviousView();
+            }
+        }, 100L);
+    }
+
+    private void goToPreviousView(){
+        Intent launcherIntent;
+        if (!StringUtils.isEmpty(chatUuid)) {
+            launcherIntent = new Intent(weMessage.get(), ChatViewActivity.class);
+            launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chatUuid);
+        }else {
+            launcherIntent = new Intent(weMessage.get(), ContactViewActivity.class);
+            launcherIntent.putExtra(weMessage.BUNDLE_CONTACT_VIEW_UUID, handleChatUuidMap[0]);
+            launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, handleChatUuidMap[1]);
+        }
 
         startActivity(launcherIntent);
         finish();
@@ -482,7 +535,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
 
     private void showErroredSnackbar(String message, int duration){
         if (!isFinishing() && !isDestroyed()) {
-            final Snackbar snackbar = Snackbar.make(findViewById(R.id.chatAddContactLayout), message, duration * 1000);
+            final Snackbar snackbar = Snackbar.make(findViewById(R.id.contactSelectLayout), message, duration * 1000);
 
             snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
                 @Override
@@ -540,9 +593,32 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
         return result;
     }
 
+    private boolean isContactMe(ContactInfo contactInfo){
+        if (contactInfo instanceof Handle){
+            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString());
+        }else if (contactInfo instanceof Contact){
+            for (Handle h : ((Contact) contactInfo).getHandles()){
+                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isContactBlocked(ContactInfo contactInfo){
+        if (contactInfo instanceof Handle){
+            return ((Handle) contactInfo).isBlocked();
+        }else if (contactInfo instanceof Contact){
+            for (Handle h : ((Contact) contactInfo).getHandles()){
+                if (h.isBlocked()) return true;
+            }
+        }
+
+        return false;
+    }
+
     private class ContactHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
-        private Contact contact;
+        private ContactInfo contact;
 
         private ImageView contactPictureView;
         private TextView contactDisplayNameView;
@@ -556,41 +632,46 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             contactHandle = itemView.findViewById(R.id.contactHandle);
 
             itemView.setOnClickListener(this);
+            findViewById(R.id.selectedContactBubble).setVisibility(View.GONE);
         }
 
-        public void bind(Contact contact){
-            if (!(contact.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()))) {
+        public void bind(ContactInfo contact){
+            if (!isContactMe(contact)) {
                 this.contact = contact;
 
-                contactDisplayNameView.setText(contact.getUIDisplayName());
-                contactHandle.setText(contact.getHandle().getHandleID());
+                contactDisplayNameView.setText(contact.getDisplayName());
+                contactHandle.setText(contact.pullHandle(true).getHandleID());
 
-                Glide.with(ChatAddContactActivity.this).load(IOUtils.getContactIconUri(contact, IOUtils.IconSize.NORMAL)).into(contactPictureView);
+                Glide.with(ContactSelectActivity.this).load(IOUtils.getContactIconUri(contact.pullHandle(true), IOUtils.IconSize.NORMAL)).into(contactPictureView);
             }
         }
 
         @Override
         public void onClick(View view) {
-            performAddParticipantAction(contact.getHandle().getHandleID());
+            if (!StringUtils.isEmpty(handleChatUuidMap[0])){
+                performAction(contact.findRoot().getUuid().toString());
+            }else if (!StringUtils.isEmpty(chatUuid)) {
+                performAction(contact.pullHandle(true).getHandleID());
+            }
         }
     }
 
     private class ContactAdapter extends RecyclerView.Adapter<ContactHolder> {
 
-        private ArrayList<Contact> originalList = new ArrayList<>();
+        private ArrayList<ContactInfo> originalList = new ArrayList<>();
         private ArrayList<SearchableContact> contacts = new ArrayList<>();
         private AsyncTask<String, Void, Collection> searchTask;
 
         @Override
         public ContactHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            LayoutInflater layoutInflater = LayoutInflater.from(ChatAddContactActivity.this);
+            LayoutInflater layoutInflater = LayoutInflater.from(ContactSelectActivity.this);
 
             return new ContactHolder(layoutInflater, parent);
         }
 
         @Override
         public void onBindViewHolder(ContactHolder holder, int position) {
-            Contact c = contacts.get(position).getContact();
+            ContactInfo c = contacts.get(position).getContact();
 
             holder.bind(c);
         }
@@ -600,7 +681,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             return contacts.size();
         }
 
-        public Contact getContactFromSearchKey(String search){
+        public ContactInfo getContactFromSearchKey(String search){
             int index = Collections.binarySearch(contacts, new SearchableContact(null).setSearchName(search), new Comparator<SearchableContact>() {
                 @Override
                 public int compare(SearchableContact c1, SearchableContact c2) {
@@ -615,9 +696,9 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             }
         }
 
-        public void setOriginalList(ArrayList<Contact> contacts){
-            for (Contact c : contacts){
-                if (!c.isBlocked()){
+        public void setOriginalList(ArrayList<ContactInfo> contacts){
+            for (ContactInfo c : contacts){
+                if (!isContactBlocked(c)){
                     originalList.add(c);
                 }
             }
@@ -630,9 +711,9 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                 @Override
                 protected Collection doInBackground(final String... strings) {
 
-                    IPredicate<Contact> contactPredicate = new IPredicate<Contact>() {
-                        public boolean apply(Contact contact) {
-                            return StringUtils.containsIgnoreCase(contact.getUIDisplayName(), strings[0]);
+                    IPredicate<ContactInfo> contactPredicate = new IPredicate<ContactInfo>() {
+                        public boolean apply(ContactInfo contact) {
+                            return StringUtils.containsIgnoreCase(contact.getDisplayName(), strings[0]);
                         }
                     };
                     return filter(originalList, contactPredicate);
@@ -641,7 +722,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                 @Override
                 protected void onPostExecute(Collection collection) {
                     if (!isFinishing() && !isDestroyed()){
-                        refreshList(new ArrayList<Contact>(collection));
+                        refreshList(new ArrayList<ContactInfo>(collection));
                     }
                 }
             };
@@ -661,37 +742,54 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             }
         }
 
-        public void addContact(Contact c){
-            if ((!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact(c)){
-                if (c.isBlocked()) return;
+        public void addContact(ContactInfo c){
+            if (!isContactMe(c) && !excludeContact(c) && !isContactBlocked(c)){
+                if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
 
                 contacts.add(new SearchableContact(c));
                 notifyItemInserted(contacts.size() - 1);
             }
         }
 
-        public void addContactToOriginal(Contact c){
-            if ((!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact(c)){
-                if (c.isBlocked()) return;
+        public void addContactToOriginal(ContactInfo c){
+            if (!isContactMe(c)  && !excludeContact(c) && !isContactBlocked(c)){
+                if (c instanceof Contact && originalList.contains(c)) originalList.removeAll(Collections.singleton(c));
 
                 originalList.add(c);
             }
         }
 
-        public void updateContact(Contact c){
-            if ((!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact(c)) {
+        public void updateContact(ContactInfo oldData, ContactInfo newData){
+            if (!isContactMe(newData) && !excludeContact(newData)) {
 
-                new AsyncTask<Contact, Void, Integer>() {
-
+                new AsyncTask<ContactInfo, Void, Integer>() {
                     @Override
-                    protected Integer doInBackground(Contact... params) {
+                    protected Integer doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (SearchableContact contact : contacts) {
-                            if (contact.getContact().getUuid().toString().equals(params[0].getUuid().toString())) {
-                                if (params[0].isBlocked()) break;
+                        for (SearchableContact searchableContact : contacts) {
+                            ContactInfo contactInfo = searchableContact.getContact();
 
-                                contacts.set(i, new SearchableContact(params[0]));
-                                return i;
+                            if (contactInfo.equals(params[0])) {
+                                if (isContactBlocked(params[0])) break;
+
+                                if (contactInfo instanceof Handle) {
+                                    contacts.set(i, new SearchableContact(params[0]));
+                                    return i;
+                                }else if (contactInfo instanceof Contact){
+                                    Contact contact = (Contact) contactInfo;
+                                    Contact oldContact = (Contact) params[1];
+                                    List<ListUtils.ObjectContainer> handleDiffs = ListUtils.findDifference(oldContact.getHandles(), contact.getHandles());
+
+                                    for (ListUtils.ObjectContainer handleDiff : handleDiffs){
+                                        if (handleDiff.getStatus() == ListUtils.ListStatus.REMOVED){
+                                            addContact((ContactInfo) handleDiff.getObject());
+                                        }else if (handleDiff.getStatus() == ListUtils.ListStatus.ADDED){
+                                            removeContact((ContactInfo) handleDiff.getObject());
+                                        }
+                                    }
+                                    contacts.set(i, new SearchableContact(params[0]));
+                                    return i;
+                                }
                             }
                             i++;
                         }
@@ -706,21 +804,86 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                             }
                         }
                     }
+                }.execute(newData, oldData);
+            }
+        }
+
+        public void updateContactToOriginal(ContactInfo oldData, ContactInfo newData){
+            if (!isContactMe(newData) && !excludeContact(newData)) {
+                new AsyncTask<ContactInfo, Void, Void>() {
+                    @Override
+                    protected Void doInBackground(ContactInfo... params) {
+                        int i = 0;
+
+                        for (ContactInfo contactInfo : originalList) {
+                            if (contactInfo.equals(params[0])) {
+                                if (contactInfo instanceof Handle) {
+                                    originalList.set(i, params[0]);
+                                    break;
+                                }else if (contactInfo instanceof Contact){
+                                    Contact contact = (Contact) contactInfo;
+                                    Contact oldContact = (Contact) params[1];
+                                    List<ListUtils.ObjectContainer> handleDiffs = ListUtils.findDifference(oldContact.getHandles(), contact.getHandles());
+
+                                    for (ListUtils.ObjectContainer handleDiff : handleDiffs){
+                                        if (handleDiff.getStatus() == ListUtils.ListStatus.REMOVED){
+                                            addContactToOriginal((ContactInfo) handleDiff.getObject());
+                                        }else if (handleDiff.getStatus() == ListUtils.ListStatus.ADDED){
+                                            removeContactFromOriginal((ContactInfo) handleDiff.getObject());
+                                        }
+                                    }
+                                    originalList.set(i, params[0]);
+                                    break;
+                                }
+                            }
+                            i++;
+                        }
+                        return null;
+                    }
+
+                }.execute(newData, oldData);
+            }
+        }
+
+        public void removeContact(ContactInfo c){
+            if (!isContactMe(c)) {
+                new AsyncTask<ContactInfo, Void, Integer>() {
+                    @Override
+                    protected Integer doInBackground(ContactInfo... params) {
+                        int i = 0;
+                        for (SearchableContact contact : contacts) {
+                            ContactInfo contactInfo = contact.getContact();
+
+                            if (contactInfo.equals(params[0])) {
+                                contacts.remove(i);
+                                return i;
+                            }
+                            i++;
+                        }
+                        return -1;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Integer integer) {
+                        if (!isFinishing() && !isDestroyed()) {
+                            if (integer != -1) {
+                                notifyItemRemoved(integer);
+                            }
+                        }
+                    }
                 }.execute(c);
             }
         }
 
-        public void updateContactToOriginal(Contact c){
-            if ((!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact(c)) {
-                new AsyncTask<Contact, Void, Void>() {
+        public void removeContactFromOriginal(ContactInfo c){
+            if (!isContactMe(c)) {
+                new AsyncTask<ContactInfo, Void, Void>() {
                     @Override
-                    protected Void doInBackground(Contact... params) {
+                    protected Void doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (Contact contact : originalList) {
-                            if (contact.getUuid().toString().equals(params[0].getUuid().toString())) {
-                                if (params[0].isBlocked()) break;
-
-                                originalList.set(i, params[0]);
+                        for (ContactInfo contact : originalList) {
+                            if (contact.equals(params[0])) {
+                                originalList.remove(i);
                                 break;
                             }
                             i++;
@@ -732,7 +895,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             }
         }
 
-        public void refreshList(List<Contact> contactsList){
+        public void refreshList(List<ContactInfo> contactsList){
             contacts.clear();
 
             new AsyncTask<List, Void, Void>(){
@@ -741,12 +904,9 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                     ArrayList<SearchableContact> unsortedList = new ArrayList<>();
 
                     for (Object o : lists[0]){
-                        if (o instanceof Contact){
-                            if ((!((Contact) o).getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase()
-                                    .getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) && !containsContact((Contact) o)) {
-                                if (!((Contact) o).isBlocked()) {
-                                    unsortedList.add(new SearchableContact((Contact) o));
-                                }
+                        if (o instanceof ContactInfo){
+                            if (!isContactMe((ContactInfo) o) && !excludeContact((ContactInfo) o) && !isContactBlocked((ContactInfo) o)) {
+                                unsortedList.add(new SearchableContact((ContactInfo) o));
                             }
                         }
                     }
@@ -754,10 +914,7 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
                     Collections.sort(unsortedList, new Comparator<SearchableContact>() {
                         @Override
                         public int compare(SearchableContact c1, SearchableContact c2) {
-                            if (c1.getContact().getUIDisplayName().equals(c2.getContact().getUIDisplayName())){
-                                return c1.getContact().getHandle().getHandleID().compareTo(c2.getContact().getHandle().getHandleID());
-                            }
-                            return c1.getContact().getUIDisplayName().compareTo(c2.getContact().getUIDisplayName());
+                            return c1.getContact().getDisplayName().compareTo(c2.getContact().getDisplayName());
                         }
                     });
 
@@ -775,11 +932,15 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
             }.execute(contactsList);
         }
 
-        private boolean containsContact(Contact contact){
-            GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid);
+        private boolean excludeContact(ContactInfo contact){
+            if (!StringUtils.isEmpty(chatUuid)) {
+                GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid);
 
-            for (Contact c : groupChat.getParticipants()){
-                if (c.getUuid().toString().equals(contact.getUuid().toString())) return true;
+                for (Handle h : groupChat.getParticipants()) {
+                    if (contact.equals(h)) return true;
+                }
+            }else if (!StringUtils.isEmpty(handleChatUuidMap[0])) {
+                if (contact instanceof Handle) return true;
             }
             return false;
         }
@@ -788,19 +949,19 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
     private class SearchableContact {
 
         private String searchName;
-        private Contact contact;
+        private ContactInfo contact;
 
-        public SearchableContact(Contact contact){
+        public SearchableContact(ContactInfo contact){
             this.contact = contact;
         }
 
-        public Contact getContact(){
+        public ContactInfo getContact(){
             return contact;
         }
 
         public String getSearchName(){
             if (StringUtils.isEmpty(searchName)){
-                return contact.getUIDisplayName();
+                return contact.getDisplayName();
             }
             return searchName;
         }
@@ -808,6 +969,15 @@ public class ChatAddContactActivity extends AppCompatActivity implements Message
         public SearchableContact setSearchName(String searchName){
             this.searchName = searchName;
             return this;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof SearchableContact){
+                if (((SearchableContact) obj).getContact().equals(contact)) return true;
+            }
+
+            return false;
         }
     }
 

@@ -229,5 +229,10 @@
     <string name="contact_sync_success_message">Your contacts have been imported from your computer to your weMessage Contact List.</string>
     <string name="contact_sync_fail">Contact Sync Failed</string>
     <string name="contact_sync_fail_message">An error occurred while performing a Contact Sync. Please check your weServer logs for issues.</string>
+    <string name="word_primary">Primary</string>
+    <string name="add_to_contact">Add to Contact</string>
+    <string name="create_contact">Create New Contact</string>
+    <string name="contact_not_found">Could not a matching contact.</string>
+    <string name="handles_title">%1$d Emails and Numbers</string>
 
 </resources>

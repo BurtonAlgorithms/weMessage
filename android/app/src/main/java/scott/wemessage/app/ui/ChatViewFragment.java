@@ -64,14 +64,15 @@ import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.connection.IConnectionBinder;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
-import scott.wemessage.app.messages.objects.ActionMessage;
-import scott.wemessage.app.messages.objects.Attachment;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.MessageBase;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
-import scott.wemessage.app.ui.activities.ChatAddContactActivity;
+import scott.wemessage.app.messages.models.ActionMessage;
+import scott.wemessage.app.messages.models.Attachment;
+import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.messages.models.MessageBase;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.GroupChat;
+import scott.wemessage.app.messages.models.users.ContactInfo;
+import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.ui.activities.ContactSelectActivity;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ContactViewActivity;
 import scott.wemessage.app.ui.activities.ConversationActivity;
@@ -392,13 +393,13 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     }
 
     @Override
-    public void onContactCreate(Contact contact) { }
+    public void onContactCreate(ContactInfo contact) { }
 
     @Override
-    public void onContactUpdate(Contact oldData, Contact newData) { }
+    public void onContactUpdate(ContactInfo oldData, ContactInfo newData) { }
 
     @Override
-    public void onContactListRefresh(List<Contact> contacts) { }
+    public void onContactListRefresh(List<? extends ContactInfo> contacts) { }
 
     @Override
     public void onChatAdd(Chat chat) { }
@@ -454,7 +455,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     }
 
     @Override
-    public void onParticipantAdd(final Chat chat, Contact contact) {
+    public void onParticipantAdd(final Chat chat, Handle handle) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -477,7 +478,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     }
 
     @Override
-    public void onParticipantRemove(final Chat chat, Contact contact) {
+    public void onParticipantRemove(final Chat chat, Handle handle) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -832,7 +833,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     }
 
     private void launchAddParticipantActivity(){
-        Intent launcherIntent = new Intent(weMessage.get(), ChatAddContactActivity.class);
+        Intent launcherIntent = new Intent(weMessage.get(), ContactSelectActivity.class);
 
         launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chatUuid);
 
@@ -1042,7 +1043,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         private GroupChat groupChat;
 
         public ArrayList<String> attachmentUris = new ArrayList<>();
-        private ArrayList<Contact> contacts = new ArrayList<>();
+        private ArrayList<Handle> contacts = new ArrayList<>();
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -1117,9 +1118,9 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
             showingDeletePosition = null;
 
-            for (Contact c : groupChat.getParticipants()){
-                if (!c.isBlocked()) {
-                    contacts.add(c);
+            for (Handle h : groupChat.getParticipants()){
+                if (!h.isBlocked()) {
+                    contacts.add(h);
                 }
             }
 
@@ -1339,11 +1340,11 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             super(inflater.inflate(R.layout.list_item_chat_view_contact, parent, false));
         }
 
-        public void bind(GroupChat chat, Contact contact){
+        public void bind(GroupChat chat, Handle handle){
             init();
 
-            final String contactUuid = contact.getUuid().toString();
-            final String contactHandle = contact.getHandle().getHandleID();
+            final String contactUuid = handle.getUuid().toString();
+            final String contactHandle = handle.getHandleID();
 
             itemView.findViewById(R.id.chatContactLayout).setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -1376,8 +1377,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 }
             });
 
-            chatContactDisplayNameView.setText(contact.getUIDisplayName());
-            Glide.with(ChatViewFragment.this).load(IOUtils.getContactIconUri(contact, IOUtils.IconSize.NORMAL)).into(chatContactPictureView);
+            chatContactDisplayNameView.setText(handle.getDisplayName());
+            Glide.with(ChatViewFragment.this).load(IOUtils.getContactIconUri(handle, IOUtils.IconSize.NORMAL)).into(chatContactPictureView);
 
             swipeLayout.setSwipeEnabled(chat.isInChat());
 

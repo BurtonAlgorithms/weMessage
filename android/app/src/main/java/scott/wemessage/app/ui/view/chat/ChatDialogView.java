@@ -6,19 +6,19 @@ import com.stfalcon.chatkit.commons.models.IMessage;
 import java.util.ArrayList;
 import java.util.List;
 
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
-import scott.wemessage.app.messages.objects.chats.PeerChat;
-import scott.wemessage.app.ui.view.messages.ContactView;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.GroupChat;
+import scott.wemessage.app.messages.models.chats.PeerChat;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.ui.view.messages.MessageView;
+import scott.wemessage.app.ui.view.messages.UserView;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;
 
 public class ChatDialogView implements IDialog {
 
     private Chat chat;
-    private List<ContactView> users = new ArrayList<>();
+    private List<UserView> users = new ArrayList<>();
     private MessageView lastMessage;
 
     public ChatDialogView(Chat chat){
@@ -26,12 +26,12 @@ public class ChatDialogView implements IDialog {
         this.lastMessage = new MessageView(weMessage.get().getMessageDatabase().getLastMessageFromChat(chat));
 
         if (chat.getChatType() == Chat.ChatType.PEER){
-            users.add(new ContactView(((PeerChat) chat).getContact()));
+            users.add(new UserView(((PeerChat) chat).getHandle()));
         }else {
             GroupChat groupChat = (GroupChat) chat;
 
-            for (Contact c : groupChat.getParticipants()){
-                users.add(new ContactView(c));
+            for (Handle h : groupChat.getParticipants()){
+                users.add(new UserView(h));
             }
         }
     }
@@ -57,7 +57,7 @@ public class ChatDialogView implements IDialog {
     }
 
     @Override
-    public List<? extends ContactView> getUsers() {
+    public List<? extends UserView> getUsers() {
         return users;
     }
 

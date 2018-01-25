@@ -2,11 +2,12 @@ package scott.wemessage.app.messages;
 
 import java.util.List;
 
-import scott.wemessage.app.messages.objects.ActionMessage;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.MessageBase;
-import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.models.ActionMessage;
+import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.messages.models.MessageBase;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.users.ContactInfo;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
@@ -14,11 +15,11 @@ import scott.wemessage.commons.types.ReturnType;
 
 public interface MessageCallbacks {
 
-    void onContactCreate(Contact contact);
+    void onContactCreate(ContactInfo contact);
 
-    void onContactUpdate(Contact oldData, Contact newData);
+    void onContactUpdate(ContactInfo oldData, ContactInfo newData);
 
-    void onContactListRefresh(List<Contact> contacts);
+    void onContactListRefresh(List<? extends ContactInfo> contacts);
 
     void onChatAdd(Chat chat);
 
@@ -28,9 +29,9 @@ public interface MessageCallbacks {
 
     void onChatRename(Chat chat, String displayName);
 
-    void onParticipantAdd(Chat chat, Contact contact);
+    void onParticipantAdd(Chat chat, Handle handle);
 
-    void onParticipantRemove(Chat chat, Contact contact);
+    void onParticipantRemove(Chat chat, Handle handle);
 
     void onLeaveGroup(Chat chat);
 

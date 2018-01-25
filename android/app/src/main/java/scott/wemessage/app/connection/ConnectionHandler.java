@@ -43,14 +43,14 @@ import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
-import scott.wemessage.app.messages.objects.Account;
-import scott.wemessage.app.messages.objects.Attachment;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.Handle;
-import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
-import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.messages.models.users.Account;
+import scott.wemessage.app.messages.models.Attachment;
+import scott.wemessage.app.messages.models.users.Contact;
+import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.GroupChat;
+import scott.wemessage.app.messages.models.chats.PeerChat;
 import scott.wemessage.app.security.CryptoFile;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.DecryptionTask;
@@ -569,6 +569,13 @@ public final class ConnectionHandler extends Thread {
                     getParentService().endService();
                 }
                 return;
+            }catch (EOFException ex){
+                Bundle extras = new Bundle();
+                extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_authentication_message));
+                sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
+                getParentService().endService();
+
+                return;
             }catch(Exception ex){
                 AppLogger.error(TAG, "An error occurred while authenticating login information", ex);
 
@@ -677,12 +684,6 @@ public final class ConnectionHandler extends Thread {
 
                         weMessage.get().signIn(currentAccount, false);
                         database.addAccount(currentAccount);
-
-                        Handle meHandle = database.getHandleByAccount(weMessage.get().getCurrentAccount());
-
-                        if (database.getContactByHandle(meHandle) == null) {
-                            weMessage.get().getMessageManager().addContact(new Contact(UUID.randomUUID(), null, null, meHandle, null, false, false), false);
-                        }
                     } else {
                         UUID oldUUID = database.getAccountByEmail(emailPlainText).getUuid();
                         currentAccount.setUuid(oldUUID);
@@ -776,14 +777,12 @@ public final class ConnectionHandler extends Thread {
                                 MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
 
                                 for (String s : jsonMessage.getChat().getParticipants()) {
-                                    if (messageDatabase.getHandleByHandleID(s) == null) {
-                                        messageDatabase.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE));
-                                    }
-                                }
+                                    Handle handle = messageDatabase.getHandleByHandleID(s);
 
-                                for (String s : jsonMessage.getChat().getParticipants()) {
-                                    if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
-                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null, false, false), false);
+                                    if (handle == null) {
+                                        messageManager.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE, false, false), false);
+                                    }else {
+                                        messageManager.updateHandle(handle.getUuid().toString(), handle.setHandleType(Handle.HandleType.IMESSAGE), false, true);
                                     }
                                 }
 
@@ -794,14 +793,12 @@ public final class ConnectionHandler extends Thread {
                                     messageManager.setHasUnreadMessages(messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), true, false);
                                 }
 
-                                Contact sender;
+                                Handle sender;
 
                                 if (StringUtils.isEmpty(jsonMessage.getHandle())) {
-                                    Handle meHandle = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
-
-                                    sender = messageDatabase.getContactByHandle(meHandle);
+                                    sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
                                 } else {
-                                    sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+                                    sender = messageDatabase.getHandleByHandleID(jsonMessage.getHandle());
                                 }
 
                                 Chat chat = messageDatabase.getChatByMacGuid(jsonChat.getMacGuid());
@@ -844,14 +841,12 @@ public final class ConnectionHandler extends Thread {
                                 MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
 
                                 for (String s : jsonMessage.getChat().getParticipants()) {
-                                    if (messageDatabase.getHandleByHandleID(s) == null) {
-                                        messageDatabase.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE));
-                                    }
-                                }
+                                    Handle handle = messageDatabase.getHandleByHandleID(s);
 
-                                for (String s : jsonMessage.getChat().getParticipants()) {
-                                    if (messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)) == null) {
-                                        messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(s), null, false, false), false);
+                                    if (handle == null) {
+                                        messageManager.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE, false, false), false);
+                                    }else {
+                                        messageManager.updateHandle(handle.getUuid().toString(), handle.setHandleType(Handle.HandleType.IMESSAGE), false, true);
                                     }
                                 }
 
@@ -881,7 +876,7 @@ public final class ConnectionHandler extends Thread {
                                     if (!updated) {
                                         if (!StringUtils.isEmpty(StringUtils.trimORC(decryptedText))) {
                                             if (jsonMessage.isFromMe()) {
-                                                Contact sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount()));
+                                                Handle sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
 
                                                 Message message = new Message(UUID.randomUUID(), jsonMessage.getMacGuid(),
                                                         messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, new ArrayList<Attachment>(),
@@ -966,6 +961,9 @@ public final class ConnectionHandler extends Thread {
                                                 contactExists = true;
                                                 contact = dbContact;
                                             }
+                                        } else {
+                                            handle = new Handle(UUID.randomUUID(), jsonContact.getHandleId(), Handle.HandleType.IMESSAGE, false, false);
+                                            weMessage.get().getMessageManager().addHandle(handle, false);
                                         }
 
                                         if (contactExists) {
@@ -999,10 +997,10 @@ public final class ConnectionHandler extends Thread {
                                             }
                                             weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), updatedContact, false);
                                         } else {
-                                            Handle newHandle = new Handle(UUID.randomUUID(), jsonContact.getHandleId(), Handle.HandleType.IMESSAGE);
-                                            database.addHandle(newHandle);
+                                            ArrayList<Handle> handles = new ArrayList<>();
+                                            handles.add(handle);
 
-                                            contact = new Contact().setUuid(UUID.randomUUID()).setHandle(newHandle).setBlocked(false).setDoNotDisturb(false);
+                                            contact = new Contact().setUuid(UUID.randomUUID()).setHandles(handles).setPrimaryHandle(handles.get(0));
                                             String contactName = jsonContact.getName();
 
                                             if (contactName.contains(" ")) {
@@ -1154,13 +1152,13 @@ public final class ConnectionHandler extends Thread {
     }
 
     private void newGroupChat(MessageManager messageManager, JSONChat jsonChat){
-        ArrayList<Contact> contactList = new ArrayList<>();
+        ArrayList<Handle> handleList = new ArrayList<>();
 
         for (String s : jsonChat.getParticipants()) {
-            contactList.add(weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByHandleID(s)));
+            handleList.add(weMessage.get().getMessageDatabase().getHandleByHandleID(s));
         }
         GroupChat newChat = new GroupChat(UUID.randomUUID(), null, jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
-                true, true, false, jsonChat.getDisplayName(), contactList);
+                true, true, false, jsonChat.getDisplayName(), handleList);
 
         messageManager.addChat(newChat, false);
     }
@@ -1170,19 +1168,19 @@ public final class ConnectionHandler extends Thread {
 
         ArrayList<String> existingChatParticipantList = new ArrayList<>();
 
-        for (Contact c : existingChat.getParticipants()) {
-            existingChatParticipantList.add(c.getHandle().getHandleID());
+        for (Handle h : existingChat.getParticipants()) {
+            existingChatParticipantList.add(h.getHandleID());
         }
 
         for (String s : existingChatParticipantList){
             if (!jsonChat.getParticipants().contains(s)){
-                messageManager.removeParticipantFromGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), executionTime, false);
+                messageManager.removeParticipantFromGroup(existingChat, messageDatabase.getHandleByHandleID(s), executionTime, false);
             }
         }
 
         for (String s : jsonChat.getParticipants()){
             if (!existingChatParticipantList.contains(s) && !s.equalsIgnoreCase(weMessage.get().getCurrentAccount().getEmail())){
-                messageManager.addParticipantToGroup(existingChat, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(s)), executionTime, false);
+                messageManager.addParticipantToGroup(existingChat, messageDatabase.getHandleByHandleID(s), executionTime, false);
             }
         }
 
@@ -1208,12 +1206,12 @@ public final class ConnectionHandler extends Thread {
                 if (peerChat != null){
 
                     PeerChat updatedChat = new PeerChat(peerChat.getUuid(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
-                            peerChat.isInChat(), peerChat.hasUnreadMessages(), peerChat.getContact());
+                            peerChat.isInChat(), peerChat.hasUnreadMessages(), peerChat.getHandle());
                     messageManager.updateChat(peerChat.getUuid().toString(), updatedChat, false);
 
                 }else {
                     PeerChat newChat = new PeerChat(UUID.randomUUID(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
-                            true, true, messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonChat.getParticipants().get(0))));
+                            true, true, messageDatabase.getHandleByHandleID(jsonChat.getParticipants().get(0)));
                     messageManager.addChat(newChat, false);
                 }
 
@@ -1352,15 +1350,10 @@ public final class ConnectionHandler extends Thread {
                 Chat apGroupChat = messageDatabase.getChatByMacGuid(args[0]);
 
                 if (messageDatabase.getHandleByHandleID(args[1]) == null) {
-                    messageDatabase.addHandle(new Handle(UUID.randomUUID(), args[1], Handle.HandleType.IMESSAGE));
+                    weMessage.get().getMessageManager().addHandle(new Handle(UUID.randomUUID(), args[1], Handle.HandleType.IMESSAGE, false, false), false);
                 }
 
-                Contact apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[1]));
-
-                if (apContact == null) {
-                    messageManager.addContact(new Contact(UUID.randomUUID(), null, null, messageDatabase.getHandleByHandleID(args[1]), null, false, false), false);
-                    apContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[1]));
-                }
+                Handle apHandle = messageDatabase.getHandleByHandleID(args[1]);
 
                 if (apGroupChat == null || !(apGroupChat instanceof GroupChat)) {
                     Bundle extras = new Bundle();
@@ -1371,12 +1364,12 @@ public final class ConnectionHandler extends Thread {
                             new NullPointerException("Could not perform JSONAction Add Participant because group chat was not found by GUID lookup"));
                     return;
                 }
-                messageManager.addParticipantToGroup((GroupChat) apGroupChat, apContact, Calendar.getInstance().getTime(), false);
+                messageManager.addParticipantToGroup((GroupChat) apGroupChat, apHandle, Calendar.getInstance().getTime(), false);
                 break;
 
             case REMOVE_PARTICIPANT:
                 Chat rpGroupChat = messageDatabase.getChatByMacGuid(args[0]);
-                Contact rpContact = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(args[1]));
+                Handle rpHandle = messageDatabase.getHandleByHandleID(args[1]);
 
                 if (rpGroupChat == null || !(rpGroupChat instanceof GroupChat)) {
                     Bundle extras = new Bundle();
@@ -1388,16 +1381,16 @@ public final class ConnectionHandler extends Thread {
                     return;
                 }
 
-                if (rpContact == null) {
+                if (rpHandle == null) {
                     Bundle extras = new Bundle();
                     extras.putString(weMessage.BUNDLE_ACTION_PERFORM_ALTERNATE_ERROR_MESSAGE, getParentService().getString(R.string.action_perform_error_contact_not_found,
                             getParentService().getString(R.string.action_remove_participant)));
                     sendLocalBroadcast(weMessage.BROADCAST_ACTION_PERFORM_ERROR, extras);
-                    AppLogger.error("Could not perform JSONAction Remove Participant because contact with the provided Handle ID was not found.",
-                            new NullPointerException("Could not perform JSONAction Remove Participant because contact with the provided Handle ID was not found."));
+                    AppLogger.error("Could not perform JSONAction Remove Participant because the Handle ID was not found.",
+                            new NullPointerException("Could not perform JSONAction Remove Participant because the Handle ID was not found."));
                     return;
                 }
-                messageManager.removeParticipantFromGroup((GroupChat) rpGroupChat, rpContact, Calendar.getInstance().getTime(), false);
+                messageManager.removeParticipantFromGroup((GroupChat) rpGroupChat, rpHandle, Calendar.getInstance().getTime(), false);
                 break;
 
             case RENAME_GROUP:
@@ -1540,23 +1533,23 @@ public final class ConnectionHandler extends Thread {
                 .setMessageEffect(MessageEffect.from(jsonMessage.getMessageEffect())).setEffectFinished(existingMessage.getEffectFinished());
 
         if (overrideAll){
-            Contact sender;
+            Handle sender;
 
             if (messageDatabase.getChatByMacGuid(jsonMessage.getChat().getMacGuid()).getChatType() == Chat.ChatType.PEER){
                 if (jsonMessage.isFromMe()){
-                    sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount()));
+                    sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
                 }else {
                     if (StringUtils.isEmpty(jsonMessage.getHandle())) {
-                        sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+                        sender = messageDatabase.getHandleByHandleID(jsonMessage.getHandle());
                     }else {
-                        sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+                        sender = messageDatabase.getHandleByHandleID(jsonMessage.getHandle());
                     }
                 }
             }else {
                 if (StringUtils.isEmpty(jsonMessage.getHandle())) {
-                    sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount()));
+                    sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
                 } else {
-                    sender = messageDatabase.getContactByHandle(messageDatabase.getHandleByHandleID(jsonMessage.getHandle()));
+                    sender = messageDatabase.getHandleByHandleID(jsonMessage.getHandle());
                 }
             }
 
@@ -1564,7 +1557,7 @@ public final class ConnectionHandler extends Thread {
                     .setSender(sender);
         }else {
             newData.setMacGuid(existingMessage.getMacGuid()).setChat(messageDatabase.getChatByUuid(existingMessage.getChat().getUuid().toString()))
-                    .setSender(messageDatabase.getContactByHandle(existingMessage.getSender().getHandle()));
+                    .setSender(existingMessage.getSender());
         }
 
         messageManager.updateMessage(existingMessage.getUuid().toString(), newData, false);

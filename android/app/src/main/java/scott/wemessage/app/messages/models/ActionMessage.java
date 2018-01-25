@@ -1,9 +1,9 @@
-package scott.wemessage.app.messages.objects;
+package scott.wemessage.app.messages.models;
 
 import java.util.Date;
 import java.util.UUID;
 
-import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.models.chats.Chat;
 import scott.wemessage.commons.utils.DateUtils;
 
 public class ActionMessage extends MessageBase {

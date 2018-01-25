@@ -28,10 +28,10 @@ import java.util.Date;
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.MessageDatabase;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.Handle;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
+import scott.wemessage.app.messages.models.users.Contact;
+import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.GroupChat;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.DecryptionTask;
 import scott.wemessage.app.security.KeyTextPair;
@@ -102,8 +102,7 @@ public class NotificationService extends FirebaseMessagingService {
                         }
 
                         if (handle != null) {
-                            Contact c = weMessage.get().getMessageDatabase().getContactByHandle(handle);
-                            if (c.isDoNotDisturb() || c.isBlocked()) return;
+                            if (handle.isDoNotDisturb() || handle.isBlocked()) return;
                         }
 
                         DecryptionTask decryptionTask = new DecryptionTask(new KeyTextPair(jsonNotification.getEncryptedText(), jsonNotification.getKey()), CryptoType.AES);
@@ -122,14 +121,14 @@ public class NotificationService extends FirebaseMessagingService {
                         }
 
                         if (!StringUtils.isEmpty(displayName)) {
-                            if (handle != null) {
-                                message = database.getContactByHandle(handle).getUIDisplayName() + ": ";
+                            if (handle != null && database.getContactByHandle(handle) != null) {
+                                message = database.getContactByHandle(handle).getDisplayName() + ": ";
                             } else {
                                 message = jsonNotification.getHandleId() + ": ";
                             }
                         } else {
-                            if (handle != null) {
-                                displayName = database.getContactByHandle(handle).getUIDisplayName();
+                            if (handle != null && database.getContactByHandle(handle) != null) {
+                                displayName = database.getContactByHandle(handle).getDisplayName();
                             } else {
                                 displayName = jsonNotification.getHandleId();
                             }
@@ -144,8 +143,14 @@ public class NotificationService extends FirebaseMessagingService {
                         } else {
                             if (handle != null) {
                                 Contact c = database.getContactByHandle(handle);
-                                if (c.getContactPictureFileLocation() != null && !StringUtils.isEmpty(c.getContactPictureFileLocation().getFileLocation())) {
-                                    largeIcon = createCircleBitmap(BitmapFactory.decodeFile(c.getContactPictureFileLocation().getFileLocation()));
+                                if (c != null && c.getContactPictureFileLocation() != null && !StringUtils.isEmpty(c.getContactPictureFileLocation().getFileLocation())) {
+                                    Bitmap bitmap = BitmapFactory.decodeFile(c.getContactPictureFileLocation().getFileLocation());
+
+                                    if (bitmap != null) {
+                                        largeIcon = createCircleBitmap(bitmap);
+                                    }else {
+                                        largeIcon = createCircleBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_default_contact));
+                                    }
                                 } else {
                                     largeIcon = createCircleBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_default_contact));
                                 }

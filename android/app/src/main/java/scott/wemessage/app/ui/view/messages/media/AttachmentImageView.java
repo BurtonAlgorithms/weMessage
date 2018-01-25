@@ -22,7 +22,7 @@ import com.stfalcon.chatkit.commons.ImageLoader;
 import com.stfalcon.chatkit.utils.RoundedImageView;
 
 import scott.wemessage.R;
-import scott.wemessage.app.messages.objects.Attachment;
+import scott.wemessage.app.messages.models.Attachment;
 import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;

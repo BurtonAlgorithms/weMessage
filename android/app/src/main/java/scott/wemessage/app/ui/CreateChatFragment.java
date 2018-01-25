@@ -59,15 +59,16 @@ import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.connection.IConnectionBinder;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageDatabase;
-import scott.wemessage.app.messages.objects.ActionMessage;
-import scott.wemessage.app.messages.objects.Attachment;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.Handle;
-import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.MessageBase;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
-import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.messages.models.ActionMessage;
+import scott.wemessage.app.messages.models.Attachment;
+import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.messages.models.MessageBase;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.GroupChat;
+import scott.wemessage.app.messages.models.chats.PeerChat;
+import scott.wemessage.app.messages.models.users.Contact;
+import scott.wemessage.app.messages.models.users.ContactInfo;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.view.chat.CreateChatBottomSheet;
@@ -83,6 +84,7 @@ import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.DateUtils;
+import scott.wemessage.commons.utils.ListUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class CreateChatFragment extends MessagingFragment implements MessageCallbacks, IConnectionBinder {
@@ -279,7 +281,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                         return true;
                     }
 
-                    Contact attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
+                    ContactInfo attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
 
                     if (attemptedSearchContact != null){
                         addContactToSelectedView(attemptedSearchContact);
@@ -316,7 +318,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 if (!StringUtils.isEmpty(searchContactEditText.getText().toString().trim())) {
                     String text = searchContactEditText.getText().toString().trim();
 
-                    Contact attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
+                    ContactInfo attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
 
                     if (attemptedSearchContact != null){
                         addContactToSelectedView(attemptedSearchContact);
@@ -402,7 +404,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             }
         });
 
-        ArrayList<Contact> contacts = new ArrayList<>(weMessage.get().getMessageManager().getContacts().values());
+        ArrayList<ContactInfo> contacts = new ArrayList<>(weMessage.get().getMessageManager().getContacts().values());
 
         contactAdapter.refreshList(contacts);
         contactAdapter.setOriginalList(contacts);
@@ -432,38 +434,38 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     }
 
     @Override
-    public void onContactCreate(final Contact contact) {
+    public void onContactCreate(final ContactInfo contact) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
-                    contactAdapter.addContact(contact);
-                    contactAdapter.addContactToOriginal(contact);
+                    contactAdapter.addContact(contact.findRoot());
+                    contactAdapter.addContactToOriginal(contact.findRoot());
                 }
             }
         });
     }
 
     @Override
-    public void onContactUpdate(Contact oldData, final Contact newData) {
+    public void onContactUpdate(final ContactInfo oldData, final ContactInfo newData) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
-                    contactAdapter.updateContact(newData);
-                    contactAdapter.updateContactToOriginal(newData);
+                    contactAdapter.updateContact(oldData, newData.findRoot());
+                    contactAdapter.updateContactToOriginal(oldData, newData.findRoot());
                 }
             }
         });
     }
 
     @Override
-    public void onContactListRefresh(final List<Contact> contacts) {
+    public void onContactListRefresh(final List<? extends ContactInfo> contacts) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
-                    contactAdapter.refreshList(contacts);
+                    contactAdapter.refreshList(new ArrayList<>(contacts));
                     contactAdapter.setOriginalList(new ArrayList<>(contacts));
                 }
             }
@@ -483,10 +485,10 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     public void onChatRename(Chat chat, String displayName) { }
 
     @Override
-    public void onParticipantAdd(Chat chat, Contact contact) { }
+    public void onParticipantAdd(Chat chat, Handle contact) { }
 
     @Override
-    public void onParticipantRemove(Chat chat, Contact contact) { }
+    public void onParticipantRemove(Chat chat, Handle contact) { }
 
     @Override
     public void onLeaveGroup(Chat chat) { }
@@ -582,7 +584,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
         if (selectedNameViews.size() == 1){
             if (selectedNameViews.get(0) instanceof SelectedContactNameView){
-                Chat chat = messageDatabase.getChatByHandle(((SelectedContactNameView) selectedNameViews.get(0)).getContact().getHandle());
+                Chat chat = messageDatabase.getChatByHandle(((SelectedContactNameView) selectedNameViews.get(0)).getContact().pullHandle(false));
                 if (chat != null){
                     return sendMessage(text, chat);
                 }else {
@@ -593,7 +595,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                             null,
                             true,
                             false,
-                            ((SelectedContactNameView) selectedNameViews.get(0)).getContact()
+                            ((SelectedContactNameView) selectedNameViews.get(0)).getContact().pullHandle(false)
                     ));
                 }
             }else {
@@ -605,7 +607,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                         null,
                         true,
                         false,
-                        new Contact().setHandle(new Handle().setHandleID(selectedUnknownNameView.getHandle())
+                        new Handle().setHandleID(selectedUnknownNameView.getHandle()
                 )));
             }
         }else {
@@ -624,7 +626,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
             for (SelectedNameView nameView : selectedNameViews){
                 if (nameView instanceof SelectedContactNameView){
-                    participants.add(((SelectedContactNameView) nameView).getContact().getHandle().getHandleID());
+                    participants.add(((SelectedContactNameView) nameView).getContact().pullHandle(false).getHandleID());
                 }else if (nameView instanceof SelectedUnknownNameView){
                     participants.add(((SelectedUnknownNameView) nameView).getHandle());
                 }
@@ -662,7 +664,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 UUID.randomUUID(),
                 null,
                 chat,
-                weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())),
+                weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()),
                 new ArrayList<Attachment>(),
                 input,
                 DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
@@ -681,7 +683,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         return true;
     }
 
-    private void addContactToSelectedView(Contact contact){
+    private void addContactToSelectedView(ContactInfo contact){
         if (!selectedContactsViewIntegrity.contains(contact.getUuid().toString())) {
             SelectedContactNameView selectedContactNameView = new SelectedContactNameView(getActivity());
 
@@ -843,10 +845,33 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         return serviceConnection.getConnectionService() == null || !serviceConnection.getConnectionService().getConnectionHandler().isConnected().get();
     }
 
+    private boolean isContactMe(ContactInfo contactInfo){
+        if (contactInfo instanceof Handle){
+            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString());
+        }else if (contactInfo instanceof Contact){
+            for (Handle h : ((Contact) contactInfo).getHandles()){
+                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isContactBlocked(ContactInfo contactInfo){
+        if (contactInfo instanceof Handle){
+            return ((Handle) contactInfo).isBlocked();
+        }else if (contactInfo instanceof Contact){
+            for (Handle h : ((Contact) contactInfo).getHandles()){
+                if (h.isBlocked()) return true;
+            }
+        }
+
+        return false;
+    }
+
     private class ContactHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
         private boolean isSelected;
-        private Contact contact;
+        private ContactInfo contact;
         private String contactUuid;
 
         private ImageView selectedContactBubble;
@@ -865,14 +890,14 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             itemView.setOnClickListener(this);
         }
 
-        public void bind(Contact contact){
-            if (!(contact.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()))) {
+        public void bind(ContactInfo contact){
+            if (!isContactMe(contact)) {
                 this.contact = contact;
                 contactUuid = contact.getUuid().toString();
-                contactDisplayNameView.setText(contact.getUIDisplayName());
-                contactHandle.setText(contact.getHandle().getHandleID());
+                contactDisplayNameView.setText(contact.getDisplayName());
+                contactHandle.setText(contact.pullHandle(false).getHandleID());
 
-                Glide.with(CreateChatFragment.this).load(IOUtils.getContactIconUri(contact, IOUtils.IconSize.NORMAL)).into(contactPictureView);
+                Glide.with(CreateChatFragment.this).load(IOUtils.getContactIconUri(contact.pullHandle(false), IOUtils.IconSize.NORMAL)).into(contactPictureView);
 
                 if (selectedContactUuids.contains(contactUuid)){
                     setSelected(true);
@@ -916,7 +941,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     private class ContactAdapter extends RecyclerView.Adapter<ContactHolder> {
 
-        private ArrayList<Contact> originalList = new ArrayList<>();
+        private ArrayList<ContactInfo> originalList = new ArrayList<>();
         private ArrayList<SearchableContact> contacts = new ArrayList<>();
         private AsyncTask<String, Void, Collection> searchTask;
 
@@ -929,7 +954,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
         @Override
         public void onBindViewHolder(ContactHolder holder, int position) {
-            Contact c = contacts.get(position).getContact();
+            ContactInfo c = contacts.get(position).getContact();
 
             holder.bind(c);
         }
@@ -939,7 +964,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             return contacts.size();
         }
 
-        public Contact getContactFromSearchKey(String search){
+        public ContactInfo getContactFromSearchKey(String search){
             int index = Collections.binarySearch(contacts, new SearchableContact(null).setSearchName(search), new Comparator<SearchableContact>() {
                 @Override
                 public int compare(SearchableContact c1, SearchableContact c2) {
@@ -954,9 +979,9 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             }
         }
 
-        public void setOriginalList(ArrayList<Contact> contacts){
-            for (Contact c : contacts){
-                if (!c.isBlocked()){
+        public void setOriginalList(ArrayList<ContactInfo> contacts){
+            for (ContactInfo c : contacts){
+                if (!isContactBlocked(c)){
                     originalList.add(c);
                 }
             }
@@ -969,9 +994,9 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 @Override
                 protected Collection doInBackground(final String... strings) {
 
-                    IPredicate<Contact> contactPredicate = new IPredicate<Contact>() {
-                        public boolean apply(Contact contact) {
-                            return StringUtils.containsIgnoreCase(contact.getUIDisplayName(), strings[0]);
+                    IPredicate<ContactInfo> contactPredicate = new IPredicate<ContactInfo>() {
+                        public boolean apply(ContactInfo contact) {
+                            return StringUtils.containsIgnoreCase(contact.getDisplayName(), strings[0]);
                         }
                     };
                     return filter(originalList, contactPredicate);
@@ -980,7 +1005,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 @Override
                 protected void onPostExecute(Collection collection) {
                     if (!getActivity().isFinishing() && !getActivity().isDestroyed()){
-                        refreshList(new ArrayList<Contact>(collection));
+                        refreshList(new ArrayList<ContactInfo>(collection));
                     }
                 }
             };
@@ -1000,36 +1025,118 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             }
         }
 
-        public void addContact(Contact c){
-            if (!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())){
-                if (c.isBlocked()) return;
+        public void addContact(ContactInfo c){
+            if (!isContactMe(c) && !isContactBlocked(c)){
+                if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
 
                 contacts.add(new SearchableContact(c));
                 notifyItemInserted(contacts.size() - 1);
             }
         }
 
-        public void addContactToOriginal(Contact c){
-            if (!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())){
-                if (c.isBlocked()) return;
+        public void addContactToOriginal(ContactInfo c){
+            if (!isContactMe(c) && !isContactBlocked(c)){
+                if (c instanceof Contact && originalList.contains(c)) originalList.removeAll(Collections.singleton(c));
 
                 originalList.add(c);
             }
         }
 
-        public void updateContact(Contact c){
-            if (!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) {
+        public void updateContact(ContactInfo oldData, ContactInfo newData){
+            if (!isContactMe(newData)) {
+                new AsyncTask<ContactInfo, Void, Integer>() {
+                    @Override
+                    protected Integer doInBackground(ContactInfo... params) {
+                        int i = 0;
+                        for (SearchableContact searchableContact : contacts) {
+                            ContactInfo contactInfo = searchableContact.getContact();
 
-                new AsyncTask<Contact, Void, Integer>() {
+                            if (contactInfo.equals(params[0])) {
+                                if (isContactBlocked(params[0])) break;
+
+                                if (contactInfo instanceof Handle) {
+                                    contacts.set(i, new SearchableContact(params[0]));
+                                    return i;
+                                }else if (contactInfo instanceof Contact){
+                                    Contact contact = (Contact) contactInfo;
+                                    Contact oldContact = (Contact) params[1];
+                                    List<ListUtils.ObjectContainer> handleDiffs = ListUtils.findDifference(oldContact.getHandles(), contact.getHandles());
+
+                                    for (ListUtils.ObjectContainer handleDiff : handleDiffs){
+                                        if (handleDiff.getStatus() == ListUtils.ListStatus.REMOVED){
+                                            addContact((ContactInfo) handleDiff.getObject());
+                                        }else if (handleDiff.getStatus() == ListUtils.ListStatus.ADDED){
+                                            removeContact((ContactInfo) handleDiff.getObject());
+                                        }
+                                    }
+                                    contacts.set(i, new SearchableContact(params[0]));
+                                    return i;
+                                }
+                            }
+                            i++;
+                        }
+                        return -1;
+                    }
 
                     @Override
-                    protected Integer doInBackground(Contact... params) {
+                    protected void onPostExecute(Integer integer) {
+                        if (getActivity() != null && !getActivity().isFinishing() && !getActivity().isDestroyed()) {
+                            if (integer != -1) {
+                                notifyItemChanged(integer);
+                            }
+                        }
+                    }
+                }.execute(newData, oldData);
+            }
+        }
+
+        public void updateContactToOriginal(ContactInfo oldData, ContactInfo newData){
+            if (!isContactMe(newData)) {
+                new AsyncTask<ContactInfo, Void, Void>() {
+                    @Override
+                    protected Void doInBackground(ContactInfo... params) {
+                        int i = 0;
+                        for (ContactInfo contactInfo : originalList) {
+                            if (contactInfo.equals(params[0])) {
+                                if (contactInfo instanceof Handle) {
+                                    originalList.set(i, params[0]);
+                                    break;
+                                }else if (contactInfo instanceof Contact){
+                                    Contact contact = (Contact) contactInfo;
+                                    Contact oldContact = (Contact) params[1];
+                                    List<ListUtils.ObjectContainer> handleDiffs = ListUtils.findDifference(oldContact.getHandles(), contact.getHandles());
+
+                                    for (ListUtils.ObjectContainer handleDiff : handleDiffs){
+                                        if (handleDiff.getStatus() == ListUtils.ListStatus.REMOVED){
+                                            addContactToOriginal((ContactInfo) handleDiff.getObject());
+                                        }else if (handleDiff.getStatus() == ListUtils.ListStatus.ADDED){
+                                            removeContactFromOriginal((ContactInfo) handleDiff.getObject());
+                                        }
+                                    }
+                                    originalList.set(i, params[0]);
+                                    break;
+                                }
+                            }
+                            i++;
+                        }
+                        return null;
+                    }
+
+                }.execute(newData, oldData);
+            }
+        }
+
+        public void removeContact(ContactInfo c){
+            if (!isContactMe(c)) {
+                new AsyncTask<ContactInfo, Void, Integer>() {
+                    @Override
+                    protected Integer doInBackground(ContactInfo... params) {
                         int i = 0;
                         for (SearchableContact contact : contacts) {
-                            if (contact.getContact().getUuid().toString().equals(params[0].getUuid().toString())) {
-                                if (params[0].isBlocked()) break;
+                            ContactInfo contactInfo = contact.getContact();
 
-                                contacts.set(i, new SearchableContact(params[0]));
+                            if (contactInfo.equals(params[0])) {
+                                contacts.remove(i);
                                 return i;
                             }
                             i++;
@@ -1039,9 +1146,9 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
                     @Override
                     protected void onPostExecute(Integer integer) {
-                        if (!getActivity().isFinishing() && !getActivity().isDestroyed()) {
+                        if (getActivity() != null && !getActivity().isFinishing() && !getActivity().isDestroyed()) {
                             if (integer != -1) {
-                                notifyItemChanged(integer);
+                                notifyItemRemoved(integer);
                             }
                         }
                     }
@@ -1049,17 +1156,15 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             }
         }
 
-        public void updateContactToOriginal(Contact c){
-            if (!c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) {
-                new AsyncTask<Contact, Void, Void>() {
+        public void removeContactFromOriginal(ContactInfo c){
+            if (!isContactMe(c)) {
+                new AsyncTask<ContactInfo, Void, Void>() {
                     @Override
-                    protected Void doInBackground(Contact... params) {
+                    protected Void doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (Contact contact : originalList) {
-                            if (contact.getUuid().toString().equals(params[0].getUuid().toString())) {
-                                if (params[0].isBlocked()) break;
-
-                                originalList.set(i, params[0]);
+                        for (ContactInfo contact : originalList) {
+                            if (contact.equals(params[0])) {
+                                originalList.remove(i);
                                 break;
                             }
                             i++;
@@ -1071,7 +1176,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             }
         }
 
-        public void refreshList(List<Contact> contactsList){
+        public void refreshList(List<ContactInfo> contactsList){
             contacts.clear();
 
             new AsyncTask<List, Void, Void>(){
@@ -1080,12 +1185,9 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     ArrayList<SearchableContact> unsortedList = new ArrayList<>();
 
                     for (Object o : lists[0]){
-                        if (o instanceof Contact){
-                            if (!((Contact) o).getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase()
-                                    .getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) {
-                                if (!((Contact) o).isBlocked()) {
-                                    unsortedList.add(new SearchableContact((Contact) o));
-                                }
+                        if (o instanceof ContactInfo){
+                            if (!isContactMe((ContactInfo) o) && !isContactBlocked((ContactInfo) o)) {
+                                unsortedList.add(new SearchableContact((ContactInfo) o));
                             }
                         }
                     }
@@ -1093,15 +1195,11 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     Collections.sort(unsortedList, new Comparator<SearchableContact>() {
                         @Override
                         public int compare(SearchableContact c1, SearchableContact c2) {
-                            if (c1.getContact().getUIDisplayName().equals(c2.getContact().getUIDisplayName())){
-                                return c1.getContact().getHandle().getHandleID().compareTo(c2.getContact().getHandle().getHandleID());
-                            }
-                            return c1.getContact().getUIDisplayName().compareTo(c2.getContact().getUIDisplayName());
+                            return c1.getContact().getDisplayName().compareTo(c2.getContact().getDisplayName());
                         }
                     });
 
                     contacts = unsortedList;
-
                     return null;
                 }
 
@@ -1118,19 +1216,19 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     private class SearchableContact {
 
         private String searchName;
-        private Contact contact;
+        private ContactInfo contact;
 
-        public SearchableContact(Contact contact){
+        public SearchableContact(ContactInfo contact){
             this.contact = contact;
         }
 
-        public Contact getContact(){
+        public ContactInfo getContact(){
             return contact;
         }
 
         public String getSearchName(){
             if (StringUtils.isEmpty(searchName)){
-                return contact.getUIDisplayName();
+                return contact.getDisplayName();
             }
             return searchName;
         }
@@ -1139,11 +1237,20 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             this.searchName = searchName;
             return this;
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof SearchableContact){
+                if (((SearchableContact) obj).getContact().equals(contact)) return true;
+            }
+
+            return false;
+        }
     }
 
     private class SelectedContactNameView extends SelectedNameView {
 
-        private Contact contact;
+        private ContactInfo contact;
 
         public SelectedContactNameView(Context context) {
             super(context);
@@ -1157,7 +1264,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             super(context, attributeSet, defStyle);
         }
 
-        public Contact getContact(){
+        public ContactInfo getContact(){
             return contact;
         }
 
@@ -1165,11 +1272,11 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             return contact.getUuid().toString();
         }
 
-        public void initializeNameView(Contact contact){
+        public void initializeNameView(ContactInfo contact){
             this.contact = contact;
 
             super.initializeView();
-            setText(contact.getUIDisplayName());
+            setText(contact.getDisplayName());
         }
     }
 

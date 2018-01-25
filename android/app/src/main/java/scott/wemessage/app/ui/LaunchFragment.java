@@ -41,7 +41,7 @@ import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageDatabase;
-import scott.wemessage.app.messages.objects.Account;
+import scott.wemessage.app.messages.models.users.Account;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.ui.view.dialog.AnimationDialogLayout;

@@ -30,7 +30,7 @@ import java.util.Date;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.messages.objects.Attachment;
+import scott.wemessage.app.messages.models.Attachment;
 import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;

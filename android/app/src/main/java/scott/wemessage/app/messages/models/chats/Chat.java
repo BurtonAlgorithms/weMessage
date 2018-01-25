@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages.objects.chats;
+package scott.wemessage.app.messages.models.chats;
 
 import java.util.UUID;
 
@@ -12,7 +12,7 @@ public abstract class Chat {
     private String macChatIdentifier;
     private boolean isInChat;
     private boolean hasUnreadMessages;
-    private FileLocationContainer chatPictureFileLocation;
+    protected FileLocationContainer chatPictureFileLocation;
 
     public Chat(){
 
@@ -107,7 +107,7 @@ public abstract class Chat {
             return typeName;
         }
 
-        public static ChatType stringToHandleType(String s){
+        public static ChatType stringToChatType(String s){
             if (s == null) return null;
 
             switch (s.toLowerCase()){

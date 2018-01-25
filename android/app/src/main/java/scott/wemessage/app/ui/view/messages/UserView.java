@@ -2,21 +2,21 @@ package scott.wemessage.app.ui.view.messages;
 
 import com.stfalcon.chatkit.commons.models.IUser;
 
-import scott.wemessage.app.messages.objects.Contact;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.utils.IOUtils;
 
-public class ContactView implements IUser {
+public class UserView implements IUser {
 
-    private Contact contact;
+    private Handle handle;
 
-    public ContactView(Contact contact){
-        this.contact = contact;
+    public UserView(Handle handle){
+        this.handle = handle;
     }
 
     @Override
     public String getId() {
         try {
-            return contact.getUuid().toString();
+            return handle.getUuid().toString();
         }catch(Exception ex){
             return "";
         }
@@ -24,11 +24,11 @@ public class ContactView implements IUser {
 
     @Override
     public String getName() {
-        return contact.getUIDisplayName();
+        return handle.getDisplayName();
     }
 
     @Override
     public String getAvatar() {
-        return IOUtils.getContactIconUri(contact, IOUtils.IconSize.NORMAL);
+        return IOUtils.getContactIconUri(handle, IOUtils.IconSize.NORMAL);
     }
 }

@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages.objects;
+package scott.wemessage.app.messages.models;
 
 public abstract class MessageBase {
 

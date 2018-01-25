@@ -1,17 +1,19 @@
-package scott.wemessage.app.messages.objects.chats;
+package scott.wemessage.app.messages.models.chats;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import scott.wemessage.app.messages.objects.Contact;
+import scott.wemessage.app.messages.models.users.Contact;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.utils.FileLocationContainer;
+import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class GroupChat extends Chat {
 
     private String displayName;
-    private List<Contact> participants;
+    private List<Handle> participants;
     private boolean isDoNotDisturb;
 
     public GroupChat(){
@@ -19,7 +21,7 @@ public class GroupChat extends Chat {
     }
 
     public GroupChat(UUID uuid, FileLocationContainer groupChatPictureFileLocation, String macGuid, String macGroupID, String macChatIdentifier,
-                     boolean isInChat, boolean hasUnreadMessages, boolean isDoNotDisturb, String displayName, List<Contact> participants) {
+                     boolean isInChat, boolean hasUnreadMessages, boolean isDoNotDisturb, String displayName, List<Handle> participants) {
 
         super(uuid, groupChatPictureFileLocation, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
 
@@ -39,6 +41,11 @@ public class GroupChat extends Chat {
 
     public String getUIDisplayName(boolean macUI){
         String fullString;
+        List<Contact> contacts = new ArrayList<>();
+
+        for (Handle h : participants){
+            contacts.add(weMessage.get().getMessageDatabase().getContactByHandle(h));
+        }
 
         if (!StringUtils.isEmpty(getDisplayName())){
             fullString = getDisplayName();
@@ -46,25 +53,25 @@ public class GroupChat extends Chat {
             ArrayList<String> dummyParticipantList = new ArrayList<>();
 
             if (!macUI) {
-                for (Contact c : participants) {
-                    dummyParticipantList.add(c.getUIDisplayName());
+                for (Contact c : contacts) {
+                    dummyParticipantList.add(c.getDisplayName());
                 }
                 dummyParticipantList.remove(dummyParticipantList.size() - 1);
 
-                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + getParticipants().get(getParticipants().size() - 1).getUIDisplayName();
+                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + contacts.get(contacts.size() - 1).getDisplayName();
             } else {
-                for (Contact c : participants) {
-                    dummyParticipantList.add(c.getHandle().getHandleID());
+                for (Handle h : participants) {
+                    dummyParticipantList.add(h.getHandleID());
                 }
                 dummyParticipantList.remove(dummyParticipantList.size() - 1);
 
-                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + getParticipants().get(getParticipants().size() - 1).getHandle().getHandleID();
+                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + getParticipants().get(getParticipants().size() - 1).getHandleID();
             }
         }
         return fullString;
     }
 
-    public List<Contact> getParticipants() {
+    public List<Handle> getParticipants() {
         return participants;
     }
 
@@ -77,20 +84,20 @@ public class GroupChat extends Chat {
         return this;
     }
 
-    public GroupChat setParticipants(List<Contact> participants) {
+    public GroupChat setParticipants(List<Handle> participants) {
         this.participants = participants;
         return this;
     }
 
-    public GroupChat addParticipant(Contact contact){
-        participants.add(contact);
+    public GroupChat addParticipant(Handle handle){
+        participants.add(handle);
         return this;
     }
 
-    public GroupChat removeParticipant(Contact contact){
-        for (Contact c : participants){
-            if (c.getUuid().toString().equals(contact.getUuid().toString())){
-                participants.remove(c);
+    public GroupChat removeParticipant(Handle handle){
+        for (Handle h : participants){
+            if (h.getUuid().toString().equals(handle.getUuid().toString())){
+                participants.remove(h);
                 return this;
             }
         }

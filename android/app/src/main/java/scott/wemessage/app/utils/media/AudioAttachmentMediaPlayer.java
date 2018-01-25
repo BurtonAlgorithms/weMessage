@@ -6,7 +6,7 @@ import android.net.Uri;
 
 import java.io.IOException;
 
-import scott.wemessage.app.messages.objects.Attachment;
+import scott.wemessage.app.messages.models.Attachment;
 import scott.wemessage.app.weMessage;
 
 public class AudioAttachmentMediaPlayer extends MediaPlayer implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener {

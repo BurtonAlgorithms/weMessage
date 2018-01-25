@@ -1,44 +1,42 @@
-package scott.wemessage.app.messages.objects;
+package scott.wemessage.app.messages.models.users;
 
 import android.content.res.Resources;
 
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 
+import java.util.List;
 import java.util.UUID;
 
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class Contact {
+public class Contact extends ContactInfo {
 
     private UUID uuid;
-    private String firstName;
-    private String lastName;
-    private Handle handle;
+    private String firstName, lastName;
+    private List<Handle> handles;
+    private Handle primaryHandle;
     private FileLocationContainer contactPictureFileLocation;
-    private boolean isDoNotDisturb;
-    private boolean isBlocked;
 
     public Contact(){
 
     }
 
-    public Contact(UUID uuid, String firstName, String lastName, Handle handle, FileLocationContainer contactPictureFileLocation, boolean isDoNotDisturb, boolean isBlocked) {
+    public Contact(UUID uuid, String firstName, String lastName, List<Handle> handles, Handle primaryHandle, FileLocationContainer contactPictureFileLocation) {
         this.uuid = uuid;
         this.firstName = firstName;
         this.lastName = lastName;
-        this.handle = handle;
+        this.handles = handles;
+        this.primaryHandle = primaryHandle;
         this.contactPictureFileLocation = contactPictureFileLocation;
-        this.isDoNotDisturb = isDoNotDisturb;
-        this.isBlocked = isBlocked;
     }
 
     public UUID getUuid() {
         return uuid;
     }
 
-    public String getUIDisplayName(){
+    public String getDisplayName(){
         try {
             String fullString = "";
 
@@ -54,11 +52,11 @@ public class Contact {
                 PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
 
                 try {
-                    Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(getHandle().getHandleID(), Resources.getSystem().getConfiguration().locale.getCountry());
+                    Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(getPrimaryHandle().getHandleID(), Resources.getSystem().getConfiguration().locale.getCountry());
 
                     fullString = phoneNumberUtil.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL);
                 }catch (Exception ex){
-                    fullString = getHandle().getHandleID();
+                    fullString = getPrimaryHandle().getHandleID();
                 }
             }
 
@@ -72,24 +70,42 @@ public class Contact {
         return firstName;
     }
 
-    public String getLastName() {
+    public String getLastName(){
         return lastName;
     }
 
-    public Handle getHandle() {
-        return handle;
+    public List<Handle> getHandles() {
+        return handles;
+    }
+
+    public Handle getPrimaryHandle(){
+        return (primaryHandle == null) ? handles.get(0) : primaryHandle;
     }
 
     public FileLocationContainer getContactPictureFileLocation() {
         return contactPictureFileLocation;
     }
 
-    public boolean isDoNotDisturb() {
-        return isDoNotDisturb;
+    @Override
+    public ContactInfo findRoot() {
+        return this;
     }
 
-    public boolean isBlocked(){
-        return isBlocked;
+    @Override
+    public Handle pullHandle(boolean iMessage){
+        if (iMessage){
+            if (getPrimaryHandle().getHandleType() == Handle.HandleType.IMESSAGE) return getPrimaryHandle();
+            else {
+                for (Handle h : getHandles()){
+                    if (h.getHandleType() == Handle.HandleType.IMESSAGE){
+                        return h;
+                    }
+                }
+                return getPrimaryHandle();
+            }
+        }else {
+            return getPrimaryHandle();
+        }
     }
 
     public Contact setUuid(UUID uuid) {
@@ -107,23 +123,18 @@ public class Contact {
         return this;
     }
 
-    public Contact setHandle(Handle handle) {
-        this.handle = handle;
+    public Contact setHandles(List<Handle> handles) {
+        this.handles = handles;
+        return this;
+    }
+
+    public Contact setPrimaryHandle(Handle handle){
+        this.primaryHandle = handle;
         return this;
     }
 
     public Contact setContactPictureFileLocation(FileLocationContainer contactPictureFileLocation) {
         this.contactPictureFileLocation = contactPictureFileLocation;
-        return this;
-    }
-
-    public Contact setDoNotDisturb(boolean isDoNotDisturb) {
-        this.isDoNotDisturb = isDoNotDisturb;
-        return this;
-    }
-
-    public Contact setBlocked(boolean isBlocked){
-        this.isBlocked = isBlocked;
         return this;
     }
 }

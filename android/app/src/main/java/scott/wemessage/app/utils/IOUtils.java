@@ -27,10 +27,11 @@ import java.net.UnknownHostException;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
-import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.GroupChat;
+import scott.wemessage.app.messages.models.chats.PeerChat;
+import scott.wemessage.app.messages.models.users.Contact;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.utils.media.MediaDownloadCallbacks;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
@@ -55,12 +56,14 @@ public class IOUtils {
         if (chat.getChatType() == Chat.ChatType.PEER){
             PeerChat peerChat = (PeerChat) chat;
 
-            if (peerChat.getContact().getContactPictureFileLocation() == null){
+            Contact contact = weMessage.get().getMessageDatabase().getContactByHandle(peerChat.getHandle());
+
+            if (contact == null || contact.getContactPictureFileLocation() == null){
                 return getDefaultContactUri(iconSize);
-            }else if (StringUtils.isEmpty(peerChat.getContact().getContactPictureFileLocation().getFileLocation())){
+            }else if (StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())){
                 return getDefaultContactUri(iconSize);
             }else {
-                return Uri.fromFile(peerChat.getContact().getContactPictureFileLocation().getFile()).toString();
+                return Uri.fromFile(contact.getContactPictureFileLocation().getFile()).toString();
             }
         }else {
             GroupChat groupChat = (GroupChat) chat;
@@ -75,9 +78,11 @@ public class IOUtils {
         }
     }
 
-    public static String getContactIconUri(Contact contact, IconSize iconSize){
+    public static String getContactIconUri(Handle handle, IconSize iconSize){
         try {
-            if (contact.getContactPictureFileLocation() == null) {
+            Contact contact = weMessage.get().getMessageDatabase().getContactByHandle(handle);
+
+            if (contact == null || contact.getContactPictureFileLocation() == null) {
                 return getDefaultContactUri(iconSize);
             } else if (StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())) {
                 return getDefaultContactUri(iconSize);

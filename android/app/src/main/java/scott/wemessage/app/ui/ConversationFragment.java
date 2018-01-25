@@ -77,14 +77,15 @@ import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.firebase.NotificationCallbacks;
-import scott.wemessage.app.messages.objects.ActionMessage;
-import scott.wemessage.app.messages.objects.Attachment;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.MessageBase;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
-import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.messages.models.ActionMessage;
+import scott.wemessage.app.messages.models.Attachment;
+import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.messages.models.MessageBase;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.GroupChat;
+import scott.wemessage.app.messages.models.chats.PeerChat;
+import scott.wemessage.app.messages.models.users.ContactInfo;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ChatViewActivity;
 import scott.wemessage.app.ui.activities.ContactViewActivity;
@@ -341,7 +342,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         ImageLoader imageLoader;
         final MessageManager messageManager = weMessage.get().getMessageManager();
-        final String meUuid = weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())).getUuid().toString();
+        final String meUuid = weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString();
 
         MessageHolders messageHolders = new MessageHolders()
                 .setIncomingTextConfig(IncomingMessageViewHolder.class, R.layout.incoming_message)
@@ -595,17 +596,17 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public void onContactCreate(Contact contact) {
+    public void onContactCreate(ContactInfo contact) {
 
     }
 
     @Override
-    public void onContactUpdate(Contact oldData, Contact newData) {
+    public void onContactUpdate(ContactInfo oldData, ContactInfo newData) {
 
     }
 
     @Override
-    public void onContactListRefresh(List<Contact> contacts) {
+    public void onContactListRefresh(List<? extends ContactInfo> handles) {
 
     }
 
@@ -653,7 +654,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public void onParticipantAdd(final Chat chat, Contact contact) {
+    public void onParticipantAdd(final Chat chat, Handle handle) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -666,7 +667,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public void onParticipantRemove(final Chat chat, Contact contact) {
+    public void onParticipantRemove(final Chat chat, Handle handle) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -1264,7 +1265,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                         UUID.randomUUID(),
                         null,
                         getChat(),
-                        weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount())),
+                        weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()),
                         attachments,
                         unprocessedMessage.getInput().toString().trim(),
                         DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
@@ -1556,7 +1557,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     private void launchContactView(){
         Intent launcherIntent = new Intent(weMessage.get(), ContactViewActivity.class);
 
-        launcherIntent.putExtra(weMessage.BUNDLE_CONTACT_VIEW_UUID, ((PeerChat) getChat()).getContact().getUuid().toString());
+        launcherIntent.putExtra(weMessage.BUNDLE_CONTACT_VIEW_UUID, ((PeerChat) getChat()).getHandle().getUuid().toString());
         launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
 
         startActivity(launcherIntent);

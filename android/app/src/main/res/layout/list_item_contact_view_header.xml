@@ -116,28 +116,35 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <TextView
-                android:id="@+id/contactViewHandleHeader"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/black"/>
-
-            <TextView
-                android:id="@+id/contactViewHandleTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:textSize="18sp"
-                android:textColor="@color/colorHeader"/>
-
-            <View
-                android:background="@color/lighterGray"
+            <LinearLayout
+                android:id="@+id/primaryHandleView"
+                android:orientation="vertical"
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp"/>
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:text="@string/word_primary"/>
+
+                <TextView
+                    android:id="@+id/contactViewHandleTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textSize="18sp"
+                    android:textColor="@color/colorHeader"/>
+
+                <View
+                    android:background="@color/lighterGray"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"/>
+            </LinearLayout>
 
             <RelativeLayout
                 android:layout_width="wrap_content"
@@ -179,15 +186,81 @@
                 android:minHeight="0dp"
                 app:buttonFontName="OrkneyMedium"/>
 
+            <LinearLayout
+                android:id="@+id/setContactView"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <View
+                    android:background="@color/lighterGray"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp" />
+
+                <LinearLayout
+                    android:id="@+id/setContactButton"
+                    android:orientation="horizontal"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:src="@drawable/ic_add"
+                        android:tint="@color/colorAccent"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:layout_gravity="center"/>
+
+                    <scott.wemessage.app.ui.view.font.FontTextView
+                        android:text="@string/add_to_contact"
+                        android:textColor="@color/colorAccent"
+                        android:layout_marginStart="8dp"
+                        android:textSize="18sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"/>
+                </LinearLayout>
+
+            </LinearLayout>
+
         </LinearLayout>
 
     </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/contactHandlesLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="24dp"
+        android:layout_below="@id/contactViewDetailsLayout">
+
+        <android.support.v7.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:contentPadding="8dp"
+            app:cardCornerRadius="4dp">
+
+            <TextView
+                android:id="@+id/contactViewHandlesTextView"
+                android:textSize="20sp"
+                android:textColor="@color/colorHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:padding="4dp"/>
+
+        </android.support.v7.widget.CardView>
+
+    </LinearLayout>
 
     <android.support.v7.widget.CardView
         android:id="@+id/contactViewAttachmentsCardView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/contactViewDetailsLayout"
+        android:layout_below="@id/contactHandlesLayout"
         android:layout_marginTop="24dp"
         app:contentPadding="8dp"
         app:cardCornerRadius="4dp">

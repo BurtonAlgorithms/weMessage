@@ -17,10 +17,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import scott.wemessage.R;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
-import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.GroupChat;
+import scott.wemessage.app.messages.models.chats.PeerChat;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.ui.view.font.FontTextView;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.view.DisplayUtils;
@@ -62,7 +62,7 @@ public class ChatTitleView extends LinearLayout {
         }
 
         if (chat instanceof PeerChat){
-            Contact contact = ((PeerChat) chat).getContact();
+            Handle handle = ((PeerChat) chat).getHandle();
             String url = IOUtils.getChatIconUri(chat, IOUtils.IconSize.NORMAL);
             RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) getLayoutParams();
 
@@ -90,7 +90,7 @@ public class ChatTitleView extends LinearLayout {
             titleTextView.setTextColor(Color.WHITE);
             titleTextView.setSingleLine();
             titleTextView.setEllipsize(TextUtils.TruncateAt.END);
-            titleTextView.setText(contact.getUIDisplayName());
+            titleTextView.setText(handle.getDisplayName());
             titleTextView.setLayoutParams(textLayoutParams);
 
             participantsTextView.setVisibility(GONE);
@@ -139,13 +139,13 @@ public class ChatTitleView extends LinearLayout {
             String participantsText;
             List<String> participantDisplayNames = new ArrayList<>();
 
-            for (Contact c : groupChat.getParticipants()){
-                participantDisplayNames.add(c.getUIDisplayName());
+            for (Handle h : groupChat.getParticipants()){
+                participantDisplayNames.add(h.getDisplayName());
             }
             participantDisplayNames.remove(participantDisplayNames.size() - 1);
 
             participantsText = StringUtils.join(participantDisplayNames, ", ", 0) + getContext().getString(R.string.word_and) +
-                    " " + groupChat.getParticipants().get(groupChat.getParticipants().size() - 1).getUIDisplayName();
+                    " " + groupChat.getParticipants().get(groupChat.getParticipants().size() - 1).getDisplayName();
 
             participantsTextView.setTextSize(PARTICIPANT_TEXT_SIZE);
             participantsTextView.setTextColor(Color.WHITE);

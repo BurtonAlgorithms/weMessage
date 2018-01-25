@@ -22,7 +22,7 @@ import scott.wemessage.R;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.firebase.NotificationCallbacks;
-import scott.wemessage.app.messages.objects.Account;
+import scott.wemessage.app.messages.models.users.Account;
 import scott.wemessage.app.security.util.AesPrngHelper;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.utils.IOUtils;
@@ -35,7 +35,7 @@ import scott.wemessage.commons.utils.StringUtils;
 
 public final class weMessage extends Application implements Constants {
 
-    public static final int DATABASE_VERSION = 2;
+    public static final int DATABASE_VERSION = 3;
     public static final int CONNECTION_TIMEOUT_WAIT = 7;
     public static final int MAX_CHAT_ICON_SIZE = 26214400;
 
@@ -81,6 +81,7 @@ public final class weMessage extends Application implements Constants {
     public static final String BUNDLE_CREATE_CHAT_CONTACT_UUIDS = IDENTIFIER_PREFIX + "bundleCreateChatContactUuids";
     public static final String BUNDLE_CREATE_CHAT_UNKNOWN_HANDLES = IDENTIFIER_PREFIX + "bundleCreateChatUnknownHandles";
     public static final String BUNDLE_CONTACT_VIEW_UUID = IDENTIFIER_PREFIX + "bundleContactViewUuid";
+    public static final String BUNDLE_HANDLE_UUID = IDENTIFIER_PREFIX + "bundleHandleUuid";
 
     public static final String ARG_HOST = IDENTIFIER_PREFIX + "hostArg";
     public static final String ARG_PORT = IDENTIFIER_PREFIX + "portArg";
@@ -337,7 +338,7 @@ public final class weMessage extends Application implements Constants {
         this.currentAccount = account;
     }
 
-    private synchronized void dumpMessageManager(){
+    public synchronized void dumpMessageManager(){
         if (messageManager != null) {
             messageManager.dumpAll(this);
             messageManager = null;

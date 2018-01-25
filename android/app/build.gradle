@@ -6,7 +6,7 @@ def debugProguard = false
 
 android {
     compileSdkVersion 27
-    buildToolsVersion '27.0.2'
+    buildToolsVersion '27.0.3'
     defaultConfig {
         applicationId "scott.wemessage"
         minSdkVersion 21
@@ -42,9 +42,9 @@ dependencies {
     implementation 'com.android.support:support-v4:27.0.2'
     implementation 'com.android.support:support-v13:27.0.2'
     implementation "com.android.support:support-emoji:27.0.2"
-    implementation 'com.google.firebase:firebase-core:11.6.2'
-    implementation 'com.google.firebase:firebase-messaging:11.6.2'
-    implementation 'com.github.bumptech.glide:glide:4.4.0'
+    implementation 'com.google.firebase:firebase-core:11.8.0'
+    implementation 'com.google.firebase:firebase-messaging:11.8.0'
+    implementation 'com.github.bumptech.glide:glide:4.5.0'
     implementation 'com.github.stfalcon:chatkit:0.2.2'
     implementation 'com.github.siyamed:android-shape-imageview:0.9.3@aar'
     implementation 'com.afollestad:easyvideoplayer:0.3.0'
@@ -62,7 +62,7 @@ dependencies {
     }
 
     testImplementation 'junit:junit:4.12'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.4.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.5.0'
 }
 
 apply plugin: 'com.google.gms.google-services'

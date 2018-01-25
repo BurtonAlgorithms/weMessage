@@ -33,9 +33,9 @@ import java.io.File;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.messages.objects.Attachment;
-import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.models.Attachment;
+import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.messages.models.chats.Chat;
 import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;

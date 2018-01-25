@@ -5,7 +5,7 @@ import com.stfalcon.chatkit.commons.models.IMessage;
 import java.util.Calendar;
 import java.util.Date;
 
-import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.messages.models.Message;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class MessageView implements IMessage {
@@ -35,11 +35,11 @@ public class MessageView implements IMessage {
     }
 
     @Override
-    public ContactView getUser() {
+    public UserView getUser() {
         try {
-            return new ContactView(message.getSender());
+            return new UserView(message.getSender());
         }catch (Exception ex){
-            return new ContactView(null);
+            return new UserView(null);
         }
     }
 

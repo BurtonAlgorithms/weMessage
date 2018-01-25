@@ -35,12 +35,13 @@ import java.util.UUID;
 import scott.wemessage.R;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
-import scott.wemessage.app.messages.objects.ActionMessage;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.MessageBase;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.messages.models.ActionMessage;
+import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.messages.models.MessageBase;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.PeerChat;
+import scott.wemessage.app.messages.models.users.ContactInfo;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.ui.activities.CreateChatActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
@@ -301,17 +302,17 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     }
 
     @Override
-    public void onContactCreate(Contact contact) {
+    public void onContactCreate(ContactInfo contact) {
 
     }
 
     @Override
-    public void onContactUpdate(Contact oldData, Contact newData) {
+    public void onContactUpdate(ContactInfo oldData, ContactInfo newData) {
 
     }
 
     @Override
-    public void onContactListRefresh(List<Contact> contacts) {
+    public void onContactListRefresh(List<? extends ContactInfo> handles) {
 
     }
 
@@ -372,7 +373,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     }
 
     @Override
-    public void onParticipantAdd(Chat chat, Contact contact) {
+    public void onParticipantAdd(Chat chat, Handle handle) {
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
@@ -386,7 +387,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     }
 
     @Override
-    public void onParticipantRemove(Chat chat, Contact contact) {
+    public void onParticipantRemove(Chat chat, Handle handle) {
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
@@ -608,7 +609,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     private boolean isChatBlocked(Chat chat){
         try {
-            return chat instanceof PeerChat && (weMessage.get().getMessageDatabase().getContactByHandle(((PeerChat) chat).getContact().getHandle()).isBlocked());
+            return chat instanceof PeerChat && (((PeerChat) chat).getHandle().isBlocked());
         }catch (NullPointerException ex){
             return false;
         }

@@ -39,11 +39,13 @@ import java.util.UUID;
 
 import scott.wemessage.R;
 import scott.wemessage.app.messages.MessageCallbacks;
-import scott.wemessage.app.messages.objects.ActionMessage;
-import scott.wemessage.app.messages.objects.Contact;
-import scott.wemessage.app.messages.objects.Message;
-import scott.wemessage.app.messages.objects.MessageBase;
-import scott.wemessage.app.messages.objects.chats.Chat;
+import scott.wemessage.app.messages.models.ActionMessage;
+import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.messages.models.MessageBase;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.users.Contact;
+import scott.wemessage.app.messages.models.users.ContactInfo;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.weMessage;
@@ -187,7 +189,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             }
         });
 
-        ArrayList<Contact> contacts = new ArrayList<>(weMessage.get().getMessageManager().getContacts().values());
+        ArrayList<ContactInfo> contacts = new ArrayList<>(weMessage.get().getMessageManager().getContacts().values());
 
         contactAdapter.refreshList(contacts);
         contactAdapter.setOriginalList(contacts);
@@ -207,41 +209,36 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
     }
 
     @Override
-    public void onContactCreate(final Contact contact) {
-        if (!contact.isBlocked()) return;
+    public void onContactCreate(final ContactInfo contact) {
+        if (!isContactBlocked(contact)) return;
 
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
-                    contactAdapter.addContact(contact);
-                    contactAdapter.addContactToOriginal(contact);
+                    contactAdapter.addContact(contact.findRoot());
+                    contactAdapter.addContactToOriginal(contact.findRoot());
                 }
             }
         });
     }
 
     @Override
-    public void onContactUpdate(final Contact oldData, final Contact newData) {
+    public void onContactUpdate(final ContactInfo oldData, final ContactInfo newData) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
-                    if (!oldData.isBlocked() && !newData.isBlocked()) return;
+                    if (!isContactBlocked(oldData) && !isContactBlocked(newData.findRoot())) return;
 
-                    if (!oldData.isBlocked() && newData.isBlocked()){
-                        contactAdapter.addContact(newData);
-                        contactAdapter.addContactToOriginal(newData);
+                    if (!isContactBlocked(oldData) && isContactBlocked(newData.findRoot())){
+                        contactAdapter.addContact(newData.findRoot());
+                        contactAdapter.addContactToOriginal(newData.findRoot());
                     }
 
-                    if (oldData.isBlocked() && !newData.isBlocked()){
-                        contactAdapter.removeContact(newData);
-                        contactAdapter.removeContactFromOriginal(newData);
-                    }
-
-                    if (oldData.isBlocked() && newData.isBlocked()) {
-                        contactAdapter.updateContact(newData);
-                        contactAdapter.updateContactToOriginal(newData);
+                    if (isContactBlocked(oldData) && !isContactBlocked(newData.findRoot())){
+                        contactAdapter.removeContact(newData.findRoot());
+                        contactAdapter.removeContactFromOriginal(newData.findRoot());
                     }
                 }
             }
@@ -249,12 +246,12 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
     }
 
     @Override
-    public void onContactListRefresh(final List<Contact> contacts) {
+    public void onContactListRefresh(final List<? extends ContactInfo> contacts) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (contactAdapter != null){
-                    contactAdapter.refreshList(contacts);
+                    contactAdapter.refreshList(new ArrayList<>(contacts));
                     contactAdapter.setOriginalList(new ArrayList<>(contacts));
                 }
             }
@@ -274,10 +271,10 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
     public void onChatRename(Chat chat, String displayName) { }
 
     @Override
-    public void onParticipantAdd(Chat chat, Contact contact) { }
+    public void onParticipantAdd(Chat chat, Handle handle) { }
 
     @Override
-    public void onParticipantRemove(Chat chat, Contact contact) { }
+    public void onParticipantRemove(Chat chat, Handle handle) { }
 
     @Override
     public void onLeaveGroup(Chat chat) { }
@@ -389,8 +386,27 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
         return result;
     }
 
-    private boolean isContactMe(Contact c){
-        return c.getHandle().getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString());
+    private boolean isContactMe(ContactInfo contactInfo){
+        if (contactInfo instanceof Handle){
+            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString());
+        }else if (contactInfo instanceof Contact){
+            for (Handle h : ((Contact) contactInfo).getHandles()){
+                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isContactBlocked(ContactInfo contactInfo){
+        if (contactInfo instanceof Handle){
+            return ((Handle) contactInfo).isBlocked();
+        }else if (contactInfo instanceof Contact){
+            for (Handle h : ((Contact) contactInfo).getHandles()){
+                if (h.isBlocked()) return true;
+            }
+        }
+
+        return false;
     }
 
     private class ContactHolder extends RecyclerView.ViewHolder {
@@ -407,18 +423,27 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             super(inflater.inflate(R.layout.list_item_blocked_contact, parent, false));
         }
 
-        public void bind(final Contact contact){
+        public void bind(final ContactInfo contact){
             init();
 
-            contactDisplayNameView.setText(contact.getUIDisplayName());
-            contactHandle.setText(contact.getHandle().getHandleID());
+            contactDisplayNameView.setText(contact.getDisplayName());
+            contactHandle.setText(contact.pullHandle(false).getHandleID());
 
-            Glide.with(BlockedContactsActivity.this).load(IOUtils.getContactIconUri(contact, IOUtils.IconSize.NORMAL)).into(contactPictureView);
+            Glide.with(BlockedContactsActivity.this).load(IOUtils.getContactIconUri(contact.pullHandle(false), IOUtils.IconSize.NORMAL)).into(contactPictureView);
 
             unblockContactButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), contact.setBlocked(false), true);
+                    if (contact instanceof Handle) {
+                        Handle h = (Handle) contact;
+
+                        weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(false), true, true);
+                    }else if (contact instanceof Contact){
+                        for (Handle h : ((Contact) contact).getHandles()){
+                            weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(false), false, false);
+                        }
+                        weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), (Contact) contact, true);
+                    }
                 }
             });
 
@@ -492,7 +517,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
         private Integer showingDeletePosition;
 
-        private ArrayList<Contact> originalList = new ArrayList<>();
+        private ArrayList<ContactInfo> originalList = new ArrayList<>();
         private ArrayList<SearchableContact> contacts = new ArrayList<>();
         private AsyncTask<String, Void, Collection> searchTask;
 
@@ -505,7 +530,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
         @Override
         public void onBindViewHolder(ContactHolder holder, int position) {
-            Contact c = contacts.get(position).getContact();
+            ContactInfo c = contacts.get(position).getContact();
 
             holder.bind(c);
         }
@@ -515,9 +540,9 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             return contacts.size();
         }
 
-        public void setOriginalList(ArrayList<Contact> contacts){
-            for (Contact c : contacts){
-                if (c.isBlocked()){
+        public void setOriginalList(ArrayList<ContactInfo> contacts){
+            for (ContactInfo c : contacts){
+                if (isContactBlocked(c)){
                     originalList.add(c);
                 }
             }
@@ -530,9 +555,9 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                 @Override
                 protected Collection doInBackground(final String... strings) {
 
-                    IPredicate<Contact> contactPredicate = new IPredicate<Contact>() {
-                        public boolean apply(Contact contact) {
-                            return StringUtils.containsIgnoreCase(contact.getUIDisplayName(), strings[0]);
+                    IPredicate<ContactInfo> contactPredicate = new IPredicate<ContactInfo>() {
+                        public boolean apply(ContactInfo contact) {
+                            return StringUtils.containsIgnoreCase(contact.getDisplayName(), strings[0]);
                         }
                     };
                     return filter(originalList, contactPredicate);
@@ -541,7 +566,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                 @Override
                 protected void onPostExecute(Collection collection) {
                     if (!isFinishing() && !isDestroyed()){
-                        refreshList(new ArrayList<Contact>(collection));
+                        refreshList(new ArrayList<ContactInfo>(collection));
                     }
                 }
             };
@@ -561,77 +586,33 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             }
         }
 
-        public void addContact(Contact c){
-            if (!isContactMe(c) && c.isBlocked()){
+        public void addContact(ContactInfo c){
+            if (!isContactMe(c) && isContactBlocked(c)){
+                if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
+
                 contacts.add(new SearchableContact(c));
                 notifyItemInserted(contacts.size() - 1);
             }
         }
 
-        public void addContactToOriginal(Contact c){
-            if (!isContactMe(c) && c.isBlocked()){
+        public void addContactToOriginal(ContactInfo c){
+            if (!isContactMe(c) && isContactBlocked(c)){
+                if (c instanceof Contact && originalList.contains(c)) originalList.removeAll(Collections.singleton(c));
+
                 originalList.add(c);
             }
         }
 
-        public void updateContact(Contact c){
-            if (!isContactMe(c) && c.isBlocked()) {
-
-                new AsyncTask<Contact, Void, Integer>() {
-
-                    @Override
-                    protected Integer doInBackground(Contact... params) {
-                        int i = 0;
-                        for (SearchableContact contact : contacts) {
-                            if (contact.getContact().getUuid().toString().equals(params[0].getUuid().toString())) {
-                                contacts.set(i, new SearchableContact(params[0]));
-                                return i;
-                            }
-                            i++;
-                        }
-                        return -1;
-                    }
-
-                    @Override
-                    protected void onPostExecute(Integer integer) {
-                        if (!isFinishing() && !isDestroyed()) {
-                            if (integer != -1) {
-                                notifyItemChanged(integer);
-                            }
-                        }
-                    }
-                }.execute(c);
-            }
-        }
-
-        public void updateContactToOriginal(Contact c){
-            if (!isContactMe(c) && c.isBlocked()) {
-                new AsyncTask<Contact, Void, Void>() {
-                    @Override
-                    protected Void doInBackground(Contact... params) {
-                        int i = 0;
-                        for (Contact contact : originalList) {
-                            if (contact.getUuid().toString().equals(params[0].getUuid().toString())) {
-                                originalList.set(i, params[0]);
-                                break;
-                            }
-                            i++;
-                        }
-                        return null;
-                    }
-
-                }.execute(c);
-            }
-        }
-
-        public void removeContact(Contact c){
+        public void removeContact(ContactInfo c){
             if (!isContactMe(c)) {
-                new AsyncTask<Contact, Void, Integer>() {
+                new AsyncTask<ContactInfo, Void, Integer>() {
                     @Override
-                    protected Integer doInBackground(Contact... params) {
+                    protected Integer doInBackground(ContactInfo... params) {
                         int i = 0;
                         for (SearchableContact contact : contacts) {
-                            if (contact.getContact().getUuid().toString().equals(params[0].getUuid().toString())) {
+                            ContactInfo contactInfo = contact.getContact();
+
+                            if (contactInfo.equals(params[0])) {
                                 closeUnderlyingView();
                                 contacts.remove(i);
                                 return i;
@@ -653,14 +634,14 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             }
         }
 
-        public void removeContactFromOriginal(Contact c){
+        public void removeContactFromOriginal(ContactInfo c){
             if (!isContactMe(c)) {
-                new AsyncTask<Contact, Void, Void>() {
+                new AsyncTask<ContactInfo, Void, Void>() {
                     @Override
-                    protected Void doInBackground(Contact... params) {
+                    protected Void doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (Contact contact : originalList) {
-                            if (contact.getUuid().toString().equals(params[0].getUuid().toString())) {
+                        for (ContactInfo contact : originalList) {
+                            if (contact.equals(params[0])) {
                                 originalList.remove(i);
                                 break;
                             }
@@ -673,7 +654,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             }
         }
 
-        public void refreshList(List<Contact> contactsList){
+        public void refreshList(List<ContactInfo> contactsList){
             contacts.clear();
 
             new AsyncTask<List, Void, Void>(){
@@ -682,9 +663,9 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                     ArrayList<SearchableContact> unsortedList = new ArrayList<>();
 
                     for (Object o : lists[0]){
-                        if (o instanceof Contact){
-                            if (!isContactMe((Contact) o) && ((Contact) o).isBlocked()) {
-                                unsortedList.add(new SearchableContact((Contact) o));
+                        if (o instanceof ContactInfo){
+                            if (!isContactMe((ContactInfo) o) && isContactBlocked((Contact) o)) {
+                                unsortedList.add(new SearchableContact((ContactInfo) o));
                             }
                         }
                     }
@@ -692,10 +673,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                     Collections.sort(unsortedList, new Comparator<SearchableContact>() {
                         @Override
                         public int compare(SearchableContact c1, SearchableContact c2) {
-                            if (c1.getContact().getUIDisplayName().equals(c2.getContact().getUIDisplayName())){
-                                return c1.getContact().getHandle().getHandleID().compareTo(c2.getContact().getHandle().getHandleID());
-                            }
-                            return c1.getContact().getUIDisplayName().compareTo(c2.getContact().getUIDisplayName());
+                            return c1.getContact().getDisplayName().compareTo(c2.getContact().getDisplayName());
                         }
                     });
 
@@ -724,14 +702,23 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
     private class SearchableContact {
 
-        private Contact contact;
+        private ContactInfo contact;
 
-        public SearchableContact(Contact contact){
+        public SearchableContact(ContactInfo contact){
             this.contact = contact;
         }
 
-        public Contact getContact(){
+        public ContactInfo getContact(){
             return contact;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof SearchableContact){
+                if (((SearchableContact) obj).getContact().equals(contact)) return true;
+            }
+
+            return false;
         }
     }
 

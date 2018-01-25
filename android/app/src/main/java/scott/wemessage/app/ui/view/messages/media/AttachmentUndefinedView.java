@@ -7,7 +7,7 @@ import android.widget.ImageView;
 import com.stfalcon.chatkit.utils.RoundedImageView;
 
 import scott.wemessage.R;
-import scott.wemessage.app.messages.objects.Attachment;
+import scott.wemessage.app.messages.models.Attachment;
 import scott.wemessage.app.ui.view.font.FontTextView;
 import scott.wemessage.app.ui.view.messages.MessageView;
 

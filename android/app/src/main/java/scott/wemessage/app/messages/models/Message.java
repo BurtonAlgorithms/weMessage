@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages.objects;
+package scott.wemessage.app.messages.models;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,9 +10,10 @@ import java.util.List;
 import java.util.UUID;
 
 import scott.wemessage.app.connection.ConnectionHandler;
-import scott.wemessage.app.messages.objects.chats.Chat;
-import scott.wemessage.app.messages.objects.chats.GroupChat;
-import scott.wemessage.app.messages.objects.chats.PeerChat;
+import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.messages.models.chats.GroupChat;
+import scott.wemessage.app.messages.models.chats.PeerChat;
+import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.security.CryptoFile;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.EncryptionTask;
@@ -32,7 +33,7 @@ public class Message extends MessageBase {
     private UUID uuid;
     private String macGuid;
     private Chat chat;
-    private Contact sender;
+    private Handle sender;
     private List<Attachment> attachments;
     private String text;
     private Long dateSent, dateDelivered, dateRead;
@@ -44,7 +45,7 @@ public class Message extends MessageBase {
 
     }
 
-    public Message(UUID uuid, String macGuid, Chat chat, Contact sender, List<Attachment> attachments, String text, Long dateSent, Long dateDelivered, Long dateRead,
+    public Message(UUID uuid, String macGuid, Chat chat, Handle sender, List<Attachment> attachments, String text, Long dateSent, Long dateDelivered, Long dateRead,
                    Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe, MessageEffect messageEffect, Boolean isEffectFinished){
         this.uuid = uuid;
         this.macGuid = macGuid;
@@ -77,7 +78,7 @@ public class Message extends MessageBase {
         return chat;
     }
 
-    public Contact getSender() {
+    public Handle getSender() {
         return sender;
     }
 
@@ -175,7 +176,7 @@ public class Message extends MessageBase {
         return this;
     }
 
-    public Message setSender(Contact sender) {
+    public Message setSender(Handle sender) {
         this.sender = sender;
         return this;
     }
@@ -254,21 +255,21 @@ public class Message extends MessageBase {
 
         if(chat instanceof PeerChat){
             displayName = null;
-            participants.add(((PeerChat) chat).getContact().getHandle().getHandleID());
+            participants.add(((PeerChat) chat).getHandle().getHandleID());
         } else {
             GroupChat groupChat = (GroupChat) chat;
 
             displayName = groupChat.getDisplayName();
 
-            for (Contact c : groupChat.getParticipants()){
-                participants.add(c.getHandle().getHandleID());
+            for (Handle h : groupChat.getParticipants()){
+                participants.add(h.getHandleID());
             }
         }
 
-        if (getSender() == null || getSender().getHandle().getHandleType() == Handle.HandleType.ME){
+        if (getSender() == null || getSender().getHandleType() == Handle.HandleType.ME){
             handle = null;
         }else {
-            handle = getSender().getHandle().getHandleID();
+            handle = getSender().getHandleID();
         }
 
         for (Attachment attachment : getAttachments()){

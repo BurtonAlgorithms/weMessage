@@ -31,7 +31,7 @@ import nl.dionsegijn.konfetti.models.Size;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.messages.objects.Message;
+import scott.wemessage.app.messages.models.Message;
 import scott.wemessage.app.utils.view.DisplayUtils;
 
 public final class MessageEffects {
