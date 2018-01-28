@@ -1,0 +1,3 @@
+[submodule "dependencies/chatkit"]
+	path = dependencies/chatkit
+	url = https://github.com/RomanScott/ChatKit
