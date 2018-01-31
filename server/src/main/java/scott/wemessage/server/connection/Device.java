@@ -45,6 +45,7 @@ import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.FileUtils;
+import scott.wemessage.commons.utils.StringUtils;
 import scott.wemessage.server.ServerLogger;
 import scott.wemessage.server.configuration.ServerConfiguration;
 import scott.wemessage.server.database.MessagesDatabase;
@@ -331,22 +332,26 @@ public class Device extends Thread {
                         for (String number : phoneNumbers){
                             if (messagesDatabase.getHandleByAccount(number) != null){
                                 contact.setHandleId(number);
-                                finalList.add(contact);
                                 break;
                             }
                         }
 
-                        if (!finalList.contains(contact)){
+                        if (StringUtils.isEmpty(contact.getHandleId())){
                             for (String email : emails){
                                 if (messagesDatabase.getHandleByAccount(email) != null){
                                     contact.setHandleId(email);
-                                    finalList.add(contact);
                                     break;
                                 }
                             }
                         }
-                    }
 
+                        if (StringUtils.isEmpty(contact.getHandleId())){
+                            if (phoneNumbers.length > 0) contact.setHandleId(phoneNumbers[0]);
+                            else if (emails.length > 0) contact.setHandleId(emails[0]);
+                        }
+
+                        if (!StringUtils.isEmpty(contact.getHandleId())) finalList.add(contact);
+                    }
                     sendOutgoingMessageWithCrypto(weMessage.JSON_CONTACT_SYNC, new ContactBatch(finalList), ContactBatch.class);
                     org.apache.commons.io.FileUtils.deleteDirectory(contactsFolder);
                 }catch (Exception ex){
