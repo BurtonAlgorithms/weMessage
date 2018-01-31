@@ -14,6 +14,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import scott.wemessage.R;
@@ -27,14 +28,15 @@ public class SettingsActivity extends AppCompatActivity {
 
     private boolean isBoundToConnectionService = false;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
-    private ViewGroup settingsSync;
+    private ViewGroup settingsGoToServer;
+    private ViewGroup settingsContacts;
 
     private BroadcastReceiver settingsBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED)){
                 unbindService();
-                toggleSync(true);
+                toggleConnectToServer(true);
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
@@ -74,7 +76,7 @@ public class SettingsActivity extends AppCompatActivity {
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
                 showErroredSnackbar(getString(R.string.result_process_error), 5);
             }else if(intent.getAction().equals(weMessage.BROADCAST_LOGIN_SUCCESSFUL)){
-                toggleSync(false);
+                toggleConnectToServer(false);
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_FAILED)){
                 DialogDisplayer.showContactSyncResult(false, SettingsActivity.this, getSupportFragmentManager());
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
@@ -121,29 +123,27 @@ public class SettingsActivity extends AppCompatActivity {
         toolbar.setTitle("");
         setSupportActionBar(toolbar);
 
-        settingsSync = findViewById(R.id.settingsSync);
-        TextView settingsVersionText = findViewById(R.id.settingsVersionText);
-        ViewGroup settingsBlockedContacts = findViewById(R.id.settingsBlockedContacts);
         ViewGroup settingsSignInOut = findViewById(R.id.settingsSignInOut);
         ViewGroup settingsAbout = findViewById(R.id.settingsAbout);
+        settingsGoToServer = findViewById(R.id.settingsConnectToServer);
+        settingsContacts = findViewById(R.id.settingsContacts);
 
-        if (isServiceRunning(ConnectionService.class)){
-            serviceConnection.scheduleTask(new Runnable() {
-                @Override
-                public void run() {
-                    toggleSync(!serviceConnection.getConnectionService().getConnectionHandler().isConnected().get());
-                }
-            });
-        }else {
-            toggleSync(true);
-        }
+        ((TextView) findViewById(R.id.settingsVersionText)).setText(getString(R.string.settings_version, weMessage.WEMESSAGE_VERSION));
 
-        settingsVersionText.setText(getString(R.string.settings_version, weMessage.WEMESSAGE_VERSION));
+        settingsGoToServer.setOnClickListener(new OnClickWaitListener(1000L) {
+            @Override
+            public void onWaitClick(View v) {
+                Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
 
-        settingsBlockedContacts.setOnClickListener(new View.OnClickListener() {
+                startActivity(launcherIntent);
+                finish();
+            }
+        });
+
+        settingsContacts.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent launchIntent = new Intent(weMessage.get(), BlockedContactsActivity.class);
+                Intent launchIntent = new Intent(weMessage.get(), ContactListActivity.class);
 
                 startActivity(launchIntent);
                 finish();
@@ -172,6 +172,17 @@ public class SettingsActivity extends AppCompatActivity {
                 finish();
             }
         });
+
+        if (isServiceRunning(ConnectionService.class)){
+            serviceConnection.scheduleTask(new Runnable() {
+                @Override
+                public void run() {
+                    toggleConnectToServer(!serviceConnection.getConnectionService().getConnectionHandler().isConnected().get());
+                }
+            });
+        }else {
+            toggleConnectToServer(true);
+        }
     }
 
     @Override
@@ -251,33 +262,19 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
-    private void toggleSync(boolean offline){
+    private void toggleConnectToServer(boolean offline){
         if (offline){
-            ((TextView) findViewById(R.id.syncText)).setText(R.string.connect_to_server);
+            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) settingsContacts.getLayoutParams();
 
-            settingsSync.setOnClickListener(new OnClickWaitListener(1000L) {
-                @Override
-                public void onWaitClick(View v) {
-                    Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-                    startActivity(launcherIntent);
-                    finish();
-                }
-            });
+            layoutParams.addRule(RelativeLayout.BELOW, R.id.settingsConnectToServer);
+            settingsGoToServer.setVisibility(View.VISIBLE);
+            settingsContacts.setLayoutParams(layoutParams);
         }else {
-            ((TextView) findViewById(R.id.syncText)).setText(R.string.sync_contacts);
+            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) settingsContacts.getLayoutParams();
 
-            settingsSync.setOnClickListener(new OnClickWaitListener(1000L) {
-                @Override
-                public void onWaitClick(View v) {
-                    DialogDisplayer.showContactSyncDialog(SettingsActivity.this, getSupportFragmentManager(), new Runnable() {
-                        @Override
-                        public void run() {
-                            serviceConnection.getConnectionService().getConnectionHandler().requestContactSync();
-                        }
-                    });
-                }
-            });
+            layoutParams.removeRule(RelativeLayout.BELOW);
+            settingsGoToServer.setVisibility(View.GONE);
+            settingsContacts.setLayoutParams(layoutParams);
         }
     }
 

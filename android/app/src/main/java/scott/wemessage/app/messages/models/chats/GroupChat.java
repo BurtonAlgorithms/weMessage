@@ -44,7 +44,9 @@ public class GroupChat extends Chat {
         List<Contact> contacts = new ArrayList<>();
 
         for (Handle h : participants){
-            contacts.add(weMessage.get().getMessageDatabase().getContactByHandle(h));
+            Contact c = weMessage.get().getMessageDatabase().getContactByHandle(h);
+
+            if (c != null) contacts.add(c);
         }
 
         if (!StringUtils.isEmpty(getDisplayName())){

@@ -194,13 +194,15 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
                     if (cursorHandle.getCount() > 0){
                         cursorHandle.moveToFirst();
-                        contact.handleText = contactCursor.getString(contactCursor.getColumnIndex(HandleTable.HANDLE_ID));
+                        contact.handleText = cursorHandle.getString(cursorHandle.getColumnIndex(HandleTable.HANDLE_ID));
                     }
 
                     cursorHandle.close();
 
-                    contactsV2Map.put(contact.uuid, contact);
-                    contactHandleMap.put(contact.uuid, contact.handleUuid);
+                    if (!contactHandleMap.containsValue(contact.handleText)) {
+                        contactsV2Map.put(contact.uuid, contact);
+                        contactHandleMap.put(contact.uuid, contact.handleText);
+                    }
                     contactCursor.moveToNext();
                 }
             }
@@ -231,12 +233,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                     }else {
                         chatV2.displayName = chatCursor.getString(chatCursor.getColumnIndex(ChatTable.DISPLAY_NAME));
                         chatV2.isDoNotDisturb = chatCursor.getInt(chatCursor.getColumnIndex(ChatTable.IS_DO_NOT_DISTURB));
-
-                        List<String> contactUuids = Arrays.asList(chatCursor.getString(chatCursor.getColumnIndex(ChatTable.PARTICIPANTS)).split(", "));
-
-                        for (String s : contactUuids) {
-                            chatV2.participants.add(contactsV2Map.get(s).handleText);
-                        }
+                        chatV2.participants.addAll(Arrays.asList(chatCursor.getString(chatCursor.getColumnIndex(ChatTable.PARTICIPANTS)).split(", ")));
                     }
                     chatsV2List.add(chatV2);
                     chatCursor.moveToNext();
@@ -301,8 +298,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 values.put(ContactTable.UUID, contact.uuid);
                 values.put(ContactTable.FIRST_NAME, firstName);
                 values.put(ContactTable.LAST_NAME, lastName);
-                values.put(ContactTable.HANDLES, contact.handleUuid);
-                values.put(ContactTable.PRIMARY_HANDLE, contact.handleUuid);
+                values.put(ContactTable.HANDLES, contact.handleText);
+                values.put(ContactTable.PRIMARY_HANDLE, contact.handleText);
 
                 if (contact.contactPictureFileLocation != null) {
                     values.put(ContactTable.CONTACT_PICTURE_FILE_LOCATION, contact.contactPictureFileLocation);
@@ -358,7 +355,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 }
             }
             cursorMessage.close();
-            weMessage.get().dumpMessageManager();
+
+            db.execSQL("DELETE FROM " + HandleTable.TABLE_NAME + " WHERE " + HandleTable._ID + " NOT IN (SELECT MIN(" + HandleTable._ID + ") FROM " + HandleTable.TABLE_NAME + " GROUP BY " + HandleTable.HANDLE_ID + ")");
         }
     }
 
@@ -967,8 +965,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     public Contact buildContact(Cursor cursor){
         Contact contact = new Contact().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ContactTable.UUID))))
                 .setFirstName(cursor.getString(cursor.getColumnIndex(ContactTable.FIRST_NAME))).setLastName(cursor.getString(cursor.getColumnIndex(ContactTable.LAST_NAME)))
-                .setHandles(stringListToHandles(Arrays.asList(cursor.getString(cursor.getColumnIndex(ContactTable.HANDLES)).split(", ")), true))
-                .setPrimaryHandle(getHandleByUuid(cursor.getString(cursor.getColumnIndex(ContactTable.PRIMARY_HANDLE))))
+                .setHandles(stringListToHandles(Arrays.asList(cursor.getString(cursor.getColumnIndex(ContactTable.HANDLES)).split(", "))))
+                .setPrimaryHandle(getHandleByHandleID(cursor.getString(cursor.getColumnIndex(ContactTable.PRIMARY_HANDLE))))
                 .setContactPictureFileLocation(new FileLocationContainer(cursor.getString(cursor.getColumnIndex(ContactTable.CONTACT_PICTURE_FILE_LOCATION))));
         return contact;
     }
@@ -979,8 +977,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         values.put(ContactTable.UUID, contact.getUuid().toString());
         values.put(ContactTable.FIRST_NAME, contact.getFirstName());
         values.put(ContactTable.LAST_NAME, contact.getLastName());
-        values.put(ContactTable.HANDLES, StringUtils.join(handlesToStringList(contact.getHandles(), true), ", ", 2));
-        values.put(ContactTable.PRIMARY_HANDLE, contact.getPrimaryHandle().getUuid().toString());
+        values.put(ContactTable.HANDLES, StringUtils.join(handlesToStringList(contact.getHandles()), ", ", 2));
+        values.put(ContactTable.PRIMARY_HANDLE, Handle.parseHandleId(contact.getPrimaryHandle().getHandleID()));
 
         if (contact.getContactPictureFileLocation() != null) {
             values.put(ContactTable.CONTACT_PICTURE_FILE_LOCATION, contact.getContactPictureFileLocation().getFileLocation());
@@ -1009,7 +1007,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase();
         String selectQuery = "SELECT * FROM " + ContactTable.TABLE_NAME + " WHERE " + ContactTable.HANDLES + " LIKE ?";
 
-        Cursor cursor = db.rawQuery(selectQuery, new String[] { "%" + handle.getUuid().toString() + "%" });
+        Cursor cursor = db.rawQuery(selectQuery, new String[] { "%" + Handle.parseHandleId(handle.getHandleID()) + "%" });
         Contact contact = null;
 
         if (cursor.getCount() > 0){
@@ -1119,6 +1117,11 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         db.update(HandleTable.TABLE_NAME, values, selection, new String[]{ uuid });
     }
 
+    protected void deleteHandleByUuid(String uuid){
+        String whereClause = HandleTable.UUID + " = ?";
+        getWritableDatabase().delete(HandleTable.TABLE_NAME, whereClause, new String[] { uuid });
+    }
+
     public Chat buildChat(Cursor cursor){
         if (!(cursor.getString(cursor.getColumnIndex(ChatTable.ACCOUNT_UUID)).equals(weMessage.get().getCurrentAccount().getUuid().toString()))){
             return null;
@@ -1136,7 +1139,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                     .setHasUnreadMessages(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.HAS_UNREAD_MESSAGES))));
         }else {
             chat = new GroupChat().setDisplayName(cursor.getString(cursor.getColumnIndex(ChatTable.DISPLAY_NAME)))
-                    .setParticipants(stringListToHandles(Arrays.asList(cursor.getString(cursor.getColumnIndex(ChatTable.PARTICIPANTS)).split(", ")), false))
+                    .setParticipants(stringListToHandles(Arrays.asList(cursor.getString(cursor.getColumnIndex(ChatTable.PARTICIPANTS)).split(", "))))
                     .setDoNotDisturb(integerToBoolean(cursor.getInt(cursor.getColumnIndex(ChatTable.IS_DO_NOT_DISTURB))))
                     .setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(ChatTable.UUID)))).setMacGuid(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GUID)))
                     .setMacGroupID(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_GROUP_ID))).setMacChatIdentifier(cursor.getString(cursor.getColumnIndex(ChatTable.MAC_CHAT_IDENTIFIER)))
@@ -1161,7 +1164,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             values.putNull(ChatTable.IS_DO_NOT_DISTURB);
         }else if (chat instanceof GroupChat){
             values.put(ChatTable.DISPLAY_NAME, ((GroupChat) chat).getDisplayName());
-            values.put(ChatTable.PARTICIPANTS, StringUtils.join(handlesToStringList(((GroupChat) chat).getParticipants(), false), ", ", 2));
+            values.put(ChatTable.PARTICIPANTS, StringUtils.join(handlesToStringList(((GroupChat) chat).getParticipants()), ", ", 2));
             values.put(ChatTable.IS_DO_NOT_DISTURB, booleanToInteger(((GroupChat) chat).isDoNotDisturb()));
         }
 
@@ -1361,7 +1364,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         Message message = new Message().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(MessageTable.UUID))))
                 .setMacGuid(cursor.getString(cursor.getColumnIndex(MessageTable.MAC_GUID))).setChat(getChatByUuid(cursor.getString(cursor.getColumnIndex(MessageTable.CHAT_UUID))))
-                .setSender(getHandleByUuid(cursor.getString(cursor.getColumnIndex(MessageTable.SENDER_UUID))))
+                .setSender(getHandleByHandleID(cursor.getString(cursor.getColumnIndex(MessageTable.SENDER_UUID))))
                 .setAttachments(stringListToAttachments(Arrays.asList(cursor.getString(cursor.getColumnIndex(MessageTable.ATTACHMENTS)).split(", "))))
                 .setText(cursor.getString(cursor.getColumnIndex(MessageTable.TEXT))).setDateSent(cursor.getLong(cursor.getColumnIndex(MessageTable.DATE_SENT)))
                 .setDateDelivered(cursor.getLong(cursor.getColumnIndex(MessageTable.DATE_DELIVERED))).setDateRead(cursor.getLong(cursor.getColumnIndex(MessageTable.DATE_READ)))
@@ -1379,7 +1382,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         values.put(MessageTable.ACCOUNT_UUID, weMessage.get().getCurrentAccount().getUuid().toString());
         values.put(MessageTable.MAC_GUID, message.getMacGuid());
         values.put(MessageTable.CHAT_UUID, message.getChat().getUuid().toString());
-        values.put(MessageTable.SENDER_UUID, message.getSender().getUuid().toString());
+        values.put(MessageTable.SENDER_UUID, Handle.parseHandleId(message.getSender().getHandleID()));
         values.put(MessageTable.ATTACHMENTS, StringUtils.join(attachmentsToStringList(message.getAttachments()), ", ", 2));
         values.put(MessageTable.TEXT, message.getText());
         values.put(MessageTable.DATE_SENT, message.getDateSent());
@@ -1478,28 +1481,20 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         getWritableDatabase().delete(MessageTable.TABLE_NAME, whereClause, new String[] { macGuid });
     }
 
-    private List<String> handlesToStringList(List<Handle> handles, boolean withUuids){
+    private List<String> handlesToStringList(List<Handle> handles){
         List<String> stringList = new ArrayList<>();
 
         for (Handle handle : handles){
-            if (withUuids){
-                stringList.add(handle.getUuid().toString());
-            }else {
-                stringList.add(Handle.parseHandleId(handle.getHandleID()));
-            }
+            stringList.add(Handle.parseHandleId(handle.getHandleID()));
         }
         return stringList;
     }
 
-    private List<Handle> stringListToHandles(List<String> stringList, boolean withUuids){
+    private List<Handle> stringListToHandles(List<String> stringList){
         List<Handle> handles = new ArrayList<>();
 
         for (String s : stringList){
-            if (withUuids){
-                handles.add(getHandleByUuid(s));
-            }else {
-                handles.add(getHandleByHandleID(s));
-            }
+            handles.add(getHandleByHandleID(s));
         }
         return handles;
     }

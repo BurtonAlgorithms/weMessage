@@ -133,6 +133,24 @@ public class Contact extends ContactInfo {
         return this;
     }
 
+    public Contact addHandle(Handle handle){
+        handles.add(handle);
+        return this;
+    }
+
+    public Contact removeHandle(Handle handle){
+        for (Handle h : handles){
+            if (h.getUuid().toString().equals(handle.getUuid().toString())){
+                if (handle.equals(primaryHandle)){
+                    primaryHandle = null;
+                }
+                handles.remove(h);
+                return this;
+            }
+        }
+        return this;
+    }
+
     public Contact setContactPictureFileLocation(FileLocationContainer contactPictureFileLocation) {
         this.contactPictureFileLocation = contactPictureFileLocation;
         return this;

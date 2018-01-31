@@ -56,15 +56,7 @@ public final class MessageManager {
         HashMap<String, ContactInfo> contactInfoHashMap = new HashMap<>();
 
         for (Handle h : handles.values()){
-            Contact c = weMessage.get().getMessageDatabase().getContactByHandle(h);
-
-            if (c == null){
-                contactInfoHashMap.put(h.getUuid().toString(), h);
-            }else {
-                if (!handles.containsKey(c.getUuid().toString())){
-                    contactInfoHashMap.put(c.getUuid().toString(), c);
-                }
-            }
+            contactInfoHashMap.put(h.findRoot().getUuid().toString(), h.findRoot());
         }
 
         return contactInfoHashMap;
@@ -78,7 +70,7 @@ public final class MessageManager {
         callbacksMap.remove(uuid);
     }
 
-    public void addContact(final Contact contact, boolean threaded){
+    public synchronized void addContact(final Contact contact, boolean threaded){
         if (threaded){
             createThreadedTask(new Runnable() {
                 @Override
@@ -91,7 +83,7 @@ public final class MessageManager {
         }
     }
 
-    public void updateContact(final String uuid, final Contact newData, boolean threaded){
+    public synchronized void updateContact(final String uuid, final Contact newData, boolean threaded){
         if (threaded) {
             createThreadedTask(new Runnable() {
                 @Override
@@ -104,7 +96,7 @@ public final class MessageManager {
         }
     }
 
-    public void deleteContact(final String uuid, boolean threaded){
+    public synchronized void deleteContact(final String uuid, boolean threaded){
         if (threaded){
             createThreadedTask(new Runnable() {
                 @Override
@@ -140,6 +132,19 @@ public final class MessageManager {
             }).start();
         }else {
             updateHandleTask(uuid, newData, useCallbacks);
+        }
+    }
+
+    public synchronized void deleteHandle(final String uuid, boolean threaded){
+        if (threaded){
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    deleteHandleTask(uuid);
+                }
+            }).start();
+        }else {
+            deleteHandleTask(uuid);
         }
     }
 
@@ -374,7 +379,6 @@ public final class MessageManager {
     }
 
     private void deleteContactTask(String uuid){
-        Contact c = weMessage.get().getMessageDatabase().getContactByUuid(uuid);
         weMessage.get().getMessageDatabase().deleteContactByUuid(uuid);
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
@@ -434,6 +438,38 @@ public final class MessageManager {
             for (MessageCallbacks callbacks : callbacksMap.values()) {
                 callbacks.onContactUpdate(oldHandle, newData);
             }
+        }
+    }
+
+    private void deleteHandleTask(String uuid){
+        List<Chat> chatsToDelete = new ArrayList<>();
+        Handle h = weMessage.get().getMessageDatabase().getHandleByUuid(uuid);
+        Contact c = weMessage.get().getMessageDatabase().getContactByHandle(h);
+
+        if (weMessage.get().getMessageDatabase().getAccountByHandle(h) != null) return;
+
+        for (Chat chat : chats.values()){
+            if (chat instanceof PeerChat){
+                if (((PeerChat) chat).getHandle().equals(h)) chatsToDelete.add(chat);
+            }else if (chat instanceof GroupChat){
+                if (((GroupChat) chat).getParticipants().contains(h)) chatsToDelete.add(chat);
+            }
+        }
+
+        for (Chat chat : chatsToDelete){
+            deleteChatTask(chat);
+        }
+
+        if (c != null){
+            deleteContactTask(c.getUuid().toString());
+        }
+
+        handles.remove(uuid);
+        weMessage.get().getMessageDatabase().deleteHandleByUuid(uuid);
+
+        for (MessageCallbacks callbacks : callbacksMap.values()){
+            callbacks.onContactListRefresh(new ArrayList<>(getContacts().values()));
+            callbacks.onChatListRefresh(new ArrayList<>(getChats().values()));
         }
     }
 
@@ -643,5 +679,4 @@ public final class MessageManager {
     private Thread createThreadedTask(Runnable runnable){
         return new Thread(runnable);
     }
-
 }

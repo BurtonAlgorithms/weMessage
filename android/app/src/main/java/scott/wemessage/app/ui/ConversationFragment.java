@@ -88,6 +88,7 @@ import scott.wemessage.app.messages.models.users.ContactInfo;
 import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ChatViewActivity;
+import scott.wemessage.app.ui.activities.ContactListActivity;
 import scott.wemessage.app.ui.activities.ContactViewActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.activities.MessageImageActivity;
@@ -240,16 +241,23 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                 Intent startingIntent = getActivity().getIntent();
                 Class startingClass = Class.forName(startingIntent.getStringExtra(weMessage.BUNDLE_RETURN_POINT));
 
-                Chat chat = messageDatabase.getChatByUuid(startingIntent.getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT));
+                if (startingIntent.getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT).equals(weMessage.BUNDLE_GO_TO_CONTACT_LIST)){
+                    Intent launchIntent = new Intent(weMessage.get(), ContactListActivity.class);
 
-                if (chat == null) {
-                    Intent returnIntent = new Intent(weMessage.get(), startingClass);
-                    returnIntent.putExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON, getString(R.string.conversation_load_failure));
-
-                    startActivity(returnIntent);
+                    startActivity(launchIntent);
                     getActivity().finish();
                 } else {
-                    setChat(chat);
+                    Chat chat = messageDatabase.getChatByUuid(startingIntent.getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT));
+
+                    if (chat == null) {
+                        Intent returnIntent = new Intent(weMessage.get(), startingClass);
+                        returnIntent.putExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON, getString(R.string.conversation_load_failure));
+
+                        startActivity(returnIntent);
+                        getActivity().finish();
+                    } else {
+                        setChat(chat);
+                    }
                 }
             } catch (Exception ex) {
                 AppLogger.error(TAG, "Could not load ConversationFragment because an error occurred", ex);
@@ -461,6 +469,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                 return false;
             }
         });
+
+        messageInput.setSaveEnabled(true);
 
         messageSelectionModeBar.findViewById(R.id.messageSelectCopyIcon).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -893,6 +903,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
+    public void onAttachmentChange(boolean isEmpty) {
+        messageInput.setHasAttachments(!isEmpty);
+    }
+
+    @Override
     public void setAttachmentsInput(List<String> attachments, String cameraAttachmentFile, String audioFile) {
         if (isResumed()){
 
@@ -1136,7 +1151,9 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     private boolean sendMessage(CharSequence input){
-        if (StringUtils.isEmpty(input.toString().trim())) return false;
+        UnprocessedMessage unprocessedMessage = preprocessMessage(input);
+
+        if (StringUtils.isEmpty(input.toString().trim()) && unprocessedMessage.hasNoAttachments()) return false;
 
         if (!isConnectionServiceRunning()){
             DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment =
@@ -1157,8 +1174,6 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             showErroredSnackbar(getString(R.string.still_connecting_send_message));
             return false;
         }
-
-        UnprocessedMessage unprocessedMessage = preprocessMessage(input);
 
         new AsyncTask<UnprocessedMessage, Void, MessageTaskReturnType>(){
             @Override
@@ -1310,6 +1325,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         if (isPopupFragmentOpen) {
             if (getAttachmentPopupFragment() != null) {
                 inputAttachments.addAll(getAttachmentPopupFragment().getSelectedAttachments());
+                cameraAttachment = getAttachmentPopupFragment().getCameraAttachmentFile();
+                voiceMessage = getAttachmentPopupFragment().getAudioFile();
 
                 getAttachmentPopupFragment().clearSelectedAttachments();
             }
@@ -1893,6 +1910,10 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         String getVoiceInput() {
             return voiceInput;
+        }
+
+        boolean hasNoAttachments(){
+            return getInputAttachments().isEmpty() && getCameraInput() == null && getVoiceInput() == null;
         }
     }
 

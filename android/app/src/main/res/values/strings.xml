@@ -180,6 +180,7 @@
     <string name="settings_version">Version: %1$s</string>
     <string name="blocked_contacts">Blocked Contacts</string>
     <string name="sign_out">Sign Out</string>
+    <string name="word_block">Block</string>
     <string name="word_unblock">Unblock</string>
     <string name="word_delivered">Delivered</string>
     <string name="word_read">Read</string>
@@ -214,25 +215,37 @@
     <string name="offline_mode_action_create_chat">You cannot create a group chat while in Offline Mode! Connect to your weServer in order to do this.</string>
     <string name="offline_mode_action_add">You cannot add people to group chats while in Offline Mode! Connect to your weServer in order to do this.</string>
     <string name="connect_to_server">Connect to weServer</string>
-    <string name="sync_contacts">Sync Contacts</string>
-    <string name="sync_contacts_title">Perform Contact Sync</string>
-    <string name="sync_contacts_message">Contact Sync will transfer the contacts on your computer to your weMessage Contacts List. \n\nThis process will take a while if you have a lot
-        of contacts, so do not get disconnected from your weServer during the sync.</string>
-    <string name="sync_contacts_message_permission">Make sure that Terminal has access to your Contacts (like Accessibility) in System Preferences, or the Sync will not work.</string>
-    <string name="start_process">Start Process</string>
     <string name="still_connecting_send_message">Currently trying to connect to your weServer. Please wait before trying to send any messages.</string>
     <string name="still_connecting_perform_action">Currently trying to connect to your weServer. Please wait before trying to perform this action.</string>
     <string name="update_log">What\'s New</string>
     <string name="version_11_update">weMessage Version 1.1 adds Contact Sync! To sync the contacts on your computer with weMessage, go into your Settings.
         \n\nIn addition, you are now able to view certain message effects.</string>
-    <string name="contact_sync_success">Contact Sync Success</string>
-    <string name="contact_sync_success_message">Your contacts have been imported from your computer to your weMessage Contact List.</string>
-    <string name="contact_sync_fail">Contact Sync Failed</string>
-    <string name="contact_sync_fail_message">An error occurred while performing a Contact Sync. Please check your weServer logs for issues.</string>
     <string name="word_primary">Primary</string>
     <string name="add_to_contact">Add to Contact</string>
     <string name="create_contact">Create New Contact</string>
     <string name="contact_not_found">Could not a matching contact.</string>
-    <string name="handles_title">%1$d Emails and Numbers</string>
+    <string name="handles_title">%1$d Contacts</string>
+    <string name="set_as_primary">Set As Primary</string>
+    <string name="word_contacts">Contacts</string>
+    <string name="delete_handle_title">Erase Contact</string>
+    <string name="delete_handle_message">This contact may be connected to your chats and messages. \n\nIf you delete it, you will also be deleting any messages or chats that this contact is in.</string>
+    <string name="toggle_blocked_contacts">Show Blocked Contacts</string>
+    <string name="toggle_unblocked_contacts">Show Unblocked Contacts</string>
+    <string name="sync_with_phone">Sync with Phone</string>
+    <string name="sync_with_mac">Sync with Mac</string>
+    <string name="sync_contacts">Sync Contacts</string>
+    <string name="sync_contacts_title">Perform Contact Sync</string>
+    <string name="start_process">Start Process</string>
+    <string name="sync_contacts_message">Contact Sync will import your contacts from a desired location. \n\nYou can sync your contacts with either your computer or the ones on your phone.</string>
+    <string name="sync_contacts_mac_message">Contact Sync will transfer the contacts on your computer to your weMessage Contacts List. \n\nThis process will take a while if you have a lot
+        of contacts, so do not get disconnected from your weServer during the sync.</string>
+    <string name="sync_contacts_message_permission">Make sure that Terminal has access to your Contacts (like Accessibility) in System Preferences, or the Sync will not work.</string>
+    <string name="sync_contacts_android_message">Contact Sync will import the contacts from the Contact List on your phone. \n\nPlease make sure you give weMessage permission to read your contacts if it asks for it.</string>
+    <string name="sync_contacts_android_permission_denied">Could not perform Contact Sync because weMessage does not have permission to read your contacts.</string>
+    <string name="contact_sync_success">Contact Sync Success</string>
+    <string name="contact_sync_fail">Contact Sync Failed</string>
+    <string name="contact_sync_success_message">Your contacts have successfully been imported to your weMessage Contact List.</string>
+    <string name="contact_sync_fail_message">An error occurred while performing a Contact Sync. If you synced with your computer, please check your weServer logs for issues.</string>
+    <string name="contact_sync_fail_offline">You cannot Contact Sync with your computer while in Offline Mode! Connect to your weServer in order to do this.</string>
 
 </resources>

@@ -14,6 +14,8 @@ public abstract class ContactInfo {
 
     @Override
     public boolean equals(Object obj) {
+        if (obj == null) return false;
+
         if (obj instanceof Handle){
             Handle objectHandle = (Handle) obj;
 

@@ -880,7 +880,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         private TextView contactHandle;
 
         public ContactHolder(LayoutInflater inflater, ViewGroup parent) {
-            super(inflater.inflate(R.layout.list_item_contact, parent, false));
+            super(inflater.inflate(R.layout.list_item_select_contact, parent, false));
 
             selectedContactBubble = itemView.findViewById(R.id.selectedContactBubble);
             contactPictureView = itemView.findViewById(R.id.contactPictureView);

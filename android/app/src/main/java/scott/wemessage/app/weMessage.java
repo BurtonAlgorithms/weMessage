@@ -51,6 +51,7 @@ public final class weMessage extends Application implements Constants {
     public static final int REQUEST_PERMISSION_CAMERA = 5002;
     public static final int REQUEST_PERMISSION_RECORD_AUDIO = 5003;
     public static final int REQUEST_PERMISSION_WRITE_STORAGE = 5004;
+    public static final int REQUEST_PERMISSION_READ_CONTACTS = 5005;
 
     public static final int REQUEST_CODE_CAMERA = 6000;
 
@@ -82,6 +83,7 @@ public final class weMessage extends Application implements Constants {
     public static final String BUNDLE_CREATE_CHAT_UNKNOWN_HANDLES = IDENTIFIER_PREFIX + "bundleCreateChatUnknownHandles";
     public static final String BUNDLE_CONTACT_VIEW_UUID = IDENTIFIER_PREFIX + "bundleContactViewUuid";
     public static final String BUNDLE_HANDLE_UUID = IDENTIFIER_PREFIX + "bundleHandleUuid";
+    public static final String BUNDLE_GO_TO_CONTACT_LIST = IDENTIFIER_PREFIX + "bundleGoToContactList";
 
     public static final String ARG_HOST = IDENTIFIER_PREFIX + "hostArg";
     public static final String ARG_PORT = IDENTIFIER_PREFIX + "portArg";
@@ -155,6 +157,8 @@ public final class weMessage extends Application implements Constants {
         if (AppLogger.USE_CRASHLYTICS){
             Fabric.with(this, new Crashlytics());
         }
+
+        new MessageDatabase(this).getWritableDatabase().close();
 
         AndroidBase64Wrapper base64Wrapper = new AndroidBase64Wrapper();
         ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(base64Wrapper);

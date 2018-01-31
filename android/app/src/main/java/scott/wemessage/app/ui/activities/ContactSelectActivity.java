@@ -445,10 +445,7 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
 
     private void addHandleToContact(String contactUuid){
         Contact contact = weMessage.get().getMessageDatabase().getContactByUuid(contactUuid);
-        ArrayList<Handle> handles = new ArrayList<>(contact.getHandles());
-
-        handles.add(weMessage.get().getMessageDatabase().getHandleByUuid(handleChatUuidMap[0]));
-        weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), contact.setHandles(handles), true);
+        weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), contact.addHandle(weMessage.get().getMessageDatabase().getHandleByUuid(handleChatUuidMap[0])), true);
 
         new Handler().postDelayed(new Runnable() {
             @Override
@@ -625,14 +622,14 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         private TextView contactHandle;
 
         public ContactHolder(LayoutInflater inflater, ViewGroup parent) {
-            super(inflater.inflate(R.layout.list_item_contact, parent, false));
+            super(inflater.inflate(R.layout.list_item_select_contact, parent, false));
 
             contactPictureView = itemView.findViewById(R.id.contactPictureView);
             contactDisplayNameView = itemView.findViewById(R.id.contactDisplayNameView);
             contactHandle = itemView.findViewById(R.id.contactHandle);
 
             itemView.setOnClickListener(this);
-            findViewById(R.id.selectedContactBubble).setVisibility(View.GONE);
+            itemView.findViewById(R.id.selectedContactBubble).setVisibility(View.GONE);
         }
 
         public void bind(ContactInfo contact){
@@ -640,9 +637,9 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
                 this.contact = contact;
 
                 contactDisplayNameView.setText(contact.getDisplayName());
-                contactHandle.setText(contact.pullHandle(true).getHandleID());
+                contactHandle.setText(contact.pullHandle(StringUtils.isEmpty(handleChatUuidMap[0])).getHandleID());
 
-                Glide.with(ContactSelectActivity.this).load(IOUtils.getContactIconUri(contact.pullHandle(true), IOUtils.IconSize.NORMAL)).into(contactPictureView);
+                Glide.with(ContactSelectActivity.this).load(IOUtils.getContactIconUri(contact.pullHandle(StringUtils.isEmpty(handleChatUuidMap[0])), IOUtils.IconSize.NORMAL)).into(contactPictureView);
             }
         }
 

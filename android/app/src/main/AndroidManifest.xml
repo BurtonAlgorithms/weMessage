@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <application
         android:name="scott.wemessage.app.weMessage"
@@ -33,7 +34,7 @@
         <activity android:name=".app.ui.activities.ChatViewActivity" />
         <activity android:name=".app.ui.activities.ContactSelectActivity" />
         <activity android:name=".app.ui.activities.ContactViewActivity" />
-        <activity android:name=".app.ui.activities.BlockedContactsActivity" />
+        <activity android:name=".app.ui.activities.ContactListActivity" />
         <activity android:name=".app.ui.activities.MessageImageActivity" />
         <activity android:name=".app.ui.activities.MessageVideoActivity"
                   android:theme="@style/AppTheme.VideoPlayer"

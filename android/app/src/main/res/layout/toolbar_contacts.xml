@@ -2,7 +2,7 @@
 <android.support.v7.widget.Toolbar
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/blockedContactsToolbar"
+    android:id="@+id/contactsListToolbar"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:elevation="4dp"
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content">
 
         <ImageButton
-            android:id="@+id/blockedContactsBackButton"
+            android:id="@+id/contactsListBackButton"
             android:src="@drawable/ic_back_button"
             android:background="?android:attr/selectableItemBackground"
             android:layout_alignParentStart="true"
@@ -24,14 +24,26 @@
             android:layout_height="20dp" />
 
         <scott.wemessage.app.ui.view.font.FontTextView
+            android:id="@+id/contactsListToolbarTextView"
             app:fontName="OrkneyMedium"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerHorizontal="true"
             android:layout_centerVertical="true"
-            android:text="@string/blocked_contacts"
+            android:text="@string/word_contacts"
             android:textColor="#ffffff"
             android:textSize="20sp" />
+
+        <ImageButton
+            android:id="@+id/contactsListMenuButton"
+            android:src="@drawable/ic_menu"
+            android:background="?android:attr/selectableItemBackground"
+            android:tint="@color/white"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="16dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp" />
 
     </RelativeLayout>
 

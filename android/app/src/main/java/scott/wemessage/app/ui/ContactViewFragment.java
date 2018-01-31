@@ -30,7 +30,6 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -61,6 +60,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 import scott.wemessage.R;
@@ -324,7 +325,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                                         DialogDisplayer.generateAlertDialog(getString(R.string.max_file_chat_size_alert_title), getString(R.string.max_file_chat_size_alert_message, FileUtils.getFileSizeString(weMessage.MAX_CHAT_ICON_SIZE)))
                                                 .show(getFragmentManager(), "AttachmentMaxFileSizeAlert");
                                     }else {
-                                        File newFile = new File(weMessage.get().getChatIconsFolder(), handleUuid + srcFile.getName());
+                                        File newFile = new File(weMessage.get().getChatIconsFolder(), oldVal.getUuid().toString() + srcFile.getName());
 
                                         FileUtils.copy(srcFile, newFile);
 
@@ -484,9 +485,10 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                 Handle h = weMessage.get().getMessageDatabase().getHandleByUuid(handleUuid);
 
                 if (contact.equals(h)){
+                    toggleContactModes();
+
                     if (contactViewRecyclerAdapter != null){
                         contactViewRecyclerAdapter.updateContact(contact);
-                        toggleContactModes();
                     }
                 }
             }
@@ -501,9 +503,10 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                 Handle h = weMessage.get().getMessageDatabase().getHandleByUuid(handleUuid);
 
                 if (newData.equals(h)){
+                    toggleContactModes();
+
                     if (contactViewRecyclerAdapter != null){
                         contactViewRecyclerAdapter.updateContact(newData);
-                        toggleContactModes();
                     }
                 }
             }
@@ -519,11 +522,12 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
                 for (ContactInfo c : contacts){
                     if (c.equals(h)){
+                        toggleContactModes();
+
                         if (contactViewRecyclerAdapter != null) {
                             contactViewRecyclerAdapter.updateContact(c);
-                            toggleContactModes();
-                            break;
                         }
+                        break;
                     }
                 }
             }
@@ -700,7 +704,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     private void launchSetContactActivity(){
         Intent launcherIntent = new Intent(weMessage.get(), ContactSelectActivity.class);
 
-        launcherIntent.putExtra(weMessage.BUNDLE_HANDLE_UUID, handleUuid);
+        launcherIntent.putExtra(weMessage.BUNDLE_HANDLE_UUID, new String[] { handleUuid, previousChatId });
 
         startActivity(launcherIntent);
         getActivity().finish();
@@ -994,6 +998,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     private class ContactViewRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         private ArrayList<String> attachmentUris = new ArrayList<>();
+        private Timer handlesTimer = new Timer();
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -1105,7 +1110,6 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     }
 
     private class ContactViewHeader extends RecyclerView.ViewHolder {
-
         private boolean isInit = false;
 
         private LinearLayout contactPictureContainer;
@@ -1130,7 +1134,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
         public void bind(ContactInfo contact){
             init();
 
-            String handleID = contact.pullHandle(false).getHandleID();
+            String handleID = ((Contact) contact.findRoot()).getPrimaryHandle().getHandleID();
             String handleText;
 
             contactName.setText(contact.getDisplayName());
@@ -1245,26 +1249,43 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
                 contactHandlesLayout.setVisibility(View.GONE);
             } else {
+                contactHandlesLayout.setVisibility(View.VISIBLE);
+
                 CardView cardView = itemView.findViewById(R.id.contactViewAttachmentsCardView);
                 RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) cardView.getLayoutParams();
-                Contact c = weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByUuid(handleUuid));
-                List<Handle> handles = c.getHandles();
 
                 layoutParams.removeRule(RelativeLayout.BELOW);
                 layoutParams.addRule(RelativeLayout.BELOW, R.id.contactHandlesLayout);
                 cardView.setLayoutParams(layoutParams);
 
-                contactHandlesLayout.setVisibility(View.VISIBLE);
-                ((TextView) itemView.findViewById(R.id.contactViewHandlesTextView)).setText(getString(R.string.handles_title, handles.size()));
+                contactViewRecyclerAdapter.handlesTimer.cancel();
+                contactViewRecyclerAdapter.handlesTimer = new Timer();
+                contactViewRecyclerAdapter.handlesTimer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        if (getActivity() == null) return;
 
-                contactHandlesLayout.removeAllViews();
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Contact c = weMessage.get().getMessageDatabase().getContactByHandle(weMessage.get().getMessageDatabase().getHandleByUuid(handleUuid));
+                                List<Handle> handles = c.getHandles();
 
-                for (Handle h : handles){
-                    ContactHandleView contactHandleView = new ContactHandleView(getContext());
+                                ((TextView) itemView.findViewById(R.id.contactViewHandlesTextView)).setText(getString(R.string.handles_title, handles.size()));
+                                ((ViewGroup) itemView.findViewById(R.id.contactHandlesListLayout)).removeAllViews();
 
-                    contactHandleView.bind(c, h);
-                    contactHandlesLayout.addView(contactHandleView);
-                }
+                                for (Handle h : handles){
+                                    SwipeLayout swipeLayout = (SwipeLayout) getLayoutInflater().inflate(R.layout.list_item_contact_handle, null);
+                                    ContactHandleView contactHandleView = new ContactHandleView(c, h);
+
+                                    contactHandleView.swipeLayout = swipeLayout;
+                                    contactHandleView.bind();
+                                    ((ViewGroup) itemView.findViewById(R.id.contactHandlesListLayout)).addView(swipeLayout);
+                                }
+                            }
+                        });
+                    }
+                }, 200L);
             }
             toggleEditMode(isInEditMode);
         }
@@ -1526,63 +1547,54 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
         }
     }
 
-    private class ContactHandleView extends SwipeLayout {
-        private LinearLayout contactRemoveHandleButtonLayout;
-        private TextView contactHandleTextView;
+    private class ContactHandleView {
+        private Contact contact;
+        private Handle handle;
 
-        public ContactHandleView(Context context) {
-            super(context);
-            initView();
+        SwipeLayout swipeLayout;
+
+        private ContactHandleView(Contact contact, Handle handle){
+            this.contact = contact;
+            this.handle = handle;
         }
 
-        public ContactHandleView(Context context, AttributeSet attrs) {
-            super(context, attrs);
-            initView();
-        }
+        void bind(){
+            TextView setPrimaryHandle = swipeLayout.findViewById(R.id.setPrimaryHandleButton);
+            TextView removeHandle = swipeLayout.findViewById(R.id.removeHandleButton);
+            TextView contactHandleTextView = swipeLayout.findViewById(R.id.contactHandleTextView);
 
-        public ContactHandleView(Context context, AttributeSet attrs, int defStyle) {
-            super(context, attrs, defStyle);
-            initView();
-        }
+            swipeLayout.addDrag(SwipeLayout.DragEdge.Right, swipeLayout.findViewById(R.id.handleSwipeButtonLayout));
 
-        private void initView() {
-            View view = inflate(getContext(), R.layout.list_item_contact_handle, null);
-            addView(view);
-
-            contactRemoveHandleButtonLayout = findViewById(R.id.contactRemoveHandleButtonLayout);
-            contactHandleTextView = findViewById(R.id.contactHandleTextView);
-        }
-
-        void closeUnderlyingView(){
-            if (getOpenStatus() != SwipeLayout.Status.Close) {
-                close();
-            }
-        }
-
-        void bind(final Contact contact, final Handle handle){
-            contactRemoveHandleButtonLayout.setOnClickListener(new View.OnClickListener() {
+            setPrimaryHandle.setOnClickListener(new OnClickWaitListener(500L) {
                 @Override
-                public void onClick(View view) {
+                public void onWaitClick(View v) {
+                    weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), contact.setPrimaryHandle(handle), true);
+                }
+            });
+
+            removeHandle.setOnClickListener(new OnClickWaitListener(500L) {
+                @Override
+                public void onWaitClick(View view) {
                     ArrayList<Handle> handles = new ArrayList<>(contact.getHandles());
 
                     if (handles.size() == 1){
                         weMessage.get().getMessageManager().deleteContact(contact.getUuid().toString(), true);
                         returnToConversationScreen();
                     } else {
-                        handles.remove(handle);
-                        weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), contact.setHandles(handles), true);
+                        weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), contact.removeHandle(handle), true);
                     }
                 }
             });
 
-            contactHandleTextView.setText(handle.getDisplayName());
+            contactHandleTextView.setText(handle.getHandleID());
 
-            addDrag(SwipeLayout.DragEdge.Right, findViewById(R.id.contactRemoveHandleButtonLayout));
-            addSwipeListener(new SwipeLayout.SwipeListener() {
+            swipeLayout.addSwipeListener(new SwipeLayout.SwipeListener() {
                 @Override
                 public void onStartOpen(SwipeLayout layout) {
                     if (isHandleShowingDeletePosition){
-                        closeUnderlyingView();
+                        if (swipeLayout.getOpenStatus() != SwipeLayout.Status.Close) {
+                            swipeLayout.close();
+                        }
                     }
                 }
 

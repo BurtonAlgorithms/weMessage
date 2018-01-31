@@ -20,5 +20,9 @@
 
         <item name="android:navigationBarColor">@color/videoPlayerPrimary</item>
     </style>
+
+    <style name="MenuFragmentStyle.TextView" parent="TextView.DefaultStyle">
+        <item name="android:textSize">20sp</item>
+    </style>
     
 </resources>

@@ -402,7 +402,7 @@ public final class ConnectionHandler extends Thread {
                         AppLogger.error(TAG, "An error occurred while updating the instance's registration token.", ex);
                     }
                 }
-            }).run();
+            }).start();
         }
     }
 
@@ -949,58 +949,51 @@ public final class ConnectionHandler extends Thread {
                                     MessageDatabase database = weMessage.get().getMessageDatabase();
 
                                     for (JSONContact jsonContact : contactBatch.getContacts()) {
-                                        boolean contactExists = false;
+                                        ArrayList<Handle> handles = new ArrayList<>();
+                                        String[] numbers = jsonContact.getNumbers().split(",");
+                                        String[] emails = jsonContact.getEmails().split(",");
 
-                                        Handle handle = database.getHandleByHandleID(jsonContact.getHandleId());
-                                        Contact contact = null;
+                                        for (String number : numbers){
+                                            Handle handle = database.getHandleByHandleID(number);
 
-                                        if (handle != null) {
-                                            Contact dbContact = database.getContactByHandle(handle);
-
-                                            if (dbContact != null) {
-                                                contactExists = true;
-                                                contact = dbContact;
+                                            if (handle == null){
+                                                handle = new Handle(UUID.randomUUID(), number, Handle.HandleType.UNKNOWN, false, false);
+                                                weMessage.get().getMessageManager().addHandle(handle, false);
                                             }
-                                        } else {
-                                            handle = new Handle(UUID.randomUUID(), jsonContact.getHandleId(), Handle.HandleType.IMESSAGE, false, false);
-                                            weMessage.get().getMessageManager().addHandle(handle, false);
+
+                                            handles.add(handle);
                                         }
 
-                                        if (contactExists) {
-                                            String contactName = jsonContact.getName();
+                                        for (String email : emails){
+                                            Handle handle = database.getHandleByHandleID(email);
 
-                                            Contact updatedContact = contact;
-
-                                            if (contactName.contains(" ")) {
-                                                int i = contactName.lastIndexOf(" ");
-                                                String[] names = {contactName.substring(0, i), contactName.substring(i + 1)};
-                                                updatedContact.setFirstName(names[0]).setLastName(names[1]);
-                                            } else {
-                                                updatedContact.setFirstName(contactName).setLastName("");
+                                            if (handle == null){
+                                                handle = new Handle(UUID.randomUUID(), email, Handle.HandleType.UNKNOWN, false, false);
+                                                weMessage.get().getMessageManager().addHandle(handle, false);
                                             }
 
-                                            if (fileAttachmentsMap.get(jsonContact.getId()) != null) {
-                                                Attachment attachment = fileAttachmentsMap.get(jsonContact.getId());
+                                            handles.add(handle);
+                                        }
 
-                                                File srcFile = attachment.getFileLocation().getFile();
+                                        Handle handle = database.getHandleByHandleID(jsonContact.getHandleId());
+                                        Contact contact = database.getContactByHandle(handle);
 
-                                                if (srcFile.length() < weMessage.MAX_CHAT_ICON_SIZE) {
-                                                    File newFile = new File(weMessage.get().getChatIconsFolder(), jsonContact.getId() + srcFile.getName());
-
-                                                    FileUtils.copy(srcFile, newFile);
-
-                                                    if (contact.getContactPictureFileLocation() != null && !StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())) {
-                                                        contact.getContactPictureFileLocation().getFile().delete();
+                                        for (Handle h : handles){
+                                            if (h.findRoot() instanceof Contact){
+                                                Contact c = (Contact) h.findRoot();
+                                                if (!c.equals(contact)){
+                                                    if (c.getHandles().size() == 1){
+                                                        weMessage.get().getMessageManager().deleteContact(c.getUuid().toString(), false);
+                                                    }else {
+                                                        weMessage.get().getMessageManager().updateContact(c.getUuid().toString(), c.removeHandle(h), false);
                                                     }
-                                                    updatedContact.setContactPictureFileLocation(new FileLocationContainer(newFile));
                                                 }
                                             }
-                                            weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), updatedContact, false);
-                                        } else {
-                                            ArrayList<Handle> handles = new ArrayList<>();
-                                            handles.add(handle);
+                                        }
 
-                                            contact = new Contact().setUuid(UUID.randomUUID()).setHandles(handles).setPrimaryHandle(handles.get(0));
+                                        if (contact == null){
+                                            contact = new Contact().setUuid(UUID.randomUUID()).setHandles(handles).setPrimaryHandle(handle);
+
                                             String contactName = jsonContact.getName();
 
                                             if (contactName.contains(" ")) {
@@ -1023,10 +1016,38 @@ public final class ConnectionHandler extends Thread {
                                                     contact.setContactPictureFileLocation(new FileLocationContainer(newFile));
                                                 }
                                             }
+
                                             weMessage.get().getMessageManager().addContact(contact, false);
+                                        } else {
+                                            String contactName = jsonContact.getName();
+
+                                            if (contactName.contains(" ")) {
+                                                int i = contactName.lastIndexOf(" ");
+                                                String[] names = {contactName.substring(0, i), contactName.substring(i + 1)};
+                                                contact.setFirstName(names[0]).setLastName(names[1]);
+                                            } else {
+                                                contact.setFirstName(contactName).setLastName("");
+                                            }
+
+                                            if (fileAttachmentsMap.get(jsonContact.getId()) != null) {
+                                                Attachment attachment = fileAttachmentsMap.get(jsonContact.getId());
+
+                                                File srcFile = attachment.getFileLocation().getFile();
+
+                                                if (srcFile.length() < weMessage.MAX_CHAT_ICON_SIZE) {
+                                                    File newFile = new File(weMessage.get().getChatIconsFolder(), jsonContact.getId() + srcFile.getName());
+
+                                                    FileUtils.copy(srcFile, newFile);
+
+                                                    if (contact.getContactPictureFileLocation() != null && !StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())) {
+                                                        contact.getContactPictureFileLocation().getFile().delete();
+                                                    }
+                                                    contact.setContactPictureFileLocation(new FileLocationContainer(newFile));
+                                                }
+                                            }
+                                            weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), contact.setHandles(handles).setPrimaryHandle(handle), false);
                                         }
                                     }
-
                                     isSyncingContacts.set(false);
                                     sendLocalBroadcast(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS, null);
                                 } catch (Exception ex) {

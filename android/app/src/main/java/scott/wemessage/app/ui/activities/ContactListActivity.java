@@ -1,14 +1,20 @@
 package scott.wemessage.app.ui.activities;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -19,14 +25,17 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.daimajia.swipe.SwipeLayout;
+import com.yalantis.contextmenu.lib.ContextMenuDialogFragment;
+import com.yalantis.contextmenu.lib.MenuObject;
+import com.yalantis.contextmenu.lib.MenuParams;
+import com.yalantis.contextmenu.lib.interfaces.OnMenuItemClickListener;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,8 +45,11 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
+import scott.wemessage.app.connection.ConnectionService;
+import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.models.ActionMessage;
 import scott.wemessage.app.messages.models.Message;
@@ -47,26 +59,37 @@ import scott.wemessage.app.messages.models.users.Contact;
 import scott.wemessage.app.messages.models.users.ContactInfo;
 import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
+import scott.wemessage.app.utils.ContactUtils;
 import scott.wemessage.app.utils.IOUtils;
+import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.commons.utils.ListUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class BlockedContactsActivity extends AppCompatActivity implements MessageCallbacks {
+public class ContactListActivity extends AppCompatActivity implements MessageCallbacks, OnMenuItemClickListener {
 
+    private AtomicBoolean isInBlockedMode = new AtomicBoolean(false);
     private String callbackUuid;
 
+    private Toolbar toolbar;
     private EditText searchContactEditText;
     private RecyclerView contactsRecyclerView;
     private ContactAdapter contactAdapter;
+    private ContextMenuDialogFragment menuDialogFragment;
+    private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
 
-    private BroadcastReceiver blockedContactsBroadcastReceiver = new BroadcastReceiver() {
+    private boolean isBoundToConnectionService = false;
+
+    private BroadcastReceiver contactsListBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
+            if (intent.getAction().equals(weMessage.BROADCAST_CONNECTION_SERVICE_STOPPED)){
+                unbindService();
+            }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
@@ -105,9 +128,9 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             }else if(intent.getAction().equals(weMessage.BROADCAST_RESULT_PROCESS_ERROR)){
                 showErroredSnackbar(getString(R.string.result_process_error), 5);
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_FAILED)){
-                DialogDisplayer.showContactSyncResult(false, BlockedContactsActivity.this, getSupportFragmentManager());
+                DialogDisplayer.showContactSyncResult(false, ContactListActivity.this, getSupportFragmentManager());
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
-                DialogDisplayer.showContactSyncResult(true, BlockedContactsActivity.this, getSupportFragmentManager());
+                DialogDisplayer.showContactSyncResult(true, ContactListActivity.this, getSupportFragmentManager());
             }
         }
     };
@@ -115,7 +138,11 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_blocked_contacts);
+        setContentView(R.layout.activity_contacts);
+
+        if (isServiceRunning(ConnectionService.class)){
+            bindService();
+        }
 
         IntentFilter broadcastIntentFilter = new IntentFilter();
 
@@ -132,15 +159,20 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
         callbackUuid = UUID.randomUUID().toString();
         weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
-        LocalBroadcastManager.getInstance(this).registerReceiver(blockedContactsBroadcastReceiver, broadcastIntentFilter);
+        LocalBroadcastManager.getInstance(this).registerReceiver(contactsListBroadcastReceiver, broadcastIntentFilter);
 
-        Toolbar toolbar = findViewById(R.id.blockedContactsToolbar);
-        ImageButton backButton = toolbar.findViewById(R.id.blockedContactsBackButton);
-
-        backButton.setOnClickListener(new View.OnClickListener() {
+        toolbar = findViewById(R.id.contactsListToolbar);
+        toolbar.findViewById(R.id.contactsListBackButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 goToSettings();
+            }
+        });
+
+        toolbar.findViewById(R.id.contactsListMenuButton).setOnClickListener(new OnClickWaitListener(500L) {
+            @Override
+            public void onWaitClick(View v) {
+                menuDialogFragment.show(getSupportFragmentManager(), "ContactListContextMenuDialogFragment");
             }
         });
 
@@ -189,6 +221,18 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             }
         });
 
+        ViewTreeObserver viewTreeObserver = toolbar.getViewTreeObserver();
+
+        if (viewTreeObserver.isAlive()){
+            viewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    toolbar.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    buildContextMenu(toolbar.getHeight());
+                }
+            });
+        }
+
         ArrayList<ContactInfo> contacts = new ArrayList<>(weMessage.get().getMessageManager().getContacts().values());
 
         contactAdapter.refreshList(contacts);
@@ -198,9 +242,26 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
     @Override
     public void onDestroy() {
         weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(blockedContactsBroadcastReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(contactsListBroadcastReceiver);
+
+        if (isBoundToConnectionService){
+            unbindService();
+        }
 
         super.onDestroy();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode){
+            case weMessage.REQUEST_PERMISSION_READ_CONTACTS:
+                if (isGranted(grantResults)){
+                    phoneContactSync();
+                } else {
+                    DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), getString(R.string.sync_contacts_message_permission)).show(getSupportFragmentManager(), "ContactSyncPhonePermissionDenied");
+                }
+                break;
+        }
     }
 
     @Override
@@ -210,8 +271,6 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
     @Override
     public void onContactCreate(final ContactInfo contact) {
-        if (!isContactBlocked(contact)) return;
-
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -221,6 +280,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                 }
             }
         });
+
     }
 
     @Override
@@ -229,17 +289,8 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             @Override
             public void run() {
                 if (contactAdapter != null){
-                    if (!isContactBlocked(oldData) && !isContactBlocked(newData.findRoot())) return;
-
-                    if (!isContactBlocked(oldData) && isContactBlocked(newData.findRoot())){
-                        contactAdapter.addContact(newData.findRoot());
-                        contactAdapter.addContactToOriginal(newData.findRoot());
-                    }
-
-                    if (isContactBlocked(oldData) && !isContactBlocked(newData.findRoot())){
-                        contactAdapter.removeContact(newData.findRoot());
-                        contactAdapter.removeContactFromOriginal(newData.findRoot());
-                    }
+                    contactAdapter.updateContact(oldData, newData.findRoot());
+                    contactAdapter.updateContactToOriginal(oldData, newData.findRoot());
                 }
             }
         });
@@ -315,13 +366,148 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
     @Override
     public void onAttachmentReceiveFailure(FailReason failReason) { }
 
+    @Override
+    public void onMenuItemClick(View clickedView, int position) {
+        switch (position){
+            case 0: break;
+            case 1:
+                ContactUtils.showContactSyncDialog(this, getSupportFragmentManager(),
+
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        macContactSync();
+                    }
+                },
+
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        phoneContactSync();
+                    }
+                });
+                break;
+            case 2:
+                toggleBlocked();
+                break;
+            default: break;
+        }
+    }
+
+    private void toggleBlocked(){
+        if (isInBlockedMode.get()){
+            isInBlockedMode.set(false);
+            ((TextView) toolbar.findViewById(R.id.contactsListToolbarTextView)).setText(R.string.word_contacts);
+        }else {
+            isInBlockedMode.set(true);
+            ((TextView) toolbar.findViewById(R.id.contactsListToolbarTextView)).setText(R.string.blocked_contacts);
+        }
+
+        buildContextMenu(toolbar.getHeight());
+        ArrayList<ContactInfo> contacts = new ArrayList<>(weMessage.get().getMessageManager().getContacts().values());
+
+        contactAdapter.refreshList(contacts);
+        contactAdapter.setOriginalList(contacts);
+    }
+
+    private void buildContextMenu(int height){
+        ArrayList<MenuObject> menuObjects = new ArrayList<>();
+        MenuParams menuParams = new MenuParams();
+
+        Drawable closeDrawable = getDrawable(R.drawable.ic_close);
+        Drawable syncDrawable = getDrawable(R.drawable.ic_sync);
+        Drawable blockedDrawable = getDrawable(R.drawable.ic_blocked);
+
+        closeDrawable.setTint(getResources().getColor(R.color.white));
+        syncDrawable.setTint(getResources().getColor(R.color.white));
+        blockedDrawable.setTint(getResources().getColor(R.color.white));
+
+        MenuObject closeMenu = new MenuObject();
+        closeMenu.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        closeMenu.setBgColor(getResources().getColor(R.color.outgoingBubbleColor));
+        closeMenu.setMenuTextAppearanceStyle(R.style.MenuFragmentStyle_TextView);
+        closeMenu.setDividerColor(R.color.white);
+        closeMenu.setDrawable(closeDrawable);
+
+        MenuObject contactSync = new MenuObject();
+        contactSync.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        contactSync.setBgColor(getResources().getColor(R.color.outgoingBubbleColor));
+        contactSync.setMenuTextAppearanceStyle(R.style.MenuFragmentStyle_TextView);
+        contactSync.setDividerColor(R.color.white);
+        contactSync.setDrawable(syncDrawable);
+        contactSync.setTitle(getString(R.string.sync_contacts));
+
+        MenuObject toggleBlocked = new MenuObject();
+        toggleBlocked.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        toggleBlocked.setBgColor(getResources().getColor(R.color.outgoingBubbleColor));
+        toggleBlocked.setMenuTextAppearanceStyle(R.style.MenuFragmentStyle_TextView);
+        toggleBlocked.setDividerColor(R.color.white);
+        toggleBlocked.setDrawable(blockedDrawable);
+        toggleBlocked.setTitle(isInBlockedMode.get() ? getString(R.string.toggle_unblocked_contacts) : getString(R.string.toggle_blocked_contacts));
+
+        menuObjects.add(closeMenu);
+        menuObjects.add(contactSync);
+        menuObjects.add(toggleBlocked);
+
+        menuParams.setActionBarSize(height);
+        menuParams.setMenuObjects(menuObjects);
+        menuParams.setClosableOutside(false);
+        menuParams.setAnimationDelay(50);
+        menuParams.setAnimationDuration(75);
+
+        menuDialogFragment = ContextMenuDialogFragment.newInstance(menuParams);
+        menuDialogFragment.setItemClickListener(this);
+    }
+
+    private void phoneContactSync(){
+        if (!hasPermission(Manifest.permission.READ_CONTACTS, false, null, "ContactSyncReadContactsPermission", weMessage.REQUEST_PERMISSION_READ_CONTACTS)) return;
+
+        ContactUtils.syncContacts(this);
+    }
+
+    private void macContactSync(){
+        if (!isServiceRunning(ConnectionService.class)){
+            DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment = DialogDisplayer.generateOfflineDialog(this, getString(R.string.contact_sync_fail_offline));
+
+            alertDialogFragment.setOnDismiss(new Runnable() {
+                @Override
+                public void run() {
+                    goToLauncherReconnect();
+                }
+            });
+
+            alertDialogFragment.show(getSupportFragmentManager(), "OfflineModeContactSyncAlertDialog");
+            return;
+        }
+
+        if (isStillConnecting()){
+            showErroredSnackbar(getString(R.string.still_connecting_perform_action), 5);
+            return;
+        }
+
+        serviceConnection.getConnectionService().getConnectionHandler().requestContactSync();
+    }
+
+    private void bindService(){
+        Intent intent = new Intent(this, ConnectionService.class);
+        bindService(intent, serviceConnection, Context.BIND_IMPORTANT);
+        isBoundToConnectionService = true;
+    }
+
+    private void unbindService(){
+        if (isBoundToConnectionService) {
+            unbindService(serviceConnection);
+            isBoundToConnectionService = false;
+        }
+    }
+
     private void showDisconnectReasonDialog(Intent bundledIntent, String defaultMessage, Runnable runnable){
         DialogDisplayer.showDisconnectReasonDialog(this, getSupportFragmentManager(), bundledIntent, defaultMessage, runnable);
     }
 
     private void showErroredSnackbar(String message, int duration){
         if (!isFinishing() && !isDestroyed()) {
-            final Snackbar snackbar = Snackbar.make(findViewById(R.id.blockedContactsLayout), message, duration * 1000);
+            final Snackbar snackbar = Snackbar.make(findViewById(R.id.contactSelectLayout), message, duration * 1000);
 
             snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
                 @Override
@@ -337,6 +523,22 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
             snackbar.show();
         }
+    }
+
+    private void launchContactView(String handleUuid){
+        Intent launcherIntent = new Intent(weMessage.get(), ContactViewActivity.class);
+
+        launcherIntent.putExtra(weMessage.BUNDLE_CONTACT_VIEW_UUID, handleUuid);
+        launcherIntent.putExtra(weMessage.BUNDLE_GO_TO_CONTACT_LIST, weMessage.BUNDLE_GO_TO_CONTACT_LIST);
+
+        startActivity(launcherIntent);
+    }
+
+    private void goToSettings(){
+        Intent launcherIntent = new Intent(weMessage.get(), SettingsActivity.class);
+
+        startActivity(launcherIntent);
+        finish();
     }
 
     private void goToLauncher(){
@@ -359,13 +561,6 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
         }
     }
 
-    private void goToSettings(){
-        Intent launcherIntent = new Intent(weMessage.get(), SettingsActivity.class);
-
-        startActivity(launcherIntent);
-        finish();
-    }
-
     private boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -374,6 +569,10 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
             }
         }
         return false;
+    }
+
+    private boolean isStillConnecting(){
+        return serviceConnection.getConnectionService() == null || !serviceConnection.getConnectionService().getConnectionHandler().isConnected().get();
     }
 
     private <T> Collection<T> filter(Collection<T> target, IPredicate<T> predicate) {
@@ -409,45 +608,97 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
         return false;
     }
 
-    private class ContactHolder extends RecyclerView.ViewHolder {
+    private boolean hasPermission(final String permission, boolean showRationale, String rationaleString, String alertTagId, final int requestCode){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            if (showRationale && shouldShowRequestPermissionRationale(permission)){
+                DialogDisplayer.AlertDialogFragment alertDialogFragment = DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), rationaleString);
 
+                alertDialogFragment.setOnDismiss(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            requestPermissions(new String[]{permission}, requestCode);
+                        }
+                    }
+                });
+                alertDialogFragment.show(getSupportFragmentManager(), alertTagId);
+                return false;
+            } else {
+                requestPermissions(new String[] { permission }, requestCode);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isGranted(int[] grantResults){
+        return (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
+    }
+
+    private class ContactHolder extends RecyclerView.ViewHolder {
         private boolean isInit = false;
 
         private SwipeLayout swipeLayout;
-        private LinearLayout unblockContactButton;
         private ImageView contactPictureView;
         private TextView contactDisplayNameView;
         private TextView contactHandle;
+        private TextView toggleBlockButton;
+        private TextView removeContactButton;
 
         public ContactHolder(LayoutInflater inflater, ViewGroup parent) {
-            super(inflater.inflate(R.layout.list_item_blocked_contact, parent, false));
+            super(inflater.inflate(R.layout.list_item_contact, parent, false));
         }
 
         public void bind(final ContactInfo contact){
             init();
 
+            Glide.with(ContactListActivity.this).load(IOUtils.getContactIconUri(contact.pullHandle(false), IOUtils.IconSize.NORMAL)).into(contactPictureView);
             contactDisplayNameView.setText(contact.getDisplayName());
             contactHandle.setText(contact.pullHandle(false).getHandleID());
 
-            Glide.with(BlockedContactsActivity.this).load(IOUtils.getContactIconUri(contact.pullHandle(false), IOUtils.IconSize.NORMAL)).into(contactPictureView);
-
-            unblockContactButton.setOnClickListener(new View.OnClickListener() {
+            toggleBlockButton.setText(isInBlockedMode.get() ? R.string.word_unblock : R.string.word_block);
+            toggleBlockButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     if (contact instanceof Handle) {
                         Handle h = (Handle) contact;
 
-                        weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(false), true, true);
+                        weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(!isInBlockedMode.get()), true, true);
                     }else if (contact instanceof Contact){
                         for (Handle h : ((Contact) contact).getHandles()){
-                            weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(false), false, false);
+                            weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(!isInBlockedMode.get()), false, false);
                         }
                         weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), (Contact) contact, true);
                     }
                 }
             });
 
-            swipeLayout.addDrag(SwipeLayout.DragEdge.Right, itemView.findViewById(R.id.contactUnblockButton));
+            removeContactButton.setOnClickListener(new OnClickWaitListener(500L) {
+                @Override
+                public void onWaitClick(View v) {
+                    if (contact instanceof Handle) {
+                        DialogDisplayer.AlertDialogFragmentDouble alertDialogFragmentDouble = DialogDisplayer.generateAlertDialogDouble(getString(R.string.delete_handle_title), getString(R.string.delete_handle_message), getString(R.string.word_delete));
+                        alertDialogFragmentDouble.setOnDismiss(new Runnable() {
+                            @Override
+                            public void run() {
+                                weMessage.get().getMessageManager().deleteHandle(contact.getUuid().toString(), true);
+                            }
+                        });
+                        alertDialogFragmentDouble.show(getSupportFragmentManager(), "DeleteContactDialog");
+                    }else if (contact instanceof Contact){
+                        weMessage.get().getMessageManager().deleteContact(contact.getUuid().toString(), true);
+                    }
+                }
+            });
+
+            itemView.findViewById(R.id.contactItemLayout).setOnClickListener(new OnClickWaitListener(500L) {
+                @Override
+                public void onWaitClick(View v) {
+                    launchContactView(contact.pullHandle(false).getUuid().toString());
+                }
+            });
+
+            swipeLayout.addDrag(SwipeLayout.DragEdge.Right, itemView.findViewById(R.id.contactSwipeButtonLayout));
             swipeLayout.addSwipeListener(new SwipeLayout.SwipeListener() {
                 @Override
                 public void onStartOpen(SwipeLayout layout) {
@@ -466,9 +717,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                 }
 
                 @Override
-                public void onStartClose(SwipeLayout layout) {
-
-                }
+                public void onStartClose(SwipeLayout layout) { }
 
                 @Override
                 public void onClose(SwipeLayout layout) {
@@ -478,14 +727,10 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                 }
 
                 @Override
-                public void onUpdate(SwipeLayout layout, int leftOffset, int topOffset) {
-
-                }
+                public void onUpdate(SwipeLayout layout, int leftOffset, int topOffset) { }
 
                 @Override
-                public void onHandRelease(SwipeLayout layout, float xvel, float yvel) {
-
-                }
+                public void onHandRelease(SwipeLayout layout, float xvel, float yvel) { }
             });
         }
 
@@ -505,10 +750,11 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                 isInit = true;
 
                 swipeLayout = (SwipeLayout) itemView;
-                contactPictureView = itemView.findViewById(R.id.blockedContactPictureView);
-                contactDisplayNameView = itemView.findViewById(R.id.blockedContactDisplayNameView);
-                contactHandle = itemView.findViewById(R.id.blockedContactHandle);
-                unblockContactButton = itemView.findViewById(R.id.contactUnblockButton);
+                contactPictureView = itemView.findViewById(R.id.contactPictureView);
+                contactDisplayNameView = itemView.findViewById(R.id.contactDisplayNameView);
+                contactHandle = itemView.findViewById(R.id.contactHandle);
+                toggleBlockButton = itemView.findViewById(R.id.contactToggleBlockButton);
+                removeContactButton = itemView.findViewById(R.id.contactRemoveButton);
             }
         }
     }
@@ -523,7 +769,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
         @Override
         public ContactHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            LayoutInflater layoutInflater = LayoutInflater.from(BlockedContactsActivity.this);
+            LayoutInflater layoutInflater = LayoutInflater.from(ContactListActivity.this);
 
             return new ContactHolder(layoutInflater, parent);
         }
@@ -542,8 +788,14 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
         public void setOriginalList(ArrayList<ContactInfo> contacts){
             for (ContactInfo c : contacts){
-                if (isContactBlocked(c)){
-                    originalList.add(c);
+                if (isInBlockedMode.get()){
+                    if (isContactBlocked(c)){
+                        originalList.add(c);
+                    }
+                }else {
+                    if (!isContactBlocked(c)) {
+                        originalList.add(c);
+                    }
                 }
             }
         }
@@ -587,19 +839,171 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
         }
 
         public void addContact(ContactInfo c){
-            if (!isContactMe(c) && isContactBlocked(c)){
+            if (isInBlockedMode.get()){
+                if (!isContactBlocked(c)) return;
                 if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
 
                 contacts.add(new SearchableContact(c));
                 notifyItemInserted(contacts.size() - 1);
+
+            } else {
+                if (!isContactMe(c) && !isContactBlocked(c)) {
+                    if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
+
+                    contacts.add(new SearchableContact(c));
+                    notifyItemInserted(contacts.size() - 1);
+                }
             }
         }
 
         public void addContactToOriginal(ContactInfo c){
-            if (!isContactMe(c) && isContactBlocked(c)){
+            if (isInBlockedMode.get()){
+                if (!isContactBlocked(c)) return;
                 if (c instanceof Contact && originalList.contains(c)) originalList.removeAll(Collections.singleton(c));
 
                 originalList.add(c);
+            } else {
+                if (!isContactMe(c) && !isContactBlocked(c)) {
+                    if (c instanceof Contact && originalList.contains(c)) originalList.removeAll(Collections.singleton(c));
+
+                    originalList.add(c);
+                }
+            }
+        }
+
+        public void updateContact(ContactInfo oldData, ContactInfo newData){
+            if (!isContactMe(newData)) {
+
+                if (isInBlockedMode.get()){
+                    if (!isContactBlocked(oldData) && !isContactBlocked(newData.findRoot())) return;
+
+                    if (!isContactBlocked(oldData) && isContactBlocked(newData.findRoot())){
+                        addContact(newData.findRoot());
+                        return;
+                    }
+
+                    if (isContactBlocked(oldData) && !isContactBlocked(newData.findRoot())){
+                        removeContact(newData.findRoot());
+                        return;
+                    }
+                } else {
+                    if (isContactBlocked(oldData) && isContactBlocked(newData.findRoot())) return;
+
+                    if (isContactBlocked(oldData) && !isContactBlocked(newData.findRoot())){
+                        addContact(newData.findRoot());
+                        return;
+                    }
+
+                    if (!isContactBlocked(oldData) && isContactBlocked(newData.findRoot())){
+                        removeContact(newData.findRoot());
+                        return;
+                    }
+                }
+
+                new AsyncTask<ContactInfo, Void, Integer>() {
+                    @Override
+                    protected Integer doInBackground(ContactInfo... params) {
+                        int i = 0;
+                        for (SearchableContact searchableContact : contacts) {
+                            ContactInfo contactInfo = searchableContact.getContact();
+
+                            if (contactInfo.equals(params[0])) {
+                                if (contactInfo instanceof Handle) {
+                                    contacts.set(i, new SearchableContact(params[0]));
+                                    return i;
+                                }else if (contactInfo instanceof Contact){
+                                    Contact contact = (Contact) contactInfo;
+                                    Contact oldContact = (Contact) params[1];
+                                    List<ListUtils.ObjectContainer> handleDiffs = ListUtils.findDifference(oldContact.getHandles(), contact.getHandles());
+
+                                    for (ListUtils.ObjectContainer handleDiff : handleDiffs){
+                                        if (handleDiff.getStatus() == ListUtils.ListStatus.REMOVED){
+                                            addContact((ContactInfo) handleDiff.getObject());
+                                        }else if (handleDiff.getStatus() == ListUtils.ListStatus.ADDED){
+                                            removeContact((ContactInfo) handleDiff.getObject());
+                                        }
+                                    }
+                                    contacts.set(i, new SearchableContact(params[0]));
+                                    return i;
+                                }
+                            }
+                            i++;
+                        }
+                        return -1;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Integer integer) {
+                        if (!isFinishing() && !isDestroyed()) {
+                            if (integer != -1) {
+                                notifyItemChanged(integer);
+                            }
+                        }
+                    }
+                }.execute(newData, oldData);
+            }
+        }
+
+        public void updateContactToOriginal(ContactInfo oldData, ContactInfo newData){
+            if (!isContactMe(newData)) {
+                if (isInBlockedMode.get()){
+                    if (!isContactBlocked(oldData) && !isContactBlocked(newData.findRoot())) return;
+
+                    if (!isContactBlocked(oldData) && isContactBlocked(newData.findRoot())){
+                        addContactToOriginal(newData.findRoot());
+                        return;
+                    }
+
+                    if (isContactBlocked(oldData) && !isContactBlocked(newData.findRoot())){
+                        removeContactFromOriginal(newData.findRoot());
+                        return;
+                    }
+                } else {
+                    if (isContactBlocked(oldData) && isContactBlocked(newData.findRoot())) return;
+
+                    if (isContactBlocked(oldData) && !isContactBlocked(newData.findRoot())){
+                        addContactToOriginal(newData.findRoot());
+                        return;
+                    }
+
+                    if (!isContactBlocked(oldData) && isContactBlocked(newData.findRoot())){
+                        removeContactFromOriginal(newData.findRoot());
+                        return;
+                    }
+                }
+                
+                new AsyncTask<ContactInfo, Void, Void>() {
+                    @Override
+                    protected Void doInBackground(ContactInfo... params) {
+                        int i = 0;
+
+                        for (ContactInfo contactInfo : originalList) {
+                            if (contactInfo.equals(params[0])) {
+                                if (contactInfo instanceof Handle) {
+                                    originalList.set(i, params[0]);
+                                    break;
+                                }else if (contactInfo instanceof Contact){
+                                    Contact contact = (Contact) contactInfo;
+                                    Contact oldContact = (Contact) params[1];
+                                    List<ListUtils.ObjectContainer> handleDiffs = ListUtils.findDifference(oldContact.getHandles(), contact.getHandles());
+
+                                    for (ListUtils.ObjectContainer handleDiff : handleDiffs){
+                                        if (handleDiff.getStatus() == ListUtils.ListStatus.REMOVED){
+                                            addContactToOriginal((ContactInfo) handleDiff.getObject());
+                                        }else if (handleDiff.getStatus() == ListUtils.ListStatus.ADDED){
+                                            removeContactFromOriginal((ContactInfo) handleDiff.getObject());
+                                        }
+                                    }
+                                    originalList.set(i, params[0]);
+                                    break;
+                                }
+                            }
+                            i++;
+                        }
+                        return null;
+                    }
+
+                }.execute(newData, oldData);
             }
         }
 
@@ -664,8 +1068,12 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
 
                     for (Object o : lists[0]){
                         if (o instanceof ContactInfo){
-                            if (!isContactMe((ContactInfo) o) && isContactBlocked((Contact) o)) {
-                                unsortedList.add(new SearchableContact((ContactInfo) o));
+                            if (!isContactMe((ContactInfo) o)) {
+                                if (isInBlockedMode.get()) {
+                                    if (isContactBlocked((ContactInfo) o)) unsortedList.add(new SearchableContact((ContactInfo) o));
+                                }else {
+                                    if (!isContactBlocked((ContactInfo) o)) unsortedList.add(new SearchableContact((ContactInfo) o));
+                                }
                             }
                         }
                     }
@@ -678,7 +1086,6 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
                     });
 
                     contacts = unsortedList;
-
                     return null;
                 }
 
@@ -692,7 +1099,7 @@ public class BlockedContactsActivity extends AppCompatActivity implements Messag
         }
 
         private void closeUnderlyingView(){
-            RecyclerView.ViewHolder viewHolder = contactsRecyclerView.findViewHolderForAdapterPosition(contactAdapter.showingDeletePosition);
+            RecyclerView.ViewHolder viewHolder = contactsRecyclerView.findViewHolderForAdapterPosition(showingDeletePosition);
 
             if (viewHolder != null && viewHolder instanceof ContactHolder){
                 ((ContactHolder) viewHolder).closeUnderlyingView();

@@ -33,6 +33,15 @@
 ##--------------------------------------------------------
 
 
+##----------------------  ChatKit  -----------------------
+
+-keepclassmembers class * extends com.stfalcon.chatkit.commons.ViewHolder {
+   public <init>(android.view.View);
+}
+
+##--------------------------------------------------------
+
+
 ##------------------------------  GSON  ------------------------------
 
 # Gson uses generic type information stored in a class file when working with fields. Proguard

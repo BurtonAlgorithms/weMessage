@@ -8,6 +8,7 @@ import com.google.i18n.phonenumbers.Phonenumber;
 import java.util.UUID;
 
 import scott.wemessage.app.weMessage;
+import scott.wemessage.commons.utils.StringUtils;
 
 public class Handle extends ContactInfo {
 
@@ -50,13 +51,32 @@ public class Handle extends ContactInfo {
     }
 
     public String getDisplayName(){
+        PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
         Contact c = weMessage.get().getMessageDatabase().getContactByHandle(this);
 
         if (c != null){
-            return c.getDisplayName();
-        }else {
-            PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
+            String fullString = "";
 
+            if (!StringUtils.isEmpty(c.getFirstName())) {
+                fullString = c.getFirstName();
+            }
+
+            if (!StringUtils.isEmpty(c.getLastName())) {
+                fullString += " " + c.getLastName();
+            }
+
+            if (StringUtils.isEmpty(fullString)) {
+                try {
+                    Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(getHandleID(), Resources.getSystem().getConfiguration().locale.getCountry());
+
+                    return phoneNumberUtil.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.INTERNATIONAL);
+                }catch (Exception ex){
+                    return getHandleID();
+                }
+            }else {
+                return fullString;
+            }
+        }else {
             try {
                 Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(getHandleID(), Resources.getSystem().getConfiguration().locale.getCountry());
 

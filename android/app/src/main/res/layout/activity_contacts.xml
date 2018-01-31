@@ -4,12 +4,12 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/blockedContactsLayout"
+    android:id="@+id/contactsListLayout"
     android:descendantFocusability="beforeDescendants"
     android:focusableInTouchMode="true" >
 
     <include
-        layout="@layout/toolbar_blocked_contacts" />
+        layout="@layout/toolbar_contacts" />
 
     <LinearLayout
         android:id="@+id/contactsEditTextContainer"

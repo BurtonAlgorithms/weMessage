@@ -202,6 +202,8 @@ public class AttachmentPopupFragment extends MessagingFragment implements MediaR
 
     public void clearSelectedAttachments(){
         attachments.clear();
+        audioFile = null;
+        cameraAttachmentFile = null;
     }
 
     public String getCameraAttachmentFile(){
@@ -221,6 +223,7 @@ public class AttachmentPopupFragment extends MessagingFragment implements MediaR
             attachmentPopupCameraButton.setText(getString(R.string.delete_camera_attachment));
             attachmentPopupCameraButton.setTextSize(12);
 
+            onAttachmentsModified();
         }else if (data != null){
             AppLogger.error("An error occurred while trying to get Camera data.", (Exception) data.getSerializableExtra(MaterialCamera.ERROR_EXTRA));
             showErroredSnackBar(getString(R.string.camera_capture_error));
@@ -279,6 +282,8 @@ public class AttachmentPopupFragment extends MessagingFragment implements MediaR
             attachmentPopupCameraButton.getCompoundDrawables()[1].setTint(Color.BLACK);
             attachmentPopupCameraButton.setText(getString(R.string.word_camera));
             attachmentPopupCameraButton.setTextSize(14);
+
+            onAttachmentsModified();
         }
     }
 
@@ -324,6 +329,8 @@ public class AttachmentPopupFragment extends MessagingFragment implements MediaR
             attachmentPopupAudioButton.setTextColor(Color.BLACK);
             attachmentPopupAudioButton.setText(getString(R.string.delete_audio_recording));
             attachmentPopupAudioButton.setTextSize(12);
+
+            onAttachmentsModified();
         }
     }
 
@@ -337,6 +344,8 @@ public class AttachmentPopupFragment extends MessagingFragment implements MediaR
             attachmentPopupAudioButton.getCompoundDrawables()[1].setTint(Color.BLACK);
             attachmentPopupAudioButton.setText(getString(R.string.word_voice));
             attachmentPopupAudioButton.setTextSize(14);
+
+            onAttachmentsModified();
         }
     }
 
@@ -597,6 +606,7 @@ public class AttachmentPopupFragment extends MessagingFragment implements MediaR
                 }
                 checkmarkView.setVisibility(View.INVISIBLE);
             }
+            onAttachmentsModified();
         }
 
         @Override
@@ -605,7 +615,13 @@ public class AttachmentPopupFragment extends MessagingFragment implements MediaR
         }
     }
 
+    void onAttachmentsModified(){
+        ((AttachmentInputListener) getParentFragment()).onAttachmentChange(attachments.isEmpty() && cameraAttachmentFile == null && audioFile == null);
+    }
+
     interface AttachmentInputListener {
+
+        void onAttachmentChange(boolean isEmpty);
 
         void setAttachmentsInput(List<String> attachments, String cameraAttachmentPath, String audioRecordingPath);
     }

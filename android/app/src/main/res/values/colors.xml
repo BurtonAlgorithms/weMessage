@@ -37,6 +37,9 @@
     <color name="outgoingDateColor">#ebebef</color>
     <color name="defaultBackgroundColor">#FAFAFA</color>
 
+    <color name="deepPurple">#5959d3</color>
+    <color name="deepPurplePressed">#5050ce</color>
+
     <color name="konfetti_yellow">#fce18a</color>
     <color name="konfetti_orange">#ff726d</color>
     <color name="konfetti_purple">#b48def</color>
