@@ -12,6 +12,7 @@ import scott.wemessage.commons.connection.json.message.JSONChat;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.connection.security.EncryptedText;
 import scott.wemessage.commons.crypto.AESCrypto;
+import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.server.connection.Device;
 
@@ -172,7 +173,8 @@ public final class ConversationGenerator {
                         true,
                         true,
                         true,
-                        messageMap.get(s).equals(handle)
+                        messageMap.get(s).equals(handle),
+                        MessageEffect.NONE.getEffectName()
                 );
                 messages.add(jsonMessage);
                 date = date + minVal;
