@@ -3,6 +3,7 @@ package scott.wemessage.server.listeners.connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.HashMap;
+import java.util.List;
 
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.server.ServerLogger;
@@ -11,6 +12,7 @@ import scott.wemessage.server.events.Event;
 import scott.wemessage.server.events.Listener;
 import scott.wemessage.server.events.connection.DeviceJoinEvent;
 import scott.wemessage.server.messages.Message;
+import scott.wemessage.server.weMessage;
 
 public class DeviceJoinListener extends Listener {
 
@@ -22,6 +24,13 @@ public class DeviceJoinListener extends Listener {
         DeviceJoinEvent event = (DeviceJoinEvent) e;
 
         try {
+            List<String> accounts = e.getMessageServer().getMessagesDatabase().getAccounts();
+            String account = e.getMessageServer().getConfiguration().getAccountEmail().toLowerCase();
+
+            if (!accounts.contains(account) && !event.getDeviceManager().getPastDeviceConnections().containsKey(event.getDevice().getDeviceId())){
+                event.getDevice().sendOutgoingMessage(weMessage.JSON_NO_ACCOUNTS_FOUND_SERVER, "", String.class);
+            }
+
             DatabaseManager db = event.getMessageServer().getDatabaseManager();
             String selectQuery = "SELECT * FROM " + db.TABLE_DEVICES + " WHERE " + db.COLUMN_DEVICE_ID + " = ?";
             PreparedStatement findStatement = db.getServerDatabaseConnection().prepareStatement(selectQuery);
@@ -75,6 +84,8 @@ public class DeviceJoinListener extends Listener {
 
             resultSet.close();
             findStatement.close();
+
+            event.getDeviceManager().getPastDeviceConnections().put(event.getDevice().getDeviceId(), event.getDevice().getAddress());
         }catch(Exception ex){
             ServerLogger.error("An error occurred while connecting Device: " + event.getDevice().getAddress() + " to the weServer. \nPlease disconnect it or it will not work as expected.", ex);
         }
