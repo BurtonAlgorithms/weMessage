@@ -75,11 +75,11 @@ public final class MessageManager {
             createThreadedTask(new Runnable() {
                 @Override
                 public void run() {
-                    addContactTask(contact);
+                    addContactTask(contact, true);
                 }
             }).start();
         }else {
-            addContactTask(contact);
+            addContactTask(contact, true);
         }
     }
 
@@ -88,11 +88,11 @@ public final class MessageManager {
             createThreadedTask(new Runnable() {
                 @Override
                 public void run() {
-                    updateContactTask(uuid, newData);
+                    updateContactTask(uuid, newData, true);
                 }
             }).start();
         }else {
-            updateContactTask(uuid, newData);
+            updateContactTask(uuid, newData, true);
         }
     }
 
@@ -101,11 +101,50 @@ public final class MessageManager {
             createThreadedTask(new Runnable() {
                 @Override
                 public void run() {
-                    deleteContactTask(uuid);
+                    deleteContactTask(uuid, true);
                 }
             }).start();
         }else {
-            deleteContactTask(uuid);
+            deleteContactTask(uuid, true);
+        }
+    }
+
+    public synchronized void addContactNoCallback(final Contact contact, boolean threaded){
+        if (threaded){
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    addContactTask(contact, false);
+                }
+            }).start();
+        }else {
+            addContactTask(contact, false);
+        }
+    }
+
+    public synchronized void updateContactNoCallback(final String uuid, final Contact newData, boolean threaded){
+        if (threaded) {
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    updateContactTask(uuid, newData, false);
+                }
+            }).start();
+        }else {
+            updateContactTask(uuid, newData, false);
+        }
+    }
+
+    public synchronized void deleteContactNoCallback(final String uuid, boolean threaded){
+        if (threaded){
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    deleteContactTask(uuid, false);
+                }
+            }).start();
+        }else {
+            deleteContactTask(uuid, false);
         }
     }
 
@@ -114,24 +153,50 @@ public final class MessageManager {
             createThreadedTask(new Runnable() {
                 @Override
                 public void run() {
-                    addHandleTask(handle);
+                    addHandleTask(handle, true);
                 }
             }).start();
         }else {
-            addHandleTask(handle);
+            addHandleTask(handle, true);
         }
     }
 
-    public synchronized void updateHandle(final String uuid, final Handle newData, final boolean threaded, final boolean useCallbacks){
+    public synchronized void updateHandle(final String uuid, final Handle newData, final boolean threaded){
         if (threaded){
             createThreadedTask(new Runnable() {
                 @Override
                 public void run() {
-                    updateHandleTask(uuid, newData, useCallbacks);
+                    updateHandleTask(uuid, newData, true);
                 }
             }).start();
         }else {
-            updateHandleTask(uuid, newData, useCallbacks);
+            updateHandleTask(uuid, newData, true);
+        }
+    }
+
+    public synchronized void addHandleNoCallback(final Handle handle, boolean threaded){
+        if (threaded){
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    addHandleTask(handle, false);
+                }
+            }).start();
+        }else {
+            addHandleTask(handle, false);
+        }
+    }
+
+    public synchronized void updateHandleNoCallback(final String uuid, final Handle newData, final boolean threaded){
+        if (threaded){
+            createThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    updateHandleTask(uuid, newData, false);
+                }
+            }).start();
+        }else {
+            updateHandleTask(uuid, newData, false);
         }
     }
 
@@ -344,6 +409,12 @@ public final class MessageManager {
         }
     }
 
+    public void refreshContactList(){
+        for (MessageCallbacks callbacks : callbacksMap.values()){
+            callbacks.onContactListRefresh(new ArrayList<>(getContacts().values()));
+        }
+    }
+
     private void init(){
         createThreadedTask(new Runnable() {
             @Override
@@ -361,39 +432,47 @@ public final class MessageManager {
         refreshChats(true);
     }
 
-    private void addContactTask(Contact contact){
+    private void addContactTask(Contact contact, boolean useCallbacks){
         weMessage.get().getMessageDatabase().addContact(contact);
 
-        for (MessageCallbacks callbacks : callbacksMap.values()){
-            callbacks.onContactCreate(contact);
+        if (useCallbacks) {
+            for (MessageCallbacks callbacks : callbacksMap.values()) {
+                callbacks.onContactCreate(contact);
+            }
         }
     }
 
-    private void updateContactTask(String uuid, Contact newData){
+    private void updateContactTask(String uuid, Contact newData, boolean useCallbacks){
         Contact oldContact = weMessage.get().getMessageDatabase().getContactByUuid(uuid);
         weMessage.get().getMessageDatabase().updateContact(uuid, newData);
 
-        for (MessageCallbacks callbacks : callbacksMap.values()){
-            callbacks.onContactUpdate(oldContact, newData);
+        if (useCallbacks) {
+            for (MessageCallbacks callbacks : callbacksMap.values()) {
+                callbacks.onContactUpdate(oldContact, newData);
+            }
         }
     }
 
-    private void deleteContactTask(String uuid){
+    private void deleteContactTask(String uuid, boolean useCallbacks){
         weMessage.get().getMessageDatabase().deleteContactByUuid(uuid);
 
-        for (MessageCallbacks callbacks : callbacksMap.values()){
-            callbacks.onContactListRefresh(new ArrayList<>(getContacts().values()));
+        if (useCallbacks) {
+            for (MessageCallbacks callbacks : callbacksMap.values()) {
+                callbacks.onContactListRefresh(new ArrayList<>(getContacts().values()));
+            }
         }
     }
 
-    private void addHandleTask(Handle handle){
+    private void addHandleTask(Handle handle, boolean useCallbacks){
         if (weMessage.get().getMessageDatabase().getHandleByHandleID(handle.getHandleID()) != null) return;
 
         handles.put(handle.getUuid().toString(), handle);
         weMessage.get().getMessageDatabase().addHandle(handle);
 
-        for (MessageCallbacks callbacks : callbacksMap.values()){
-            callbacks.onContactCreate(handle);
+        if (useCallbacks) {
+            for (MessageCallbacks callbacks : callbacksMap.values()) {
+                callbacks.onContactCreate(handle);
+            }
         }
     }
 
@@ -461,7 +540,7 @@ public final class MessageManager {
         }
 
         if (c != null){
-            deleteContactTask(c.getUuid().toString());
+            deleteContactTask(c.getUuid().toString(), false);
         }
 
         handles.remove(uuid);

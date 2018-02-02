@@ -33,6 +33,7 @@ import scott.wemessage.app.messages.models.users.Handle;
 import scott.wemessage.app.ui.view.dialog.AlertDialogLayout;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.weMessage;
+import scott.wemessage.commons.utils.StringUtils;
 
 public class ContactUtils {
 
@@ -117,11 +118,13 @@ public class ContactUtils {
                             String name = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
                             String phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
 
+                            if (StringUtils.isEmpty(phoneNumber.trim())) continue;
+
                             Handle handle = weMessage.get().getMessageDatabase().getHandleByHandleID(phoneNumber);
 
                             if (handle == null) {
                                 handle = new Handle(UUID.randomUUID(), phoneNumber, Handle.HandleType.SMS, false, false);
-                                weMessage.get().getMessageManager().addHandle(handle, false);
+                                weMessage.get().getMessageManager().addHandleNoCallback(handle, false);
                             }
 
                             if (weMessage.get().getMessageDatabase().getContactByHandle(handle) != null) continue;
@@ -172,18 +175,21 @@ public class ContactUtils {
                                 contact.setContactPictureFileLocation(null);
                             }
 
-                            contacts.put(contactId, contact);
+                            if (!(StringUtils.isEmpty(contact.getFirstName()) && StringUtils.isEmpty(contact.getLastName()) && contact.getContactPictureFileLocation() == null)) {
+                                contacts.put(contactId, contact);
+                            }
                         }
                         cursor.close();
 
                         for (Contact contact : contacts.values()) {
-                            weMessage.get().getMessageManager().addContact(contact, false);
+                            weMessage.get().getMessageManager().addContactNoCallback(contact, false);
                         }
                     }
+                    weMessage.get().getMessageManager().refreshContactList();
                     sendLocalBroadcast(context, weMessage.BROADCAST_CONTACT_SYNC_SUCCESS, null);
                 }catch (Exception ex){
                     AppLogger.error("An error occurred while syncing phone contacts", ex);
-                    sendLocalBroadcast(context, weMessage.BROADCAST_CONTACT_SYNC_SUCCESS, null);
+                    sendLocalBroadcast(context, weMessage.BROADCAST_CONTACT_SYNC_FAILED, null);
                 }finally {
                     isSyncingContacts.set(false);
                 }
@@ -227,13 +233,6 @@ public class ContactUtils {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     syncMode = 2;
-                    dialog.dismiss();
-                }
-            });
-
-            builder.setNegativeButton(R.string.dismiss_button, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
                     dialog.dismiss();
                 }
             });

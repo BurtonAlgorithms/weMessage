@@ -62,6 +62,7 @@ import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.ContactUtils;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.OnClickWaitListener;
+import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
@@ -131,6 +132,8 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
                 DialogDisplayer.showContactSyncResult(false, ContactListActivity.this, getSupportFragmentManager());
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
                 DialogDisplayer.showContactSyncResult(true, ContactListActivity.this, getSupportFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION)){
+                DialogDisplayer.showNoAccountsFoundDialog(ContactListActivity.this, getSupportFragmentManager());
             }
         }
     };
@@ -156,6 +159,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION);
 
         callbackUuid = UUID.randomUUID().toString();
         weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
@@ -258,7 +262,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
                 if (isGranted(grantResults)){
                     phoneContactSync();
                 } else {
-                    DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), getString(R.string.sync_contacts_message_permission)).show(getSupportFragmentManager(), "ContactSyncPhonePermissionDenied");
+                    DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), getString(R.string.sync_contacts_android_permission_denied)).show(getSupportFragmentManager(), "ContactSyncPhonePermissionDenied");
                 }
                 break;
         }
@@ -418,30 +422,27 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
         Drawable syncDrawable = getDrawable(R.drawable.ic_sync);
         Drawable blockedDrawable = getDrawable(R.drawable.ic_blocked);
 
-        closeDrawable.setTint(getResources().getColor(R.color.white));
-        syncDrawable.setTint(getResources().getColor(R.color.white));
-        blockedDrawable.setTint(getResources().getColor(R.color.white));
+        closeDrawable.setTint(getResources().getColor(R.color.colorHeader));
+        syncDrawable.setTint(getResources().getColor(R.color.colorHeader));
+        blockedDrawable.setTint(getResources().getColor(R.color.colorHeader));
 
         MenuObject closeMenu = new MenuObject();
-        closeMenu.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        closeMenu.setBgColor(getResources().getColor(R.color.outgoingBubbleColor));
+        closeMenu.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        closeMenu.setBgDrawable(getResources().getDrawable(R.drawable.menu_button_drawable_top));
         closeMenu.setMenuTextAppearanceStyle(R.style.MenuFragmentStyle_TextView);
-        closeMenu.setDividerColor(R.color.white);
         closeMenu.setDrawable(closeDrawable);
 
         MenuObject contactSync = new MenuObject();
-        contactSync.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        contactSync.setBgColor(getResources().getColor(R.color.outgoingBubbleColor));
+        contactSync.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        contactSync.setBgDrawable(getResources().getDrawable(R.drawable.menu_button_drawable_middle));
         contactSync.setMenuTextAppearanceStyle(R.style.MenuFragmentStyle_TextView);
-        contactSync.setDividerColor(R.color.white);
         contactSync.setDrawable(syncDrawable);
         contactSync.setTitle(getString(R.string.sync_contacts));
 
         MenuObject toggleBlocked = new MenuObject();
-        toggleBlocked.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        toggleBlocked.setBgColor(getResources().getColor(R.color.outgoingBubbleColor));
+        toggleBlocked.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        toggleBlocked.setBgDrawable(getResources().getDrawable(R.drawable.menu_button_drawable_bottom));
         toggleBlocked.setMenuTextAppearanceStyle(R.style.MenuFragmentStyle_TextView);
-        toggleBlocked.setDividerColor(R.color.white);
         toggleBlocked.setDrawable(blockedDrawable);
         toggleBlocked.setTitle(isInBlockedMode.get() ? getString(R.string.toggle_unblocked_contacts) : getString(R.string.toggle_blocked_contacts));
 
@@ -449,7 +450,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
         menuObjects.add(contactSync);
         menuObjects.add(toggleBlocked);
 
-        menuParams.setActionBarSize(height);
+        menuParams.setActionBarSize(DisplayUtils.convertDpToRoundedPixel(64, this));
         menuParams.setMenuObjects(menuObjects);
         menuParams.setClosableOutside(false);
         menuParams.setAnimationDelay(50);
@@ -462,7 +463,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
     private void phoneContactSync(){
         if (!hasPermission(Manifest.permission.READ_CONTACTS, false, null, "ContactSyncReadContactsPermission", weMessage.REQUEST_PERMISSION_READ_CONTACTS)) return;
 
-        ContactUtils.syncContacts(this);
+        ContactUtils.syncContacts(weMessage.get());
     }
 
     private void macContactSync(){
@@ -529,9 +530,10 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
         Intent launcherIntent = new Intent(weMessage.get(), ContactViewActivity.class);
 
         launcherIntent.putExtra(weMessage.BUNDLE_CONTACT_VIEW_UUID, handleUuid);
-        launcherIntent.putExtra(weMessage.BUNDLE_GO_TO_CONTACT_LIST, weMessage.BUNDLE_GO_TO_CONTACT_LIST);
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, weMessage.BUNDLE_GO_TO_CONTACT_LIST);
 
         startActivity(launcherIntent);
+        finish();
     }
 
     private void goToSettings(){
@@ -587,10 +589,10 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
 
     private boolean isContactMe(ContactInfo contactInfo){
         if (contactInfo instanceof Handle){
-            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString());
+            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || ((Handle) contactInfo).getHandleType() == Handle.HandleType.ME;
         }else if (contactInfo instanceof Contact){
             for (Handle h : ((Contact) contactInfo).getHandles()){
-                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) return true;
+                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || h.getHandleType() == Handle.HandleType.ME) return true;
             }
         }
         return false;
@@ -663,10 +665,10 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
                     if (contact instanceof Handle) {
                         Handle h = (Handle) contact;
 
-                        weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(!isInBlockedMode.get()), true, true);
+                        weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(!isInBlockedMode.get()), true);
                     }else if (contact instanceof Contact){
                         for (Handle h : ((Contact) contact).getHandles()){
-                            weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(!isInBlockedMode.get()), false, false);
+                            weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(!isInBlockedMode.get()), false);
                         }
                         weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), (Contact) contact, true);
                     }
@@ -694,7 +696,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
             itemView.findViewById(R.id.contactItemLayout).setOnClickListener(new OnClickWaitListener(500L) {
                 @Override
                 public void onWaitClick(View v) {
-                    launchContactView(contact.pullHandle(false).getUuid().toString());
+                    if (!isInBlockedMode.get()) launchContactView(contact.pullHandle(false).getUuid().toString());
                 }
             });
 
@@ -838,22 +840,27 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
             }
         }
 
-        public void addContact(ContactInfo c){
-            if (isInBlockedMode.get()){
-                if (!isContactBlocked(c)) return;
-                if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
+        public void addContact(final ContactInfo c){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (isInBlockedMode.get()){
+                        if (!isContactBlocked(c)) return;
+                        if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
 
-                contacts.add(new SearchableContact(c));
-                notifyItemInserted(contacts.size() - 1);
+                        contacts.add(new SearchableContact(c));
+                        notifyItemInserted(contacts.size() - 1);
 
-            } else {
-                if (!isContactMe(c) && !isContactBlocked(c)) {
-                    if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
+                    } else {
+                        if (!isContactMe(c) && !isContactBlocked(c)) {
+                            if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
 
-                    contacts.add(new SearchableContact(c));
-                    notifyItemInserted(contacts.size() - 1);
+                            contacts.add(new SearchableContact(c));
+                            notifyItemInserted(contacts.size() - 1);
+                        }
+                    }
                 }
-            }
+            });
         }
 
         public void addContactToOriginal(ContactInfo c){
@@ -971,7 +978,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
                         return;
                     }
                 }
-                
+
                 new AsyncTask<ContactInfo, Void, Void>() {
                     @Override
                     protected Void doInBackground(ContactInfo... params) {
@@ -1085,7 +1092,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
                         }
                     });
 
-                    contacts = unsortedList;
+                    contacts.addAll(unsortedList);
                     return null;
                 }
 
@@ -1099,6 +1106,8 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
         }
 
         private void closeUnderlyingView(){
+            if (showingDeletePosition == null) return;
+
             RecyclerView.ViewHolder viewHolder = contactsRecyclerView.findViewHolderForAdapterPosition(showingDeletePosition);
 
             if (viewHolder != null && viewHolder instanceof ContactHolder){
@@ -1126,6 +1135,16 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
             }
 
             return false;
+        }
+    }
+
+    private class ContactInsert {
+        Integer position;
+        List<Integer> removed;
+
+        public ContactInsert(Integer position, List<Integer> removed) {
+            this.position = position;
+            this.removed = removed;
         }
     }
 

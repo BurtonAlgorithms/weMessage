@@ -114,6 +114,12 @@ public class DialogDisplayer {
         }
     }
 
+    public static void showNoAccountsFoundDialog(Context context, FragmentManager fragmentManager){
+        AlertDialogFragment alertDialogFragment = generateAlertDialog(context.getString(R.string.login_error_alert_title), context.getString(R.string.no_accounts_found_server_warning));
+        alertDialogFragment.setCancelable(false);
+        alertDialogFragment.show(fragmentManager, "NoAccountsFoundDialog");
+    }
+
     public static class AlertDialogFragment extends DialogFragment {
 
         private Runnable runnable;

@@ -115,12 +115,12 @@ public final class weMessage extends Application implements Constants {
     public static final String BROADCAST_MESSAGE_UPDATE_ERROR = IDENTIFIER_PREFIX + "MessageUpdateError";
     public static final String BROADCAST_ACTION_PERFORM_ERROR = IDENTIFIER_PREFIX + "ActionPerformError";
     public static final String BROADCAST_RESULT_PROCESS_ERROR = IDENTIFIER_PREFIX + "ResultProcessError";
-    public static final String BROADCAST_LOAD_ATTACHMENT_ERROR = IDENTIFIER_PREFIX + "LoadAttachmentError";
-    public static final String BROADCAST_PLAY_AUDIO_ATTACHMENT_ERROR = IDENTIFIER_PREFIX + "PlayAudioAttachmentError";
-
     public static final String BROADCAST_CONTACT_SYNC_SUCCESS = IDENTIFIER_PREFIX + "ContactSyncSuccess";
     public static final String BROADCAST_CONTACT_SYNC_FAILED = IDENTIFIER_PREFIX + "ContactSyncFailed";
+    public static final String BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION = IDENTIFIER_PREFIX + "NoAccountsFoundNotification";
 
+    public static final String BROADCAST_LOAD_ATTACHMENT_ERROR = IDENTIFIER_PREFIX + "LoadAttachmentError";
+    public static final String BROADCAST_PLAY_AUDIO_ATTACHMENT_ERROR = IDENTIFIER_PREFIX + "PlayAudioAttachmentError";
     public static final String BROADCAST_IMAGE_FULLSCREEN_ACTIVITY_START = IDENTIFIER_PREFIX + "ImageFullScreenActivityStart";
     public static final String BROADCAST_VIDEO_FULLSCREEN_ACTIVITY_START = IDENTIFIER_PREFIX + "VideoFullScreenActivityStart";
 

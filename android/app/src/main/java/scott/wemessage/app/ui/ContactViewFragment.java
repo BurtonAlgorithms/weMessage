@@ -87,6 +87,7 @@ import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.OnClickWaitListener;
+import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.connection.json.message.JSONMessage;
@@ -182,6 +183,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                 DialogDisplayer.showContactSyncResult(false, getActivity(), getFragmentManager());
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
                 DialogDisplayer.showContactSyncResult(true, getActivity(), getFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION)){
+                DialogDisplayer.showNoAccountsFoundDialog(getActivity(), getFragmentManager());
             }
         }
     };
@@ -205,6 +208,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION);
 
         callbackUuid = UUID.randomUUID().toString();
         messageManager.hookCallbacks(callbackUuid, this);
@@ -1134,10 +1138,30 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
         public void bind(ContactInfo contact){
             init();
 
-            String handleID = ((Contact) contact.findRoot()).getPrimaryHandle().getHandleID();
+            String handleID;
             String handleText;
 
+            if (contact.findRoot() instanceof Contact){
+                handleID = ((Contact) contact.findRoot()).getPrimaryHandle().getHandleID();
+            }else {
+                handleID = ((Handle) contact.findRoot()).getHandleID();
+            }
+
             contactName.setText(contact.getDisplayName());
+
+            if (isInHandleMode){
+                int right = contactViewNameSwitcher.getPaddingRight();
+                int left = contactViewNameSwitcher.getPaddingLeft();
+                int bottom = contactViewNameSwitcher.getPaddingBottom();
+
+                contactViewNameSwitcher.setPadding(left, DisplayUtils.convertDpToRoundedPixel(32, getContext()), right, bottom);
+            }else {
+                int right = contactViewNameSwitcher.getPaddingRight();
+                int left = contactViewNameSwitcher.getPaddingLeft();
+                int bottom = contactViewNameSwitcher.getPaddingBottom();
+
+                contactViewNameSwitcher.setPadding(left, DisplayUtils.convertDpToRoundedPixel(16, getContext()), right, bottom);
+            }
 
             if (isInHandleMode){
                 primaryHandleView.setVisibility(View.GONE);
@@ -1199,11 +1223,11 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
                     if (c != null){
                         for (Handle handle : c.getHandles()){
-                            weMessage.get().getMessageManager().updateHandle(handle.getUuid().toString(), handle.setDoNotDisturb(b), false, false);
+                            weMessage.get().getMessageManager().updateHandle(handle.getUuid().toString(), handle.setDoNotDisturb(b), false);
                         }
                         weMessage.get().getMessageManager().updateContact(c.getUuid().toString(), c, true);
                     }else {
-                        weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setDoNotDisturb(b), false, true);
+                        weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setDoNotDisturb(b), true);
                     }
                 }
             });
@@ -1216,11 +1240,11 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
                     if (c != null){
                         for (Handle handle : c.getHandles()){
-                            weMessage.get().getMessageManager().updateHandle(handle.getUuid().toString(), handle.setBlocked(true), false, false);
+                            weMessage.get().getMessageManager().updateHandle(handle.getUuid().toString(), handle.setBlocked(true), false);
                         }
                         weMessage.get().getMessageManager().updateContact(c.getUuid().toString(), c, true);
                     }else {
-                        weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(true), false, true);
+                        weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(true), true);
                     }
 
                     goToChatList();

@@ -82,6 +82,9 @@ public class SettingsActivity extends AppCompatActivity {
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
                 DialogDisplayer.showContactSyncResult(true, SettingsActivity.this, getSupportFragmentManager());
             }
+            else if(intent.getAction().equals(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION)){
+                DialogDisplayer.showNoAccountsFoundDialog(SettingsActivity.this, getSupportFragmentManager());
+            }
         }
     };
 
@@ -107,6 +110,7 @@ public class SettingsActivity extends AppCompatActivity {
         broadcastIntentFilter.addAction(weMessage.BROADCAST_LOGIN_SUCCESSFUL);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION);
 
         LocalBroadcastManager.getInstance(this).registerReceiver(settingsBroadcastReceiver, broadcastIntentFilter);
 

@@ -152,6 +152,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 DialogDisplayer.showContactSyncResult(false, getActivity(), getFragmentManager());
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
                 DialogDisplayer.showContactSyncResult(true, getActivity(), getFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION)){
+                DialogDisplayer.showNoAccountsFoundDialog(getActivity(), getFragmentManager());
             }
         }
     };
@@ -177,6 +179,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION);
 
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(createChatBroadcastReceiver, broadcastIntentFilter);
         weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
@@ -847,10 +850,10 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     private boolean isContactMe(ContactInfo contactInfo){
         if (contactInfo instanceof Handle){
-            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString());
+            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || ((Handle) contactInfo).getHandleType() == Handle.HandleType.ME;
         }else if (contactInfo instanceof Contact){
             for (Handle h : ((Contact) contactInfo).getHandles()){
-                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) return true;
+                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || h.getHandleType() == Handle.HandleType.ME) return true;
             }
         }
         return false;
@@ -1025,13 +1028,18 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             }
         }
 
-        public void addContact(ContactInfo c){
-            if (!isContactMe(c) && !isContactBlocked(c)){
-                if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
+        public void addContact(final ContactInfo c){
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (!isContactMe(c) && !isContactBlocked(c)){
+                        if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
 
-                contacts.add(new SearchableContact(c));
-                notifyItemInserted(contacts.size() - 1);
-            }
+                        contacts.add(new SearchableContact(c));
+                        notifyItemInserted(contacts.size() - 1);
+                    }
+                }
+            });
         }
 
         public void addContactToOriginal(ContactInfo c){

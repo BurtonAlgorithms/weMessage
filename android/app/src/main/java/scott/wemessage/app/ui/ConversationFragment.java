@@ -223,6 +223,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                 DialogDisplayer.showContactSyncResult(false, getActivity(), getFragmentManager());
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
                 DialogDisplayer.showContactSyncResult(true, getActivity(), getFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION)){
+                DialogDisplayer.showNoAccountsFoundDialog(getActivity(), getFragmentManager());
             }
         }
     };
@@ -293,6 +295,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         broadcastIntentFilter.addAction(weMessage.BROADCAST_VIDEO_FULLSCREEN_ACTIVITY_START);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION);
 
         callbackUuid = UUID.randomUUID().toString();
 
@@ -1371,6 +1374,65 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private void showMessageOptionsSheetView(final MessageView message){
         conversationBottomSheet.showWithSheetView(LayoutInflater.from(getActivity()).inflate(R.layout.sheet_conversation_message_options, conversationBottomSheet, false));
+
+        if (message.hasErrored()){
+            conversationBottomSheet.findViewById(R.id.conversationSheetRetryButton).setVisibility(View.VISIBLE);
+            conversationBottomSheet.findViewById(R.id.conversationSheetRetryDivider).setVisibility(View.VISIBLE);
+
+            conversationBottomSheet.findViewById(R.id.conversationSheetRetryButton).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (!isConnectionServiceRunning()){
+                        conversationBottomSheet.dismissSheet();
+
+                        DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment =
+                                DialogDisplayer.generateOfflineDialog(getActivity(), getString(R.string.offline_mode_message_send));
+
+                        alertDialogFragment.setOnDismiss(new Runnable() {
+                            @Override
+                            public void run() {
+                                goToLauncherReconnect();
+                            }
+                        });
+
+                        alertDialogFragment.show(getFragmentManager(), "OfflineModeAlertDialog");
+                        return;
+                    }
+
+                    if (isStillConnecting()){
+                        conversationBottomSheet.dismissSheet();
+                        showErroredSnackbar(getString(R.string.still_connecting_send_message));
+                        return;
+                    }
+
+                    Message newMessage = new Message(
+                            UUID.randomUUID(),
+                            null,
+                            getChat(),
+                            weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()),
+                            message.getMessage().getAttachments(),
+                            message.getMessage().getText(),
+                            DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
+                            null,
+                            null,
+                            false,
+                            true,
+                            false,
+                            false,
+                            true,
+                            true,
+                            MessageEffect.NONE,
+                            false
+                    );
+
+                    serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(newMessage, true);
+                    conversationBottomSheet.dismissSheet();
+                }
+            });
+        }else {
+            conversationBottomSheet.findViewById(R.id.conversationSheetRetryButton).setVisibility(View.GONE);
+            conversationBottomSheet.findViewById(R.id.conversationSheetRetryDivider).setVisibility(View.GONE);
+        }
 
         conversationBottomSheet.findViewById(R.id.conversationSheetCopyButton).setOnClickListener(new View.OnClickListener() {
             @Override

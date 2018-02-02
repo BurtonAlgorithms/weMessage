@@ -73,6 +73,7 @@
     <string name="word_done">Done</string>
     <string name="word_copy">Copy</string>
     <string name="word_more">More&#8230;</string>
+    <string name="word_retry">Retry</string>
     <string name="word_error">Error</string>
     <string name="chat_delete_message_go_back">The chat you were viewing was deleted.</string>
     <string name="load_attachment_error">An unknown error occurred while trying to load an attachment.</string>
@@ -247,5 +248,6 @@
     <string name="contact_sync_success_message">Your contacts have successfully been imported to your weMessage Contact List.</string>
     <string name="contact_sync_fail_message">An error occurred while performing a Contact Sync. If you synced with your computer, please check your weServer logs for issues.</string>
     <string name="contact_sync_fail_offline">You cannot Contact Sync with your computer while in Offline Mode! Connect to your weServer in order to do this.</string>
+    <string name="no_accounts_found_server_warning">Your weServer could not find any messages associated with your login. \n\nIf you are not receiving any messages, check your weServer logs to be sure you entered the right e-mail address.</string>
 
 </resources>

@@ -35,6 +35,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -782,7 +784,7 @@ public final class ConnectionHandler extends Thread {
                                     if (handle == null) {
                                         messageManager.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE, false, false), false);
                                     }else {
-                                        messageManager.updateHandle(handle.getUuid().toString(), handle.setHandleType(Handle.HandleType.IMESSAGE), false, true);
+                                        messageManager.updateHandle(handle.getUuid().toString(), handle.setHandleType(Handle.HandleType.IMESSAGE), false);
                                     }
                                 }
 
@@ -846,7 +848,7 @@ public final class ConnectionHandler extends Thread {
                                     if (handle == null) {
                                         messageManager.addHandle(new Handle(UUID.randomUUID(), s, Handle.HandleType.IMESSAGE, false, false), false);
                                     }else {
-                                        messageManager.updateHandle(handle.getUuid().toString(), handle.setHandleType(Handle.HandleType.IMESSAGE), false, true);
+                                        messageManager.updateHandle(handle.getUuid().toString(), handle.setHandleType(Handle.HandleType.IMESSAGE), false);
                                     }
                                 }
 
@@ -953,23 +955,29 @@ public final class ConnectionHandler extends Thread {
                                         String[] numbers = jsonContact.getNumbers().split(",");
                                         String[] emails = jsonContact.getEmails().split(",");
 
+                                        if (StringUtils.isEmpty(jsonContact.getHandleId().trim())) continue;
+
                                         for (String number : numbers){
+                                            if (StringUtils.isEmpty(number.trim())) continue;
+
                                             Handle handle = database.getHandleByHandleID(number);
 
                                             if (handle == null){
                                                 handle = new Handle(UUID.randomUUID(), number, Handle.HandleType.UNKNOWN, false, false);
-                                                weMessage.get().getMessageManager().addHandle(handle, false);
+                                                weMessage.get().getMessageManager().addHandleNoCallback(handle, false);
                                             }
 
                                             handles.add(handle);
                                         }
 
                                         for (String email : emails){
+                                            if (StringUtils.isEmpty(email.trim())) continue;
+
                                             Handle handle = database.getHandleByHandleID(email);
 
                                             if (handle == null){
                                                 handle = new Handle(UUID.randomUUID(), email, Handle.HandleType.UNKNOWN, false, false);
-                                                weMessage.get().getMessageManager().addHandle(handle, false);
+                                                weMessage.get().getMessageManager().addHandleNoCallback(handle, false);
                                             }
 
                                             handles.add(handle);
@@ -983,9 +991,9 @@ public final class ConnectionHandler extends Thread {
                                                 Contact c = (Contact) h.findRoot();
                                                 if (!c.equals(contact)){
                                                     if (c.getHandles().size() == 1){
-                                                        weMessage.get().getMessageManager().deleteContact(c.getUuid().toString(), false);
+                                                        weMessage.get().getMessageManager().deleteContactNoCallback(c.getUuid().toString(), false);
                                                     }else {
-                                                        weMessage.get().getMessageManager().updateContact(c.getUuid().toString(), c.removeHandle(h), false);
+                                                        weMessage.get().getMessageManager().updateContactNoCallback(c.getUuid().toString(), c.removeHandle(h), false);
                                                     }
                                                 }
                                             }
@@ -1017,7 +1025,9 @@ public final class ConnectionHandler extends Thread {
                                                 }
                                             }
 
-                                            weMessage.get().getMessageManager().addContact(contact, false);
+                                            if (!(StringUtils.isEmpty(contact.getFirstName()) && StringUtils.isEmpty(contact.getLastName()) && contact.getContactPictureFileLocation() == null)) {
+                                                weMessage.get().getMessageManager().addContactNoCallback(contact, false);
+                                            }
                                         } else {
                                             String contactName = jsonContact.getName();
 
@@ -1045,10 +1055,11 @@ public final class ConnectionHandler extends Thread {
                                                     contact.setContactPictureFileLocation(new FileLocationContainer(newFile));
                                                 }
                                             }
-                                            weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), contact.setHandles(handles).setPrimaryHandle(handle), false);
+                                            weMessage.get().getMessageManager().updateContactNoCallback(contact.getUuid().toString(), contact.setHandles(handles).setPrimaryHandle(handle), false);
                                         }
                                     }
                                     isSyncingContacts.set(false);
+                                    weMessage.get().getMessageManager().refreshContactList();
                                     sendLocalBroadcast(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS, null);
                                 } catch (Exception ex) {
                                     isSyncingContacts.set(false);
@@ -1057,6 +1068,13 @@ public final class ConnectionHandler extends Thread {
                             }
                         }).start();
                     }
+                } else if (incoming.startsWith(weMessage.JSON_NO_ACCOUNTS_FOUND_SERVER)){
+                    new Timer().schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            sendLocalBroadcast(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION, null);
+                        }
+                    }, 3 * 1000L);
                 }
             }catch(EOFException ex){
                 sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_SERVER_CLOSED, null);

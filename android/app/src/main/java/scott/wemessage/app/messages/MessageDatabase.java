@@ -283,6 +283,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             db.execSQL(createChatTable);
 
             for (ContactV2 contact : contactsV2Map.values()){
+                if (StringUtils.isEmpty(contact.firstName) && StringUtils.isEmpty(contact.lastName) && StringUtils.isEmpty(contact.contactPictureFileLocation)) continue;
+
                 ContentValues values = new ContentValues();
                 String firstName = "";
                 String lastName = "";

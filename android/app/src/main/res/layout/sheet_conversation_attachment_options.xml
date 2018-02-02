@@ -16,7 +16,7 @@
         android:textAllCaps="false"
         android:textSize="16sp"
         android:textColor="@color/colorHeader"
-        android:background="@drawable/bottom_sheet_button_frame_fill"
+        android:background="@drawable/bottom_sheet_button_frame_full"
         android:layout_gravity="center"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

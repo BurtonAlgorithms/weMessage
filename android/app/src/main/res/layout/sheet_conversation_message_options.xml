@@ -10,13 +10,33 @@
 
     <scott.wemessage.app.ui.view.font.FontButton
         style="?android:attr/borderlessButtonStyle"
+        android:id="@+id/conversationSheetRetryButton"
+        android:text="@string/word_retry"
+        android:gravity="center"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="@color/colorHeader"
+        android:background="@drawable/bottom_sheet_button_frame_top"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="OrkneyLight"/>
+
+    <View
+        android:id="@+id/conversationSheetRetryDivider"
+        android:background="@color/shadedWhite"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"/>
+
+    <scott.wemessage.app.ui.view.font.FontButton
+        style="?android:attr/borderlessButtonStyle"
         android:id="@+id/conversationSheetCopyButton"
         android:text="@string/word_copy"
         android:gravity="center"
         android:textAllCaps="false"
         android:textSize="16sp"
         android:textColor="@color/colorHeader"
-        android:background="@drawable/bottom_sheet_button_frame_top"
+        android:background="@drawable/bottom_sheet_button_frame_middle"
         android:layout_gravity="center"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

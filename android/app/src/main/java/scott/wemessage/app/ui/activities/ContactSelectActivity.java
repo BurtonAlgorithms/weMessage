@@ -127,6 +127,8 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
                 DialogDisplayer.showContactSyncResult(false, ContactSelectActivity.this, getSupportFragmentManager());
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
                 DialogDisplayer.showContactSyncResult(true, ContactSelectActivity.this, getSupportFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION)){
+                DialogDisplayer.showNoAccountsFoundDialog(ContactSelectActivity.this, getSupportFragmentManager());
             }
         }
     };
@@ -160,6 +162,7 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         broadcastIntentFilter.addAction(weMessage.BROADCAST_RESULT_PROCESS_ERROR);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION);
 
         callbackUuid = UUID.randomUUID().toString();
         weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
@@ -592,10 +595,10 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
 
     private boolean isContactMe(ContactInfo contactInfo){
         if (contactInfo instanceof Handle){
-            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString());
+            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || ((Handle) contactInfo).getHandleType() == Handle.HandleType.ME;
         }else if (contactInfo instanceof Contact){
             for (Handle h : ((Contact) contactInfo).getHandles()){
-                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString())) return true;
+                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || h.getHandleType() == Handle.HandleType.ME) return true;
             }
         }
         return false;
@@ -739,13 +742,18 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
             }
         }
 
-        public void addContact(ContactInfo c){
-            if (!isContactMe(c) && !excludeContact(c) && !isContactBlocked(c)){
-                if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
+        public void addContact(final ContactInfo c){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (!isContactMe(c) && !excludeContact(c) && !isContactBlocked(c)){
+                        if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
 
-                contacts.add(new SearchableContact(c));
-                notifyItemInserted(contacts.size() - 1);
-            }
+                        contacts.add(new SearchableContact(c));
+                        notifyItemInserted(contacts.size() - 1);
+                    }
+                }
+            });
         }
 
         public void addContactToOriginal(ContactInfo c){
