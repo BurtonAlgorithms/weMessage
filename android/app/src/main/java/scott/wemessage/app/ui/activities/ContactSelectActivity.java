@@ -782,8 +782,16 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
                                     return i;
                                 }else if (contactInfo instanceof Contact){
                                     Contact contact = (Contact) contactInfo;
-                                    Contact oldContact = (Contact) params[1];
-                                    List<ListUtils.ObjectContainer> handleDiffs = ListUtils.findDifference(oldContact.getHandles(), contact.getHandles());
+                                    List<Handle> oldHandles;
+
+                                    if (params[1] instanceof Contact){
+                                        oldHandles = ((Contact) params[1]).getHandles();
+                                    }else {
+                                        oldHandles = new ArrayList<>();
+                                        oldHandles.add((Handle) params[1]);
+                                    }
+
+                                    List<ListUtils.ObjectContainer> handleDiffs = ListUtils.findDifference(oldHandles, contact.getHandles());
 
                                     for (ListUtils.ObjectContainer handleDiff : handleDiffs){
                                         if (handleDiff.getStatus() == ListUtils.ListStatus.REMOVED){
@@ -827,8 +835,16 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
                                     break;
                                 }else if (contactInfo instanceof Contact){
                                     Contact contact = (Contact) contactInfo;
-                                    Contact oldContact = (Contact) params[1];
-                                    List<ListUtils.ObjectContainer> handleDiffs = ListUtils.findDifference(oldContact.getHandles(), contact.getHandles());
+                                    List<Handle> oldHandles;
+
+                                    if (params[1] instanceof Contact){
+                                        oldHandles = ((Contact) params[1]).getHandles();
+                                    }else {
+                                        oldHandles = new ArrayList<>();
+                                        oldHandles.add((Handle) params[1]);
+                                    }
+
+                                    List<ListUtils.ObjectContainer> handleDiffs = ListUtils.findDifference(oldHandles, contact.getHandles());
 
                                     for (ListUtils.ObjectContainer handleDiff : handleDiffs){
                                         if (handleDiff.getStatus() == ListUtils.ListStatus.REMOVED){

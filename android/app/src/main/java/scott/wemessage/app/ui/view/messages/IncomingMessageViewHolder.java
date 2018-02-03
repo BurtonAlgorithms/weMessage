@@ -419,7 +419,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
     }
 
     private boolean isStringEmojis(String text){
-        return !StringUtils.isEmpty(text) && StringUtils.isEmpty(EmojiParser.removeAllEmojis(text).trim());
+        return !StringUtils.isEmpty(text.trim()) && StringUtils.isEmpty(EmojiParser.removeAllEmojis(text).trim());
     }
 
     private ConversationFragment getParentFragment(){
