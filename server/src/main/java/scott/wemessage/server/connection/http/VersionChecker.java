@@ -30,7 +30,7 @@ public class VersionChecker extends Thread {
             FirebaseVersionMessage versionMessage = new Gson().fromJson(response.body().string(), FirebaseVersionMessage.class);
 
             if (!versionMessage.getLatestVersion().equals(weMessage.WEMESSAGE_VERSION)) {
-                ServerLogger.log(ServerLogger.Level.INFO, "A new weServer version has been found! Download the latest one off of the website.");
+                ServerLogger.log(ServerLogger.Level.INFO, "A new weServer version has been found! Download the latest one off of the website: https://wemessageapp.com");
                 ServerLogger.emptyLine();
                 ServerLogger.log(StringUtils.toFixedString("", ServerLogger.Level.WARNING.getPrefix().length()) + " Current Version: " + weMessage.WEMESSAGE_VERSION + " \t Latest Version: " + versionMessage.getLatestVersion());
                 ServerLogger.emptyLine();

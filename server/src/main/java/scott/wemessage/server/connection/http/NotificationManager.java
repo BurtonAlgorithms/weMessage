@@ -85,7 +85,8 @@ public class NotificationManager {
                                 message.getHandle().getHandleID(),
                                 message.getChat().getGuid(),
                                 chatName,
-                                String.valueOf(attachmentNumber)
+                                String.valueOf(attachmentNumber),
+                                messageServer.getConfiguration().getConfigJSON().getConfig().getAccountInfo().getEmail()
                         );
 
                         OkHttpClient client = new OkHttpClient();
