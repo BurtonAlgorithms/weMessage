@@ -10,7 +10,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.Typeface;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,6 +25,12 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.StyleSpan;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -34,6 +42,7 @@ import android.view.animation.CycleInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import scott.wemessage.R;
@@ -41,9 +50,13 @@ import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageDatabase;
-import scott.wemessage.app.messages.models.users.Account;
+import scott.wemessage.app.models.users.Account;
+import scott.wemessage.app.models.users.Handle;
+import scott.wemessage.app.sms.MmsManager;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ConversationActivity;
+import scott.wemessage.app.ui.activities.mini.SetDefaultSmsActivity;
+import scott.wemessage.app.ui.activities.mini.SetNumberActivity;
 import scott.wemessage.app.ui.view.dialog.AnimationDialogLayout;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.ui.view.dialog.ProgressDialogLayout;
@@ -65,14 +78,15 @@ public class LaunchFragment extends Fragment {
     private int errorSnackbarDuration = 5000;
     private boolean isBoundToConnectionService = false;
     private boolean isStillConnecting = false;
+    private boolean skipCreate = false;
 
     private String lastHashedPass;
     private String goToConversationHolder;
 
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private ConstraintLayout launchConstraintLayout;
-    private EditText ipEditText, emailEditText, passwordEditText;
-    private FontButton signInButton, offlineButton;
+    private EditText ipEditText, failoverIpEditText, emailEditText, passwordEditText;
+    private FontButton signInButton, smsOrOfflineButton;
     private ProgressDialog loginProgressDialog;
 
     private BroadcastReceiver launcherBroadcastReceiver = new BroadcastReceiver() {
@@ -151,12 +165,29 @@ public class LaunchFragment extends Fragment {
                         }, 100L);
                     }
                 }
+            }else if (intent.getAction().equals(weMessage.BROADCAST_SMS_MODE_DISABLED)){
+                if (smsOrOfflineButton != null){
+                    smsOrOfflineButton.setText(R.string.offline_mode);
+                    smsOrOfflineButton.setFont("OrkneyLight");
+                    smsOrOfflineButton.setTextColor(getResources().getColor(R.color.brightRed));
+                }
+            }else if (intent.getAction().equals(weMessage.BROADCAST_SMS_MODE_ENABLED)){
+                if (smsOrOfflineButton != null){
+                    smsOrOfflineButton.setText(R.string.sms_mode);
+                    smsOrOfflineButton.setFont("OrkneyMedium");
+                    smsOrOfflineButton.setTextColor(getResources().getColor(R.color.outgoingBubbleColorOrange));
+                }
             }
         }
     };
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
+        if (performSmsChecks()){
+            skipCreate = true;
+            super.onCreate(savedInstanceState);
+            return;
+        }
 
         if (isServiceRunning(ConnectionService.class)) {
             bindService();
@@ -183,6 +214,14 @@ public class LaunchFragment extends Fragment {
                     }
                 }
             });
+        }else if (MmsManager.isDefaultSmsApp() && weMessage.get().isSignedIn(false)){
+            if (!getActivity().getIntent().hasExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT)) {
+                if (canStartConversationActivity()) {
+                    startConversationActivity(goToConversationHolder);
+                } else {
+                    startChatListActivity();
+                }
+            }
         }
 
         IntentFilter intentFilter = new IntentFilter();
@@ -200,6 +239,8 @@ public class LaunchFragment extends Fragment {
         intentFilter.addAction(weMessage.BROADCAST_DISCONNECT_REASON_INCORRECT_VERSION);
 
         intentFilter.addAction(weMessage.BROADCAST_LOGIN_SUCCESSFUL);
+        intentFilter.addAction(weMessage.BROADCAST_SMS_MODE_ENABLED);
+        intentFilter.addAction(weMessage.BROADCAST_SMS_MODE_DISABLED);
 
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(launcherBroadcastReceiver, intentFilter);
 
@@ -211,12 +252,18 @@ public class LaunchFragment extends Fragment {
     public View onCreateView(final LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_launch, container, false);
 
+        if (skipCreate) return view;
+
+        TextView loginTextView = view.findViewById(R.id.launchLoginText);
+        ImageView launchFailoverIpShowDetailsButton = view.findViewById(R.id.launchFailoverIpShowDetailsButton);
+
         launchConstraintLayout = view.findViewById(R.id.launchConstraintLayout);
         ipEditText = view.findViewById(R.id.launchIpEditText);
+        failoverIpEditText = view.findViewById(R.id.launchFailoverIpEditText);
         emailEditText = view.findViewById(R.id.launchEmailEditText);
         passwordEditText = view.findViewById(R.id.launchPasswordEditText);
         signInButton = view.findViewById(R.id.signInButton);
-        offlineButton = view.findViewById(R.id.offlineButton);
+        smsOrOfflineButton = view.findViewById(R.id.smsOrOfflineButton);
         oldEditTextColor = emailEditText.getCurrentTextColor();
 
         if (savedInstanceState != null) {
@@ -224,6 +271,7 @@ public class LaunchFragment extends Fragment {
 
             lastHashedPass = savedInstanceState.getString(weMessage.BUNDLE_LAUNCHER_LAST_HASHED_PASS);
             ipEditText.setText(ipUnformatted);
+            failoverIpEditText.setText(savedInstanceState.getString(weMessage.BUNDLE_FAILOVER_IP));
             emailEditText.setText(savedInstanceState.getString(weMessage.BUNDLE_EMAIL));
             passwordEditText.setText(savedInstanceState.getString(weMessage.BUNDLE_PASSWORD));
 
@@ -243,10 +291,11 @@ public class LaunchFragment extends Fragment {
                 showProgressDialog(view, getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
             }
         } else {
-            SharedPreferences sharedPreferences = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
+            SharedPreferences sharedPreferences = weMessage.get().getSharedPreferences();
             String host = sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_HOST, "");
             String email = sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, "");
             String hashedPass = sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, "");
+            String failoverIp = sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_FAILOVER_IP, "");
 
             lastHashedPass = hashedPass;
 
@@ -265,18 +314,19 @@ public class LaunchFragment extends Fragment {
 
             ipEditText.setText(host);
             emailEditText.setText(email);
+            failoverIpEditText.setText(failoverIp);
 
             if (isServiceRunning(ConnectionService.class) && loginProgressDialog == null){
                 showProgressDialog(view, getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
-            }else if (weMessage.get().isSignedIn() && !isServiceRunning(ConnectionService.class)) {
-                if (!(getActivity().getIntent().getExtras() != null && getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false))) {
+            }else if (weMessage.get().isSignedIn(true) && !isServiceRunning(ConnectionService.class)) {
+                if (!(getActivity().getIntent().hasExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT) && getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false))) {
                     if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
-                        startConnectionService(view, ipAddress, port, email, hashedPass, true);
+                        startConnectionService(view, ipAddress, port, email, hashedPass, true, failoverIp);
                     }
                 }
 
                 if (canStartConversationActivity()) {
-                    startConnectionService(view, ipAddress, port, email, hashedPass, true);
+                    startConnectionService(view, ipAddress, port, email, hashedPass, true, failoverIp);
                 }
             }
         }
@@ -284,6 +334,52 @@ public class LaunchFragment extends Fragment {
         if (!StringUtils.isEmpty(lastHashedPass) && StringUtils.isEmpty(passwordEditText.getText().toString())){
             passwordEditText.setText(weMessage.DEFAULT_PASSWORD);
         }
+
+        if (MmsManager.isDefaultSmsApp()){
+            smsOrOfflineButton.setText(R.string.sms_mode);
+            smsOrOfflineButton.setFont("OrkneyMedium");
+            smsOrOfflineButton.setTextColor(getResources().getColor(R.color.outgoingBubbleColorOrange));
+        }else {
+            smsOrOfflineButton.setText(R.string.offline_mode);
+            smsOrOfflineButton.setFont("OrkneyLight");
+            smsOrOfflineButton.setTextColor(getResources().getColor(R.color.brightRed));
+        }
+
+        String fullText = getString(R.string.login_text).concat("  ").concat(getString(R.string.need_help));
+        int indexOf = fullText.indexOf(getString(R.string.need_help));
+
+        SpannableString spannableString = new SpannableString(fullText);
+        ClickableSpan clickableSpan = new ClickableSpan() {
+            @Override
+            public void onClick(View widget) {
+                showLoginHelpDialog();
+            }
+
+            @Override
+            public void updateDrawState(TextPaint ds) {
+                super.updateDrawState(ds);
+                ds.setUnderlineText(false);
+            }
+        };
+
+        spannableString.setSpan(clickableSpan, indexOf, indexOf + getString(R.string.need_help).length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannableString.setSpan(new StyleSpan(Typeface.BOLD), indexOf, indexOf + getString(R.string.need_help).length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        loginTextView.setText(spannableString);
+        loginTextView.setMovementMethod(LinkMovementMethod.getInstance());
+        loginTextView.setHighlightColor(Color.TRANSPARENT);
+
+        if (weMessage.get().getSharedPreferences().getBoolean(weMessage.SHARED_PREFERENCES_SHOW_SETUP_INFO, true)
+            && (weMessage.get().getSharedPreferences().getInt(weMessage.SHARED_PREFERENCES_LAST_VERSION, -1) == weMessage.WEMESSAGE_BUILD_VERSION
+                || StringUtils.isEmpty(weMessage.get().getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_HOST, "")))){
+            showLoginHelpDialog();
+        }
+
+        launchFailoverIpShowDetailsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DialogDisplayer.generateAlertDialog(getString(R.string.login_failover_ip), getString(R.string.login_failover_ip_details)).show(getFragmentManager(), "FailoverIPAddressAlert");
+            }
+        });
 
         launchConstraintLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -309,6 +405,25 @@ public class LaunchFragment extends Fragment {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     clearEditText(ipEditText, true);
+                }
+                return false;
+            }
+        });
+
+        failoverIpEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    resetEditText(failoverIpEditText);
+                }
+            }
+        });
+
+        failoverIpEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    clearEditText(failoverIpEditText, true);
                 }
                 return false;
             }
@@ -359,7 +474,7 @@ public class LaunchFragment extends Fragment {
         view.findViewById(R.id.passwordRestoreButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                lastHashedPass = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).getString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, "");
+                lastHashedPass = weMessage.get().getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, "");
                 passwordEditText.setText(weMessage.DEFAULT_PASSWORD);
                 clearEditText(passwordEditText, true);
             }
@@ -373,6 +488,7 @@ public class LaunchFragment extends Fragment {
                 String ipUnformatted = ipEditText.getText().toString();
                 String email = emailEditText.getText().toString();
                 String password = passwordEditText.getText().toString();
+                String failoverIp = failoverIpEditText.getText().toString();
 
                 if (StringUtils.isEmpty(ipUnformatted)) {
                     invalidateField(ipEditText);
@@ -398,6 +514,17 @@ public class LaunchFragment extends Fragment {
                     ipAddress = ipUnformatted;
                     port = weMessage.DEFAULT_PORT;
                 }
+
+                if (failoverIp.contains(":")) {
+                    try {
+                        Integer.parseInt(failoverIp.split(":")[1]);
+                    } catch (Exception ex) {
+                        invalidateField(failoverIpEditText);
+                        generateInvalidSnackBar(view, getString(R.string.port_not_valid_failover)).show();
+                        return;
+                    }
+                }
+
 
                 if (StringUtils.isEmpty(email)) {
                     invalidateField(emailEditText);
@@ -432,6 +559,7 @@ public class LaunchFragment extends Fragment {
                 }
 
                 resetEditText(ipEditText);
+                resetEditText(failoverIpEditText);
                 resetEditText(emailEditText);
                 resetEditText(passwordEditText);
 
@@ -448,17 +576,29 @@ public class LaunchFragment extends Fragment {
                 startTextColorAnimation(signInButton, 150L, 150L, finalTextColor, currentTextColor);
 
                 if (StringUtils.isEmpty(lastHashedPass)) {
-                    startConnectionService(view, ipAddress, port, email, password, false);
+                    startConnectionService(view, ipAddress, port, email, password, false, failoverIp);
                 }else {
-                    startConnectionService(view, ipAddress, port, email, lastHashedPass, true);
+                    startConnectionService(view, ipAddress, port, email, lastHashedPass, true, failoverIp);
                 }
             }
         });
 
-        offlineButton.setOnClickListener(new OnClickWaitListener(750L) {
+        smsOrOfflineButton.setOnClickListener(new OnClickWaitListener(750L) {
             @Override
             public void onWaitClick(View v) {
                 clearEditTexts();
+
+                if (MmsManager.isDefaultSmsApp()){
+                    weMessage.get().signIn(null);
+                    int currentTextColor = getResources().getColor(R.color.outgoingBubbleColorOrange);
+                    int finalTextColor = getResources().getColor(R.color.outgoingBubbleColorOrangePressed);
+
+                    startTextColorAnimation(smsOrOfflineButton, 0L, 75L, currentTextColor, finalTextColor);
+                    startTextColorAnimation(smsOrOfflineButton, 75L, 75L, finalTextColor, currentTextColor);
+
+                    startChatListActivity();
+                    return;
+                }
 
                 String email = emailEditText.getText().toString();
                 String password = passwordEditText.getText().toString();
@@ -475,8 +615,8 @@ public class LaunchFragment extends Fragment {
                     return;
                 }
 
-                if (weMessage.get().isSessionRecent() && weMessage.get().getCurrentAccount() != null
-                        && weMessage.get().getCurrentAccount().getEmail().equalsIgnoreCase(emailEditText.getText().toString())){
+                if (weMessage.get().getCurrentSession().getAccount() != null &&
+                        Handle.parseHandleId(weMessage.get().getCurrentSession().getAccount().getEmail()).equalsIgnoreCase(Handle.parseHandleId(emailEditText.getText().toString()))){
                     startChatListActivity();
                     return;
                 }
@@ -513,8 +653,8 @@ public class LaunchFragment extends Fragment {
                 int currentTextColor = getResources().getColor(R.color.brightRed);
                 int finalTextColor = getResources().getColor(R.color.brightRedTextPressed);
 
-                startTextColorAnimation(offlineButton, 0L, 75L, currentTextColor, finalTextColor);
-                startTextColorAnimation(offlineButton, 75L, 75L, finalTextColor, currentTextColor);
+                startTextColorAnimation(smsOrOfflineButton, 0L, 75L, currentTextColor, finalTextColor);
+                startTextColorAnimation(smsOrOfflineButton, 75L, 75L, finalTextColor, currentTextColor);
 
                 signInOffline(email, password);
             }
@@ -557,6 +697,7 @@ public class LaunchFragment extends Fragment {
         outState.putString(weMessage.BUNDLE_HOST, ipEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_EMAIL, emailEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_PASSWORD, passwordEditText.getText().toString());
+        outState.putString(weMessage.BUNDLE_FAILOVER_IP, failoverIpEditText.getText().toString());
         outState.putString(weMessage.BUNDLE_LAUNCHER_LAST_HASHED_PASS, lastHashedPass);
         outState.putString(weMessage.BUNDLE_LAUNCHER_GO_TO_CONVERSATION_UUID, goToConversationHolder);
         outState.putBoolean(weMessage.BUNDLE_IS_LAUNCHER_STILL_CONNECTING, loginProgressDialog != null);
@@ -589,7 +730,7 @@ public class LaunchFragment extends Fragment {
         }
     }
 
-    private void startConnectionService(View view, String ipAddress, int port, String email, String password, boolean alreadyHashed){
+    private void startConnectionService(View view, String ipAddress, int port, String email, String password, boolean alreadyHashed, String failoverIp){
         if (isServiceRunning(ConnectionService.class)){
             AppLogger.log(AppLogger.Level.ERROR, TAG, "The connection service is already running");
             return;
@@ -601,6 +742,7 @@ public class LaunchFragment extends Fragment {
         startServiceIntent.putExtra(weMessage.ARG_EMAIL, email);
         startServiceIntent.putExtra(weMessage.ARG_PASSWORD, password);
         startServiceIntent.putExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, alreadyHashed);
+        startServiceIntent.putExtra(weMessage.ARG_FAILOVER_IP, failoverIp);
 
         getActivity().startService(startServiceIntent);
         bindService();
@@ -628,9 +770,8 @@ public class LaunchFragment extends Fragment {
     }
 
     private void signInOffline(String email, String password){
-        weMessage.get().signOut();
-
         MessageDatabase database = weMessage.get().getMessageDatabase();
+        weMessage.get().signOut(false);
 
         if (database.getAccounts().isEmpty()){
             invalidateField(emailEditText);
@@ -652,14 +793,55 @@ public class LaunchFragment extends Fragment {
             return;
         }
 
-        SharedPreferences.Editor editor = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+        SharedPreferences.Editor editor = weMessage.get().getSharedPreferences().edit();
+
         editor.putString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, email);
         editor.putString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, account.getEncryptedPassword());
-
         editor.apply();
 
-        weMessage.get().signIn(account, true);
+        weMessage.get().signIn(account);
         startChatListActivity();
+    }
+
+    private boolean performSmsChecks(){
+        if (MmsManager.isPhone()) {
+            if (weMessage.get().getSharedPreferences().getBoolean(weMessage.SHARED_PREFERENCES_PROMPT_FOR_SMS, true) && !MmsManager.isDefaultSmsApp()) {
+                Intent launcherIntent = new Intent(weMessage.get(), SetDefaultSmsActivity.class);
+
+                startActivity(launcherIntent);
+                getActivity().finish();
+                return true;
+            }
+
+            if (MmsManager.isDefaultSmsApp() && (!MmsManager.hasSmsPermissions() || SetDefaultSmsActivity.settingsNoAccess())){
+                Intent launcherIntent = new Intent(weMessage.get(), SetDefaultSmsActivity.class);
+                launcherIntent.putExtra(weMessage.BUNDLE_SET_SMS_PERMISSION_ERROR, true);
+
+                startActivity(launcherIntent);
+                getActivity().finish();
+                return true;
+            }
+
+            if (MmsManager.isDefaultSmsApp() && StringUtils.isEmpty(MmsManager.getPhoneNumber())){
+                Intent launcherIntent = new Intent(weMessage.get(), SetNumberActivity.class);
+
+                startActivity(launcherIntent);
+                getActivity().finish();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void showLoginHelpDialog(){
+        DialogDisplayer.AlertDialogFragment alertDialogFragment = generateAlertDialog(getString(R.string.setup_process), getString(R.string.setup_process_disclaimer));
+
+        alertDialogFragment.linkify(true);
+        alertDialogFragment.setCancelableOnTouchedOutside(false);
+        alertDialogFragment.show(getFragmentManager(), "SetupProcessAlertDialog");
+
+        weMessage.get().getSharedPreferences().edit().putBoolean(weMessage.SHARED_PREFERENCES_SHOW_SETUP_INFO, false).apply();
     }
 
     private void invalidateField(final EditText editText){
@@ -688,6 +870,7 @@ public class LaunchFragment extends Fragment {
     private void clearEditTexts() {
         closeKeyboard();
         clearEditText(ipEditText, false);
+        clearEditText(failoverIpEditText, false);
         clearEditText(emailEditText, false);
         clearEditText(passwordEditText, false);
     }

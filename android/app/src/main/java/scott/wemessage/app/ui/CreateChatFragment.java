@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -59,16 +60,21 @@ import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.connection.IConnectionBinder;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageDatabase;
-import scott.wemessage.app.messages.models.ActionMessage;
-import scott.wemessage.app.messages.models.Attachment;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.MessageBase;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.GroupChat;
-import scott.wemessage.app.messages.models.chats.PeerChat;
-import scott.wemessage.app.messages.models.users.Contact;
-import scott.wemessage.app.messages.models.users.ContactInfo;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.chats.PeerChat;
+import scott.wemessage.app.models.messages.ActionMessage;
+import scott.wemessage.app.models.messages.Attachment;
+import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.messages.MessageBase;
+import scott.wemessage.app.models.sms.chats.SmsChat;
+import scott.wemessage.app.models.sms.chats.SmsGroupChat;
+import scott.wemessage.app.models.sms.chats.SmsPeerChat;
+import scott.wemessage.app.models.sms.messages.MmsMessage;
+import scott.wemessage.app.models.users.Contact;
+import scott.wemessage.app.models.users.ContactInfo;
+import scott.wemessage.app.models.users.Handle;
+import scott.wemessage.app.sms.MmsManager;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.view.chat.CreateChatBottomSheet;
@@ -78,7 +84,6 @@ import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.types.ReturnType;
@@ -114,28 +119,28 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), CreateChatFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), CreateChatFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), CreateChatFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), CreateChatFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_SEND_MESSAGE_ERROR)){
@@ -154,6 +159,13 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 DialogDisplayer.showContactSyncResult(true, getActivity(), getFragmentManager());
             }else if(intent.getAction().equals(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION)){
                 DialogDisplayer.showNoAccountsFoundDialog(getActivity(), getFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_COMPOSE_SMS_LAUNCH)){
+                if (getActivity() == null) return;
+
+                if (!(getActivity().getIntent().getAction() != null &&
+                        (getActivity().getIntent().getAction().equals(Intent.ACTION_SEND) || getActivity().getIntent().getAction().equals(Intent.ACTION_SENDTO)))){
+                    getActivity().finish();
+                }
             }
         }
     };
@@ -180,6 +192,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_COMPOSE_SMS_LAUNCH);
 
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(createChatBroadcastReceiver, broadcastIntentFilter);
         weMessage.get().getMessageManager().hookCallbacks(callbackUuid, this);
@@ -212,6 +225,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         contactAdapter = new ContactAdapter();
         contactsRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         contactsRecyclerView.setAdapter(contactAdapter);
+
+        insertFromIntent();
 
         if (savedInstanceState != null){
             selectedContactUuids = savedInstanceState.getStringArrayList(weMessage.BUNDLE_CREATE_CHAT_CONTACT_UUIDS);
@@ -425,7 +440,6 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     @Override
     public void onDestroy() {
-
         weMessage.get().getMessageManager().unhookCallbacks(callbackUuid);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(createChatBroadcastReceiver);
 
@@ -438,6 +452,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     @Override
     public void onContactCreate(final ContactInfo contact) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -451,6 +467,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     @Override
     public void onContactUpdate(final ContactInfo oldData, final ContactInfo newData) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -464,6 +482,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     @Override
     public void onContactListRefresh(final List<? extends ContactInfo> contacts) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -515,23 +535,24 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     public void onMessagesQueueFinish(List<MessageBase> messages) { }
 
     @Override
-    public void onMessagesRefresh() { }
-
-    @Override
     public void onActionMessageAdd(ActionMessage message) { }
 
     @Override
-    public void onMessageSendFailure(final JSONMessage jsonMessage, final ReturnType returnType) {
+    public void onMessageSendFailure(final ReturnType returnType) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                showMessageSendFailureSnackbar(jsonMessage, returnType);
+                showMessageSendFailureSnackbar(returnType);
             }
         });
     }
 
     @Override
     public void onActionPerformFailure(final JSONAction jsonAction, final ReturnType returnType) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -542,6 +563,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     @Override
     public void onAttachmentSendFailure(final FailReason failReason) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -552,6 +575,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
     @Override
     public void onAttachmentReceiveFailure(final FailReason failReason) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -587,44 +612,15 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
 
         if (selectedNameViews.size() == 1){
             if (selectedNameViews.get(0) instanceof SelectedContactNameView){
-                Chat chat = messageDatabase.getChatByHandle(((SelectedContactNameView) selectedNameViews.get(0)).getContact().pullHandle(false));
-                if (chat != null){
-                    return sendMessage(text, chat);
-                }else {
-                    return sendMessage(text, new PeerChat(
-                            UUID.randomUUID(),
-                            null,
-                            null,
-                            null,
-                            true,
-                            false,
-                            ((SelectedContactNameView) selectedNameViews.get(0)).getContact().pullHandle(false)
-                    ));
-                }
+                Handle handle = ((SelectedContactNameView) selectedNameViews.get(0)).getContact().pullHandle(false);
+
+                return sendMessage(text, handle);
             }else {
                 SelectedUnknownNameView selectedUnknownNameView = (SelectedUnknownNameView) selectedNameViews.get(0);
-                return sendMessage(text, new PeerChat(
-                        UUID.randomUUID(),
-                        null,
-                        null,
-                        null,
-                        true,
-                        false,
-                        new Handle().setHandleID(selectedUnknownNameView.getHandle()
-                )));
+
+                return sendMessage(text, new Handle().setHandleID(selectedUnknownNameView.getHandle()).setHandleType(Handle.HandleType.UNKNOWN));
             }
         }else {
-            if (!isConnectionServiceRunning()){
-                showOfflineActionDialog(getString(R.string.offline_mode_action_create_chat));
-                return false;
-            }
-
-            if (isStillConnecting()){
-                showErroredSnackbar(getString(R.string.still_connecting_perform_action), 5);
-                return false;
-            }
-
-            String groupName;
             List<String> participants = new ArrayList<>();
 
             for (SelectedNameView nameView : selectedNameViews){
@@ -635,55 +631,187 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 }
             }
 
-            int count = 1;
+            if (isConnectionServiceRunning() && !isStillConnecting()){
+                String groupName;
+                int count = 1;
 
-            for (GroupChat groupChat : messageDatabase.getGroupChatsWithLikeName(getString(R.string.default_group_name))){
-                count++;
-            }
+                for (GroupChat groupChat : messageDatabase.getGroupChatsWithLikeName(getString(R.string.default_group_name))){
+                    count++;
+                }
 
-            if (count == 1){
-                groupName = getString(R.string.default_group_name);
+                if (count == 1){
+                    groupName = getString(R.string.default_group_name);
+                }else {
+                    groupName = getString(R.string.default_group_name) + " " + count;
+                }
+
+                serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingCreateGroupAction(groupName, participants, text);
+                return true;
             }else {
-                groupName = getString(R.string.default_group_name) + " " + count;
-            }
+                if (MmsManager.isDefaultSmsApp()){
+                    boolean isSms = true;
 
-            serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingCreateGroupAction(groupName, participants, text);
-            return true;
+                    for (String s : participants){
+                        if (!isPossibleNumber(s)){
+                            isSms = false;
+                            break;
+                        }
+                    }
+
+                    if (isSms){
+                        List<Handle> handles = new ArrayList<>();
+
+                        for (String s : participants){
+                            handles.add(new Handle().setHandleID(s).setHandleType(Handle.HandleType.SMS));
+                        }
+
+                        SmsGroupChat groupChat = new SmsGroupChat(null, handles, null, false, false);
+                        MmsMessage mmsMessage = new MmsMessage(null, groupChat,
+                                weMessage.get().getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), text,
+                                Calendar.getInstance().getTime(), null, false, false, true
+                        );
+
+                        weMessage.get().getMmsManager().sendMessage(mmsMessage);
+                        return true;
+                    }else {
+                        showOfflineActionDialog(getString(R.string.offline_mode_action_create_chat, MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
+                        return false;
+                    }
+                }else {
+                    if (isStillConnecting()){
+                        showErroredSnackbar(getString(R.string.still_connecting_perform_action), 5);
+                        return false;
+                    }else {
+                        showOfflineActionDialog(getString(R.string.offline_mode_action_create_chat, MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
+                        return false;
+                    }
+                }
+            }
         }
     }
 
-    private boolean sendMessage(String input, Chat chat){
-        if (!isConnectionServiceRunning()){
-            showOfflineActionDialog(getString(R.string.offline_mode_message_send));
-            return false;
-        }
+    private boolean sendMessage(String input, Handle handle){
+        Chat chat = weMessage.get().getMessageDatabase().getChatByHandle(handle);
 
-        if (isStillConnecting()){
-            showErroredSnackbar(getString(R.string.still_connecting_send_message), 5);
-            return false;
+        if (chat == null){
+            if (handle.getHandleType() == Handle.HandleType.UNKNOWN || handle.getHandleType() == Handle.HandleType.IMESSAGE){
+                if (isConnectionServiceRunning() && !isStillConnecting()){
+                    performSend(input, handle, false);
+                    return true;
+                }else if (MmsManager.isDefaultSmsApp()){
+                    if (isPossibleNumber(input)){
+                        performSend(input, handle, true);
+                        return true;
+                    }else {
+                        showOfflineActionDialog(getString(R.string.offline_mode_message_send, MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
+                        return false;
+                    }
+                }else {
+                    if (isStillConnecting()){
+                        showErroredSnackbar(getString(R.string.still_connecting_send_message), 5);
+                        return false;
+                    } else {
+                        showOfflineActionDialog(getString(R.string.offline_mode_message_send, MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
+                        return false;
+                    }
+                }
+            }else if (handle.getHandleType() == Handle.HandleType.SMS){
+                if (MmsManager.isDefaultSmsApp()){
+                    performSend(input, handle, true);
+                    return true;
+                }else {
+                    if (isConnectionServiceRunning() && !isStillConnecting()){
+                        performSend(input, handle, false);
+                        return true;
+                    }else {
+                        DialogDisplayer.generateAlertDialog(getString(R.string.sms_error), getString(R.string.send_message_sms_not_default)).show(getFragmentManager(), "SendSmsErrorAlert");
+                        return false;
+                    }
+                }
+            }else return false;
+        }else {
+            if (chat instanceof SmsChat){
+                MmsMessage mmsMessage = new MmsMessage(null, chat,
+                        weMessage.get().getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), input,
+                        Calendar.getInstance().getTime(), null, false, false, true
+                );
+                weMessage.get().getMmsManager().sendMessage(mmsMessage);
+                return true;
+            }else {
+                Message message = new Message(
+                        UUID.randomUUID().toString(),
+                        null,
+                        chat,
+                        weMessage.get().getCurrentSession().getAccount().getHandle(),
+                        new ArrayList<Attachment>(),
+                        input,
+                        DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
+                        null, null, false, true, false, false, true, true, MessageEffect.NONE, false
+                );
+                serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
+                return true;
+            }
         }
+    }
 
-        Message message = new Message(
-                UUID.randomUUID(),
-                null,
-                chat,
-                weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()),
-                new ArrayList<Attachment>(),
-                input,
-                DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
-                null,
-                null,
-                false,
-                true,
-                false,
-                false,
-                true,
-                true,
-                MessageEffect.NONE,
-                false
-        );
-        serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
-        return true;
+    private void performSend(String input, Handle handle, boolean isMms){
+        if (isMms){
+            MmsMessage mmsMessage = new MmsMessage(null, new SmsPeerChat(null, handle, false),
+                    weMessage.get().getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), input,
+                    Calendar.getInstance().getTime(), null, false, false, true
+            );
+            weMessage.get().getMmsManager().sendMessage(mmsMessage);
+        }else {
+            Message message = new Message(
+                    UUID.randomUUID().toString(),
+                    null,
+                    new PeerChat(
+                            UUID.randomUUID().toString(),
+                            null,
+                            null,
+                            null,
+                            true,
+                            false,
+                            handle
+                    ),
+                    weMessage.get().getCurrentSession().getAccount().getHandle(),
+                    new ArrayList<Attachment>(),
+                    input,
+                    DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
+                    null, null, false, true, false, false, true, true, MessageEffect.NONE, false
+            );
+            serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
+        }
+    }
+
+    private void insertFromIntent(){
+        String action = getActivity().getIntent().getAction();
+
+        if (action != null && (action.equals(Intent.ACTION_SEND) || action.equals(Intent.ACTION_SENDTO))){
+            Bundle extras = getActivity().getIntent().getExtras();
+            Uri intentUri = getActivity().getIntent().getData();
+
+            String message = extras.getString(Intent.EXTRA_TEXT);
+            String recipients = getRecipients(intentUri);
+
+            if (!StringUtils.isEmpty(recipients)){
+                String[] addresses = TextUtils.split(recipients, ";");
+
+                for (String s : addresses){
+                    Handle handle = weMessage.get().getMessageDatabase().getHandleByHandleID(s);
+
+                    if (handle != null){
+                        addContactToSelectedView(handle.findRoot());
+                    }else {
+                        addUnknownContactToSelectedView(s);
+                    }
+                }
+            }
+
+            if (!StringUtils.isEmpty(message)){
+                newChatMessageInputView.getInputEditText().setText(message);
+            }
+        }
     }
 
     private void addContactToSelectedView(ContactInfo contact){
@@ -787,7 +915,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         alertDialogFragment.setOnDismiss(new Runnable() {
             @Override
             public void run() {
-                goToLauncherReconnect();
+                LaunchActivity.launchActivity(getActivity(), CreateChatFragment.this, true);
             }
         });
 
@@ -814,26 +942,6 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         }
     }
 
-    private void goToLauncher(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
-        }
-    }
-
-    private void goToLauncherReconnect(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
-        }
-    }
-
     private <T> Collection<T> filter(Collection<T> target, IPredicate<T> predicate) {
         Collection<T> result = new ArrayList<>();
         for (T element : target) {
@@ -844,16 +952,24 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         return result;
     }
 
+    private String getRecipients(Uri uri) {
+        String base = uri.getSchemeSpecificPart();
+        int pos = base.indexOf('?');
+        return (pos == -1) ? base : base.substring(0, pos);
+    }
+
     private boolean isStillConnecting(){
         return serviceConnection.getConnectionService() == null || !serviceConnection.getConnectionService().getConnectionHandler().isConnected().get();
     }
 
     private boolean isContactMe(ContactInfo contactInfo){
+        if (weMessage.get().getCurrentSession().isMe(contactInfo)) return true;
+
         if (contactInfo instanceof Handle){
-            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || ((Handle) contactInfo).getHandleType() == Handle.HandleType.ME;
+            return ((Handle) contactInfo).getHandleType() == Handle.HandleType.ME;
         }else if (contactInfo instanceof Contact){
             for (Handle h : ((Contact) contactInfo).getHandles()){
-                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || h.getHandleType() == Handle.HandleType.ME) return true;
+                if (h.getHandleType() == Handle.HandleType.ME) return true;
             }
         }
         return false;
@@ -869,6 +985,10 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         }
 
         return false;
+    }
+
+    private boolean isPossibleNumber(String number){
+        return PhoneNumberUtil.getInstance().isPossibleNumber(number, Resources.getSystem().getConfiguration().locale.getCountry());
     }
 
     private class ContactHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -1056,7 +1176,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     @Override
                     protected Integer doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (SearchableContact searchableContact : contacts) {
+                        for (SearchableContact searchableContact : new ArrayList<>(contacts)) {
                             ContactInfo contactInfo = searchableContact.getContact();
 
                             if (contactInfo.equals(params[0])) {
@@ -1112,7 +1232,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     @Override
                     protected Void doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (ContactInfo contactInfo : originalList) {
+                        for (ContactInfo contactInfo : new ArrayList<>(originalList)) {
                             if (contactInfo.equals(params[0])) {
                                 if (contactInfo instanceof Handle) {
                                     originalList.set(i, params[0]);
@@ -1156,7 +1276,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     @Override
                     protected Integer doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (SearchableContact contact : contacts) {
+                        for (SearchableContact contact : new ArrayList<>(contacts)) {
                             ContactInfo contactInfo = contact.getContact();
 
                             if (contactInfo.equals(params[0])) {
@@ -1186,7 +1306,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     @Override
                     protected Void doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (ContactInfo contact : originalList) {
+                        for (ContactInfo contact : new ArrayList<>(originalList)) {
                             if (contact.equals(params[0])) {
                                 originalList.remove(i);
                                 break;

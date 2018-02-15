@@ -11,7 +11,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -21,6 +20,7 @@ import com.afollestad.easyvideoplayer.EasyVideoPlayer;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
+import scott.wemessage.app.ui.activities.abstracts.BaseActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.OnClickWaitListener;
@@ -29,7 +29,7 @@ import scott.wemessage.app.utils.media.VideoAttachmentPlayer;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
 
-public class MessageVideoActivity extends AppCompatActivity implements EasyVideoCallback, MediaDownloadCallbacks, VideoAttachmentPlayer.OnClickCallback {
+public class MessageVideoActivity extends BaseActivity implements EasyVideoCallback, MediaDownloadCallbacks, VideoAttachmentPlayer.OnClickCallback {
 
     private VideoAttachmentPlayer videoPlayer;
     private TextView doneButton;

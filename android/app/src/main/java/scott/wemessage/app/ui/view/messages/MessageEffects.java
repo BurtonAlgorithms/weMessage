@@ -31,7 +31,7 @@ import nl.dionsegijn.konfetti.models.Size;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.models.messages.Message;
 import scott.wemessage.app.utils.view.DisplayUtils;
 
 public final class MessageEffects {
@@ -58,9 +58,9 @@ public final class MessageEffects {
     }
 
     static void performGentle(final AnimationCallbacks animationCallbacks, final Message message, final Activity activity, final ViewGroup bubbleView, final TextView text, final LinearLayout replay){
-        if (animationCallbacks.getAnimatedMessages().containsKey(message.getUuid().toString())) return;
+        if (animationCallbacks.getAnimatedMessages().containsKey(message.getIdentifier())) return;
 
-        animationCallbacks.getAnimatedMessages().put(message.getUuid().toString(), message);
+        animationCallbacks.getAnimatedMessages().put(message.getIdentifier(), message);
         bubbleView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
 
         float initialTextSize = DisplayUtils.convertPixelsToSp(text.getTextSize(), activity);
@@ -169,7 +169,7 @@ public final class MessageEffects {
                     public void onAnimationEnd(Animator animation) {
                         if (activity == null || animationCallbacks == null) return;
 
-                        animationCallbacks.getAnimatedMessages().remove(message.getUuid().toString());
+                        animationCallbacks.getAnimatedMessages().remove(message.getIdentifier());
                     }
 
                     @Override
@@ -185,9 +185,9 @@ public final class MessageEffects {
     }
 
     static void performLoud(final AnimationCallbacks animationCallbacks, final Message message, final Activity activity, final ViewGroup bubbleView, final TextView text, final TextView replayText, final ImageView replayImageView){
-        if (animationCallbacks.getAnimatedMessages().containsKey(message.getUuid().toString())) return;
+        if (animationCallbacks.getAnimatedMessages().containsKey(message.getIdentifier())) return;
 
-        animationCallbacks.getAnimatedMessages().put(message.getUuid().toString(), message);
+        animationCallbacks.getAnimatedMessages().put(message.getIdentifier(), message);
         bubbleView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
 
         final float initialTextSize = DisplayUtils.convertPixelsToSp(text.getTextSize(), activity);
@@ -305,7 +305,7 @@ public final class MessageEffects {
                     public void onAnimationEnd(Animator animation) {
                         if (activity == null || animationCallbacks == null) return;
 
-                        animationCallbacks.getAnimatedMessages().remove(message.getUuid().toString());
+                        animationCallbacks.getAnimatedMessages().remove(message.getIdentifier());
                     }
 
                     @Override

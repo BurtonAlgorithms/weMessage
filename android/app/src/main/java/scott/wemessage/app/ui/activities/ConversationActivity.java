@@ -6,7 +6,7 @@ import android.view.WindowManager;
 
 import scott.wemessage.R;
 import scott.wemessage.app.ui.ConversationFragment;
-import scott.wemessage.app.utils.view.SingleFragmentActivity;
+import scott.wemessage.app.ui.activities.abstracts.SingleFragmentActivity;
 
 public class ConversationActivity extends SingleFragmentActivity {
 

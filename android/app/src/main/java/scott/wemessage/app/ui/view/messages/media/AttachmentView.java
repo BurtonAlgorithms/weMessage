@@ -15,7 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import scott.wemessage.R;
-import scott.wemessage.app.messages.models.Attachment;
+import scott.wemessage.app.models.messages.Attachment;
 import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.utils.view.DisplayUtils;
@@ -42,12 +42,6 @@ public abstract class AttachmentView extends RelativeLayout {
 
         setLayoutParams(layoutParams);
     }
-
-    /**
-     *
-     * These methods come from the ChatKit Library
-     *
-     * **/
 
     protected Drawable getMessageSelector(@ColorInt int normalColor, @ColorInt int selectedColor, @ColorInt int pressedColor, @DrawableRes int shape) {
         Drawable drawable = DrawableCompat.wrap(getVectorDrawable(shape)).mutate();

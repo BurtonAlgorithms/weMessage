@@ -37,7 +37,6 @@ public class ConnectionService extends Service {
             LocalBroadcastManager.getInstance(this).sendBroadcast(serviceClosedIntent);
 
             getConnectionHandler().endConnection();
-            weMessage.get().setOfflineMode(true);
         }
         super.onDestroy();
     }
@@ -54,7 +53,8 @@ public class ConnectionService extends Service {
                     intent.getIntExtra(weMessage.ARG_PORT, -1),
                     intent.getStringExtra(weMessage.ARG_EMAIL),
                     intent.getStringExtra(weMessage.ARG_PASSWORD),
-                    intent.getBooleanExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, false));
+                    intent.getBooleanExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, false),
+                    intent.getStringExtra(weMessage.ARG_FAILOVER_IP));
 
             connectionHandler.start();
             this.connectionHandler = connectionHandler;

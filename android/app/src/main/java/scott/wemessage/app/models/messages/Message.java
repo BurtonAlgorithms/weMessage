@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages.models;
+package scott.wemessage.app.models.messages;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,13 +7,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 import scott.wemessage.app.connection.ConnectionHandler;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.GroupChat;
-import scott.wemessage.app.messages.models.chats.PeerChat;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.chats.PeerChat;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.security.CryptoFile;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.EncryptionTask;
@@ -30,7 +29,7 @@ import scott.wemessage.commons.utils.DateUtils;
 
 public class Message extends MessageBase {
 
-    private UUID uuid;
+    private String identifier;
     private String macGuid;
     private Chat chat;
     private Handle sender;
@@ -45,9 +44,9 @@ public class Message extends MessageBase {
 
     }
 
-    public Message(UUID uuid, String macGuid, Chat chat, Handle sender, List<Attachment> attachments, String text, Long dateSent, Long dateDelivered, Long dateRead,
+    public Message(String identifier, String macGuid, Chat chat, Handle sender, List<Attachment> attachments, String text, Long dateSent, Long dateDelivered, Long dateRead,
                    Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe, MessageEffect messageEffect, Boolean isEffectFinished){
-        this.uuid = uuid;
+        this.identifier = identifier;
         this.macGuid = macGuid;
         this.chat = chat;
         this.sender = sender;
@@ -66,8 +65,8 @@ public class Message extends MessageBase {
         this.isEffectFinished = isEffectFinished;
     }
 
-    public UUID getUuid() {
-        return uuid;
+    public String getIdentifier() {
+        return identifier;
     }
 
     public String getMacGuid() {
@@ -161,8 +160,8 @@ public class Message extends MessageBase {
         return isEffectFinished;
     }
 
-    public Message setUuid(UUID uuid) {
-        this.uuid = uuid;
+    public Message setIdentifier(String identifier) {
+        this.identifier = identifier;
         return this;
     }
 

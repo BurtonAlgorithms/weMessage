@@ -2,14 +2,13 @@ package scott.wemessage.app.messages;
 
 import java.util.List;
 
-import scott.wemessage.app.messages.models.ActionMessage;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.MessageBase;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.users.ContactInfo;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.messages.ActionMessage;
+import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.messages.MessageBase;
+import scott.wemessage.app.models.users.ContactInfo;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 
@@ -47,11 +46,9 @@ public interface MessageCallbacks {
 
     void onMessagesQueueFinish(List<MessageBase> messages);
 
-    void onMessagesRefresh();
-
     void onActionMessageAdd(ActionMessage message);
 
-    void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType);
+    void onMessageSendFailure(ReturnType returnType);
 
     void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType);
 

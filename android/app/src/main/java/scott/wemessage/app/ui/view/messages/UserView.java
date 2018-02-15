@@ -2,7 +2,7 @@ package scott.wemessage.app.ui.view.messages;
 
 import com.stfalcon.chatkit.commons.models.IUser;
 
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.utils.IOUtils;
 
 public class UserView implements IUser {

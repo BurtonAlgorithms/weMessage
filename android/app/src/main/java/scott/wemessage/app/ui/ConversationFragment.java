@@ -10,17 +10,23 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
+import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.support.annotation.ColorInt;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -41,6 +47,7 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.flipboard.bottomsheet.BottomSheetLayout;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.stfalcon.chatkit.commons.ImageLoader;
 import com.stfalcon.chatkit.commons.models.IMessage;
 import com.stfalcon.chatkit.messages.MessageHolders;
@@ -77,19 +84,25 @@ import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.firebase.NotificationCallbacks;
-import scott.wemessage.app.messages.models.ActionMessage;
-import scott.wemessage.app.messages.models.Attachment;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.MessageBase;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.GroupChat;
-import scott.wemessage.app.messages.models.chats.PeerChat;
-import scott.wemessage.app.messages.models.users.ContactInfo;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.chats.PeerChat;
+import scott.wemessage.app.models.messages.ActionMessage;
+import scott.wemessage.app.models.messages.Attachment;
+import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.messages.MessageBase;
+import scott.wemessage.app.models.sms.chats.SmsChat;
+import scott.wemessage.app.models.sms.chats.SmsGroupChat;
+import scott.wemessage.app.models.sms.chats.SmsPeerChat;
+import scott.wemessage.app.models.sms.messages.MmsMessage;
+import scott.wemessage.app.models.users.ContactInfo;
+import scott.wemessage.app.models.users.Handle;
+import scott.wemessage.app.sms.MmsManager;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ChatViewActivity;
 import scott.wemessage.app.ui.activities.ContactListActivity;
 import scott.wemessage.app.ui.activities.ContactViewActivity;
+import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.activities.MessageImageActivity;
 import scott.wemessage.app.ui.activities.MessageVideoActivity;
@@ -110,21 +123,23 @@ import scott.wemessage.app.utils.media.MediaDownloadCallbacks;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.MessageEffect;
+import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
+import scott.wemessage.commons.utils.ListUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class ConversationFragment extends MessagingFragment implements MessageCallbacks, NotificationCallbacks, MediaDownloadCallbacks, IConnectionBinder,
         AudioAttachmentMediaPlayer.AttachmentAudioCallbacks, AttachmentPopupFragment.AttachmentInputListener, MessageEffects.AnimationCallbacks {
 
     private AtomicBoolean isGlobalAnimationPlaying = new AtomicBoolean(false);
+    private final Object chatLock = new Object();
 
     private final String TAG = "ConversationFragment";
-    private final Object chatLock = new Object();
+    private final String BUNDLE_DOWNLOAD_TASKS = "bundleDownloadTasks";
     private final long MESSAGE_QUEUE_AMOUNT = 25;
     private final int ERROR_SNACKBAR_DURATION = 5;
     private final byte CONTENT_TYPE_ACTION = 22;
@@ -173,28 +188,28 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ConversationFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ConversationFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ConversationFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ConversationFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_NEW_MESSAGE_ERROR)){
@@ -249,7 +264,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     startActivity(launchIntent);
                     getActivity().finish();
                 } else {
-                    Chat chat = messageDatabase.getChatByUuid(startingIntent.getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT));
+                    Chat chat = messageDatabase.getChatByIdentifier(startingIntent.getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT));
 
                     if (chat == null) {
                         Intent returnIntent = new Intent(weMessage.get(), startingClass);
@@ -266,10 +281,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                 goToChatList(getString(R.string.conversation_load_failure));
             }
         }else {
-            setChat(messageDatabase.getChatByUuid(savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT)));
+            setChat(messageDatabase.getChatByIdentifier(savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT)));
             attachmentsInput = savedInstanceState.getStringArrayList(weMessage.BUNDLE_SELECTED_GALLERY_STORE);
             cameraAttachmentInput = savedInstanceState.getString(weMessage.BUNDLE_CAMERA_ATTACHMENT_FILE);
             voiceMessageInput = savedInstanceState.getString(weMessage.BUNDLE_VOICE_MESSAGE_INPUT_FILE);
+            downloadTasks = (ConcurrentHashMap<String, String>) savedInstanceState.getSerializable(BUNDLE_DOWNLOAD_TASKS);
         }
 
         if (getChat() == null){
@@ -351,9 +367,15 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         conversationLayout = getActivity().findViewById(R.id.conversationLayout);
         animationLayout = getActivity().findViewById(R.id.animationLayout);
 
+        String meUuid;
         ImageLoader imageLoader;
         final MessageManager messageManager = weMessage.get().getMessageManager();
-        final String meUuid = weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString();
+
+        if (getChat() instanceof SmsChat){
+            meUuid = weMessage.get().getCurrentSession().getSmsHandle().getUuid().toString();
+        }else {
+            meUuid = weMessage.get().getCurrentSession().getAccount().getHandle().getUuid().toString();
+        }
 
         MessageHolders messageHolders = new MessageHolders()
                 .setIncomingTextConfig(IncomingMessageViewHolder.class, R.layout.incoming_message)
@@ -475,6 +497,14 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         messageInput.setSaveEnabled(true);
 
+        if (getChat() instanceof SmsChat){
+            messageInput.setAttachmentBackgroundDrawable(getSelector(getResources().getColor(R.color.outgoingBubbleColorOrange), getResources().getColor(R.color.outgoingBubbleColorOrangePressed),
+                    getResources().getColor(R.color.transparent), R.drawable.mask));
+
+            messageInput.setSendBackgroundDrawable(getSelector(getResources().getColor(R.color.outgoingBubbleColorOrange), getResources().getColor(R.color.outgoingBubbleColorOrangePressed),
+                    getResources().getColor(R.color.transparent), R.drawable.mask));
+        }
+
         messageSelectionModeBar.findViewById(R.id.messageSelectCopyIcon).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -520,7 +550,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
 
         toggleIsInChat(chat.isInChat());
-        weMessage.get().clearNotifications(chat.getUuid().toString());
+        weMessage.get().clearNotifications(chat.getIdentifier());
 
         return view;
     }
@@ -541,7 +571,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     @Override
     public void onSaveInstanceState(Bundle outState) {
         outState.putBoolean(weMessage.BUNDLE_GALLERY_FRAGMENT_OPEN, isPopupFragmentOpen);
-        outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
+        outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getIdentifier());
+        outState.putSerializable(BUNDLE_DOWNLOAD_TASKS, downloadTasks);
 
         if (getAttachmentPopupFragment() != null) {
             outState.putString(weMessage.BUNDLE_CAMERA_ATTACHMENT_FILE, getAttachmentPopupFragment().getCameraAttachmentFile());
@@ -577,7 +608,6 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
         messageMapIntegrity.clear();
         actionMessageMapIntegrity.clear();
-        downloadTasks.clear();
 
         if (messageListAdapter != null) {
             messageListAdapter.clear();
@@ -609,27 +639,40 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public void onContactCreate(ContactInfo contact) {
-
-    }
+    public void onContactCreate(ContactInfo contact) { }
 
     @Override
-    public void onContactUpdate(ContactInfo oldData, ContactInfo newData) {
-
-    }
+    public void onContactUpdate(ContactInfo oldData, ContactInfo newData) { }
 
     @Override
-    public void onContactListRefresh(List<? extends ContactInfo> handles) {
-
-    }
+    public void onContactListRefresh(List<? extends ContactInfo> handles) { }
 
     @Override
     public void onChatAdd(Chat chat) {
+        if (chat instanceof SmsChat){
+            if (chat instanceof SmsPeerChat && getChat() instanceof PeerChat){
+                if (((SmsPeerChat) chat).getHandle().equals(((PeerChat) getChat()).getHandle())){
+                    launchConversationView(chat.getIdentifier());
+                }
+            }else if (chat instanceof SmsGroupChat && getChat() instanceof GroupChat){
+                boolean isChatThis = ListUtils.areListsEqual(((SmsGroupChat) chat).getParticipants(), ((GroupChat) getChat()).getParticipants(), new Comparator<Handle>() {
+                    @Override
+                    public int compare(Handle o1, Handle o2) {
+                        return o1.getHandleID().compareTo(o2.getHandleID());
+                    }
+                });
 
+                if (isChatThis){
+                    launchConversationView(chat.getIdentifier());
+                }
+            }
+        }
     }
 
     @Override
     public void onChatUpdate(Chat oldData, final Chat newData) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -643,6 +686,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onUnreadMessagesUpdate(final Chat chat, boolean hasUnreadMessages) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -655,6 +700,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onChatRename(final Chat chat, String displayName) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -668,6 +715,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onParticipantAdd(final Chat chat, Handle handle) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -681,6 +730,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onParticipantRemove(final Chat chat, Handle handle) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -694,6 +745,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onLeaveGroup(final Chat chat) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -707,6 +760,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onChatDelete(final Chat chat) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -718,12 +773,23 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public void onChatListRefresh(List<Chat> chats) {
+    public void onChatListRefresh(final List<Chat> chats) {
+        if (getActivity() == null) return;
 
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!chats.contains(getChat())){
+                    goToChatList(null);
+                }
+            }
+        });
     }
 
     @Override
     public void onMessageAdd(final Message message) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -732,7 +798,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
                     MessageView messageView = new MessageView(message);
                     messageListAdapter.addToStart(messageView, true);
-                    messageMapIntegrity.put(message.getUuid().toString(), message);
+                    messageMapIntegrity.put(message.getIdentifier(), message);
                     weMessage.get().getMessageManager().setHasUnreadMessages(getChat(), false, true);
                     showDeliveryStatusOnLastMessage();
                 }
@@ -742,14 +808,16 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onMessageUpdate(final Message oldData, final Message newData) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (isChatThis(newData.getChat())){
                     if (isMessageBlocked(newData)) return;
 
-                    messageListAdapter.update(oldData.getUuid().toString(), new MessageView(newData));
-                    messageMapIntegrity.put(newData.getUuid().toString(), newData);
+                    messageListAdapter.update(oldData.getIdentifier(), new MessageView(newData));
+                    messageMapIntegrity.put(newData.getIdentifier(), newData);
                 }
             }
         });
@@ -757,14 +825,16 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onMessageDelete(final Message message) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if(isChatThis(message.getChat())){
                     if (isMessageBlocked(message)) return;
 
-                    messageListAdapter.deleteById(message.getUuid().toString());
-                    messageMapIntegrity.remove(message.getUuid().toString());
+                    messageListAdapter.deleteById(message.getIdentifier());
+                    messageMapIntegrity.remove(message.getIdentifier());
                     showDeliveryStatusOnLastMessage();
                 }
             }
@@ -773,6 +843,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onMessagesQueueFinish(final List<MessageBase> messages) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -797,11 +869,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                             if (isChatThis(message.getChat())) {
                                 if (isMessageBlocked(message)) continue;
 
-                                if (!messageMapIntegrity.containsKey(message.getUuid().toString())) {
+                                if (!messageMapIntegrity.containsKey(message.getIdentifier())) {
                                     MessageView messageView = new MessageView(message);
 
                                     messageViews.add(messageView);
-                                    messageMapIntegrity.put(message.getUuid().toString(), message);
+                                    messageMapIntegrity.put(message.getIdentifier(), message);
                                 }
                             }
                         }
@@ -817,15 +889,9 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public void onMessagesRefresh() {
-        messageListAdapter.clear();
-        messageMapIntegrity.clear();
-        actionMessageMapIntegrity.clear();
-        weMessage.get().getMessageManager().queueMessages(getChat(), 0L, MESSAGE_QUEUE_AMOUNT, true);
-    }
-
-    @Override
     public void onActionMessageAdd(final ActionMessage message) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -839,17 +905,21 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public void onMessageSendFailure(final JSONMessage jsonMessage, final ReturnType returnType) {
+    public void onMessageSendFailure(final ReturnType returnType) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                showMessageSendFailureSnackbar(jsonMessage, returnType);
+                showMessageSendFailureSnackbar(returnType);
             }
         });
     }
 
     @Override
     public void onActionPerformFailure(final JSONAction jsonAction, final ReturnType returnType) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -860,6 +930,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onAttachmentSendFailure(final FailReason failReason) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -870,6 +942,8 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     @Override
     public void onAttachmentReceiveFailure(final FailReason failReason) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -1155,150 +1229,57 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private boolean sendMessage(CharSequence input){
         UnprocessedMessage unprocessedMessage = preprocessMessage(input);
-
         if (StringUtils.isEmpty(input.toString().trim()) && unprocessedMessage.hasNoAttachments()) return false;
 
-        if (!isConnectionServiceRunning()){
-            DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment =
-                    DialogDisplayer.generateOfflineDialog(getActivity(), getString(R.string.offline_mode_message_send));
-
-            alertDialogFragment.setOnDismiss(new Runnable() {
-                @Override
-                public void run() {
-                    goToLauncherReconnect();
+        if (getChat() instanceof SmsChat){
+            if (MmsManager.isDefaultSmsApp()){
+                sendMessageAsync(unprocessedMessage, true);
+                return true;
+            }else {
+                DialogDisplayer.generateAlertDialog(getString(R.string.sms_error), getString(R.string.send_message_sms_not_default)).show(getFragmentManager(), "SendSmsErrorAlert");
+                return false;
+            }
+        }else {
+            if (isConnectionServiceRunning() && !isStillConnecting()){
+                sendMessageAsync(unprocessedMessage, false);
+                return true;
+            } else {
+                if (getChat() instanceof PeerChat){
+                    if (MmsManager.isDefaultSmsApp()){
+                        sendMessageAsync(unprocessedMessage, true);
+                        return true;
+                    }else {
+                        showOfflineModes();
+                        return false;
+                    }
+                }else {
+                    if (MmsManager.isDefaultSmsApp() && isPossibleSmsGroupChat(getChat())){
+                        sendMessageAsync(unprocessedMessage, true);
+                        return true;
+                    }else {
+                        showOfflineModes();
+                        return false;
+                    }
                 }
-            });
-
-            alertDialogFragment.show(getFragmentManager(), "OfflineModeAlertDialog");
-            return false;
+            }
         }
+    }
 
-        if (isStillConnecting()){
-            showErroredSnackbar(getString(R.string.still_connecting_send_message));
-            return false;
-        }
-
+    private void sendMessageAsync(UnprocessedMessage unprocessedMessage, final boolean useMms){
         new AsyncTask<UnprocessedMessage, Void, MessageTaskReturnType>(){
             @Override
             protected MessageTaskReturnType doInBackground(UnprocessedMessage... params) {
-                UnprocessedMessage unprocessedMessage = params[0];
-                List<Long> sizes = new ArrayList<>();
-                long totalSize = 0;
+                PackedMessage packedMessage = packMessage(params[0], useMms);
 
-                for (String s : unprocessedMessage.getInputAttachments()) {
-                    long length = new File(s).length();
-
-                    totalSize += length;
-                    sizes.add(length);
+                if (packedMessage.getMessage() == null){
+                    return packedMessage.getMessageTaskReturnType();
                 }
 
-                if (unprocessedMessage.getCameraInput() != null){
-                    File inputFile = new File(unprocessedMessage.getCameraInput());
-
-                    if (inputFile.exists()){
-                        totalSize += inputFile.length();
-                        sizes.add(inputFile.length());
-                    }
+                if (useMms){
+                    weMessage.get().getMmsManager().sendMessage((MmsMessage) packedMessage.getMessage());
+                }else {
+                    serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(packedMessage.getMessage(), true);
                 }
-
-                if (unprocessedMessage.getVoiceInput() != null){
-                    File inputFile = new File(unprocessedMessage.getVoiceInput());
-
-                    if (inputFile.exists()){
-                        totalSize += inputFile.length();
-                        sizes.add(inputFile.length());
-                    }
-                }
-
-                if (totalSize > weMessage.MAX_FILE_SIZE){
-                    return MessageTaskReturnType.FILE_SIZE_TOO_LARGE;
-                }
-
-                if (sizes.size() > 0 && !AndroidUtils.hasMemoryForOperation(Collections.max(sizes))) {
-                    return MessageTaskReturnType.NOT_ENOUGH_MEMORY;
-                }
-
-                List<Attachment> attachments = new ArrayList<>();
-
-                for (String s : unprocessedMessage.getInputAttachments()){
-                    try {
-                        String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
-                        String transferName = Uri.parse(s).getLastPathSegment();
-                        File copiedFile = new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + transferName);
-
-                        copiedFile.createNewFile();
-                        FileUtils.copy(new File(s), copiedFile);
-
-                        long totalBytes = copiedFile.length();
-                        Attachment a = new Attachment(
-                                UUID.randomUUID(),
-                                null,
-                                transferName,
-                                new FileLocationContainer(copiedFile),
-                                AndroidUtils.getMimeTypeStringFromPath(s),
-                                totalBytes
-                        );
-                        attachments.add(a);
-
-                    }catch (Exception ex){
-                        showErroredSnackbar(getString(R.string.send_attachment_error));
-                        AppLogger.error("An error occurred while loading a file into a message.", ex);
-                    }
-                }
-
-                if (unprocessedMessage.getCameraInput() != null){
-                    File inputFile = new File(unprocessedMessage.getCameraInput());
-
-                    if (inputFile.exists()) {
-                        long totalBytes = inputFile.length();
-                        Attachment a = new Attachment(
-                                UUID.randomUUID(),
-                                null,
-                                Uri.parse(unprocessedMessage.getCameraInput()).getLastPathSegment(),
-                                new FileLocationContainer(unprocessedMessage.getCameraInput()),
-                                AndroidUtils.getMimeTypeStringFromPath(unprocessedMessage.getCameraInput()),
-                                totalBytes
-                        );
-                        attachments.add(a);
-                    }
-                }
-
-                if (unprocessedMessage.getVoiceInput() != null){
-                    File inputFile = new File(unprocessedMessage.getVoiceInput());
-                    if (inputFile.exists()) {
-                        long totalBytes = inputFile.length();
-                        Attachment a = new Attachment(
-                                UUID.randomUUID(),
-                                null,
-                                Uri.parse(unprocessedMessage.getVoiceInput()).getLastPathSegment(),
-                                new FileLocationContainer(unprocessedMessage.getVoiceInput()),
-                                AndroidUtils.getMimeTypeStringFromPath(unprocessedMessage.getVoiceInput()),
-                                totalBytes
-                        );
-                        attachments.add(a);
-                    }
-                }
-
-                Message message = new Message(
-                        UUID.randomUUID(),
-                        null,
-                        getChat(),
-                        weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()),
-                        attachments,
-                        unprocessedMessage.getInput().toString().trim(),
-                        DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
-                        null,
-                        null,
-                        false,
-                        true,
-                        false,
-                        false,
-                        true,
-                        true,
-                        MessageEffect.NONE,
-                        false
-                );
-                serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
 
                 return MessageTaskReturnType.TASK_PERFORMED;
             }
@@ -1312,12 +1293,182 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     }else if (returnType == MessageTaskReturnType.NOT_ENOUGH_MEMORY){
                         DialogDisplayer.generateAlertDialog(getString(R.string.max_file_size_alert_title), getString(R.string.memory_file_size_alert_message))
                                 .show(getFragmentManager(), "AttachmentMaxMemorySizeAlert");
+                    }else if (returnType == MessageTaskReturnType.FILE_SIZE_TOO_LARGE_MMS){
+                        DialogDisplayer.generateAlertDialog(getString(R.string.max_file_size_alert_title), getString(R.string.max_file_size_mms_alert_message, FileUtils.getFileSizeString(weMessage.MAX_MMS_ATTACHMENT_SIZE)))
+                                .show(getFragmentManager(), "AttachmentMaxFileSizeAlert");
+                    }else if (returnType == MessageTaskReturnType.UNSUPPORTED_ATTACHMENTS){
+                        DialogDisplayer.generateAlertDialog(getString(R.string.unsupported_attachments), getString(R.string.send_message_sms_unsupported_attachments))
+                                .show(getFragmentManager(), "AttachmentMaxMemorySizeAlert");
                     }
                 }
             }
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, unprocessedMessage);
+    }
 
-        return true;
+    private PackedMessage packMessage(UnprocessedMessage unprocessedMessage, boolean useMms){
+        List<Long> sizes = new ArrayList<>();
+        long totalSize = 0;
+
+        for (String s : unprocessedMessage.getInputAttachments()) {
+            File attachmentFile = new File(s);
+
+            if (AndroidUtils.getMimeTypeFromPath(attachmentFile.getAbsolutePath()) != MimeType.IMAGE) return new PackedMessage(null, MessageTaskReturnType.UNSUPPORTED_ATTACHMENTS);
+        }
+
+        if (unprocessedMessage.getCameraInput() != null){
+            File inputFile = new File(unprocessedMessage.getCameraInput());
+
+            if (inputFile.exists()){
+                if (AndroidUtils.getMimeTypeFromPath(inputFile.getAbsolutePath()) != MimeType.IMAGE) return new PackedMessage(null, MessageTaskReturnType.UNSUPPORTED_ATTACHMENTS);
+            }
+        }
+
+        if (unprocessedMessage.getVoiceInput() != null){
+            File inputFile = new File(unprocessedMessage.getVoiceInput());
+
+            if (inputFile.exists()){
+                if (AndroidUtils.getMimeTypeFromPath(inputFile.getAbsolutePath()) != MimeType.IMAGE) return new PackedMessage(null, MessageTaskReturnType.UNSUPPORTED_ATTACHMENTS);
+            }
+        }
+
+        for (String s : unprocessedMessage.getInputAttachments()) {
+            long length = new File(s).length();
+
+            totalSize += length;
+            sizes.add(length);
+        }
+
+        if (unprocessedMessage.getCameraInput() != null){
+            File inputFile = new File(unprocessedMessage.getCameraInput());
+
+            if (inputFile.exists()){
+                totalSize += inputFile.length();
+                sizes.add(inputFile.length());
+            }
+        }
+
+        if (unprocessedMessage.getVoiceInput() != null){
+            File inputFile = new File(unprocessedMessage.getVoiceInput());
+
+            if (inputFile.exists()){
+                totalSize += inputFile.length();
+                sizes.add(inputFile.length());
+            }
+        }
+
+        if (useMms){
+            if (totalSize > weMessage.MAX_MMS_ATTACHMENT_SIZE){
+                return new PackedMessage(null, MessageTaskReturnType.FILE_SIZE_TOO_LARGE_MMS);
+            }
+        }
+
+        if (totalSize > weMessage.MAX_FILE_SIZE){
+            return new PackedMessage(null, MessageTaskReturnType.FILE_SIZE_TOO_LARGE);
+        }
+
+        if (sizes.size() > 0 && !AndroidUtils.hasMemoryForOperation(Collections.max(sizes))) {
+            return new PackedMessage(null, MessageTaskReturnType.NOT_ENOUGH_MEMORY);
+        }
+
+        List<Attachment> attachments = new ArrayList<>();
+
+        for (String s : unprocessedMessage.getInputAttachments()){
+            try {
+                String attachmentNamePrefix = new SimpleDateFormat("HH-mm-ss_MM-dd-yyyy", Locale.US).format(Calendar.getInstance().getTime());
+                String transferName = Uri.parse(s).getLastPathSegment();
+                File copiedFile = new File(weMessage.get().getAttachmentFolder(), attachmentNamePrefix + "-" + transferName);
+
+                copiedFile.createNewFile();
+                FileUtils.copy(new File(s), copiedFile);
+
+                long totalBytes = copiedFile.length();
+                Attachment a = new Attachment(
+                        UUID.randomUUID(),
+                        null,
+                        transferName,
+                        new FileLocationContainer(copiedFile),
+                        AndroidUtils.getMimeTypeStringFromPath(s),
+                        totalBytes
+                );
+                attachments.add(a);
+
+            }catch (Exception ex){
+                showErroredSnackbar(getString(R.string.send_attachment_error));
+                AppLogger.error("An error occurred while loading a file into a message.", ex);
+            }
+        }
+
+        if (unprocessedMessage.getCameraInput() != null){
+            File inputFile = new File(unprocessedMessage.getCameraInput());
+
+            if (inputFile.exists()) {
+                long totalBytes = inputFile.length();
+                Attachment a = new Attachment(
+                        UUID.randomUUID(),
+                        null,
+                        Uri.parse(unprocessedMessage.getCameraInput()).getLastPathSegment(),
+                        new FileLocationContainer(unprocessedMessage.getCameraInput()),
+                        AndroidUtils.getMimeTypeStringFromPath(unprocessedMessage.getCameraInput()),
+                        totalBytes
+                );
+                attachments.add(a);
+            }
+        }
+
+        if (unprocessedMessage.getVoiceInput() != null){
+            File inputFile = new File(unprocessedMessage.getVoiceInput());
+            if (inputFile.exists()) {
+                long totalBytes = inputFile.length();
+                Attachment a = new Attachment(
+                        UUID.randomUUID(),
+                        null,
+                        Uri.parse(unprocessedMessage.getVoiceInput()).getLastPathSegment(),
+                        new FileLocationContainer(unprocessedMessage.getVoiceInput()),
+                        AndroidUtils.getMimeTypeStringFromPath(unprocessedMessage.getVoiceInput()),
+                        totalBytes
+                );
+                attachments.add(a);
+            }
+        }
+
+        Message message;
+
+        if (useMms){
+            message = new MmsMessage(
+                    null,
+                    getChat(),
+                    weMessage.get().getCurrentSession().getSmsHandle(),
+                    attachments,
+                    unprocessedMessage.getInput().toString().trim(),
+                    Calendar.getInstance().getTime(),
+                    null,
+                    false,
+                    false,
+                    true
+            );
+        }else {
+            message = new Message(
+                    UUID.randomUUID().toString(),
+                    null,
+                    getChat(),
+                    weMessage.get().getCurrentSession().getAccount().getHandle(),
+                    attachments,
+                    unprocessedMessage.getInput().toString().trim(),
+                    DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
+                    null,
+                    null,
+                    false,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                    MessageEffect.NONE,
+                    false
+            );
+        }
+
+        return new PackedMessage(message, MessageTaskReturnType.TASK_PERFORMED);
     }
 
     private UnprocessedMessage preprocessMessage(CharSequence input){
@@ -1353,7 +1504,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         if (lastMessage == null) return;
 
         String oldLastMessageId = lastMessageId;
-        lastMessageId = lastMessage.getUuid().toString();
+        lastMessageId = lastMessage.getIdentifier();
 
         for (int childCount = messageList.getChildCount(), i = 0; i < childCount; ++i) {
             RecyclerView.ViewHolder holder = messageList.getChildViewHolder(messageList.getChildAt(i));
@@ -1376,62 +1527,36 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         conversationBottomSheet.showWithSheetView(LayoutInflater.from(getActivity()).inflate(R.layout.sheet_conversation_message_options, conversationBottomSheet, false));
 
         if (message.hasErrored()){
-            conversationBottomSheet.findViewById(R.id.conversationSheetRetryButton).setVisibility(View.VISIBLE);
-            conversationBottomSheet.findViewById(R.id.conversationSheetRetryDivider).setVisibility(View.VISIBLE);
+            if (message.getMessage() instanceof MmsMessage){
+                conversationBottomSheet.findViewById(R.id.conversationSheetRetryButton).setVisibility(View.GONE);
+                conversationBottomSheet.findViewById(R.id.conversationSheetRetryDivider).setVisibility(View.GONE);
+                conversationBottomSheet.findViewById(R.id.conversationSheetSendAsSmsButton).setVisibility(View.VISIBLE);
+                conversationBottomSheet.findViewById(R.id.conversationSheetSendAsSmsDivider).setVisibility(View.VISIBLE);
 
-            conversationBottomSheet.findViewById(R.id.conversationSheetRetryButton).setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (!isConnectionServiceRunning()){
-                        conversationBottomSheet.dismissSheet();
+                setSendAsSmsButton(message);
+            }else {
+                if (MmsManager.isPhone()){
+                    conversationBottomSheet.findViewById(R.id.conversationSheetRetryButton).setVisibility(View.VISIBLE);
+                    conversationBottomSheet.findViewById(R.id.conversationSheetRetryDivider).setVisibility(View.VISIBLE);
+                    conversationBottomSheet.findViewById(R.id.conversationSheetSendAsSmsButton).setVisibility(View.VISIBLE);
+                    conversationBottomSheet.findViewById(R.id.conversationSheetSendAsSmsDivider).setVisibility(View.VISIBLE);
 
-                        DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment =
-                                DialogDisplayer.generateOfflineDialog(getActivity(), getString(R.string.offline_mode_message_send));
+                    setRetryButton(message);
+                    setSendAsSmsButton(message);
+                }else {
+                    conversationBottomSheet.findViewById(R.id.conversationSheetRetryButton).setVisibility(View.VISIBLE);
+                    conversationBottomSheet.findViewById(R.id.conversationSheetRetryDivider).setVisibility(View.VISIBLE);
+                    conversationBottomSheet.findViewById(R.id.conversationSheetSendAsSmsButton).setVisibility(View.GONE);
+                    conversationBottomSheet.findViewById(R.id.conversationSheetSendAsSmsDivider).setVisibility(View.GONE);
 
-                        alertDialogFragment.setOnDismiss(new Runnable() {
-                            @Override
-                            public void run() {
-                                goToLauncherReconnect();
-                            }
-                        });
-
-                        alertDialogFragment.show(getFragmentManager(), "OfflineModeAlertDialog");
-                        return;
-                    }
-
-                    if (isStillConnecting()){
-                        conversationBottomSheet.dismissSheet();
-                        showErroredSnackbar(getString(R.string.still_connecting_send_message));
-                        return;
-                    }
-
-                    Message newMessage = new Message(
-                            UUID.randomUUID(),
-                            null,
-                            getChat(),
-                            weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()),
-                            message.getMessage().getAttachments(),
-                            message.getMessage().getText(),
-                            DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
-                            null,
-                            null,
-                            false,
-                            true,
-                            false,
-                            false,
-                            true,
-                            true,
-                            MessageEffect.NONE,
-                            false
-                    );
-
-                    serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(newMessage, true);
-                    conversationBottomSheet.dismissSheet();
+                    setRetryButton(message);
                 }
-            });
-        }else {
+            }
+        } else {
             conversationBottomSheet.findViewById(R.id.conversationSheetRetryButton).setVisibility(View.GONE);
             conversationBottomSheet.findViewById(R.id.conversationSheetRetryDivider).setVisibility(View.GONE);
+            conversationBottomSheet.findViewById(R.id.conversationSheetSendAsSmsButton).setVisibility(View.GONE);
+            conversationBottomSheet.findViewById(R.id.conversationSheetSendAsSmsDivider).setVisibility(View.GONE);
         }
 
         conversationBottomSheet.findViewById(R.id.conversationSheetCopyButton).setOnClickListener(new View.OnClickListener() {
@@ -1589,6 +1714,45 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
     }
 
+    private void setRetryButton(final MessageView message){
+        conversationBottomSheet.findViewById(R.id.conversationSheetRetryButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                conversationBottomSheet.dismissSheet();
+                if (showOfflineModes()) return;
+
+                Message newMessage = new Message(UUID.randomUUID().toString(), null, getChat(),
+                        weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentSession().getAccount()),
+                        message.getMessage().getAttachments(), message.getMessage().getText(),
+                        DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
+                        null, null, false, true, false,
+                        false, true, true, MessageEffect.NONE, false
+                );
+                serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(newMessage, true);
+            }
+        });
+    }
+
+    private void setSendAsSmsButton(final MessageView message){
+        conversationBottomSheet.findViewById(R.id.conversationSheetSendAsSmsButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                conversationBottomSheet.dismissSheet();
+
+                if (!MmsManager.isDefaultSmsApp()){
+                    DialogDisplayer.generateAlertDialog(getString(R.string.sms_error), getString(R.string.send_message_sms_not_default)).show(getFragmentManager(), "SendSmsErrorAlert");
+                    return;
+                }
+
+                MmsMessage mmsMessage = new MmsMessage(null, getChat(),
+                        weMessage.get().getCurrentSession().getSmsHandle(), message.getMessage().getAttachments(), message.getMessage().getText(),
+                        Calendar.getInstance().getTime(), null, false, false, true
+                );
+                weMessage.get().getMmsManager().sendMessage(mmsMessage);
+            }
+        });
+    }
+
     private void toggleIsInChat(boolean value){
         toggleSelectionMode(false);
 
@@ -1637,7 +1801,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         Intent launcherIntent = new Intent(weMessage.get(), ContactViewActivity.class);
 
         launcherIntent.putExtra(weMessage.BUNDLE_CONTACT_VIEW_UUID, ((PeerChat) getChat()).getHandle().getUuid().toString());
-        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getIdentifier());
 
         startActivity(launcherIntent);
         getActivity().finish();
@@ -1645,7 +1809,17 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
     private void launchChatView(){
         Intent launcherIntent = new Intent(weMessage.get(), ChatViewActivity.class);
-        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getIdentifier());
+
+        startActivity(launcherIntent);
+        getActivity().finish();
+    }
+
+    private void launchConversationView(String chatId){
+        Intent launcherIntent = new Intent(weMessage.get(), ConversationActivity.class);
+
+        launcherIntent.putExtra(weMessage.BUNDLE_RETURN_POINT, ChatListActivity.class.getName());
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chatId);
 
         startActivity(launcherIntent);
         getActivity().finish();
@@ -1655,7 +1829,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         Intent launcherIntent = new Intent(weMessage.get(), MessageImageActivity.class);
 
         launcherIntent.putExtra(weMessage.BUNDLE_FULL_SCREEN_IMAGE_URI, imageUri);
-        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getIdentifier());
 
         startActivity(launcherIntent);
         getActivity().finish();
@@ -1665,7 +1839,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         Intent launcherIntent = new Intent(weMessage.get(), MessageVideoActivity.class);
 
         launcherIntent.putExtra(weMessage.BUNDLE_FULL_SCREEN_VIDEO_URI, imageUri);
-        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getUuid().toString());
+        launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, getChat().getIdentifier());
 
         startActivity(launcherIntent);
         getActivity().finish();
@@ -1881,8 +2055,39 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         });
     }
 
+    private boolean showOfflineModes(){
+        if (isStillConnecting()){
+            showErroredSnackbar(getString(R.string.still_connecting_send_message));
+            return true;
+        }else if (!isConnectionServiceRunning()){
+            DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment =
+                    DialogDisplayer.generateOfflineDialog(getActivity(), getString(R.string.offline_mode_message_send, MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
+
+            alertDialogFragment.setOnDismiss(new Runnable() {
+                @Override
+                public void run() {
+                    LaunchActivity.launchActivity(getActivity(), ConversationFragment.this, true);
+                }
+            });
+
+            alertDialogFragment.show(getFragmentManager(), "OfflineModeAlertDialog");
+            return true;
+        }
+        return false;
+    }
+
     private boolean isChatThis(Chat c){
-        return c.getUuid().toString().equals(getChat().getUuid().toString());
+        return c.getIdentifier().equals(getChat().getIdentifier());
+    }
+
+    private boolean isPossibleSmsGroupChat(Chat chat){
+        GroupChat groupChat = (GroupChat) chat;
+
+        for (Handle h : groupChat.getParticipants()){
+            if (!PhoneNumberUtil.getInstance().isPossibleNumber(h.getHandleID(), Resources.getSystem().getConfiguration().locale.getCountry())) return false;
+        }
+
+        return true;
     }
 
     private boolean isStillConnecting(){
@@ -1911,26 +2116,6 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
     }
 
-    private void goToLauncher(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
-        }
-    }
-
-    private void goToLauncherReconnect(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
-        }
-    }
-
     public void goToChatList(String reason){
         if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
             Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
@@ -1944,8 +2129,21 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
     }
 
-    private class UnprocessedMessage {
+    private Drawable getSelector(@ColorInt int normalColor, @ColorInt int pressedColor, @ColorInt int disabledColor, @DrawableRes int shape) {
+        Drawable drawable = DrawableCompat.wrap(ContextCompat.getDrawable(getContext(), shape)).mutate();
+        DrawableCompat.setTintList(drawable,
+                new ColorStateList(
+                        new int[][]{
+                                new int[]{android.R.attr.state_enabled, -android.R.attr.state_pressed},
+                                new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed},
+                                new int[]{-android.R.attr.state_enabled}
+                        },
+                        new int[]{normalColor, pressedColor, disabledColor}
+                ));
+        return drawable;
+    }
 
+    private class UnprocessedMessage {
         private CharSequence input;
         private ArrayList<String> inputAttachments;
         private String cameraInput;
@@ -1979,9 +2177,29 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
     }
 
+    private class PackedMessage {
+        private Message message;
+        private MessageTaskReturnType messageTaskReturnType;
+
+        PackedMessage(Message message, MessageTaskReturnType messageTaskReturnType) {
+            this.message = message;
+            this.messageTaskReturnType = messageTaskReturnType;
+        }
+
+        Message getMessage() {
+            return message;
+        }
+
+        MessageTaskReturnType getMessageTaskReturnType() {
+            return messageTaskReturnType;
+        }
+    }
+
     private enum MessageTaskReturnType {
         FILE_SIZE_TOO_LARGE,
+        FILE_SIZE_TOO_LARGE_MMS,
         NOT_ENOUGH_MEMORY,
-        TASK_PERFORMED
+        TASK_PERFORMED,
+        UNSUPPORTED_ATTACHMENTS
     }
 }

@@ -1,19 +1,27 @@
 package scott.wemessage.app;
 
 import android.app.Application;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.media.AudioAttributes;
+import android.media.RingtoneManager;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
 import android.support.text.emoji.EmojiCompat;
 import android.support.text.emoji.FontRequestEmojiCompatConfig;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.provider.FontRequest;
 
 import com.crashlytics.android.Crashlytics;
+import com.evernote.android.job.JobManager;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.fabric.sdk.android.Fabric;
@@ -22,9 +30,14 @@ import scott.wemessage.R;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.firebase.NotificationCallbacks;
-import scott.wemessage.app.messages.models.users.Account;
+import scott.wemessage.app.models.users.Account;
+import scott.wemessage.app.models.users.Handle;
+import scott.wemessage.app.models.users.Session;
 import scott.wemessage.app.security.util.AesPrngHelper;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
+import scott.wemessage.app.sms.MmsDatabase;
+import scott.wemessage.app.sms.MmsManager;
+import scott.wemessage.app.sms.services.SendMessageJobCreator;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.commons.Constants;
 import scott.wemessage.commons.connection.ClientMessage;
@@ -36,8 +49,9 @@ import scott.wemessage.commons.utils.StringUtils;
 public final class weMessage extends Application implements Constants {
 
     public static final int DATABASE_VERSION = 3;
-    public static final int CONNECTION_TIMEOUT_WAIT = 7;
+    public static final int CONNECTION_TIMEOUT_WAIT = 5;
     public static final int MAX_CHAT_ICON_SIZE = 26214400;
+    public static final int MAX_MMS_ATTACHMENT_SIZE = 10485760;
 
     public static final String DATABASE_NAME = "weMessage.db";
     public static final String APP_IDENTIFIER = "scott.wemessage.app";
@@ -52,12 +66,14 @@ public final class weMessage extends Application implements Constants {
     public static final int REQUEST_PERMISSION_RECORD_AUDIO = 5003;
     public static final int REQUEST_PERMISSION_WRITE_STORAGE = 5004;
     public static final int REQUEST_PERMISSION_READ_CONTACTS = 5005;
+    public static final int REQUEST_PERMISSION_SMS = 5006;
 
     public static final int REQUEST_CODE_CAMERA = 6000;
 
     public static final String BUNDLE_HOST = IDENTIFIER_PREFIX + "bundleHost";
     public static final String BUNDLE_EMAIL = IDENTIFIER_PREFIX + "bundleEmail";
     public static final String BUNDLE_PASSWORD = IDENTIFIER_PREFIX + "bundlePassword";
+    public static final String BUNDLE_FAILOVER_IP = IDENTIFIER_PREFIX + "bundleFailoverIP";
     public static final String BUNDLE_ALERT_TITLE = IDENTIFIER_PREFIX + "bundleAlertTitle";
     public static final String BUNDLE_FAST_CONNECT = IDENTIFIER_PREFIX + "bundleFastConnect";
     public static final String BUNDLE_ALERT_MESSAGE = IDENTIFIER_PREFIX + "bundleAlertMessage";
@@ -84,11 +100,16 @@ public final class weMessage extends Application implements Constants {
     public static final String BUNDLE_CONTACT_VIEW_UUID = IDENTIFIER_PREFIX + "bundleContactViewUuid";
     public static final String BUNDLE_HANDLE_UUID = IDENTIFIER_PREFIX + "bundleHandleUuid";
     public static final String BUNDLE_GO_TO_CONTACT_LIST = IDENTIFIER_PREFIX + "bundleGoToContactList";
+    public static final String BUNDLE_SET_SMS_PERMISSION_ERROR = IDENTIFIER_PREFIX + "bundleSetSmsPermissionError";
+    public static final String BUNDLE_SET_SMS_FROM_SETTINGS = IDENTIFIER_PREFIX + "bundleSetSmsFromSettings";
+    public static final String BUNDLE_EDIT_NUMBER_FROM_SETTINGS = IDENTIFIER_PREFIX + "bundleEditNumberFromSettings";
+    public static final String BUNDLE_SWITCH_ACCOUNTS_MODE = IDENTIFIER_PREFIX + "bundleSwitchAccountsMode";
 
     public static final String ARG_HOST = IDENTIFIER_PREFIX + "hostArg";
     public static final String ARG_PORT = IDENTIFIER_PREFIX + "portArg";
     public static final String ARG_EMAIL = IDENTIFIER_PREFIX + "emailArg";
     public static final String ARG_PASSWORD = IDENTIFIER_PREFIX + "passwordArg";
+    public static final String ARG_FAILOVER_IP = IDENTIFIER_PREFIX + "failoverIpArg";
     public static final String ARG_PASSWORD_ALREADY_HASHED = IDENTIFIER_PREFIX + "passwordAlreadyHashed";
     public static final String ARG_ATTACHMENT_GALLERY_CACHE = IDENTIFIER_PREFIX + "attachmentGalleryCacheArg";
     public static final String ARG_CAMERA_ATTACHMENT_FILE = IDENTIFIER_PREFIX + "argCameraAttachmentFile";
@@ -118,6 +139,9 @@ public final class weMessage extends Application implements Constants {
     public static final String BROADCAST_CONTACT_SYNC_SUCCESS = IDENTIFIER_PREFIX + "ContactSyncSuccess";
     public static final String BROADCAST_CONTACT_SYNC_FAILED = IDENTIFIER_PREFIX + "ContactSyncFailed";
     public static final String BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION = IDENTIFIER_PREFIX + "NoAccountsFoundNotification";
+    public static final String BROADCAST_SMS_MODE_ENABLED = IDENTIFIER_PREFIX + "SmsModeEnabled";
+    public static final String BROADCAST_SMS_MODE_DISABLED = IDENTIFIER_PREFIX + "SmsModeDisabled";
+    public static final String BROADCAST_COMPOSE_SMS_LAUNCH = IDENTIFIER_PREFIX + "ComposeSmsLaunch";
 
     public static final String BROADCAST_LOAD_ATTACHMENT_ERROR = IDENTIFIER_PREFIX + "LoadAttachmentError";
     public static final String BROADCAST_PLAY_AUDIO_ATTACHMENT_ERROR = IDENTIFIER_PREFIX + "PlayAudioAttachmentError";
@@ -126,25 +150,31 @@ public final class weMessage extends Application implements Constants {
 
     public static final String SHARED_PREFERENCES_VERSION = IDENTIFIER_PREFIX + "version";
     public static final String SHARED_PREFERENCES_LAST_VERSION = IDENTIFIER_PREFIX + "lastVersion";
+    public static final String SHARED_PREFERENCES_SHOW_SETUP_INFO = IDENTIFIER_PREFIX + "showSetupInfo";
     public static final String SHARED_PREFERENCES_SHOW_UPDATE_DIALOG = IDENTIFIER_PREFIX + "showUpdateDialog";
     public static final String SHARED_PREFERENCES_LAST_HOST = IDENTIFIER_PREFIX + "lastHost";
     public static final String SHARED_PREFERENCES_LAST_EMAIL = IDENTIFIER_PREFIX + "lastEmail";
     public static final String SHARED_PREFERENCES_LAST_HASHED_PASSWORD = IDENTIFIER_PREFIX + "lastHashedPassword";
+    public static final String SHARED_PREFERENCES_LAST_FAILOVER_IP = IDENTIFIER_PREFIX + "lastFailoverIp";
     public static final String SHARED_PREFERENCES_SIGNED_OUT = IDENTIFIER_PREFIX + "signedOut";
+    public static final String SHARED_PREFERENCES_SIGNED_OUT_EMAIL = IDENTIFIER_PREFIX + "signedOutEmail";
     public static final String SHARED_PREFERENCES_DEVICE_INFO = IDENTIFIER_PREFIX + "deviceInfo";
     public static final String SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW = IDENTIFIER_PREFIX + "contactSyncPermissionShow";
+    public static final String SHARED_PREFERENCES_MANUAL_PHONE_NUMBER = IDENTIFIER_PREFIX + "manualPhoneNumber";
+    public static final String SHARED_PREFERENCES_PROMPT_FOR_SMS = IDENTIFIER_PREFIX + "promptForSms";
 
     private static weMessage instance;
     private MessageDatabase messageDatabase;
     private MessageManager messageManager;
-    private Account currentAccount;
+    private MmsDatabase mmsDatabase;
+    private MmsManager mmsManager;
+    private Session currentSession;
     private File attachmentFolder;
     private File chatIconsFolder;
     private NotificationCallbacks notificationCallbacks;
 
-    private AtomicBoolean isOfflineMode = new AtomicBoolean(true);
+    public AtomicBoolean isDefaultSmsApplication = new AtomicBoolean(false);
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
-    private AtomicBoolean isSessionRecent = new AtomicBoolean(false);
 
     public static weMessage get(){
         return instance;
@@ -153,12 +183,14 @@ public final class weMessage extends Application implements Constants {
     @Override
     public void onCreate() {
         super.onCreate();
+        instance = this;
 
-        if (AppLogger.USE_CRASHLYTICS){
-            Fabric.with(this, new Crashlytics());
-        }
+        updateDatabase();
+        generateSharedPreferences();
+        initNotificationChannel();
 
-        new MessageDatabase(this).getWritableDatabase().close();
+        File attachmentFolder = new File(getFilesDir(), weMessage.ATTACHMENT_FOLDER_NAME);
+        File chatIconsFolder = new File(getFilesDir(), weMessage.CHAT_ICONS_FOLDER_NAME);
 
         AndroidBase64Wrapper base64Wrapper = new AndroidBase64Wrapper();
         ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter(base64Wrapper);
@@ -171,22 +203,204 @@ public final class weMessage extends Application implements Constants {
                     }
                 });
 
+        if (AppLogger.USE_CRASHLYTICS) Fabric.with(this, new Crashlytics());
+
         AESCrypto.setMemoryAvailabilityCheck(true);
-        AESCrypto.setBase64Wrapper(new AndroidBase64Wrapper());
+        AESCrypto.setBase64Wrapper(base64Wrapper);
         AESCrypto.setPrngHelper(new AesPrngHelper());
 
         ClientMessage.setByteArrayAdapter(byteArrayAdapter);
         ServerMessage.setByteArrayAdapter(byteArrayAdapter);
 
         EmojiCompat.init(emojiConfig);
-
-        File attachmentFolder = new File(getFilesDir(), weMessage.ATTACHMENT_FOLDER_NAME);
-        File chatIconsFolder = new File(getFilesDir(), weMessage.CHAT_ICONS_FOLDER_NAME);
+        JobManager.create(this).addJobCreator(new SendMessageJobCreator());
 
         attachmentFolder.mkdir();
         chatIconsFolder.mkdir();
 
-        SharedPreferences preferences = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
+        this.attachmentFolder = attachmentFolder;
+        this.chatIconsFolder = chatIconsFolder;
+        this.currentSession = new Session();
+        this.messageDatabase = new MessageDatabase(this);
+        this.messageManager = new MessageManager(this);
+
+        if (!StringUtils.isEmpty(MmsManager.getPhoneNumber())){
+            Handle handle = getMessageDatabase().getHandleByHandleID(MmsManager.getPhoneNumber());
+
+            if (handle == null){
+                handle = new Handle(UUID.randomUUID(), MmsManager.getPhoneNumber(), Handle.HandleType.ME, false, false);
+                getMessageDatabase().addHandle(handle);
+            }
+            getCurrentSession().setSmsHandle(handle);
+        }
+
+        if (isSignedIn(true)){
+            if (!StringUtils.isEmpty(getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, ""))){
+                getCurrentSession().setAccount(getMessageDatabase().getAccountByEmail(getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, "")));
+            }
+        }
+
+        getMessageManager().initialize();
+        if (MmsManager.isDefaultSmsApp()) enableSmsMode();
+        else disableSmsMode();
+
+        IOUtils.setDeviceName();
+    }
+
+    public synchronized MessageDatabase getMessageDatabase(){
+        return messageDatabase;
+    }
+
+    public synchronized MessageManager getMessageManager(){
+        return messageManager;
+    }
+
+    public synchronized MmsDatabase getMmsDatabase(){
+        return mmsDatabase;
+    }
+
+    public synchronized MmsManager getMmsManager(){
+        return mmsManager;
+    }
+
+    public synchronized Session getCurrentSession(){
+        return currentSession;
+    }
+
+    public SharedPreferences getSharedPreferences(){
+        return getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
+    }
+
+    public synchronized File getAttachmentFolder(){
+        return attachmentFolder;
+    }
+
+    public synchronized File getChatIconsFolder(){
+        return chatIconsFolder;
+    }
+
+    public synchronized boolean isSignedIn(boolean iMessage){
+        if (iMessage){
+            return !getSharedPreferences().getBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT_EMAIL, true);
+        }else {
+            return !getSharedPreferences().getBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
+        }
+    }
+
+    public boolean isEmojiCompatInitialized(){
+        return isEmojiInitialized.get();
+    }
+
+    public synchronized boolean performNotification(String macGuid){
+        if (notificationCallbacks == null) return true;
+
+        return notificationCallbacks.onNotification(macGuid);
+    }
+
+    //todo re init messages
+
+    public synchronized void signIn(Account account){
+        SharedPreferences.Editor editor = getSharedPreferences().edit();
+
+        if (account != null){
+            getCurrentSession().setAccount(account);
+            getMessageManager().initialize();
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT_EMAIL, false);
+        }
+
+        editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
+        editor.apply();
+    }
+
+    public synchronized void signOut(boolean fullSignOut){
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        SharedPreferences.Editor editor = getSharedPreferences().edit();
+
+        if (fullSignOut){
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
+        }
+
+        editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT_EMAIL, true);
+        editor.apply();
+
+        if (fullSignOut){
+            if (getMmsManager() != null) getMmsManager().dumpMessages();
+        }
+
+        notificationManager.cancelAll();
+        getMessageManager().dumpMessages();
+        getCurrentSession().setAccount(null);
+    }
+
+    public synchronized void enableSmsMode(){
+        isDefaultSmsApplication.set(true);
+
+        getMessageDatabase().configureSmsMode();
+        mmsDatabase = new MmsDatabase(this);
+        mmsManager = new MmsManager(this);
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(weMessage.BROADCAST_SMS_MODE_ENABLED));
+    }
+
+    public synchronized void disableSmsMode(){
+        isDefaultSmsApplication.set(false);
+        getMessageDatabase().configureSmsMode();
+
+        if (getMmsManager() != null) getMmsManager().dumpMessages();
+        mmsManager = null;
+        mmsDatabase = null;
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(weMessage.BROADCAST_SMS_MODE_DISABLED));
+    }
+
+    public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){
+        this.notificationCallbacks = notificationCallbacks;
+    }
+
+    public synchronized void clearNotifications(String uuid){
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+            HashMap<Integer, String> toCancel = new HashMap<>();
+
+            for (StatusBarNotification notification : notificationManager.getActiveNotifications()){
+                if (StringUtils.isEmpty(notification.getTag())) continue;
+                if (notification.getTag().equals(weMessage.NOTIFICATION_TAG + uuid) || notification.getTag().equals(weMessage.NOTIFICATION_TAG)){
+                    toCancel.put(notification.getId(), notification.getTag());
+                }
+            }
+
+            for (Integer i : toCancel.keySet()){
+                notificationManager.cancel(toCancel.get(i), i);
+            }
+        }else {
+            notificationManager.cancelAll();
+        }
+    }
+
+    private void updateDatabase(){
+        new MessageDatabase(this).getWritableDatabase().close();
+    }
+
+    private void initNotificationChannel(){
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && notificationManager.getNotificationChannel(weMessage.NOTIFICATION_CHANNEL_NAME) == null) {
+            NotificationChannel channel = new NotificationChannel(weMessage.NOTIFICATION_CHANNEL_NAME, getString(R.string.notification_channel_name), NotificationManager.IMPORTANCE_HIGH);
+            AudioAttributes audioAttributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT).build();
+
+            channel.enableLights(true);
+            channel.enableVibration(true);
+            channel.setLightColor(Color.BLUE);
+            channel.setVibrationPattern(new long[]{1000, 1000});
+            channel.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), audioAttributes);
+
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+
+    private void generateSharedPreferences(){
+        SharedPreferences preferences = getSharedPreferences();
         int prefVersion = preferences.getInt(weMessage.SHARED_PREFERENCES_VERSION, -1);
 
         if (prefVersion != -1 && prefVersion != weMessage.WEMESSAGE_BUILD_VERSION){
@@ -221,131 +435,32 @@ public final class weMessage extends Application implements Constants {
             editor.apply();
         }
 
-        this.attachmentFolder = attachmentFolder;
-        this.chatIconsFolder = chatIconsFolder;
-        this.messageDatabase = new MessageDatabase(this);
+        if (!preferences.contains(weMessage.SHARED_PREFERENCES_MANUAL_PHONE_NUMBER)){
+            SharedPreferences.Editor editor = preferences.edit();
 
-        instance = this;
-
-        IOUtils.setDeviceName();
-    }
-
-    public synchronized MessageDatabase getMessageDatabase(){
-        return messageDatabase;
-    }
-
-    public synchronized MessageManager getMessageManager(){
-        if (messageManager == null){
-            messageManager = new MessageManager(this);
-        }
-        return messageManager;
-    }
-
-    public synchronized Account getCurrentAccount(){
-        if (currentAccount == null){
-            if (!isSignedIn()) throw new MessageDatabase.AccountNotLoggedInException();
-
-            return getMessageDatabase().getAccountByEmail(getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, null));
+            editor.putString(weMessage.SHARED_PREFERENCES_MANUAL_PHONE_NUMBER, "");
+            editor.apply();
         }
 
-        return currentAccount;
-    }
+        if (!preferences.contains(weMessage.SHARED_PREFERENCES_PROMPT_FOR_SMS)){
+            SharedPreferences.Editor editor = preferences.edit();
 
-    public synchronized File getAttachmentFolder(){
-        return attachmentFolder;
-    }
-
-    public synchronized File getChatIconsFolder(){
-        return chatIconsFolder;
-    }
-
-    public synchronized boolean isSignedIn(){
-        SharedPreferences sharedPreferences = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
-
-        return !sharedPreferences.getBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
-    }
-
-    public boolean isOfflineMode(){
-        return isOfflineMode.get();
-    }
-
-    public boolean isSessionRecent(){
-        return isSessionRecent.get();
-    }
-
-    public boolean isEmojiCompatInitialized(){
-        return isEmojiInitialized.get();
-    }
-
-    public synchronized boolean performNotification(String macGuid){
-        if (notificationCallbacks == null) return true;
-
-        return notificationCallbacks.onNotification(macGuid);
-    }
-
-    public synchronized void signIn(Account account, boolean offlineMode){
-        setCurrentAccount(account);
-        setOfflineMode(offlineMode);
-
-        isSessionRecent.set(true);
-
-        SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
-
-        editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
-        editor.apply();
-    }
-
-    public synchronized void signOut(){
-        isSessionRecent.set(false);
-
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        SharedPreferences.Editor editor = getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
-
-        notificationManager.cancelAll();
-        editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
-        editor.apply();
-
-        dumpMessageManager();
-        setCurrentAccount(null);
-    }
-
-    public void setOfflineMode(boolean value){
-        isOfflineMode.set(value);
-    }
-
-    public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){
-        this.notificationCallbacks = notificationCallbacks;
-    }
-
-    public synchronized void clearNotifications(String uuid){
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-            HashMap<Integer, String> toCancel = new HashMap<>();
-
-            for (StatusBarNotification notification : notificationManager.getActiveNotifications()){
-                if (StringUtils.isEmpty(notification.getTag())) continue;
-                if (notification.getTag().equals(weMessage.NOTIFICATION_TAG + uuid) || notification.getTag().equals(weMessage.NOTIFICATION_TAG)){
-                    toCancel.put(notification.getId(), notification.getTag());
-                }
-            }
-
-            for (Integer i : toCancel.keySet()){
-                notificationManager.cancel(toCancel.get(i), i);
-            }
-        }else {
-            notificationManager.cancelAll();
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_PROMPT_FOR_SMS, MmsManager.isPhone());
+            editor.apply();
         }
-    }
 
-    private synchronized void setCurrentAccount(Account account){
-        this.currentAccount = account;
-    }
+        if (!preferences.contains(weMessage.SHARED_PREFERENCES_SIGNED_OUT) || preferences.getBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false)){
+            SharedPreferences.Editor editor = preferences.edit();
 
-    public synchronized void dumpMessageManager(){
-        if (messageManager != null) {
-            messageManager.dumpAll(this);
-            messageManager = null;
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
+            editor.apply();
+        }
+
+        if (!preferences.contains(weMessage.SHARED_PREFERENCES_SIGNED_OUT_EMAIL)){
+            SharedPreferences.Editor editor = preferences.edit();
+
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT_EMAIL, true);
+            editor.apply();
         }
     }
 }

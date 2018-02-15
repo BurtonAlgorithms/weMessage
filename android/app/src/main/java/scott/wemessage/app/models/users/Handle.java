@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages.models.users;
+package scott.wemessage.app.models.users;
 
 import android.content.res.Resources;
 
@@ -116,12 +116,12 @@ public class Handle extends ContactInfo {
     }
 
     public Handle setDoNotDisturb(boolean isDoNotDisturb) {
-        this.isDoNotDisturb = isDoNotDisturb;
+        if (handleType != HandleType.ME) this.isDoNotDisturb = isDoNotDisturb;
         return this;
     }
 
     public Handle setBlocked(boolean isBlocked){
-        this.isBlocked = isBlocked;
+        if (handleType != HandleType.ME) this.isBlocked = isBlocked;
         return this;
     }
 

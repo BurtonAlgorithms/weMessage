@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.messages.models.users.Contact;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.users.Contact;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.ui.view.dialog.AlertDialogLayout;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.weMessage;
@@ -70,13 +70,13 @@ public class ContactUtils {
                         bundle.putString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON, context.getString(R.string.start_process));
                         alertDialogFragmentDouble.setArguments(bundle);
 
-                        if (context.getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).getBoolean(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW, true)) {
+                        if (weMessage.get().getSharedPreferences().getBoolean(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW, true)) {
                             alertDialogFragmentDouble.setOnDismiss(new Runnable() {
                                 @Override
                                 public void run() {
                                     if (context == null || fragmentManager == null) return;
 
-                                    context.getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit().putBoolean(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW, false).apply();
+                                    weMessage.get().getSharedPreferences().edit().putBoolean(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW, false).apply();
 
                                     Bundle bundle = new Bundle();
                                     DialogDisplayer.AlertDialogFragmentDouble alertDialogFragmentDouble = new DialogDisplayer.AlertDialogFragmentDouble();
@@ -158,7 +158,7 @@ public class ContactUtils {
 
                                 if (inputStream != null) {
                                     Bitmap photo = BitmapFactory.decodeStream(inputStream);
-                                    File newFile = new File(weMessage.get().getChatIconsFolder(), contact.getUuid().toString() + "Imported");
+                                    File newFile = new File(weMessage.get().getChatIconsFolder(), contact.getUuid().toString() + "Imported.png");
 
                                     newFile.createNewFile();
 
@@ -237,7 +237,19 @@ public class ContactUtils {
                 }
             });
 
+            setRetainInstance(true);
+
             return builder.create();
+        }
+
+        @Override
+        public void onDestroyView() {
+            Dialog dialog = getDialog();
+
+            if (dialog != null && getRetainInstance()) {
+                dialog.setDismissMessage(null);
+            }
+            super.onDestroyView();
         }
 
         @Override

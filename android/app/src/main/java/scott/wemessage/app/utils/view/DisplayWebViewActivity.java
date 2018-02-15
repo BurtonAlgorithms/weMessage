@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
@@ -14,9 +13,10 @@ import android.widget.TextView;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
+import scott.wemessage.app.ui.activities.abstracts.BaseActivity;
 import scott.wemessage.app.weMessage;
 
-public class DisplayWebViewActivity extends AppCompatActivity {
+public class DisplayWebViewActivity extends BaseActivity {
 
     private boolean loaded = false;
     private WebBundle webBundle;

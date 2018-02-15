@@ -64,16 +64,18 @@ import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.connection.IConnectionBinder;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
-import scott.wemessage.app.messages.models.ActionMessage;
-import scott.wemessage.app.messages.models.Attachment;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.MessageBase;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.GroupChat;
-import scott.wemessage.app.messages.models.users.ContactInfo;
-import scott.wemessage.app.messages.models.users.Handle;
-import scott.wemessage.app.ui.activities.ContactSelectActivity;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.messages.ActionMessage;
+import scott.wemessage.app.models.messages.Attachment;
+import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.messages.MessageBase;
+import scott.wemessage.app.models.sms.chats.SmsChat;
+import scott.wemessage.app.models.users.ContactInfo;
+import scott.wemessage.app.models.users.Handle;
+import scott.wemessage.app.sms.MmsManager;
 import scott.wemessage.app.ui.activities.ChatListActivity;
+import scott.wemessage.app.ui.activities.ContactSelectActivity;
 import scott.wemessage.app.ui.activities.ContactViewActivity;
 import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
@@ -86,7 +88,6 @@ import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.types.ReturnType;
@@ -139,28 +140,28 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ChatViewFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ChatViewFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ChatViewFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ChatViewFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_NEW_MESSAGE_ERROR)){
@@ -220,7 +221,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             Intent startingIntent = getActivity().getIntent();
 
             chatUuid = startingIntent.getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT);
-            editedName = ((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid)).getDisplayName();
+            editedName = ((GroupChat) weMessage.get().getMessageDatabase().getChatByIdentifier(chatUuid)).getDisplayName();
         }else {
             isInEditMode = savedInstanceState.getBoolean(BUNDLE_IS_IN_EDIT_MODE, isInEditMode);
 
@@ -313,7 +314,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 return false;
             }
         });
-        GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid);
+        GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByIdentifier(chatUuid);
 
         chatViewAdapter.loadChat(groupChat);
         toggleIsInChat(groupChat.isInChat(), false);
@@ -409,6 +410,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatUpdate(Chat oldData, final Chat newData) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -420,7 +423,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     @Override
                     public void run() {
                         if (chatViewAdapter != null) {
-                            if (newData.getUuid().toString().equals(chatUuid) && newData instanceof GroupChat) {
+                            if (newData.getIdentifier().equals(chatUuid) && newData instanceof GroupChat) {
                                 toggleIsInChat(newData.isInChat(), false);
                                 chatViewAdapter.loadChat((GroupChat) newData);
                             }
@@ -436,6 +439,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatRename(final Chat chat, String displayName) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -447,7 +452,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     @Override
                     public void run() {
                         if (chatViewAdapter != null){
-                            if (chat.getUuid().toString().equals(chatUuid)) {
+                            if (chat.getIdentifier().equals(chatUuid)) {
                                 chatViewAdapter.loadChat((GroupChat) chat);
                             }
                         }
@@ -459,6 +464,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onParticipantAdd(final Chat chat, Handle handle) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -470,7 +477,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     @Override
                     public void run() {
                         if (chatViewAdapter != null){
-                            if (chat.getUuid().toString().equals(chatUuid)) {
+                            if (chat.getIdentifier().equals(chatUuid)) {
                                 chatViewAdapter.loadChat((GroupChat) chat);
                             }
                         }
@@ -482,6 +489,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onParticipantRemove(final Chat chat, Handle handle) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -493,7 +502,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     @Override
                     public void run() {
                         if (chatViewAdapter != null){
-                            if (chat.getUuid().toString().equals(chatUuid)) {
+                            if (chat.getIdentifier().equals(chatUuid)) {
                                 chatViewAdapter.loadChat((GroupChat) chat);
                             }
                         }
@@ -505,6 +514,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onLeaveGroup(Chat chat) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -515,10 +526,12 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatDelete(final Chat chat) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (chat.getUuid().toString().equals(chatUuid)){
+                if (chat.getIdentifier().equals(chatUuid)){
                     Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
                     returnIntent.putExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON, getString(R.string.return_chat_list_chat_deleted));
 
@@ -531,6 +544,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatListRefresh(final List<Chat> chats) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -542,10 +557,19 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     @Override
                     public void run() {
                         if (chatViewAdapter != null){
+                            boolean chatFound = false;
+
                             for (Chat c : chats){
-                                if (c.getUuid().toString().equals(chatUuid) && c instanceof GroupChat){
+                                if (c.getIdentifier().equals(chatUuid) && c instanceof GroupChat){
                                     chatViewAdapter.loadChat((GroupChat) c);
+                                    chatFound = true;
+                                    break;
                                 }
+                            }
+
+                            if (!chatFound){
+                                startActivity(new Intent(weMessage.get(), ChatListActivity.class));
+                                getActivity().finish();
                             }
                         }
                     }
@@ -567,23 +591,24 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     public void onMessagesQueueFinish(List<MessageBase> messages) { }
 
     @Override
-    public void onMessagesRefresh() { }
-
-    @Override
     public void onActionMessageAdd(ActionMessage message) { }
 
     @Override
-    public void onMessageSendFailure(final JSONMessage jsonMessage, final ReturnType returnType) {
+    public void onMessageSendFailure(final ReturnType returnType) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                showMessageSendFailureSnackbar(jsonMessage, returnType);
+                showMessageSendFailureSnackbar(returnType);
             }
         });
     }
 
     @Override
     public void onActionPerformFailure(final JSONAction jsonAction, final ReturnType returnType) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -594,6 +619,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onAttachmentSendFailure(final FailReason failReason) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -604,6 +631,8 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onAttachmentReceiveFailure(final FailReason failReason) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -640,7 +669,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     private void toggleEditMode(boolean value, boolean saveChanges){
         if (value){
             isInEditMode = true;
-            editedName = ((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid)).getDisplayName();
+            editedName = ((GroupChat) weMessage.get().getMessageDatabase().getChatByIdentifier(chatUuid)).getDisplayName();
 
             chatViewAdapter.toggleEditMode(true, false);
             toolbarBackButton.setVisibility(View.GONE);
@@ -661,11 +690,12 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
             try {
                 if (saveChanges) {
-                    GroupChat oldVal = ((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid));
+                    GroupChat oldVal = ((GroupChat) weMessage.get().getMessageDatabase().getChatByIdentifier(chatUuid));
 
                     if (editedName != null && !editedName.equals(oldVal.getDisplayName())) {
                         if (!isConnectionServiceRunning()){
-                            showOfflineActionDialog(getString(R.string.offline_mode_action_rename));
+                            showOfflineActionDialog(getString(R.string.offline_mode_action_rename,
+                                    MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
                         }else if (isStillConnecting()){
                             showErroredSnackBar(getString(R.string.still_connecting_perform_action));
                         }else {
@@ -800,7 +830,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         }
 
         if (reloadLayout){
-            chatViewAdapter.loadChat((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid));
+            chatViewAdapter.loadChat((GroupChat) weMessage.get().getMessageDatabase().getChatByIdentifier(chatUuid));
         }
     }
 
@@ -933,26 +963,6 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         return images;
     }
 
-    private void goToLauncher(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
-        }
-    }
-
-    private void goToLauncherReconnect(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
-        }
-    }
-
     private boolean hasPermission(final String permission, String rationaleString, String alertTagId, final int requestCode){
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ContextCompat.checkSelfPermission(getActivity(), permission) != PackageManager.PERMISSION_GRANTED) {
             if (shouldShowRequestPermissionRationale(permission)){
@@ -1033,7 +1043,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
         alertDialogFragment.setOnDismiss(new Runnable() {
             @Override
             public void run() {
-                goToLauncherReconnect();
+                LaunchActivity.launchActivity(getActivity(), ChatViewFragment.this, true);
             }
         });
 
@@ -1149,7 +1159,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     ArrayList<String> allUris = new ArrayList<>();
 
                     try {
-                        for (Attachment a : weMessage.get().getMessageDatabase().getReversedAttachmentsInChat(groupChat.getUuid().toString(), 0L, Long.MAX_VALUE)) {
+                        for (Attachment a : weMessage.get().getMessageDatabase().getReversedAttachmentsInChat(groupChat.getIdentifier(), 0L, Long.MAX_VALUE)) {
                             String fileLoc = a.getFileLocation().getFileLocation();
 
                             if (!StringUtils.isEmpty(fileLoc) && !allUris.contains(fileLoc)) {
@@ -1215,7 +1225,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
             toggleEditMode(chat, isInEditMode, false);
 
-            if (chat.isInChat()){
+            if (chat.isInChat() && !(chat instanceof SmsChat)){
                 itemView.findViewById(R.id.chatViewDividerOne).setVisibility(View.VISIBLE);
                 chatLeaveButton.setVisibility(View.VISIBLE);
             }else {
@@ -1226,10 +1236,12 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
         public void toggleEditMode(GroupChat chat, boolean value, boolean saveChanges){
             if (value) {
-                if (chatViewNameSwitcher.getNextView().getId() == R.id.chatViewEditName) {
-                    chatViewNameSwitcher.showNext();
+                if (!(chat instanceof SmsChat)) {
+                    if (chatViewNameSwitcher.getNextView().getId() == R.id.chatViewEditName) {
+                        chatViewNameSwitcher.showNext();
+                    }
+                    chatViewEditName.setText(editedName);
                 }
-                chatViewEditName.setText(editedName);
                 chatViewEditPictureTextView.setVisibility(View.VISIBLE);
                 chatViewEditPictureTextView.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -1243,18 +1255,21 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
             if (!value) {
                 if (saveChanges){
-                    editedName = chatViewEditName.getText().toString();
-                    clearEditText(chatViewEditName, true);
+                    if (!(chat instanceof SmsChat)) {
+                        editedName = chatViewEditName.getText().toString();
+                        clearEditText(chatViewEditName, true);
+                    }
                 }else {
                     Glide.with(ChatViewFragment.this).load(IOUtils.getChatIconUri(chat, IOUtils.IconSize.LARGE)).into(chatViewPicture);
                 }
 
-                if (chatViewNameSwitcher.getNextView().getId() == R.id.chatViewName) {
-                    chatViewNameSwitcher.showNext();
+                if (!(chat instanceof SmsChat)) {
+                    if (chatViewNameSwitcher.getNextView().getId() == R.id.chatViewName) {
+                        chatViewNameSwitcher.showNext();
+                    }
+                    closeKeyboard();
+                    clearEditText(chatViewEditName, false);
                 }
-
-                closeKeyboard();
-                clearEditText(chatViewEditName, false);
 
                 chatViewEditPictureTextView.setVisibility(View.GONE);
                 chatViewPictureContainer.setOnClickListener(null);
@@ -1302,7 +1317,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                         GroupChat newChat = chat;
 
-                        weMessage.get().getMessageManager().updateChat(newChat.getUuid().toString(), newChat.setDoNotDisturb(b), true);
+                        weMessage.get().getMessageManager().updateChat(newChat.getIdentifier(), newChat.setDoNotDisturb(b), true);
                     }
                 });
 
@@ -1310,7 +1325,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                     @Override
                     public void onClick(View view) {
                         if (!isConnectionServiceRunning()){
-                            showOfflineActionDialog(getString(R.string.offline_mode_action_leave));
+                            showOfflineActionDialog(getString(R.string.offline_mode_action_leave, MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
                             return;
                         }
 
@@ -1359,10 +1374,10 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             chatContactRemoveButtonLayout.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid);
+                    GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByIdentifier(chatUuid);
 
                     if (!isConnectionServiceRunning()){
-                        showOfflineActionDialog(getString(R.string.offline_mode_action_remove));
+                        showOfflineActionDialog(getString(R.string.offline_mode_action_remove, MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
                         return;
                     }
 
@@ -1383,7 +1398,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             chatContactDisplayNameView.setText(handle.getDisplayName());
             Glide.with(ChatViewFragment.this).load(IOUtils.getContactIconUri(handle, IOUtils.IconSize.NORMAL)).into(chatContactPictureView);
 
-            swipeLayout.setSwipeEnabled(chat.isInChat());
+            swipeLayout.setSwipeEnabled(chat.isInChat() && !(chat instanceof SmsChat));
 
             swipeLayout.addDrag(SwipeLayout.DragEdge.Right, itemView.findViewById(R.id.chatContactRemoveButtonLayout));
             swipeLayout.addSwipeListener(new SwipeLayout.SwipeListener() {
@@ -1465,7 +1480,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
                 itemView.findViewById(R.id.mediaErrorTextView).setVisibility(View.VISIBLE);
             }
 
-            if (chat.isInChat()){
+            if (chat.isInChat() && !(chat instanceof SmsChat)){
                 itemView.findViewById(R.id.chatViewAddParticipant).setVisibility(View.VISIBLE);
             }else {
                 itemView.findViewById(R.id.chatViewAddParticipant).setVisibility(View.GONE);

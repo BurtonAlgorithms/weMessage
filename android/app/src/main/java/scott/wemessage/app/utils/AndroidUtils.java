@@ -31,7 +31,7 @@ public class AndroidUtils {
     }
 
     public static String getDeviceName(){
-        String deviceInfo = weMessage.get().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).getString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, "");
+        String deviceInfo = weMessage.get().getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, "");
 
         if (!StringUtils.isEmpty(deviceInfo)) {
             Device device = Device.fromString(deviceInfo);

@@ -1,5 +1,7 @@
 package scott.wemessage.app.ui.activities;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.app.ActivityManager;
@@ -8,26 +10,33 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.PorterDuff;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.CycleInterpolator;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -47,37 +56,49 @@ import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageCallbacks;
-import scott.wemessage.app.messages.models.ActionMessage;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.MessageBase;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.GroupChat;
-import scott.wemessage.app.messages.models.users.Contact;
-import scott.wemessage.app.messages.models.users.ContactInfo;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.messages.ActionMessage;
+import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.messages.MessageBase;
+import scott.wemessage.app.models.users.Account;
+import scott.wemessage.app.models.users.Contact;
+import scott.wemessage.app.models.users.ContactInfo;
+import scott.wemessage.app.models.users.Handle;
+import scott.wemessage.app.sms.MmsManager;
+import scott.wemessage.app.ui.activities.abstracts.BaseActivity;
+import scott.wemessage.app.ui.activities.abstracts.IAccountSwitcher;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.IOUtils;
+import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.crypto.BCrypt;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.ListUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ContactSelectActivity extends AppCompatActivity implements MessageCallbacks {
+public class ContactSelectActivity extends BaseActivity implements MessageCallbacks, IAccountSwitcher {
+
+    private static  final String BUNDLE_IS_SWITCH_ACCOUNTS_FRAGMENT_SHOWN = "bundleIsSwitchAccountsFragmentShown";
+    private static final String BUNDLE_SWITCH_ACCOUNTS_EMAIL = "bundleSwitchAccountsEmail";
 
     private int oldEditTextColor;
     private boolean isBoundToConnectionService = false;
+    private boolean isSwitchAccountsMode = false;
+    private boolean isSwitchAccountFragmentShown = false;
 
     private String callbackUuid;
     private String chatUuid;
     private String[] handleChatUuidMap;
+    private String selectedSwitchAccount;
 
     private EditText searchContactEditText;
     private RecyclerView contactsRecyclerView;
     private ContactAdapter contactAdapter;
+    private FrameLayout switchAccountsFragmentContainer;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
 
     private BroadcastReceiver contactSelectBroadcastReceiver = new BroadcastReceiver() {
@@ -89,28 +110,28 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(ContactSelectActivity.this, null, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(ContactSelectActivity.this, null, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(ContactSelectActivity.this, null, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(ContactSelectActivity.this, null, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_SEND_MESSAGE_ERROR)){
@@ -145,9 +166,12 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         if (savedInstanceState != null){
             chatUuid = savedInstanceState.getString(weMessage.BUNDLE_CONVERSATION_CHAT);
             handleChatUuidMap = savedInstanceState.getStringArray(weMessage.BUNDLE_HANDLE_UUID);
+            isSwitchAccountsMode = savedInstanceState.getBoolean(weMessage.BUNDLE_SWITCH_ACCOUNTS_MODE);
+            selectedSwitchAccount = savedInstanceState.getString(BUNDLE_SWITCH_ACCOUNTS_EMAIL);
         }else {
             chatUuid = getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_CHAT);
             handleChatUuidMap = getIntent().getStringArrayExtra(weMessage.BUNDLE_HANDLE_UUID);
+            isSwitchAccountsMode = getIntent().getBooleanExtra(weMessage.BUNDLE_SWITCH_ACCOUNTS_MODE, false);
         }
 
         IntentFilter broadcastIntentFilter = new IntentFilter();
@@ -170,6 +194,7 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
 
         searchContactEditText = findViewById(R.id.searchContactEditText);
         contactsRecyclerView = findViewById(R.id.contactsRecyclerView);
+        switchAccountsFragmentContainer = findViewById(R.id.switchAccountsFragmentContainer);
         oldEditTextColor = searchContactEditText.getCurrentTextColor();
 
         findViewById(R.id.contactSelectCancelButton).setOnClickListener(new View.OnClickListener() {
@@ -182,6 +207,34 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         contactAdapter = new ContactAdapter();
         contactsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         contactsRecyclerView.setAdapter(contactAdapter);
+
+        ViewGroup.LayoutParams layoutParams = switchAccountsFragmentContainer.getLayoutParams();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        layoutParams.height = displayMetrics.heightPixels / 2;
+
+        switchAccountsFragmentContainer.setLayoutParams(layoutParams);
+
+        searchContactEditText.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (isSwitchAccountFragmentShown){
+                    toggleSwitchAccountsFragment(null, false, true);
+                }
+                return false;
+            }
+        });
+
+        contactsRecyclerView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (isSwitchAccountFragmentShown){
+                    toggleSwitchAccountsFragment(null, false, true);
+                }
+                return false;
+            }
+        });
+
 
         searchContactEditText.addTextChangedListener(new TextWatcher() {
             private Timer timer = new Timer();
@@ -238,6 +291,21 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
                         return true;
                     }
 
+                    if (isSwitchAccountsMode){
+                        ContactInfo attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
+
+                        if (attemptedSearchContact != null){
+                            clearEditText(searchContactEditText, true);
+                            performAction(attemptedSearchContact.pullHandle(false).getHandleID());
+                            return true;
+                        }else {
+                            closeKeyboard();
+                            invalidateField(searchContactEditText);
+                            showErroredSnackbar(getString(R.string.account_lookup_not_found), 5);
+                            return true;
+                        }
+                    }
+
                     if (!StringUtils.isEmpty(handleChatUuidMap[0])){
                         ContactInfo attemptedSearchContact = contactAdapter.getContactFromSearchKey(text);
 
@@ -284,6 +352,10 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
             }
         });
 
+        if (savedInstanceState != null && savedInstanceState.getBoolean(BUNDLE_IS_SWITCH_ACCOUNTS_FRAGMENT_SHOWN)){
+            toggleSwitchAccountsFragment(selectedSwitchAccount,true, false);
+        }
+
         ArrayList<ContactInfo> contacts = new ArrayList<>(weMessage.get().getMessageManager().getContacts().values());
 
         contactAdapter.refreshList(contacts);
@@ -294,6 +366,13 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
     protected void onSaveInstanceState(Bundle outState) {
         outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, chatUuid);
         outState.putStringArray(weMessage.BUNDLE_HANDLE_UUID, handleChatUuidMap);
+        outState.putBoolean(weMessage.BUNDLE_SWITCH_ACCOUNTS_MODE, isSwitchAccountsMode);
+        outState.putBoolean(BUNDLE_IS_SWITCH_ACCOUNTS_FRAGMENT_SHOWN, isSwitchAccountFragmentShown);
+
+        if (isSwitchAccountFragmentShown){
+            outState.putString(BUNDLE_SWITCH_ACCOUNTS_EMAIL, selectedSwitchAccount);
+            toggleSwitchAccountsFragment(null, false, false);
+        }
 
         super.onSaveInstanceState(outState);
     }
@@ -395,13 +474,10 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
     public void onMessagesQueueFinish(List<MessageBase> messages) { }
 
     @Override
-    public void onMessagesRefresh() { }
-
-    @Override
     public void onActionMessageAdd(ActionMessage message) { }
 
     @Override
-    public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) { }
+    public void onMessageSendFailure(ReturnType returnType) { }
 
     @Override
     public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) { }
@@ -412,8 +488,22 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
     @Override
     public void onAttachmentReceiveFailure(FailReason failReason) { }
 
+    @Override
+    public void onAccountSwitched() {
+        toggleSwitchAccountsFragment(null, false, true);
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                goToPreviousView();
+            }
+        }, 260L);
+    }
+
     private void performAction(String arg){
-        if (!StringUtils.isEmpty(chatUuid)){
+        if (isSwitchAccountsMode){
+            toggleSwitchAccountsFragment(arg, !isSwitchAccountFragmentShown, true);
+        }else if (!StringUtils.isEmpty(chatUuid)){
             performAddParticipantAction(arg);
         }else if (!StringUtils.isEmpty(handleChatUuidMap[0])){
             addHandleToContact(arg);
@@ -422,13 +512,13 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
 
     private void performAddParticipantAction(String participant){
         if (!isServiceRunning(ConnectionService.class)){
-            DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment =
-                    DialogDisplayer.generateOfflineDialog(this, getString(R.string.offline_mode_action_add));
+            DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment = DialogDisplayer.generateOfflineDialog(this,
+                    getString(R.string.offline_mode_action_add, MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
 
             alertDialogFragment.setOnDismiss(new Runnable() {
                 @Override
                 public void run() {
-                    goToLauncherReconnect();
+                    LaunchActivity.launchActivity(ContactSelectActivity.this, null, true);
                 }
             });
 
@@ -436,7 +526,7 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
             return;
         }
 
-        serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingAddParticipantAction(((GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid)), participant);
+        serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingAddParticipantAction(((GroupChat) weMessage.get().getMessageDatabase().getChatByIdentifier(chatUuid)), participant);
 
         new Handler().postDelayed(new Runnable() {
             @Override
@@ -458,9 +548,73 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         }, 100L);
     }
 
+    private void toggleSwitchAccountsFragment(final String email, boolean value, boolean performAnimation){
+        if (isSwitchAccountFragmentShown != value){
+            if (value){
+                isSwitchAccountFragmentShown = true;
+
+                if (performAnimation) {
+                    switchAccountsFragmentContainer.animate().alpha(1.0f).translationY(0).setDuration(250).setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            super.onAnimationStart(animation);
+
+                            handleSwitchAccountsFragmentOpen(email);
+                            switchAccountsFragmentContainer.setVisibility(View.VISIBLE);
+                        }
+                    });
+                }else {
+                    handleSwitchAccountsFragmentOpen(email);
+                    switchAccountsFragmentContainer.setVisibility(View.VISIBLE);
+                    switchAccountsFragmentContainer.animate().alpha(1.0f).translationY(0).setDuration(1);
+                }
+            }else {
+                isSwitchAccountFragmentShown = false;
+
+                int height = switchAccountsFragmentContainer.getHeight();
+
+                if (performAnimation) {
+                    switchAccountsFragmentContainer.animate().alpha(0.f).translationY(height).setDuration(250).setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            super.onAnimationEnd(animation);
+
+                            handleSwitchAccountsFragmentClose();
+                            switchAccountsFragmentContainer.setVisibility(View.GONE);
+                        }
+                    });
+                }else {
+                    handleSwitchAccountsFragmentClose();
+                    switchAccountsFragmentContainer.setVisibility(View.GONE);
+                    switchAccountsFragmentContainer.animate().alpha(0.f).translationY(height).setDuration(1);
+                }
+            }
+        }
+    }
+
+    private void handleSwitchAccountsFragmentOpen(String email){
+        closeKeyboard();
+
+        SwitchAccountsFragment switchAccountsFragment = new SwitchAccountsFragment();
+        Bundle popupArgs = new Bundle();
+
+        popupArgs.putString(BUNDLE_SWITCH_ACCOUNTS_EMAIL, email);
+        switchAccountsFragment.setArguments(popupArgs);
+        switchAccountsFragment.setCallbacks(this);
+
+        getSupportFragmentManager().beginTransaction().add(R.id.switchAccountsFragmentContainer, switchAccountsFragment).commit();
+    }
+
+    private void handleSwitchAccountsFragmentClose(){
+        getSupportFragmentManager().beginTransaction().remove(getSupportFragmentManager().findFragmentById(R.id.switchAccountsFragmentContainer)).commit();
+    }
+
     private void goToPreviousView(){
         Intent launcherIntent;
-        if (!StringUtils.isEmpty(chatUuid)) {
+
+        if (isSwitchAccountsMode){
+            launcherIntent = new Intent(weMessage.get(), SettingsActivity.class);
+        }else if (!StringUtils.isEmpty(chatUuid)) {
             launcherIntent = new Intent(weMessage.get(), ChatViewActivity.class);
             launcherIntent.putExtra(weMessage.BUNDLE_CONVERSATION_CHAT, chatUuid);
         }else {
@@ -553,26 +707,6 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         }
     }
 
-    private void goToLauncher(){
-        if (!isFinishing() && !isDestroyed()) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
-
-            startActivity(launcherIntent);
-            finish();
-        }
-    }
-
-    private void goToLauncherReconnect(){
-        if (!isFinishing() && !isDestroyed()) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            startActivity(launcherIntent);
-            finish();
-        }
-    }
-
     private boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -594,11 +728,13 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
     }
 
     private boolean isContactMe(ContactInfo contactInfo){
+        if (weMessage.get().getCurrentSession().isMe(contactInfo)) return true;
+
         if (contactInfo instanceof Handle){
-            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || ((Handle) contactInfo).getHandleType() == Handle.HandleType.ME;
+            return ((Handle) contactInfo).getHandleType() == Handle.HandleType.ME;
         }else if (contactInfo instanceof Contact){
             for (Handle h : ((Contact) contactInfo).getHandles()){
-                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || h.getHandleType() == Handle.HandleType.ME) return true;
+                if (h.getHandleType() == Handle.HandleType.ME) return true;
             }
         }
         return false;
@@ -614,6 +750,188 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         }
 
         return false;
+    }
+
+    private boolean excludeContact(ContactInfo contact){
+        if (isSwitchAccountsMode){
+            return !(isContactMe(contact) && AuthenticationUtils.isValidEmailFormat(contact.pullHandle(false).getHandleID()));
+        }
+
+        if (isContactMe(contact) || isContactBlocked(contact)) return true;
+
+        if (!StringUtils.isEmpty(chatUuid)) {
+            GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByIdentifier(chatUuid);
+
+            for (Handle h : groupChat.getParticipants()) {
+                if (contact.equals(h)) return true;
+            }
+        }else if (!StringUtils.isEmpty(handleChatUuidMap[0])) {
+            if (contact instanceof Handle) return true;
+        }
+
+        return false;
+    }
+
+    public static class SwitchAccountsFragment extends Fragment {
+        private IAccountSwitcher callbacks;
+
+        int oldEditTextColor;
+        EditText passwordEditText;
+        Button switchAccountButton;
+        String accountEmail;
+
+        @Nullable
+        @Override
+        public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+            View view = inflater.inflate(R.layout.fragment_switch_accounts_password, container, false);
+
+            accountEmail = getArguments().getString(BUNDLE_SWITCH_ACCOUNTS_EMAIL);
+            passwordEditText = view.findViewById(R.id.switchAccountsEnterPasswordEditText);
+            switchAccountButton = view.findViewById(R.id.switchAccountButton);
+            oldEditTextColor = passwordEditText.getCurrentTextColor();
+
+            passwordEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (hasFocus) {
+                        resetEditText(passwordEditText);
+                    }
+                }
+            });
+
+            passwordEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    if (actionId == EditorInfo.IME_ACTION_DONE) {
+                        clearEditText(passwordEditText, true);
+                        switchAccount(accountEmail, passwordEditText.getText().toString());
+                    }
+                    return false;
+                }
+            });
+
+            switchAccountButton.setOnClickListener(new OnClickWaitListener(500L) {
+                @Override
+                public void onWaitClick(View v) {
+                    switchAccount(accountEmail, passwordEditText.getText().toString());
+                }
+            });
+
+            return view;
+        }
+
+        void setCallbacks(IAccountSwitcher callbacks){
+            this.callbacks = callbacks;
+        }
+
+        private void switchAccount(String email, String password){
+            closeKeyboard();
+            clearEditText(passwordEditText, false);
+
+            if (StringUtils.isEmpty(password)) {
+                invalidateField(passwordEditText);
+                generateInvalidSnackBar(getView(), getString(R.string.no_password)).show();
+                return;
+            }
+
+            AuthenticationUtils.PasswordValidateType validateType = AuthenticationUtils.isValidPasswordFormat(password);
+
+            if (validateType == AuthenticationUtils.PasswordValidateType.LENGTH_TOO_SMALL) {
+                invalidateField(passwordEditText);
+                generateInvalidSnackBar(getView(), getString(R.string.password_too_short, weMessage.MINIMUM_PASSWORD_LENGTH)).show();
+                return;
+            }
+
+            if (validateType == AuthenticationUtils.PasswordValidateType.PASSWORD_TOO_EASY) {
+                invalidateField(passwordEditText);
+                generateInvalidSnackBar(getView(), getString(R.string.password_too_easy)).show();
+                return;
+            }
+
+            resetEditText(passwordEditText);
+
+            Account account = weMessage.get().getMessageDatabase().getAccountByEmail(email);
+
+            if (account == null){
+                generateInvalidSnackBar(getView(), getString(R.string.account_lookup_not_found)).show();
+                return;
+            }
+
+            if (!BCrypt.checkPassword(password, account.getEncryptedPassword())){
+                invalidateField(passwordEditText);
+                generateInvalidSnackBar(getView(), getString(R.string.offline_mode_incorrect_password)).show();
+                return;
+            }
+
+            weMessage.get().getSharedPreferences().edit().putString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, email)
+                    .putString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, account.getEncryptedPassword()).apply();
+            weMessage.get().signOut(false);
+            weMessage.get().signIn(account);
+
+            if (callbacks != null) callbacks.onAccountSwitched();
+        }
+
+        private void invalidateField(final EditText editText){
+            ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), getResources().getColor(R.color.colorHeader), getResources().getColor(R.color.invalidRed));
+            colorAnimation.setDuration(200);
+            colorAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    editText.getBackground().setColorFilter((int) animation.getAnimatedValue(), PorterDuff.Mode.SRC_ATOP);
+                    editText.setTextColor((int) animation.getAnimatedValue());
+                }
+            });
+
+            Animation invalidShake = AnimationUtils.loadAnimation(getActivity(), R.anim.invalid_shake);
+            invalidShake.setInterpolator(new CycleInterpolator(7F));
+
+            colorAnimation.start();
+            editText.startAnimation(invalidShake);
+        }
+
+        private void resetEditText(EditText editText){
+            editText.getBackground().setColorFilter(getResources().getColor(R.color.colorHeader), PorterDuff.Mode.SRC_ATOP);
+            editText.setTextColor(oldEditTextColor);
+        }
+
+        private void clearEditText(final EditText editText, boolean closeKeyboard){
+            if (closeKeyboard) {
+                closeKeyboard();
+            }
+
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    editText.clearFocus();
+                }
+            }, 100);
+        }
+
+        private void closeKeyboard(){
+            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+
+            if (getActivity().getCurrentFocus() != null) {
+                imm.hideSoftInputFromWindow(getActivity().getCurrentFocus().getWindowToken(), 0);
+            }
+        }
+
+        private Snackbar generateInvalidSnackBar(View view, String message){
+            final Snackbar snackbar = Snackbar.make(view, message, 5000);
+
+            snackbar.setAction(getString(R.string.dismiss_button), new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackbar.dismiss();
+                }
+            });
+            snackbar.setActionTextColor(getResources().getColor(R.color.brightRedText));
+
+            View snackbarView = snackbar.getView();
+            TextView textView = snackbarView.findViewById(android.support.design.R.id.snackbar_text);
+            textView.setMaxLines(5);
+
+            return snackbar;
+        }
     }
 
     private class ContactHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -636,19 +954,21 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         }
 
         public void bind(ContactInfo contact){
-            if (!isContactMe(contact)) {
+            if (!excludeContact(contact)) {
                 this.contact = contact;
 
                 contactDisplayNameView.setText(contact.getDisplayName());
-                contactHandle.setText(contact.pullHandle(StringUtils.isEmpty(handleChatUuidMap[0])).getHandleID());
+                contactHandle.setText(contact.pullHandle((handleChatUuidMap != null && StringUtils.isEmpty(handleChatUuidMap[0])) && !isSwitchAccountsMode).getHandleID());
 
-                Glide.with(ContactSelectActivity.this).load(IOUtils.getContactIconUri(contact.pullHandle(StringUtils.isEmpty(handleChatUuidMap[0])), IOUtils.IconSize.NORMAL)).into(contactPictureView);
+                Glide.with(ContactSelectActivity.this).load(IOUtils.getContactIconUri(contact.pullHandle((handleChatUuidMap != null && StringUtils.isEmpty(handleChatUuidMap[0])) && !isSwitchAccountsMode), IOUtils.IconSize.NORMAL)).into(contactPictureView);
             }
         }
 
         @Override
         public void onClick(View view) {
-            if (!StringUtils.isEmpty(handleChatUuidMap[0])){
+            if (isSwitchAccountsMode){
+                performAction(contact.pullHandle(false).getHandleID());
+            }else if (!StringUtils.isEmpty(handleChatUuidMap[0])){
                 performAction(contact.findRoot().getUuid().toString());
             }else if (!StringUtils.isEmpty(chatUuid)) {
                 performAction(contact.pullHandle(true).getHandleID());
@@ -698,7 +1018,7 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
 
         public void setOriginalList(ArrayList<ContactInfo> contacts){
             for (ContactInfo c : contacts){
-                if (!isContactBlocked(c)){
+                if (!excludeContact(c)){
                     originalList.add(c);
                 }
             }
@@ -746,7 +1066,7 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (!isContactMe(c) && !excludeContact(c) && !isContactBlocked(c)){
+                    if (!excludeContact(c)){
                         if (c instanceof Contact && contacts.contains(new SearchableContact(c))) contacts.removeAll(Collections.singleton(new SearchableContact(c)));
 
                         contacts.add(new SearchableContact(c));
@@ -757,7 +1077,7 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         }
 
         public void addContactToOriginal(ContactInfo c){
-            if (!isContactMe(c)  && !excludeContact(c) && !isContactBlocked(c)){
+            if (!excludeContact(c)){
                 if (c instanceof Contact && originalList.contains(c)) originalList.removeAll(Collections.singleton(c));
 
                 originalList.add(c);
@@ -765,18 +1085,16 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         }
 
         public void updateContact(ContactInfo oldData, ContactInfo newData){
-            if (!isContactMe(newData) && !excludeContact(newData)) {
+            if (!excludeContact(newData)) {
 
                 new AsyncTask<ContactInfo, Void, Integer>() {
                     @Override
                     protected Integer doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (SearchableContact searchableContact : contacts) {
+                        for (SearchableContact searchableContact : new ArrayList<>(contacts)) {
                             ContactInfo contactInfo = searchableContact.getContact();
 
                             if (contactInfo.equals(params[0])) {
-                                if (isContactBlocked(params[0])) break;
-
                                 if (contactInfo instanceof Handle) {
                                     contacts.set(i, new SearchableContact(params[0]));
                                     return i;
@@ -822,13 +1140,13 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         }
 
         public void updateContactToOriginal(ContactInfo oldData, ContactInfo newData){
-            if (!isContactMe(newData) && !excludeContact(newData)) {
+            if (!excludeContact(newData)) {
                 new AsyncTask<ContactInfo, Void, Void>() {
                     @Override
                     protected Void doInBackground(ContactInfo... params) {
                         int i = 0;
 
-                        for (ContactInfo contactInfo : originalList) {
+                        for (ContactInfo contactInfo : new ArrayList<>(originalList)) {
                             if (contactInfo.equals(params[0])) {
                                 if (contactInfo instanceof Handle) {
                                     originalList.set(i, params[0]);
@@ -867,12 +1185,12 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         }
 
         public void removeContact(ContactInfo c){
-            if (!isContactMe(c)) {
+            if (!excludeContact(c)) {
                 new AsyncTask<ContactInfo, Void, Integer>() {
                     @Override
                     protected Integer doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (SearchableContact contact : contacts) {
+                        for (SearchableContact contact : new ArrayList<>(contacts)) {
                             ContactInfo contactInfo = contact.getContact();
 
                             if (contactInfo.equals(params[0])) {
@@ -897,12 +1215,12 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
         }
 
         public void removeContactFromOriginal(ContactInfo c){
-            if (!isContactMe(c)) {
+            if (!excludeContact(c)) {
                 new AsyncTask<ContactInfo, Void, Void>() {
                     @Override
                     protected Void doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (ContactInfo contact : originalList) {
+                        for (ContactInfo contact : new ArrayList<>(originalList)) {
                             if (contact.equals(params[0])) {
                                 originalList.remove(i);
                                 break;
@@ -926,7 +1244,7 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
 
                     for (Object o : lists[0]){
                         if (o instanceof ContactInfo){
-                            if (!isContactMe((ContactInfo) o) && !excludeContact((ContactInfo) o) && !isContactBlocked((ContactInfo) o)) {
+                            if (!excludeContact((ContactInfo) o)) {
                                 unsortedList.add(new SearchableContact((ContactInfo) o));
                             }
                         }
@@ -951,19 +1269,6 @@ public class ContactSelectActivity extends AppCompatActivity implements MessageC
                     }
                 }
             }.execute(contactsList);
-        }
-
-        private boolean excludeContact(ContactInfo contact){
-            if (!StringUtils.isEmpty(chatUuid)) {
-                GroupChat groupChat = (GroupChat) weMessage.get().getMessageDatabase().getChatByUuid(chatUuid);
-
-                for (Handle h : groupChat.getParticipants()) {
-                    if (contact.equals(h)) return true;
-                }
-            }else if (!StringUtils.isEmpty(handleChatUuidMap[0])) {
-                if (contact instanceof Handle) return true;
-            }
-            return false;
         }
     }
 

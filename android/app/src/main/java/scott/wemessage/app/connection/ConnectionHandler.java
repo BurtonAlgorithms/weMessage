@@ -1,8 +1,8 @@
 package scott.wemessage.app.connection;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.content.LocalBroadcastManager;
@@ -11,6 +11,7 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -45,14 +46,14 @@ import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
-import scott.wemessage.app.messages.models.users.Account;
-import scott.wemessage.app.messages.models.Attachment;
-import scott.wemessage.app.messages.models.users.Contact;
-import scott.wemessage.app.messages.models.users.Handle;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.GroupChat;
-import scott.wemessage.app.messages.models.chats.PeerChat;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.chats.PeerChat;
+import scott.wemessage.app.models.messages.Attachment;
+import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.users.Account;
+import scott.wemessage.app.models.users.Contact;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.security.CryptoFile;
 import scott.wemessage.app.security.CryptoType;
 import scott.wemessage.app.security.DecryptionTask;
@@ -60,6 +61,7 @@ import scott.wemessage.app.security.EncryptionTask;
 import scott.wemessage.app.security.FileDecryptionTask;
 import scott.wemessage.app.security.KeyTextPair;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
+import scott.wemessage.app.sms.MmsManager;
 import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
@@ -122,12 +124,14 @@ public final class ConnectionHandler extends Thread {
     private boolean fastConnect = false;
     private String emailPlainText;
     private String passwordPlainText, passwordHashedText;
+    private String failoverIpAddress;
 
-    protected ConnectionHandler(ConnectionService service, String ipAddress, int port, String emailPlainText, String password, boolean alreadyHashed){
+    protected ConnectionHandler(ConnectionService service, String ipAddress, int port, String emailPlainText, String password, boolean alreadyHashed, String failoverIpAddress){
         this.service = service;
         this.ipAddress = ipAddress;
         this.port = port;
         this.emailPlainText = emailPlainText;
+        this.failoverIpAddress = failoverIpAddress;
 
         if (alreadyHashed){
             this.passwordHashedText = password;
@@ -298,7 +302,7 @@ public final class ConnectionHandler extends Thread {
                         }
 
                         message.setAttachments(new ArrayList<>(passedAttachments.values()));
-                        weMessage.get().getMessageManager().updateMessage(message.getUuid().toString(), message, false);
+                        weMessage.get().getMessageManager().updateMessage(message.getIdentifier(), message, false);
 
                         for (Attachment a : message.getFailedAttachments().keySet()){
                             weMessage.get().getMessageManager().alertAttachmentSendFailure(a, message.getFailedAttachments().get(a));
@@ -306,7 +310,7 @@ public final class ConnectionHandler extends Thread {
                     }
 
                     connectionMessagesMap.put(clientMessage.getMessageUuid(), clientMessage);
-                    messageAndConnectionMessageMap.put(clientMessageUuid, message.getUuid().toString());
+                    messageAndConnectionMessageMap.put(clientMessageUuid, message.getIdentifier());
 
                     sendOutgoingObject(weMessage.JSON_NEW_MESSAGE + outgoingJson);
                 }catch(Exception ex){
@@ -441,15 +445,13 @@ public final class ConnectionHandler extends Thread {
             hostToCheck = ipAddress + ":" + port;
         }
 
-        SharedPreferences sharedPref = getParentService().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
+        SharedPreferences sharedPref = weMessage.get().getSharedPreferences();
         fastConnect = (sharedPref.getString(weMessage.SHARED_PREFERENCES_LAST_HOST, "").equals(hostToCheck) && sharedPref.getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, "").equalsIgnoreCase(emailPlainText));
 
         if (!fastConnect) {
             try {
                 Thread.sleep(TIME_TO_CONNECT * 1000);
-            } catch (Exception ex) {
-                AppLogger.error(TAG, "An error occurred while trying to make a thread sleep", ex);
-            }
+            } catch (Exception ex) { }
         }
 
         try {
@@ -462,45 +464,61 @@ public final class ConnectionHandler extends Thread {
             synchronized (inputStreamLock) {
                 inputStream = new ObjectInputStream(getConnectionSocket().getInputStream());
             }
-        }catch (UnknownHostException | ConnectException ex){
-            if (isRunning.get()){
-                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR, null);
-                getParentService().endService();
-            }
-            return;
-        }catch (NoRouteToHostException ex){
-            if (isRunning.get()) {
-                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_ERROR, null);
-                getParentService().endService();
-            }
-            return;
-        }catch (SocketTimeoutException ex){
-            if (isRunning.get()) {
-                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_TIMEOUT, null);
-                getParentService().endService();
-            }
-            return;
-        }catch (SocketException ex){
-            if (isRunning.get()) {
-                String stacktrace = getStackTrace(ex);
+        }catch (IOException ex){
+            try {
+                if (getInputStream() != null) getInputStream().close();
+            }catch (Exception exc){}
 
-                if (stacktrace.contains("Connection reset") || stacktrace.contains("Software caused connection abort")) {
-                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR, null);
-                    getParentService().endService();
+            try {
+                if (getOutputStream() != null) getOutputStream().close();
+            }catch (Exception exc){}
+
+            try {
+                getConnectionSocket().close();
+            }catch (Exception exc){}
+
+            boolean attemptReconnect = false;
+            String failoverIp = null;
+            int port = -1;
+
+            if (!StringUtils.isEmpty(failoverIpAddress)){
+                if (failoverIpAddress.contains(":")){
+                    String[] split = failoverIpAddress.split(":");
+                    try {
+                        port = Integer.parseInt(split[1]);
+                        failoverIp = split[0];
+                        attemptReconnect = true;
+                    }catch (Exception exception){ }
                 }else {
-                    AppLogger.error(TAG, "An error occurred while connecting to the weServer.", ex);
-                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_ERROR, null);
-                    getParentService().endService();
+                    failoverIp = failoverIpAddress;
+                    port = weMessage.DEFAULT_PORT;
+                    attemptReconnect = true;
                 }
             }
-            return;
-        }catch(IOException ex){
-            if (isRunning.get()) {
-                AppLogger.error(TAG, "An error occurred while connecting to the weServer.", ex);
-                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_ERROR, null);
-                getParentService().endService();
+
+            if (attemptReconnect){
+                synchronized (socketLock) {
+                    connectionSocket = new Socket();
+                }
+
+                try {
+                    getConnectionSocket().connect(new InetSocketAddress(failoverIp, port), weMessage.CONNECTION_TIMEOUT_WAIT * 1000);
+
+                    synchronized (outputStreamLock) {
+                        outputStream = new ObjectOutputStream(getConnectionSocket().getOutputStream());
+                    }
+
+                    synchronized (inputStreamLock) {
+                        inputStream = new ObjectInputStream(getConnectionSocket().getInputStream());
+                    }
+                }catch (IOException exc){
+                    handleConnectExceptions(exc);
+                    return;
+                }
+            }else {
+                handleConnectExceptions(ex);
+                return;
             }
-            return;
         }
 
         while (isRunning.get() && !hasTriedAuthenticating.get()){
@@ -553,7 +571,7 @@ public final class ConnectionHandler extends Thread {
                 boolean socketOpenCheck = false;
 
                 try {
-                    if (getInputStream().read() == -1){
+                    if (getStackTrace(ex).contains("Socket closed") || getInputStream().read() == -1){
                         Bundle extras = new Bundle();
                         extras.putString(weMessage.BUNDLE_DISCONNECT_REASON_ALTERNATE_MESSAGE, getParentService().getString(R.string.connection_error_authentication_message));
                         sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_ERROR, extras);
@@ -600,6 +618,14 @@ public final class ConnectionHandler extends Thread {
                     System.gc();
                     weMessage.get().getMessageManager().alertAttachmentReceiveFailure(FailReason.MEMORY);
                     continue;
+                }catch (SocketException ex){
+                    if (getStackTrace(ex).contains("Socket closed")){
+                        sendLocalBroadcast(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED, null);
+                        getParentService().endService();
+                        return;
+                    }else {
+                        throw ex;
+                    }
                 }
 
                 if (incomingObject instanceof Heartbeat) continue;
@@ -677,21 +703,21 @@ public final class ConnectionHandler extends Thread {
                 if (incoming.startsWith(weMessage.JSON_SUCCESSFUL_CONNECTION)) {
                     isConnected.set(true);
 
-                    if (weMessage.get().isSessionRecent()) weMessage.get().signOut();
+                    weMessage.get().signOut(false);
 
                     Account currentAccount = new Account().setEmail(emailPlainText.toLowerCase()).setEncryptedPassword(passwordHashedText);
 
                     if (database.getAccountByEmail(emailPlainText) == null) {
                         currentAccount.setUuid(UUID.randomUUID());
 
-                        weMessage.get().signIn(currentAccount, false);
                         database.addAccount(currentAccount);
+                        weMessage.get().signIn(currentAccount);
                     } else {
                         UUID oldUUID = database.getAccountByEmail(emailPlainText).getUuid();
                         currentAccount.setUuid(oldUUID);
 
-                        weMessage.get().signIn(currentAccount, false);
                         database.updateAccount(oldUUID.toString(), currentAccount);
+                        weMessage.get().signIn(currentAccount);
                     }
 
                     String hostToSave;
@@ -702,10 +728,11 @@ public final class ConnectionHandler extends Thread {
                         hostToSave = ipAddress + ":" + port;
                     }
 
-                    SharedPreferences.Editor editor = getParentService().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+                    SharedPreferences.Editor editor = weMessage.get().getSharedPreferences().edit();
                     editor.putString(weMessage.SHARED_PREFERENCES_LAST_HOST, hostToSave);
                     editor.putString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, emailPlainText);
                     editor.putString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, passwordHashedText);
+                    editor.putString(weMessage.SHARED_PREFERENCES_LAST_FAILOVER_IP, failoverIpAddress);
 
                     editor.apply();
 
@@ -798,14 +825,14 @@ public final class ConnectionHandler extends Thread {
                                 Handle sender;
 
                                 if (StringUtils.isEmpty(jsonMessage.getHandle())) {
-                                    sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
+                                    sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentSession().getAccount());
                                 } else {
                                     sender = messageDatabase.getHandleByHandleID(jsonMessage.getHandle());
                                 }
 
                                 Chat chat = messageDatabase.getChatByMacGuid(jsonChat.getMacGuid());
                                 if (!chat.isInChat()) {
-                                    messageManager.updateChat(chat.getUuid().toString(), chat.setIsInChat(true), false);
+                                    messageManager.updateChat(chat.getIdentifier(), chat.setIsInChat(true), false);
                                 }
 
                                 ArrayList<Attachment> attachments = new ArrayList<>();
@@ -822,7 +849,7 @@ public final class ConnectionHandler extends Thread {
                                     }
                                 }
 
-                                Message message = new Message(UUID.randomUUID(), jsonMessage.getMacGuid(), messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, attachments,
+                                Message message = new Message(UUID.randomUUID().toString(), jsonMessage.getMacGuid(), messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, attachments,
                                         textDecryptionTask.getDecryptedText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(), jsonMessage.getDateRead(), jsonMessage.getErrored(),
                                         jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe(), MessageEffect.from(jsonMessage.getMessageEffect()), false);
 
@@ -878,16 +905,15 @@ public final class ConnectionHandler extends Thread {
                                     if (!updated) {
                                         if (!StringUtils.isEmpty(StringUtils.trimORC(decryptedText))) {
                                             if (jsonMessage.isFromMe()) {
-                                                Handle sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
+                                                Handle sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentSession().getAccount());
 
-                                                Message message = new Message(UUID.randomUUID(), jsonMessage.getMacGuid(),
+                                                Message message = new Message(UUID.randomUUID().toString(), jsonMessage.getMacGuid(),
                                                         messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, new ArrayList<Attachment>(),
                                                         textDecryptionTask.getDecryptedText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(),
                                                         jsonMessage.getDateRead(), jsonMessage.getErrored(), jsonMessage.isSent(), jsonMessage.isDelivered(),
                                                         jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe(), MessageEffect.from(jsonMessage.getMessageEffect()), false);
                                                 messageManager.addMessage(message, false);
                                             } else {
-                                                sendLocalBroadcast(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR, null);
                                                 AppLogger.log(AppLogger.Level.ERROR, TAG, "An error occurred while updating a message with Mac GUID: " + jsonMessage.getMacGuid() +
                                                         "  Reason: Previous message not found on system");
                                             }
@@ -1196,7 +1222,7 @@ public final class ConnectionHandler extends Thread {
         for (String s : jsonChat.getParticipants()) {
             handleList.add(weMessage.get().getMessageDatabase().getHandleByHandleID(s));
         }
-        GroupChat newChat = new GroupChat(UUID.randomUUID(), null, jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
+        GroupChat newChat = new GroupChat(UUID.randomUUID().toString(), null, jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
                 true, true, false, jsonChat.getDisplayName(), handleList);
 
         messageManager.addChat(newChat, false);
@@ -1218,7 +1244,7 @@ public final class ConnectionHandler extends Thread {
         }
 
         for (String s : jsonChat.getParticipants()){
-            if (!existingChatParticipantList.contains(s) && !s.equalsIgnoreCase(weMessage.get().getCurrentAccount().getEmail())){
+            if (!existingChatParticipantList.contains(s) && !s.equalsIgnoreCase(weMessage.get().getCurrentSession().getAccount().getEmail())){
                 messageManager.addParticipantToGroup(existingChat, messageDatabase.getHandleByHandleID(s), executionTime, false);
             }
         }
@@ -1228,9 +1254,9 @@ public final class ConnectionHandler extends Thread {
         }
 
         if (overrideAll){
-            GroupChat updatedChat = (GroupChat) messageDatabase.getChatByUuid(existingChat.getUuid().toString());
+            GroupChat updatedChat = (GroupChat) messageDatabase.getChatByIdentifier(existingChat.getIdentifier());
 
-            messageManager.updateChat(existingChat.getUuid().toString(), new GroupChat(existingChat.getUuid(), null, jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
+            messageManager.updateChat(existingChat.getIdentifier(), new GroupChat(existingChat.getIdentifier(), null, jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
                     updatedChat.isInChat(), updatedChat.hasUnreadMessages(), updatedChat.isDoNotDisturb(), updatedChat.getDisplayName(), updatedChat.getParticipants()), false);
         }
     }
@@ -1244,12 +1270,12 @@ public final class ConnectionHandler extends Thread {
                 PeerChat peerChat = messageDatabase.getChatByHandle(messageDatabase.getHandleByHandleID(jsonChat.getParticipants().get(0)));
                 if (peerChat != null){
 
-                    PeerChat updatedChat = new PeerChat(peerChat.getUuid(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
+                    PeerChat updatedChat = new PeerChat(peerChat.getIdentifier(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
                             peerChat.isInChat(), peerChat.hasUnreadMessages(), peerChat.getHandle());
-                    messageManager.updateChat(peerChat.getUuid().toString(), updatedChat, false);
+                    messageManager.updateChat(peerChat.getIdentifier(), updatedChat, false);
 
                 }else {
-                    PeerChat newChat = new PeerChat(UUID.randomUUID(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
+                    PeerChat newChat = new PeerChat(UUID.randomUUID().toString(), jsonChat.getMacGuid(), jsonChat.getMacGroupID(), jsonChat.getMacChatIdentifier(),
                             true, true, messageDatabase.getHandleByHandleID(jsonChat.getParticipants().get(0)));
                     messageManager.addChat(newChat, false);
                 }
@@ -1313,11 +1339,11 @@ public final class ConnectionHandler extends Thread {
 
             if (isAMessage){
                 JSONMessage jsonMessage = (JSONMessage) serverMessage.getOutgoing(JSONMessage.class);
-                boolean isValid = (validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(0)) && validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(1)));
+                boolean isValid = (validateMessageReturnType(messageManager, jsonMessage, jsonResult, returnTypes.get(0)) && validateMessageReturnType(messageManager, jsonMessage, jsonResult, returnTypes.get(1)));
 
                 if (!isValid){
                     String correspondingMessageUUID = messageAndConnectionMessageMap.get(jsonResult.getCorrespondingUUID());
-                    Message message = weMessage.get().getMessageDatabase().getMessageByUuid(correspondingMessageUUID);
+                    Message message = weMessage.get().getMessageDatabase().getMessageByIdentifier(correspondingMessageUUID);
 
                     if (message != null && message.getChat() != null) {
                         message.setHasErrored(true);
@@ -1345,14 +1371,14 @@ public final class ConnectionHandler extends Thread {
                 boolean isValid;
 
                 if (returnTypes.size() == 1){
-                    isValid = validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(0));
+                    isValid = validateMessageReturnType(messageManager, jsonMessage, jsonResult, returnTypes.get(0));
                 }else {
-                    isValid = (validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(0)) && validateMessageReturnType(messageManager, jsonMessage, returnTypes.get(1)));
+                    isValid = (validateMessageReturnType(messageManager, jsonMessage, jsonResult, returnTypes.get(0)) && validateMessageReturnType(messageManager, jsonMessage, jsonResult, returnTypes.get(1)));
                 }
 
                 if (!isValid){
                     String correspondingMessageUUID = messageAndConnectionMessageMap.get(jsonResult.getCorrespondingUUID());
-                    Message message = weMessage.get().getMessageDatabase().getMessageByUuid(correspondingMessageUUID);
+                    Message message = weMessage.get().getMessageDatabase().getMessageByIdentifier(correspondingMessageUUID);
 
                     if (message != null && message.getChat() != null) {
                         message.setHasErrored(true);
@@ -1473,49 +1499,51 @@ public final class ConnectionHandler extends Thread {
         }
     }
 
-    private boolean validateMessageReturnType(MessageManager messageManager, JSONMessage jsonMessage, ReturnType returnType){
+    private boolean validateMessageReturnType(MessageManager messageManager, JSONMessage jsonMessage, JSONResult jsonResult, ReturnType returnType){
+        String correspondingMessageUUID = messageAndConnectionMessageMap.get(jsonResult.getCorrespondingUUID());
+
         if (returnType == null){
-            messageManager.alertMessageSendFailure(jsonMessage, ReturnType.UNKNOWN_ERROR);
+            messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.UNKNOWN_ERROR);
             AppLogger.error(TAG, "No return type was found", new NullPointerException("No return type was found"));
             return false;
         }
 
         switch (returnType){
             case UNKNOWN_ERROR:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.UNKNOWN_ERROR);
+                messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.UNKNOWN_ERROR);
                 return false;
             case SENT:
                 break;
             case INVALID_NUMBER:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.INVALID_NUMBER);
-                return false;
+                messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.INVALID_NUMBER);
+                return MmsManager.isDefaultSmsApp() && isPossibleSmsChat(jsonMessage.getChat());
             case NUMBER_NOT_IMESSAGE:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.NUMBER_NOT_IMESSAGE);
-                return false;
+                messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.NUMBER_NOT_IMESSAGE);
+                return MmsManager.isDefaultSmsApp() && isPossibleSmsChat(jsonMessage.getChat());
             case GROUP_CHAT_NOT_FOUND:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.GROUP_CHAT_NOT_FOUND);
+                messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.GROUP_CHAT_NOT_FOUND);
                 return false;
             case NOT_SENT:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.NOT_SENT);
-                return false;
+                messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.NOT_SENT);
+                return MmsManager.isDefaultSmsApp() && isPossibleSmsChat(jsonMessage.getChat());
             case SERVICE_NOT_AVAILABLE:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.SERVICE_NOT_AVAILABLE);
+                messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.SERVICE_NOT_AVAILABLE);
                 return false;
             case FILE_NOT_FOUND:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.FILE_NOT_FOUND);
+                messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.FILE_NOT_FOUND);
                 return false;
             case NULL_MESSAGE:
                 break;
             case ASSISTIVE_ACCESS_DISABLED:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.ASSISTIVE_ACCESS_DISABLED);
+                messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.ASSISTIVE_ACCESS_DISABLED);
                 return false;
             case UI_ERROR:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.UI_ERROR);
+                messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.UI_ERROR);
                 return false;
             case ACTION_PERFORMED:
                 break;
             default:
-                messageManager.alertMessageSendFailure(jsonMessage, ReturnType.UNKNOWN_ERROR);
+                messageManager.alertMessageSendFailure(correspondingMessageUUID, ReturnType.UNKNOWN_ERROR);
                 AppLogger.error(TAG, "An unsupported ReturnType enum was found", new UnsupportedOperationException("An unsupported ReturnType enum was found"));
                 return false;
         }
@@ -1566,7 +1594,7 @@ public final class ConnectionHandler extends Thread {
 
     private void updateMessage(MessageManager messageManager, Message existingMessage, JSONMessage jsonMessage, boolean overrideAll){
         MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
-        Message newData = new Message().setUuid(existingMessage.getUuid()).setAttachments(existingMessage.getAttachments()).setText(existingMessage.getText())
+        Message newData = new Message().setIdentifier(existingMessage.getIdentifier()).setAttachments(existingMessage.getAttachments()).setText(existingMessage.getText())
                 .setDateSent(jsonMessage.getDateSent()).setDateDelivered(jsonMessage.getDateDelivered()).setDateRead(jsonMessage.getDateRead()).setHasErrored(jsonMessage.getErrored())
                 .setIsSent(jsonMessage.isSent()).setDelivered(jsonMessage.isDelivered()).setRead(jsonMessage.isRead()).setFinished(jsonMessage.isFinished()).setFromMe(existingMessage.isFromMe())
                 .setMessageEffect(MessageEffect.from(jsonMessage.getMessageEffect())).setEffectFinished(existingMessage.getEffectFinished());
@@ -1576,7 +1604,7 @@ public final class ConnectionHandler extends Thread {
 
             if (messageDatabase.getChatByMacGuid(jsonMessage.getChat().getMacGuid()).getChatType() == Chat.ChatType.PEER){
                 if (jsonMessage.isFromMe()){
-                    sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
+                    sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentSession().getAccount());
                 }else {
                     if (StringUtils.isEmpty(jsonMessage.getHandle())) {
                         sender = messageDatabase.getHandleByHandleID(jsonMessage.getHandle());
@@ -1586,7 +1614,7 @@ public final class ConnectionHandler extends Thread {
                 }
             }else {
                 if (StringUtils.isEmpty(jsonMessage.getHandle())) {
-                    sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentAccount());
+                    sender = messageDatabase.getHandleByAccount(weMessage.get().getCurrentSession().getAccount());
                 } else {
                     sender = messageDatabase.getHandleByHandleID(jsonMessage.getHandle());
                 }
@@ -1595,11 +1623,51 @@ public final class ConnectionHandler extends Thread {
             newData.setMacGuid(jsonMessage.getMacGuid()).setChat(messageDatabase.getChatByMacGuid(jsonMessage.getChat().getMacGuid()))
                     .setSender(sender);
         }else {
-            newData.setMacGuid(existingMessage.getMacGuid()).setChat(messageDatabase.getChatByUuid(existingMessage.getChat().getUuid().toString()))
+            newData.setMacGuid(existingMessage.getMacGuid()).setChat(messageDatabase.getChatByIdentifier(existingMessage.getChat().getIdentifier()))
                     .setSender(existingMessage.getSender());
         }
 
-        messageManager.updateMessage(existingMessage.getUuid().toString(), newData, false);
+        messageManager.updateMessage(existingMessage.getIdentifier(), newData, false);
+    }
+
+    private void handleConnectExceptions(IOException exc){
+        try {
+            throw exc;
+        }catch (UnknownHostException | EOFException | ConnectException ex){
+            if (isRunning.get()){
+                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR, null);
+                getParentService().endService();
+            }
+        }catch (NoRouteToHostException ex){
+            if (isRunning.get()) {
+                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_ERROR, null);
+                getParentService().endService();
+            }
+        }catch (SocketTimeoutException ex){
+            if (isRunning.get()) {
+                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_TIMEOUT, null);
+                getParentService().endService();
+            }
+        }catch (SocketException ex){
+            if (isRunning.get()) {
+                String stacktrace = getStackTrace(ex);
+
+                if (stacktrace.contains("Connection reset") || stacktrace.contains("Software caused connection abort") || stacktrace.contains("Network is unreachable")) {
+                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_CONNECTION_ERROR, null);
+                    getParentService().endService();
+                }else {
+                    AppLogger.error(TAG, "An error occurred while connecting to the weServer.", ex);
+                    sendLocalBroadcast(weMessage.BROADCAST_LOGIN_ERROR, null);
+                    getParentService().endService();
+                }
+            }
+        }catch(IOException ex){
+            if (isRunning.get()) {
+                AppLogger.error(TAG, "An error occurred while connecting to the weServer.", ex);
+                sendLocalBroadcast(weMessage.BROADCAST_LOGIN_ERROR, null);
+                getParentService().endService();
+            }
+        }
     }
 
     private List<ReturnType> parseResults(List<Integer> integerList){
@@ -1610,6 +1678,13 @@ public final class ConnectionHandler extends Thread {
         }
 
         return returnList;
+    }
+
+    private boolean isPossibleSmsChat(JSONChat jsonChat){
+        for (String s : jsonChat.getParticipants()){
+            if (!PhoneNumberUtil.getInstance().isPossibleNumber(s, Resources.getSystem().getConfiguration().locale.getCountry())) return false;
+        }
+        return true;
     }
 
     private String getStackTrace(Exception ex){

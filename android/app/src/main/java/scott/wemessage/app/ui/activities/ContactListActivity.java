@@ -16,7 +16,6 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -51,13 +50,15 @@ import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
 import scott.wemessage.app.messages.MessageCallbacks;
-import scott.wemessage.app.messages.models.ActionMessage;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.MessageBase;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.users.Contact;
-import scott.wemessage.app.messages.models.users.ContactInfo;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.messages.ActionMessage;
+import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.messages.MessageBase;
+import scott.wemessage.app.models.users.Contact;
+import scott.wemessage.app.models.users.ContactInfo;
+import scott.wemessage.app.models.users.Handle;
+import scott.wemessage.app.sms.MmsManager;
+import scott.wemessage.app.ui.activities.abstracts.BaseActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.ContactUtils;
 import scott.wemessage.app.utils.IOUtils;
@@ -65,13 +66,12 @@ import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.ListUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class ContactListActivity extends AppCompatActivity implements MessageCallbacks, OnMenuItemClickListener {
+public class ContactListActivity extends BaseActivity implements MessageCallbacks, OnMenuItemClickListener {
 
     private AtomicBoolean isInBlockedMode = new AtomicBoolean(false);
     private String callbackUuid;
@@ -94,28 +94,28 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(ContactListActivity.this, null, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(ContactListActivity.this, null, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(ContactListActivity.this, null, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(ContactListActivity.this, null, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_SEND_MESSAGE_ERROR)){
@@ -353,13 +353,10 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
     public void onMessagesQueueFinish(List<MessageBase> messages) { }
 
     @Override
-    public void onMessagesRefresh() { }
-
-    @Override
     public void onActionMessageAdd(ActionMessage message) { }
 
     @Override
-    public void onMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType) { }
+    public void onMessageSendFailure(ReturnType returnType) { }
 
     @Override
     public void onActionPerformFailure(JSONAction jsonAction, ReturnType returnType) { }
@@ -468,12 +465,13 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
 
     private void macContactSync(){
         if (!isServiceRunning(ConnectionService.class)){
-            DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment = DialogDisplayer.generateOfflineDialog(this, getString(R.string.contact_sync_fail_offline));
+            DialogDisplayer.AlertDialogFragmentDouble alertDialogFragment = DialogDisplayer.generateOfflineDialog(this,
+                    getString(R.string.contact_sync_fail_offline, MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
 
             alertDialogFragment.setOnDismiss(new Runnable() {
                 @Override
                 public void run() {
-                    goToLauncherReconnect();
+                    LaunchActivity.launchActivity(ContactListActivity.this, null, true);
                 }
             });
 
@@ -543,26 +541,6 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
         finish();
     }
 
-    private void goToLauncher(){
-        if (!isFinishing() && !isDestroyed()) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
-
-            startActivity(launcherIntent);
-            finish();
-        }
-    }
-
-    private void goToLauncherReconnect(){
-        if (!isFinishing() && !isDestroyed()) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            startActivity(launcherIntent);
-            finish();
-        }
-    }
-
     private boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -588,11 +566,13 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
     }
 
     private boolean isContactMe(ContactInfo contactInfo){
+        if (weMessage.get().getCurrentSession().isMe(contactInfo)) return true;
+
         if (contactInfo instanceof Handle){
-            return contactInfo.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || ((Handle) contactInfo).getHandleType() == Handle.HandleType.ME;
+            return ((Handle) contactInfo).getHandleType() == Handle.HandleType.ME;
         }else if (contactInfo instanceof Contact){
             for (Handle h : ((Contact) contactInfo).getHandles()){
-                if (h.getUuid().toString().equals(weMessage.get().getMessageDatabase().getHandleByAccount(weMessage.get().getCurrentAccount()).getUuid().toString()) || h.getHandleType() == Handle.HandleType.ME) return true;
+                if (h.getHandleType() == Handle.HandleType.ME) return true;
             }
         }
         return false;
@@ -911,7 +891,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
                     @Override
                     protected Integer doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (SearchableContact searchableContact : contacts) {
+                        for (SearchableContact searchableContact : new ArrayList<>(contacts)) {
                             ContactInfo contactInfo = searchableContact.getContact();
 
                             if (contactInfo.equals(params[0])) {
@@ -992,7 +972,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
                     protected Void doInBackground(ContactInfo... params) {
                         int i = 0;
 
-                        for (ContactInfo contactInfo : originalList) {
+                        for (ContactInfo contactInfo : new ArrayList<>(originalList)) {
                             if (contactInfo.equals(params[0])) {
                                 if (contactInfo instanceof Handle) {
                                     originalList.set(i, params[0]);
@@ -1036,7 +1016,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
                     @Override
                     protected Integer doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (SearchableContact contact : contacts) {
+                        for (SearchableContact contact : new ArrayList<>(contacts)) {
                             ContactInfo contactInfo = contact.getContact();
 
                             if (contactInfo.equals(params[0])) {
@@ -1067,7 +1047,7 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
                     @Override
                     protected Void doInBackground(ContactInfo... params) {
                         int i = 0;
-                        for (ContactInfo contact : originalList) {
+                        for (ContactInfo contact : new ArrayList<>(originalList)) {
                             if (contact.equals(params[0])) {
                                 originalList.remove(i);
                                 break;
@@ -1151,16 +1131,6 @@ public class ContactListActivity extends AppCompatActivity implements MessageCal
             }
 
             return false;
-        }
-    }
-
-    private class ContactInsert {
-        Integer position;
-        List<Integer> removed;
-
-        public ContactInsert(Integer position, List<Integer> removed) {
-            this.position = position;
-            this.removed = removed;
         }
     }
 

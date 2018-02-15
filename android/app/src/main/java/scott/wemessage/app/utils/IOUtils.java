@@ -25,13 +25,15 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 
+import javax.net.ssl.SSLException;
+
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.GroupChat;
-import scott.wemessage.app.messages.models.chats.PeerChat;
-import scott.wemessage.app.messages.models.users.Contact;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.chats.PeerChat;
+import scott.wemessage.app.models.users.Contact;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.utils.media.MediaDownloadCallbacks;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
@@ -234,7 +236,7 @@ public class IOUtils {
         new AsyncTask<Void, Void, Void>(){
             @Override
             protected Void doInBackground(Void... voids) {
-                String deviceInfo = weMessage.get().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).getString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, "");
+                String deviceInfo = weMessage.get().getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, "");
 
                 if (!StringUtils.isEmpty(deviceInfo)) {
                     Device device = Device.fromString(deviceInfo);
@@ -244,7 +246,7 @@ public class IOUtils {
 
                 try {
                     fetchDeviceData("https://storage.googleapis.com/play_public/supported_devices.csv");
-                }catch (UnknownHostException | MalformedURLException | SocketException exc){
+                }catch (UnknownHostException | MalformedURLException | SSLException | SocketException exc){
                     try {
                         fetchDeviceData("http://storage.googleapis.com/play_public/supported_devices.csv");
                     }catch (UnknownHostException | MalformedURLException ex) {
@@ -277,7 +279,7 @@ public class IOUtils {
 
                     if (manufacturer.equalsIgnoreCase(Build.MANUFACTURER) && model.equalsIgnoreCase(Build.MODEL)) {
                         Device device = new Device(manufacturer, name, model);
-                        SharedPreferences.Editor editor = weMessage.get().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE).edit();
+                        SharedPreferences.Editor editor = weMessage.get().getSharedPreferences().edit();
 
                         editor.putString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, device.parse());
                         editor.apply();

@@ -116,13 +116,15 @@ public class DialogDisplayer {
 
     public static void showNoAccountsFoundDialog(Context context, FragmentManager fragmentManager){
         AlertDialogFragment alertDialogFragment = generateAlertDialog(context.getString(R.string.login_error_alert_title), context.getString(R.string.no_accounts_found_server_warning));
-        alertDialogFragment.setCancelable(false);
+        alertDialogFragment.setCancelableOnTouchedOutside(false);
         alertDialogFragment.show(fragmentManager, "NoAccountsFoundDialog");
     }
 
     public static class AlertDialogFragment extends DialogFragment {
 
         private Runnable runnable;
+        private boolean isCancelableOnTouchOutside = true;
+        private boolean linkify = false;
 
         @NonNull
         @Override
@@ -139,6 +141,10 @@ public class DialogDisplayer {
             alertDialogLayout.setTitle(title);
             alertDialogLayout.setMessage(message);
 
+            if (linkify){
+                alertDialogLayout.linkify();
+            }
+
             builder.setView(alertDialogLayout);
 
             if (!StringUtils.isEmpty(args.getString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON))){
@@ -154,7 +160,22 @@ public class DialogDisplayer {
                 }
             });
 
-            return builder.create();
+            setRetainInstance(linkify || isCancelableOnTouchOutside || runnable != null);
+
+            Dialog dialog = builder.create();
+            dialog.setCanceledOnTouchOutside(isCancelableOnTouchOutside);
+
+            return dialog;
+        }
+
+        @Override
+        public void onDestroyView() {
+            Dialog dialog = getDialog();
+
+            if (dialog != null && getRetainInstance()) {
+                dialog.setDismissMessage(null);
+            }
+            super.onDestroyView();
         }
 
         @Override
@@ -177,14 +198,23 @@ public class DialogDisplayer {
             }
         }
 
+        public void linkify(boolean value){
+            linkify = value;
+        }
+
         public void setOnDismiss(Runnable runnable){
             this.runnable = runnable;
+        }
+
+        public void setCancelableOnTouchedOutside(boolean cancelableOnTouchedOutside){
+            isCancelableOnTouchOutside = cancelableOnTouchedOutside;
         }
     }
 
     public static class AlertDialogFragmentDouble extends DialogFragment {
         private boolean runRunnable = false;
         private Runnable runnable;
+        private Runnable denyRunnable;
 
         @NonNull
         @Override
@@ -217,7 +247,19 @@ public class DialogDisplayer {
                 }
             });
 
+            setRetainInstance(denyRunnable != null || runnable != null);
+
             return builder.create();
+        }
+
+        @Override
+        public void onDestroyView() {
+            Dialog dialog = getDialog();
+
+            if (dialog != null && getRetainInstance()) {
+                dialog.setDismissMessage(null);
+            }
+            super.onDestroyView();
         }
 
         @Override
@@ -225,6 +267,10 @@ public class DialogDisplayer {
             if (runRunnable && runnable != null) {
                 if (getActivity() != null && !getActivity().isDestroyed() && !getActivity().isFinishing() && isAdded()) {
                     new Handler().postDelayed(runnable, 100L);
+                }
+            }else {
+                if (getActivity() != null && !getActivity().isDestroyed() && !getActivity().isFinishing() && isAdded() && denyRunnable != null) {
+                    new Handler().postDelayed(denyRunnable, 100L);
                 }
             }
 
@@ -242,6 +288,10 @@ public class DialogDisplayer {
 
         public void setOnDismiss(Runnable runnable){
             this.runnable = runnable;
+        }
+
+        public void setDenyRunnable(Runnable runnable){
+            this.denyRunnable = runnable;
         }
     }
 }

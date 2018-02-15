@@ -4,9 +4,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.ColorInt;
+import android.support.annotation.DrawableRes;
 import android.support.text.emoji.EmojiCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Spannable;
@@ -30,7 +35,8 @@ import java.util.Date;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.messages.models.Attachment;
+import scott.wemessage.app.models.messages.Attachment;
+import scott.wemessage.app.models.sms.messages.MmsMessage;
 import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
@@ -210,6 +216,8 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
                 }
             }
         }
+
+        ViewCompat.setBackground(bubble, getOutgoingBubbleDrawable(message.getMessage() instanceof MmsMessage));
 
         if (StringUtils.isEmpty(message.getText())){
             bubble.setVisibility(View.GONE);
@@ -393,6 +401,18 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
         }
     }
 
+    private Drawable getOutgoingBubbleDrawable(boolean isMms) {
+        Context context = itemView.getContext();
+
+        if (isMms){
+            return getMessageSelector(context.getResources().getColor(R.color.outgoingBubbleColorOrange), context.getResources().getColor(R.color.outgoingBubbleColorOrangePressed),
+                    context.getResources().getColor(R.color.outgoingBubbleColorOrangePressed), R.drawable.shape_outcoming_message);
+        }else {
+            return getMessageSelector(context.getResources().getColor(R.color.outgoingBubbleColor), context.getResources().getColor(R.color.outgoingBubbleColorPressed),
+                    context.getResources().getColor(R.color.outgoingBubbleColorPressed), R.drawable.shape_outcoming_message);
+        }
+    }
+
     private boolean isStringEmojis(String text){
         return !StringUtils.isEmpty(text.trim()) && StringUtils.isEmpty(EmojiParser.removeAllEmojis(text).trim());
     }
@@ -407,8 +427,27 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
             if (context instanceof Activity) {
                 return (AppCompatActivity) context;
             }
-            context = ((ContextWrapper)context).getBaseContext();
+            context = ((ContextWrapper) context).getBaseContext();
         }
         return null;
+    }
+
+    private Drawable getMessageSelector(@ColorInt int normalColor, @ColorInt int selectedColor, @ColorInt int pressedColor, @DrawableRes int shape) {
+        Drawable drawable = DrawableCompat.wrap(getVectorDrawable(shape)).mutate();
+        DrawableCompat.setTintList(
+                drawable,
+                new ColorStateList(
+                        new int[][]{
+                                new int[]{android.R.attr.state_selected},
+                                new int[]{android.R.attr.state_pressed},
+                                new int[]{-android.R.attr.state_pressed, -android.R.attr.state_selected}
+                        },
+                        new int[]{selectedColor, pressedColor, normalColor}
+                ));
+        return drawable;
+    }
+
+    private Drawable getVectorDrawable(@DrawableRes int drawable) {
+        return ContextCompat.getDrawable(itemView.getContext(), drawable);
     }
 }

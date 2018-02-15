@@ -35,13 +35,13 @@ import java.util.UUID;
 import scott.wemessage.R;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
-import scott.wemessage.app.messages.models.ActionMessage;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.MessageBase;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.PeerChat;
-import scott.wemessage.app.messages.models.users.ContactInfo;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.PeerChat;
+import scott.wemessage.app.models.messages.ActionMessage;
+import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.messages.MessageBase;
+import scott.wemessage.app.models.users.ContactInfo;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.ui.activities.CreateChatActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
@@ -53,13 +53,12 @@ import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.commons.utils.StringUtils;
 
 public class ChatListFragment extends MessagingFragment implements MessageCallbacks {
 
-    private final String TAG = "ChatListFragment";
     private final String GO_BACK_REASON_ALERT_TAG = "GoBackReasonAlert";
     private final String UPDATE_LOG_ALERT_TAG = "UpdateLogAlert";
     private final int ERROR_SNACKBAR_DURATION = 5000;
@@ -78,28 +77,28 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ChatListFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ChatListFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ChatListFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ChatListFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_NEW_MESSAGE_ERROR)){
@@ -230,14 +229,10 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             }
 
             @Override
-            public void onTouchEvent(RecyclerView rv, MotionEvent e) {
-
-            }
+            public void onTouchEvent(RecyclerView rv, MotionEvent e) { }
 
             @Override
-            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-
-            }
+            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) { }
         });
 
         addChatButton.setOnClickListener(new View.OnClickListener() {
@@ -253,29 +248,17 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         dialogsList.setAdapter(dialogsListAdapter);
         this.dialogsListAdapter = dialogsListAdapter;
 
-        for (Chat chat : weMessage.get().getMessageManager().getChats().values()){
+        for (Chat chat : weMessage.get().getMessageManager().getChats()){
             if (!isChatBlocked(chat)) {
                 dialogsListAdapter.addItem(new ChatDialogView(chat));
             }
         }
 
-        if (getActivity().getIntent() != null && getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON) != null){
+        if (getActivity().getIntent() != null && !StringUtils.isEmpty(getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON))){
             DialogDisplayer.generateAlertDialog(getString(R.string.word_error), getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON)).show(getFragmentManager(), GO_BACK_REASON_ALERT_TAG);
         }
 
-        SharedPreferences preferences = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
-
-        if (preferences.getBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false)){
-            int lastVersion = preferences.getInt(weMessage.SHARED_PREFERENCES_LAST_VERSION, -1);
-
-            if (lastVersion == 10){
-                DialogDisplayer.generateAlertDialog(getString(R.string.update_log), getString(R.string.version_11_update)).show(getFragmentManager(), UPDATE_LOG_ALERT_TAG);
-            }
-
-            SharedPreferences.Editor editor = preferences.edit();
-            editor.putBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false);
-            editor.apply();
-        }
+        showUpdateDialog();
 
         return view;
     }
@@ -305,22 +288,18 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     }
 
     @Override
-    public void onContactCreate(ContactInfo contact) {
-
-    }
+    public void onContactCreate(ContactInfo contact) { }
 
     @Override
-    public void onContactUpdate(ContactInfo oldData, ContactInfo newData) {
-
-    }
+    public void onContactUpdate(ContactInfo oldData, ContactInfo newData) { }
 
     @Override
-    public void onContactListRefresh(List<? extends ContactInfo> handles) {
-
-    }
+    public void onContactListRefresh(List<? extends ContactInfo> handles) { }
 
     @Override
     public void onChatAdd(final Chat chat) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -334,6 +313,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatUpdate(Chat oldData, Chat newData) {
+        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(newData);
 
         if (!isChatBlocked(newData)) {
@@ -348,10 +328,10 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onUnreadMessagesUpdate(Chat chat, boolean hasUnreadMessages) {
+        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
-            if (getActivity() == null) return;
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -363,6 +343,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatRename(Chat chat, String displayName) {
+        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
@@ -377,6 +358,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onParticipantAdd(Chat chat, Handle handle) {
+        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
@@ -391,6 +373,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onParticipantRemove(Chat chat, Handle handle) {
+        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
@@ -405,6 +388,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onLeaveGroup(Chat chat) {
+        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
@@ -419,11 +403,12 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatDelete(final Chat chat) {
+        if (getActivity() == null) return;
         if (!isChatBlocked(chat)) {
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    dialogsListAdapter.deleteById(chat.getUuid().toString());
+                    dialogsListAdapter.deleteById(chat.getIdentifier());
                     toggleNoConversations(dialogsListAdapter.isEmpty());
                 }
             });
@@ -432,6 +417,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatListRefresh(final List<Chat> chats) {
+        if (getActivity() == null) return;
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -452,62 +438,55 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onMessageAdd(final Message message) {
+        if (getActivity() == null) return;
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (!isChatBlocked(message.getChat())) {
                     MessageView messageView = new MessageView(message);
-                    dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
+                    dialogsListAdapter.updateDialogWithMessage(message.getChat().getIdentifier(), messageView);
                 }
             }
         });
     }
 
     @Override
-    public void onMessageUpdate(Message oldData, Message newData) {
-
-    }
+    public void onMessageUpdate(Message oldData, Message newData) { }
 
     @Override
     public void onMessageDelete(final Message message) {
+        if (getActivity() == null) return;
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (!isChatBlocked(message.getChat())) {
                     MessageView messageView = new MessageView(weMessage.get().getMessageDatabase().getLastMessageFromChat(message.getChat()));
-                    dialogsListAdapter.updateDialogWithMessage(message.getChat().getUuid().toString(), messageView);
+                    dialogsListAdapter.updateDialogWithMessage(message.getChat().getIdentifier(), messageView);
                 }
             }
         });
     }
 
     @Override
-    public void onMessagesQueueFinish(List<MessageBase> messages) {
-
-    }
+    public void onMessagesQueueFinish(List<MessageBase> messages) { }
 
     @Override
-    public void onMessagesRefresh() {
-
-    }
+    public void onActionMessageAdd(ActionMessage message) { }
 
     @Override
-    public void onActionMessageAdd(ActionMessage message) {
-
-    }
-
-    @Override
-    public void onMessageSendFailure(final JSONMessage jsonMessage, final ReturnType returnType) {
+    public void onMessageSendFailure(final ReturnType returnType) {
+        if (getActivity() == null) return;
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                showMessageSendFailureSnackbar(jsonMessage, returnType);
+                showMessageSendFailureSnackbar(returnType);
             }
         });
     }
 
     @Override
     public void onActionPerformFailure(final JSONAction jsonAction, final ReturnType returnType) {
+        if (getActivity() == null) return;
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -518,6 +497,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onAttachmentSendFailure(final FailReason failReason) {
+        if (getActivity() == null) return;
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -528,12 +508,39 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onAttachmentReceiveFailure(final FailReason failReason) {
+        if (getActivity() == null) return;
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 showAttachmentReceiveFailureSnackbar(failReason);
             }
         });
+    }
+
+    private void showUpdateDialog(){
+        SharedPreferences preferences = weMessage.get().getSharedPreferences();
+
+        if (preferences.getBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false)){
+            int lastVersion = preferences.getInt(weMessage.SHARED_PREFERENCES_LAST_VERSION, -1);
+
+            DialogDisplayer.AlertDialogFragment dialogFragment = null;
+
+            if (lastVersion == 10){
+                dialogFragment = DialogDisplayer.generateAlertDialog(getString(R.string.update_log), getString(R.string.version_11_update));
+            }else if (lastVersion == 11){
+                dialogFragment = DialogDisplayer.generateAlertDialog(getString(R.string.update_log), getString(R.string.version_12_update));
+            }
+
+            if (dialogFragment != null){
+                dialogFragment.linkify(true);
+                dialogFragment.setCancelableOnTouchedOutside(false);
+                dialogFragment.show(getFragmentManager(), UPDATE_LOG_ALERT_TAG);
+            }
+
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false);
+            editor.apply();
+        }
     }
 
     private void closeDeleteButtonViews(){
@@ -545,26 +552,6 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                     ((ChatDialogViewHolder) holder).closeView();
                 }
             }
-        }
-    }
-
-    private void goToLauncher(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
-        }
-    }
-
-    private void goToLauncherReconnect(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
         }
     }
 

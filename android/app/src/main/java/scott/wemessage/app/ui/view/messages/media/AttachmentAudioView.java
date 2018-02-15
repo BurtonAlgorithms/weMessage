@@ -21,7 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.messages.models.Attachment;
+import scott.wemessage.app.models.messages.Attachment;
+import scott.wemessage.app.models.sms.messages.MmsMessage;
 import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.utils.IOUtils;
@@ -44,8 +45,6 @@ public class AttachmentAudioView extends AttachmentView {
     private TextView audioCounterView;
     private TextView durationView;
 
-    private int defaultBubbleSelectedColor = getContext().getResources().getColor(R.color.cornflower_blue_two_24);
-
     private int defaultBubblePaddingLeft = getContext().getResources().getDimensionPixelSize(R.dimen.message_padding_left);
     private int defaultPaddingPaddingRight = getContext().getResources().getDimensionPixelSize(R.dimen.message_padding_right);
     private int defaultBubblePaddingTop = getContext().getResources().getDimensionPixelSize(R.dimen.message_padding_top);
@@ -66,7 +65,7 @@ public class AttachmentAudioView extends AttachmentView {
     @Override
     public void bind(MessageView messageView, final Attachment attachment, final MessageType messageType, boolean isErrored) {
         init();
-        applyStyle(messageType);
+        applyStyle(messageType, messageView.getMessage() instanceof MmsMessage);
         attachmentAudioBubble.setSelected(isSelected());
 
         RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) attachmentAudioBubble.getLayoutParams();
@@ -237,7 +236,7 @@ public class AttachmentAudioView extends AttachmentView {
         }
     }
 
-    private void applyStyle(MessageType messageType) {
+    private void applyStyle(MessageType messageType, boolean isMms) {
         if (messageType == MessageType.INCOMING) {
             audioCounterView.setTextColor(Color.BLACK);
             durationView.setTextColor(Color.BLACK);
@@ -247,7 +246,7 @@ public class AttachmentAudioView extends AttachmentView {
             audioCounterView.setTextColor(Color.WHITE);
             durationView.setTextColor(Color.WHITE);
             attachmentAudioBubble.setPadding(defaultBubblePaddingLeft, defaultBubblePaddingTop, defaultPaddingPaddingRight, defaultBubblePaddingBottom);
-            ViewCompat.setBackground(attachmentAudioBubble, getOutgoingBubbleDrawable());
+            ViewCompat.setBackground(attachmentAudioBubble, getOutgoingBubbleDrawable(isMms));
         }
     }
 
@@ -264,13 +263,18 @@ public class AttachmentAudioView extends AttachmentView {
     }
 
     private Drawable getIncomingBubbleDrawable() {
-        return getMessageSelector(getContext().getResources().getColor(R.color.incomingBubbleColor), defaultBubbleSelectedColor,
+        return getMessageSelector(getContext().getResources().getColor(R.color.incomingBubbleColor), getContext().getResources().getColor(R.color.incomingBubbleColorPressed),
                 getContext().getResources().getColor(R.color.incomingBubbleColorPressed), R.drawable.shape_incoming_message);
     }
 
-    private Drawable getOutgoingBubbleDrawable() {
-        return getMessageSelector(getContext().getResources().getColor(R.color.outgoingBubbleColor), defaultBubbleSelectedColor,
-                getContext().getResources().getColor(R.color.outgoingBubbleColorPressed), R.drawable.shape_outcoming_message);
+    private Drawable getOutgoingBubbleDrawable(boolean isMms) {
+        if (isMms){
+            return getMessageSelector(getContext().getResources().getColor(R.color.outgoingBubbleColorOrange), getContext().getResources().getColor(R.color.outgoingBubbleColorOrangePressed),
+                    getContext().getResources().getColor(R.color.outgoingBubbleColorOrangePressed), R.drawable.shape_outcoming_message);
+        }else {
+            return getMessageSelector(getContext().getResources().getColor(R.color.outgoingBubbleColor), getContext().getResources().getColor(R.color.outgoingBubbleColorPressed),
+                    getContext().getResources().getColor(R.color.outgoingBubbleColorPressed), R.drawable.shape_outcoming_message);
+        }
     }
 
     private void startCountHandler() {

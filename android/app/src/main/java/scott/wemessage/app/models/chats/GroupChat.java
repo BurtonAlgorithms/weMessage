@@ -1,13 +1,10 @@
-package scott.wemessage.app.messages.models.chats;
+package scott.wemessage.app.models.chats;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-import scott.wemessage.app.messages.models.users.Contact;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.utils.FileLocationContainer;
-import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class GroupChat extends Chat {
@@ -20,10 +17,10 @@ public class GroupChat extends Chat {
 
     }
 
-    public GroupChat(UUID uuid, FileLocationContainer groupChatPictureFileLocation, String macGuid, String macGroupID, String macChatIdentifier,
+    public GroupChat(String identifier, FileLocationContainer groupChatPictureFileLocation, String macGuid, String macGroupID, String macChatIdentifier,
                      boolean isInChat, boolean hasUnreadMessages, boolean isDoNotDisturb, String displayName, List<Handle> participants) {
 
-        super(uuid, groupChatPictureFileLocation, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
+        super(identifier, groupChatPictureFileLocation, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
 
         this.displayName = displayName;
         this.participants = participants;
@@ -41,13 +38,6 @@ public class GroupChat extends Chat {
 
     public String getUIDisplayName(boolean macUI){
         String fullString;
-        List<Contact> contacts = new ArrayList<>();
-
-        for (Handle h : participants){
-            Contact c = weMessage.get().getMessageDatabase().getContactByHandle(h);
-
-            if (c != null) contacts.add(c);
-        }
 
         if (!StringUtils.isEmpty(getDisplayName())){
             fullString = getDisplayName();
@@ -55,12 +45,12 @@ public class GroupChat extends Chat {
             ArrayList<String> dummyParticipantList = new ArrayList<>();
 
             if (!macUI) {
-                for (Contact c : contacts) {
-                    dummyParticipantList.add(c.getDisplayName());
+                for (Handle h : participants) {
+                    dummyParticipantList.add(h.getDisplayName());
                 }
                 dummyParticipantList.remove(dummyParticipantList.size() - 1);
 
-                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + contacts.get(contacts.size() - 1).getDisplayName();
+                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + participants.get(participants.size() - 1).getDisplayName();
             } else {
                 for (Handle h : participants) {
                     dummyParticipantList.add(h.getHandleID());

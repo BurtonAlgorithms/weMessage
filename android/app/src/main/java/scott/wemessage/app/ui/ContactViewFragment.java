@@ -68,14 +68,14 @@ import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageManager;
-import scott.wemessage.app.messages.models.ActionMessage;
-import scott.wemessage.app.messages.models.Attachment;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.MessageBase;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.users.Contact;
-import scott.wemessage.app.messages.models.users.ContactInfo;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.messages.ActionMessage;
+import scott.wemessage.app.models.messages.Attachment;
+import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.messages.MessageBase;
+import scott.wemessage.app.models.users.Contact;
+import scott.wemessage.app.models.users.ContactInfo;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.ui.activities.ChatListActivity;
 import scott.wemessage.app.ui.activities.ContactSelectActivity;
 import scott.wemessage.app.ui.activities.ConversationActivity;
@@ -90,7 +90,6 @@ import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.types.ReturnType;
@@ -141,28 +140,28 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ContactViewFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ContactViewFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ContactViewFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(getActivity(), ContactViewFragment.this, false);
                     }
                 });
             }else if(intent.getAction().equals(weMessage.BROADCAST_NEW_MESSAGE_ERROR)){
@@ -483,6 +482,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
     @Override
     public void onContactCreate(final ContactInfo contact) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -501,6 +502,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
     @Override
     public void onContactUpdate(ContactInfo oldData, final ContactInfo newData) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -519,6 +522,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
     @Override
     public void onContactListRefresh(final List<? extends ContactInfo> contacts) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -578,23 +583,24 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
     public void onMessagesQueueFinish(List<MessageBase> messages) { }
 
     @Override
-    public void onMessagesRefresh() { }
-
-    @Override
     public void onActionMessageAdd(ActionMessage message) { }
 
     @Override
-    public void onMessageSendFailure(final JSONMessage jsonMessage, final ReturnType returnType) {
+    public void onMessageSendFailure(final ReturnType returnType) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                showMessageSendFailureSnackbar(jsonMessage, returnType);
+                showMessageSendFailureSnackbar(returnType);
             }
         });
     }
 
     @Override
     public void onActionPerformFailure(final JSONAction jsonAction, final ReturnType returnType) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -605,6 +611,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
     @Override
     public void onAttachmentSendFailure(final FailReason failReason) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -615,6 +623,8 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
     @Override
     public void onAttachmentReceiveFailure(final FailReason failReason) {
+        if (getActivity() == null) return;
+
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -644,7 +654,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                     Chat handleChat = weMessage.get().getMessageDatabase().getChatByHandle(weMessage.get().getMessageDatabase().getHandleByUuid(handleUuid));
                     if (handleChat == null) return allUris;
 
-                    String previousChatId = handleChat.getUuid().toString();
+                    String previousChatId = handleChat.getIdentifier();
 
                     for (Attachment a : weMessage.get().getMessageDatabase().getReversedAttachmentsInChat(previousChatId, 0L, Long.MAX_VALUE)) {
                         String fileLoc = a.getFileLocation().getFileLocation();
@@ -915,26 +925,6 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                 editText.clearFocus();
             }
         }, 100);
-    }
-
-    private void goToLauncher(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
-        }
-    }
-
-    private void goToLauncherReconnect(){
-        if (isAdded() || (getActivity() != null && !getActivity().isFinishing())) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            startActivity(launcherIntent);
-            getActivity().finish();
-        }
     }
 
     private void goToChatList(){

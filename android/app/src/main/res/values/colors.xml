@@ -37,6 +37,9 @@
     <color name="outgoingDateColor">#ebebef</color>
     <color name="defaultBackgroundColor">#FAFAFA</color>
 
+    <color name="outgoingBubbleColorOrange">#FF6D00</color>
+    <color name="outgoingBubbleColorOrangePressed">#FF5D00</color>
+
     <color name="deepPurple">#5959d3</color>
     <color name="deepPurplePressed">#5050ce</color>
 

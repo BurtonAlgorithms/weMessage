@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
@@ -22,6 +21,7 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 
 import scott.wemessage.R;
+import scott.wemessage.app.ui.activities.abstracts.BaseActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.OnClickWaitListener;
@@ -29,7 +29,7 @@ import scott.wemessage.app.utils.media.MediaDownloadCallbacks;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.MimeType;
 
-public class MessageImageActivity extends AppCompatActivity implements MediaDownloadCallbacks {
+public class MessageImageActivity extends BaseActivity implements MediaDownloadCallbacks {
 
     private TextView doneButton;
     private ImageView imageView;

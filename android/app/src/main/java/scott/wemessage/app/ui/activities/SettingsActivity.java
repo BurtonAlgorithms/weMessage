@@ -9,27 +9,32 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.sms.MmsManager;
+import scott.wemessage.app.ui.activities.abstracts.BaseActivity;
+import scott.wemessage.app.ui.activities.mini.SetDefaultSmsActivity;
+import scott.wemessage.app.ui.activities.mini.SetNumberActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.weMessage;
+import scott.wemessage.commons.utils.StringUtils;
 
-public class SettingsActivity extends AppCompatActivity {
+public class SettingsActivity extends BaseActivity {
 
     private boolean isBoundToConnectionService = false;
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private ViewGroup settingsGoToServer;
-    private ViewGroup settingsContacts;
+    private ViewGroup settingsToggleSmsMode;
+    private ViewGroup settingsEditNumber;
+    private boolean selfDisconnect;
 
     private BroadcastReceiver settingsBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -41,28 +46,30 @@ public class SettingsActivity extends AppCompatActivity {
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_server_closed_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(SettingsActivity.this, null, false);
                     }
                 }, true);
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_ERROR)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_unknown_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(SettingsActivity.this, null, false);
                     }
                 }, true);
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_FORCED)){
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_force_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(SettingsActivity.this, null, false);
                     }
                 }, true);
             }else if(intent.getAction().equals(weMessage.BROADCAST_DISCONNECT_REASON_CLIENT_DISCONNECTED)){
+                if (selfDisconnect) return;
+
                 showDisconnectReasonDialog(intent, getString(R.string.connection_error_client_disconnect_message), new Runnable() {
                     @Override
                     public void run() {
-                        goToLauncher();
+                        LaunchActivity.launchActivity(SettingsActivity.this, null, false);
                     }
                 }, false);
             }else if(intent.getAction().equals(weMessage.BROADCAST_SEND_MESSAGE_ERROR)){
@@ -81,9 +88,12 @@ public class SettingsActivity extends AppCompatActivity {
                 DialogDisplayer.showContactSyncResult(false, SettingsActivity.this, getSupportFragmentManager());
             }else if(intent.getAction().equals(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS)){
                 DialogDisplayer.showContactSyncResult(true, SettingsActivity.this, getSupportFragmentManager());
-            }
-            else if(intent.getAction().equals(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION)){
+            }else if(intent.getAction().equals(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION)){
                 DialogDisplayer.showNoAccountsFoundDialog(SettingsActivity.this, getSupportFragmentManager());
+            }else if(intent.getAction().equals(weMessage.BROADCAST_SMS_MODE_ENABLED)){
+                showToggleSmsMode(false);
+            }else if(intent.getAction().equals(weMessage.BROADCAST_SMS_MODE_DISABLED)){
+                showToggleSmsMode(true);
             }
         }
     };
@@ -111,6 +121,8 @@ public class SettingsActivity extends AppCompatActivity {
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_FAILED);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_CONTACT_SYNC_SUCCESS);
         broadcastIntentFilter.addAction(weMessage.BROADCAST_NO_ACCOUNTS_FOUND_NOTIFICATION);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_SMS_MODE_ENABLED);
+        broadcastIntentFilter.addAction(weMessage.BROADCAST_SMS_MODE_DISABLED);
 
         LocalBroadcastManager.getInstance(this).registerReceiver(settingsBroadcastReceiver, broadcastIntentFilter);
 
@@ -123,23 +135,55 @@ public class SettingsActivity extends AppCompatActivity {
                 goToChatList();
             }
         });
-
         toolbar.setTitle("");
         setSupportActionBar(toolbar);
 
-        ViewGroup settingsSignInOut = findViewById(R.id.settingsSignInOut);
-        ViewGroup settingsAbout = findViewById(R.id.settingsAbout);
+        settingsEditNumber = findViewById(R.id.settingsEditNumber);
         settingsGoToServer = findViewById(R.id.settingsConnectToServer);
-        settingsContacts = findViewById(R.id.settingsContacts);
+        settingsToggleSmsMode = findViewById(R.id.settingsToggleSms);
+        ViewGroup settingsAbout = findViewById(R.id.settingsAbout);
+        ViewGroup settingsContacts = findViewById(R.id.settingsContacts);
+        ViewGroup settingsSwitchAccounts = findViewById(R.id.settingsSwitchAccounts);
+        ViewGroup settingsSignInOut = findViewById(R.id.settingsSignInOut);
 
         ((TextView) findViewById(R.id.settingsVersionText)).setText(getString(R.string.settings_version, weMessage.WEMESSAGE_VERSION));
+
+        settingsEditNumber.setOnClickListener(new OnClickWaitListener(1000L) {
+            @Override
+            public void onWaitClick(View v) {
+                Intent launchIntent = new Intent(weMessage.get(), SetNumberActivity.class);
+                launchIntent.putExtra(weMessage.BUNDLE_SET_SMS_FROM_SETTINGS, true);
+                launchIntent.putExtra(weMessage.BUNDLE_EDIT_NUMBER_FROM_SETTINGS, true);
+
+                startActivity(launchIntent);
+                finish();
+            }
+        });
 
         settingsGoToServer.setOnClickListener(new OnClickWaitListener(1000L) {
             @Override
             public void onWaitClick(View v) {
-                Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
+                LaunchActivity.launchActivity(SettingsActivity.this, null, true);
+            }
+        });
 
-                startActivity(launcherIntent);
+        settingsToggleSmsMode.setOnClickListener(new OnClickWaitListener(1000L) {
+            @Override
+            public void onWaitClick(View v) {
+                Intent launchIntent = new Intent(weMessage.get(), SetDefaultSmsActivity.class);
+                launchIntent.putExtra(weMessage.BUNDLE_SET_SMS_FROM_SETTINGS, true);
+
+                startActivity(launchIntent);
+                finish();
+            }
+        });
+
+        settingsAbout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent launchIntent = new Intent(weMessage.get(), AboutActivity.class);
+
+                startActivity(launchIntent);
                 finish();
             }
         });
@@ -154,28 +198,33 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
 
-        settingsSignInOut.setOnClickListener(new OnClickWaitListener(1000L) {
+        settingsSwitchAccounts.setOnClickListener(new OnClickWaitListener(1000L) {
             @Override
-            public void onWaitClick(View view) {
-                if (isServiceRunning(ConnectionService.class)) {
-                    serviceConnection.getConnectionService().getConnectionHandler().disconnect();
-                    weMessage.get().signOut();
-                } else {
-                    weMessage.get().signOut();
-                    goToLauncher();
-                }
-            }
-        });
+            public void onWaitClick(View v) {
+                Intent launcherIntent = new Intent(weMessage.get(), ContactSelectActivity.class);
+                launcherIntent.putExtra(weMessage.BUNDLE_SWITCH_ACCOUNTS_MODE, true);
 
-        settingsAbout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent launchIntent = new Intent(weMessage.get(), AboutActivity.class);
-
-                startActivity(launchIntent);
+                startActivity(launcherIntent);
                 finish();
             }
         });
+
+        settingsSignInOut.setOnClickListener(new OnClickWaitListener(1000L) {
+            @Override
+            public void onWaitClick(View view) {
+                selfDisconnect = true;
+
+                if (isServiceRunning(ConnectionService.class)) {
+                    serviceConnection.getConnectionService().getConnectionHandler().disconnect();
+                }
+
+                weMessage.get().signOut(true);
+                LaunchActivity.launchActivity(SettingsActivity.this, null, false);
+            }
+        });
+
+        showEditNumber();
+        showToggleSmsMode(!MmsManager.isDefaultSmsApp());
 
         if (isServiceRunning(ConnectionService.class)){
             serviceConnection.scheduleTask(new Runnable() {
@@ -246,17 +295,6 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
-    private void goToLauncher(){
-        if (!isFinishing() && !isDestroyed()) {
-            Intent launcherIntent = new Intent(weMessage.get(), LaunchActivity.class);
-
-            launcherIntent.putExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, true);
-
-            startActivity(launcherIntent);
-            finish();
-        }
-    }
-
     private void goToChatList(){
         if (!isFinishing() && !isDestroyed()) {
             Intent returnIntent = new Intent(weMessage.get(), ChatListActivity.class);
@@ -267,19 +305,18 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void toggleConnectToServer(boolean offline){
-        if (offline){
-            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) settingsContacts.getLayoutParams();
+        if (settingsGoToServer != null)
+            settingsGoToServer.setVisibility(offline ? View.VISIBLE : View.GONE);
+    }
 
-            layoutParams.addRule(RelativeLayout.BELOW, R.id.settingsConnectToServer);
-            settingsGoToServer.setVisibility(View.VISIBLE);
-            settingsContacts.setLayoutParams(layoutParams);
-        }else {
-            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) settingsContacts.getLayoutParams();
+    private void showEditNumber(){
+        if (settingsEditNumber != null)
+            settingsEditNumber.setVisibility(MmsManager.isDefaultSmsApp() && !StringUtils.isEmpty(weMessage.get().getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_MANUAL_PHONE_NUMBER, "")) ? View.VISIBLE : View.GONE);
+    }
 
-            layoutParams.removeRule(RelativeLayout.BELOW);
-            settingsGoToServer.setVisibility(View.GONE);
-            settingsContacts.setLayoutParams(layoutParams);
-        }
+    private void showToggleSmsMode(boolean isNotSms){
+        if (settingsToggleSmsMode != null)
+            settingsToggleSmsMode.setVisibility(isNotSms && MmsManager.isPhone() ? View.VISIBLE : View.GONE);
     }
 
     private boolean isServiceRunning(Class<?> serviceClass) {

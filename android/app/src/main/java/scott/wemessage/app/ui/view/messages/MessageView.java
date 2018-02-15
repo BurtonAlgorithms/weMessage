@@ -5,7 +5,7 @@ import com.stfalcon.chatkit.commons.models.IMessage;
 import java.util.Calendar;
 import java.util.Date;
 
-import scott.wemessage.app.messages.models.Message;
+import scott.wemessage.app.models.messages.Message;
 import scott.wemessage.commons.utils.StringUtils;
 
 public class MessageView implements IMessage {
@@ -22,7 +22,7 @@ public class MessageView implements IMessage {
 
     @Override
     public String getId() {
-        return message.getUuid().toString();
+        return message.getIdentifier();
     }
 
     @Override
@@ -46,7 +46,10 @@ public class MessageView implements IMessage {
     @Override
     public Date getCreatedAt() {
         try {
-            return message.getModernDateSent();
+            Date date = message.getModernDateSent();
+            if (date == null) return message.getModernDateDelivered();
+
+            return date;
         }catch(Exception ex){
             return Calendar.getInstance().getTime();
         }

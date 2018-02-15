@@ -1,8 +1,11 @@
 package scott.wemessage.app.messages;
 
-import android.content.Context;
+import android.content.res.Resources;
+
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -12,19 +15,23 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import scott.wemessage.R;
-import scott.wemessage.app.messages.models.ActionMessage;
-import scott.wemessage.app.messages.models.Attachment;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.MessageBase;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.GroupChat;
-import scott.wemessage.app.messages.models.chats.PeerChat;
-import scott.wemessage.app.messages.models.users.Contact;
-import scott.wemessage.app.messages.models.users.ContactInfo;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.chats.PeerChat;
+import scott.wemessage.app.models.messages.ActionMessage;
+import scott.wemessage.app.models.messages.Attachment;
+import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.messages.MessageBase;
+import scott.wemessage.app.models.sms.chats.SmsChat;
+import scott.wemessage.app.models.sms.chats.SmsGroupChat;
+import scott.wemessage.app.models.sms.messages.MmsMessage;
+import scott.wemessage.app.models.users.Contact;
+import scott.wemessage.app.models.users.ContactInfo;
+import scott.wemessage.app.models.users.Handle;
+import scott.wemessage.app.sms.MmsManager;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.message.JSONMessage;
+import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.DateUtils;
@@ -32,7 +39,7 @@ import scott.wemessage.commons.utils.StringUtils;
 
 public final class MessageManager {
 
-    private Context context;
+    private weMessage app;
     private ConcurrentHashMap<String, MessageCallbacks> callbacksMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Handle> handles = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Chat> chats = new ConcurrentHashMap<>();
@@ -40,15 +47,28 @@ public final class MessageManager {
     private ConcurrentHashMap<String, ActionMessage> actionMessages = new ConcurrentHashMap<>();
 
     public MessageManager(weMessage app){
-        this.context = app;
+        this.app = app;
         init();
     }
 
-    public Context getContext(){
-        return context;
+    public void hookCallbacks(String uuid, MessageCallbacks callbacks){
+        callbacksMap.put(uuid, callbacks);
     }
 
-    public ConcurrentHashMap<String, Chat> getChats(){
+    public void unhookCallbacks(String uuid){
+        callbacksMap.remove(uuid);
+    }
+
+    public List<Chat> getChats(){
+        List<Chat> chats = new ArrayList<>();
+
+        if (MmsManager.isDefaultSmsApp()){
+            for (SmsChat chat : app.getMmsManager().getChats().values()){
+                chats.add((Chat) chat);
+            }
+        }
+        chats.addAll(this.chats.values());
+
         return chats;
     }
 
@@ -60,14 +80,6 @@ public final class MessageManager {
         }
 
         return contactInfoHashMap;
-    }
-
-    public void hookCallbacks(String uuid, MessageCallbacks callbacks){
-        callbacksMap.put(uuid, callbacks);
-    }
-
-    public void unhookCallbacks(String uuid){
-        callbacksMap.remove(uuid);
     }
 
     public synchronized void addContact(final Contact contact, boolean threaded){
@@ -184,19 +196,6 @@ public final class MessageManager {
             }).start();
         }else {
             addHandleTask(handle, false);
-        }
-    }
-
-    public synchronized void updateHandleNoCallback(final String uuid, final Handle newData, final boolean threaded){
-        if (threaded){
-            createThreadedTask(new Runnable() {
-                @Override
-                public void run() {
-                    updateHandleTask(uuid, newData, false);
-                }
-            }).start();
-        }else {
-            updateHandleTask(uuid, newData, false);
         }
     }
 
@@ -317,16 +316,16 @@ public final class MessageManager {
         }
     }
 
-    public synchronized void refreshChats(boolean threaded){
+    public synchronized void refreshChats(boolean threaded, final boolean callbackOnly){
         if (threaded) {
             createThreadedTask(new Runnable() {
                 @Override
                 public void run() {
-                    refreshChatsTask();
+                    refreshChatsTask(callbackOnly);
                 }
             }).start();
         }else {
-            refreshChatsTask();
+            refreshChatsTask(callbackOnly);
         }
     }
 
@@ -382,13 +381,45 @@ public final class MessageManager {
         }
     }
 
-    public void alertMessageSendFailure(JSONMessage jsonMessage, ReturnType returnType){
+    public void alertMessageSendFailure(String identifier, ReturnType returnType){
+        if (!StringUtils.isEmpty(identifier) && MmsManager.isDefaultSmsApp() && (returnType == ReturnType.NOT_SENT || returnType == ReturnType.NUMBER_NOT_IMESSAGE || returnType == ReturnType.INVALID_NUMBER)){
+            Message message = messages.get(identifier);
+
+            if (message != null && isPossibleSmsChat(message.getChat())) {
+                MmsMessage mmsMessage = new MmsMessage(null, message.getChat(), message.getSender(), message.getAttachments(), message.getText(),
+                        message.getModernDateSent(), null, false, false, true);
+
+                removeMessageTask(message);
+                app.getMmsManager().sendMessage(mmsMessage);
+                return;
+            }
+        }
+
         for (MessageCallbacks callbacks : callbacksMap.values()){
-            callbacks.onMessageSendFailure(jsonMessage, returnType);
+            callbacks.onMessageSendFailure(returnType);
         }
     }
 
     public void alertActionPerformFailure(JSONAction jsonAction, ReturnType returnType){
+        if (ActionType.fromCode(jsonAction.getActionType()) == ActionType.CREATE_GROUP && MmsManager.isDefaultSmsApp() && returnType == ReturnType.NUMBER_NOT_IMESSAGE){
+            SmsGroupChat groupChat;
+            List<Handle> handles = new ArrayList<>();
+            String[] participants = jsonAction.getArgs()[1].split(",");
+
+            for (String s : participants){
+                handles.add(new Handle().setHandleID(s).setHandleType(Handle.HandleType.SMS));
+            }
+
+            groupChat = new SmsGroupChat(null, handles, null, false, false);
+
+            if (isPossibleSmsChat(groupChat)){
+                MmsMessage mmsMessage = new MmsMessage(null, groupChat, app.getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), jsonAction.getArgs()[2],
+                        Calendar.getInstance().getTime(), null, false, false, true);
+                app.getMmsManager().sendMessage(mmsMessage);
+                return;
+            }
+        }
+
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onActionPerformFailure(jsonAction, returnType);
         }
@@ -396,7 +427,7 @@ public final class MessageManager {
 
     public void alertAttachmentSendFailure(Attachment attachment, FailReason failReason){
         attachment.getFileLocation().getFile().delete();
-        weMessage.get().getMessageDatabase().deleteAttachmentByUuid(attachment.getUuid().toString());
+        app.getMessageDatabase().deleteAttachmentByUuid(attachment.getUuid().toString());
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onAttachmentSendFailure(failReason);
@@ -415,25 +446,20 @@ public final class MessageManager {
         }
     }
 
-    private void init(){
-        createThreadedTask(new Runnable() {
-            @Override
-            public void run() {
-                for (Handle h : weMessage.get().getMessageDatabase().getHandles()){
-                    handles.put(h.getUuid().toString(), h);
-                }
+    public void initialize(){
+        refreshChats(true, false);
+    }
 
-                for (MessageCallbacks callbacks : callbacksMap.values()){
-                    callbacks.onContactListRefresh(new ArrayList<>(getContacts().values()));
-                }
-            }
-        }).start();
+    public void dumpMessages(){
+        chats.clear();
+        messages.clear();
+        actionMessages.clear();
 
-        refreshChats(true);
+        refreshChats(false, true);
     }
 
     private void addContactTask(Contact contact, boolean useCallbacks){
-        weMessage.get().getMessageDatabase().addContact(contact);
+        app.getMessageDatabase().addContact(contact);
 
         if (useCallbacks) {
             for (MessageCallbacks callbacks : callbacksMap.values()) {
@@ -443,8 +469,8 @@ public final class MessageManager {
     }
 
     private void updateContactTask(String uuid, Contact newData, boolean useCallbacks){
-        Contact oldContact = weMessage.get().getMessageDatabase().getContactByUuid(uuid);
-        weMessage.get().getMessageDatabase().updateContact(uuid, newData);
+        Contact oldContact = app.getMessageDatabase().getContactByUuid(uuid);
+        app.getMessageDatabase().updateContact(uuid, newData);
 
         if (useCallbacks) {
             for (MessageCallbacks callbacks : callbacksMap.values()) {
@@ -454,7 +480,7 @@ public final class MessageManager {
     }
 
     private void deleteContactTask(String uuid, boolean useCallbacks){
-        weMessage.get().getMessageDatabase().deleteContactByUuid(uuid);
+        app.getMessageDatabase().deleteContactByUuid(uuid);
 
         if (useCallbacks) {
             for (MessageCallbacks callbacks : callbacksMap.values()) {
@@ -464,10 +490,10 @@ public final class MessageManager {
     }
 
     private void addHandleTask(Handle handle, boolean useCallbacks){
-        if (weMessage.get().getMessageDatabase().getHandleByHandleID(handle.getHandleID()) != null) return;
+        if (app.getMessageDatabase().getHandleByHandleID(handle.getHandleID()) != null) return;
 
         handles.put(handle.getUuid().toString(), handle);
-        weMessage.get().getMessageDatabase().addHandle(handle);
+        app.getMessageDatabase().addHandle(handle);
 
         if (useCallbacks) {
             for (MessageCallbacks callbacks : callbacksMap.values()) {
@@ -477,18 +503,18 @@ public final class MessageManager {
     }
 
     private void updateHandleTask(String uuid, Handle newData, boolean useCallbacks){
-        Handle oldHandle = weMessage.get().getMessageDatabase().getHandleByUuid(uuid);
+        Handle oldHandle = app.getMessageDatabase().getHandleByUuid(uuid);
 
         handles.put(uuid, newData);
-        weMessage.get().getMessageDatabase().updateHandle(uuid, newData);
+        app.getMessageDatabase().updateHandle(uuid, newData);
 
-        for (Chat chat : chats.values()) {
+        for (Chat chat : getChats()) {
             if (chat instanceof PeerChat) {
                 PeerChat peerChat = (PeerChat) chat;
 
                 if (peerChat.getHandle().getUuid().equals(oldHandle.getUuid())) {
                     peerChat.setHandle(newData);
-                    updateChatTask(peerChat.getUuid().toString(), peerChat);
+                    updateChatTask(peerChat.getIdentifier(), peerChat);
                 }
             } else if (chat instanceof GroupChat) {
                 GroupChat groupChat = (GroupChat) chat;
@@ -502,14 +528,23 @@ public final class MessageManager {
                     }
                 }
                 groupChat.setParticipants(newParticipantList);
-                updateChatTask(groupChat.getUuid().toString(), groupChat);
+                updateChatTask(groupChat.getIdentifier(), groupChat);
             }
         }
 
         for (Message message : messages.values()){
             if (message.getSender().getUuid().toString().equals(uuid)){
                 message.setSender(newData);
-                updateMessageTask(message.getUuid().toString(), message);
+                updateMessageTask(message.getIdentifier(), message);
+            }
+        }
+
+        if (MmsManager.isDefaultSmsApp()){
+            for (Message message : app.getMmsManager().getLoadedMessages().values()){
+                if (message.getSender().getUuid().toString().equals(uuid)){
+                    message.setSender(newData);
+                    updateMessageTask(message.getIdentifier(), message);
+                }
             }
         }
 
@@ -522,12 +557,12 @@ public final class MessageManager {
 
     private void deleteHandleTask(String uuid){
         List<Chat> chatsToDelete = new ArrayList<>();
-        Handle h = weMessage.get().getMessageDatabase().getHandleByUuid(uuid);
-        Contact c = weMessage.get().getMessageDatabase().getContactByHandle(h);
+        Handle h = app.getMessageDatabase().getHandleByUuid(uuid);
+        Contact c = app.getMessageDatabase().getContactByHandle(h);
 
-        if (weMessage.get().getMessageDatabase().getAccountByHandle(h) != null) return;
+        if (app.getMessageDatabase().getAccountByHandle(h) != null) return;
 
-        for (Chat chat : chats.values()){
+        for (Chat chat : getChats()){
             if (chat instanceof PeerChat){
                 if (((PeerChat) chat).getHandle().equals(h)) chatsToDelete.add(chat);
             }else if (chat instanceof GroupChat){
@@ -544,18 +579,22 @@ public final class MessageManager {
         }
 
         handles.remove(uuid);
-        weMessage.get().getMessageDatabase().deleteHandleByUuid(uuid);
+        app.getMessageDatabase().deleteHandleByUuid(uuid);
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onContactListRefresh(new ArrayList<>(getContacts().values()));
-            callbacks.onChatListRefresh(new ArrayList<>(getChats().values()));
+            callbacks.onChatListRefresh(getChats());
         }
     }
 
     private void addChatTask(Chat chat){
-        if (weMessage.get().getMessageDatabase().getChatByMacGuid(chat.getMacGuid()) != null) return;
-        chats.put(chat.getUuid().toString(), chat);
-        weMessage.get().getMessageDatabase().addChat(chat);
+        if (chat instanceof SmsChat){
+            app.getMmsManager().addChat((SmsChat) chat);
+        }else {
+            if (app.getMessageDatabase().getChatByMacGuid(chat.getMacGuid()) != null) return;
+            chats.put(chat.getIdentifier(), chat);
+            app.getMessageDatabase().addChat(chat);
+        }
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onChatAdd(chat);
@@ -563,10 +602,17 @@ public final class MessageManager {
     }
 
     private void updateChatTask(String uuid, Chat newData){
-        Chat oldChat = weMessage.get().getMessageDatabase().getChatByUuid(uuid);
+        Chat oldChat;
 
-        chats.put(uuid, newData);
-        weMessage.get().getMessageDatabase().updateChat(uuid, newData);
+        if (newData instanceof SmsChat){
+            oldChat = (Chat) app.getMmsManager().getSmsChat(uuid);
+            app.getMmsManager().updateChat(uuid, (SmsChat) newData);
+        }else {
+            oldChat = app.getMessageDatabase().getChatByIdentifier(uuid);
+
+            chats.put(uuid, newData);
+            app.getMessageDatabase().updateChat(uuid, newData);
+        }
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onChatUpdate(oldChat, newData);
@@ -574,9 +620,13 @@ public final class MessageManager {
     }
 
     private void setHasUnreadMessagesTask(Chat chat, boolean hasUnreadMessages){
-        chat.setHasUnreadMessages(hasUnreadMessages);
-        chats.put(chat.getUuid().toString(), chat);
-        weMessage.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        if (chat instanceof SmsChat){
+            app.getMmsManager().setHasUnreadMessages((SmsChat) chat, hasUnreadMessages);
+        }else {
+            chat.setHasUnreadMessages(hasUnreadMessages);
+            chats.put(chat.getIdentifier(), chat);
+            app.getMessageDatabase().updateChat(chat.getIdentifier(), chat);
+        }
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onUnreadMessagesUpdate(chat, hasUnreadMessages);
@@ -585,11 +635,11 @@ public final class MessageManager {
 
     private void renameGroupChatTask(GroupChat chat, String newName, Date executionTime){
         chat.setDisplayName(newName);
-        chats.put(chat.getUuid().toString(), chat);
-        weMessage.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        chats.put(chat.getIdentifier(), chat);
+        app.getMessageDatabase().updateChat(chat.getIdentifier(), chat);
 
         ActionMessage actionMessage = new ActionMessage(
-                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_rename_group, newName), DateUtils.convertDateTo2001Time(executionTime));
+                UUID.randomUUID(), chat, app.getString(R.string.action_message_rename_group, newName), DateUtils.convertDateTo2001Time(executionTime));
         addActionMessageTask(actionMessage);
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
@@ -599,11 +649,11 @@ public final class MessageManager {
 
     private void addParticipantToGroupTask(GroupChat chat, Handle handle, Date executionTime){
         chat.addParticipant(handle);
-        chats.put(chat.getUuid().toString(), chat);
-        weMessage.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        chats.put(chat.getIdentifier(), chat);
+        app.getMessageDatabase().updateChat(chat.getIdentifier(), chat);
 
         ActionMessage actionMessage = new ActionMessage(
-                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_add_participant, handle.getDisplayName()), DateUtils.convertDateTo2001Time(executionTime));
+                UUID.randomUUID(), chat, app.getString(R.string.action_message_add_participant, handle.getDisplayName()), DateUtils.convertDateTo2001Time(executionTime));
         addActionMessageTask(actionMessage);
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
@@ -613,11 +663,11 @@ public final class MessageManager {
 
     private void removeParticipantFromGroupTask(GroupChat chat, Handle handle, Date executionTime){
         chat.removeParticipant(handle);
-        chats.put(chat.getUuid().toString(), chat);
-        weMessage.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        chats.put(chat.getIdentifier(), chat);
+        app.getMessageDatabase().updateChat(chat.getIdentifier(), chat);
 
         ActionMessage actionMessage = new ActionMessage(
-                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_remove_participant, handle.getDisplayName()), DateUtils.convertDateTo2001Time(executionTime));
+                UUID.randomUUID(), chat, app.getString(R.string.action_message_remove_participant, handle.getDisplayName()), DateUtils.convertDateTo2001Time(executionTime));
         addActionMessageTask(actionMessage);
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
@@ -627,11 +677,11 @@ public final class MessageManager {
 
     private void leaveGroupTask(GroupChat chat, Date executionTime){
         chat.setIsInChat(false);
-        chats.put(chat.getUuid().toString(), chat);
-        weMessage.get().getMessageDatabase().updateChat(chat.getUuid().toString(), chat);
+        chats.put(chat.getIdentifier(), chat);
+        app.getMessageDatabase().updateChat(chat.getIdentifier(), chat);
 
         ActionMessage actionMessage = new ActionMessage(
-                UUID.randomUUID(), chat, getContext().getString(R.string.action_message_leave_group), DateUtils.convertDateTo2001Time(executionTime));
+                UUID.randomUUID(), chat, app.getString(R.string.action_message_leave_group), DateUtils.convertDateTo2001Time(executionTime));
         addActionMessageTask(actionMessage);
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
@@ -640,35 +690,48 @@ public final class MessageManager {
     }
 
     private void deleteChatTask(Chat chat){
-        chats.remove(chat.getUuid().toString());
-        weMessage.get().clearNotifications(chat.getUuid().toString());
-        weMessage.get().getMessageDatabase().deleteChatByUuid(chat.getUuid().toString());
+        if (chat instanceof SmsChat){
+            app.getMmsManager().deleteChat((SmsChat) chat);
+        }else {
+            if (chat.getIdentifier() != null) {
+                chats.remove(chat.getIdentifier());
+                app.clearNotifications(chat.getIdentifier());
+                app.getMessageDatabase().deleteChatByUuid(chat.getIdentifier());
+            }
+        }
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onChatDelete(chat);
         }
     }
 
-    private void refreshChatsTask(){
-        chats.clear();
+    private void refreshChatsTask(boolean callbackOnly){
+        if (!callbackOnly) {
+            chats.clear();
 
-        for (Chat c : weMessage.get().getMessageDatabase().getChats()){
-            chats.put(c.getUuid().toString(), c);
+            for (Chat c : app.getMessageDatabase().getChats()) {
+                chats.put(c.getIdentifier(), c);
+            }
         }
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
-            callbacks.onChatListRefresh(new ArrayList<>(chats.values()));
+            callbacks.onChatListRefresh(getChats());
         }
     }
 
     private void addMessageTask(Message message){
-        messages.put(message.getUuid().toString(), message);
-        for (Attachment a : message.getAttachments()){
-            if (StringUtils.isEmpty(a.getMacGuid()) || weMessage.get().getMessageDatabase().getAttachmentByMacGuid(a.getMacGuid()) == null){
-                weMessage.get().getMessageDatabase().addAttachment(a);
+        if (message instanceof MmsMessage){
+            app.getMmsManager().addMessage((MmsMessage) message);
+        }else {
+            for (Attachment a : message.getAttachments()) {
+                if (StringUtils.isEmpty(a.getMacGuid()) || app.getMessageDatabase().getAttachmentByMacGuid(a.getMacGuid()) == null) {
+                    app.getMessageDatabase().addAttachment(a);
+                }
             }
+
+            messages.put(message.getIdentifier(), message);
+            app.getMessageDatabase().addMessage(message);
         }
-        weMessage.get().getMessageDatabase().addMessage(message);
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onMessageAdd(message);
@@ -676,10 +739,17 @@ public final class MessageManager {
     }
 
     private void updateMessageTask(String uuid, Message newData){
-        Message oldMessage = weMessage.get().getMessageDatabase().getMessageByUuid(uuid);
+        Message oldMessage;
 
-        messages.put(uuid, newData);
-        weMessage.get().getMessageDatabase().updateMessage(uuid, newData);
+        if (newData instanceof MmsMessage){
+            oldMessage = app.getMmsManager().getMmsMessage(uuid, false);
+            app.getMmsManager().updateMessage(uuid, (MmsMessage) newData);
+        }else {
+            oldMessage = app.getMessageDatabase().getMessageByIdentifier(uuid);
+
+            messages.put(uuid, newData);
+            app.getMessageDatabase().updateMessage(uuid, newData);
+        }
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onMessageUpdate(oldMessage, newData);
@@ -687,8 +757,12 @@ public final class MessageManager {
     }
 
     private void removeMessageTask(Message message){
-        messages.remove(message.getUuid().toString());
-        weMessage.get().getMessageDatabase().deleteMessageByUuid(message.getUuid().toString());
+        if (message instanceof MmsMessage){
+            if (!isUuid(message.getIdentifier())) app.getMmsManager().removeMessage((MmsMessage) message);
+        }else {
+            messages.remove(message.getIdentifier());
+            app.getMessageDatabase().deleteMessageByUuid(message.getIdentifier());
+        }
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onMessageDelete(message);
@@ -696,50 +770,46 @@ public final class MessageManager {
     }
 
     private void queueMessagesTask(Chat chat, long startIndex, long requestAmount){
-        List<ActionMessage> actionMessageList = weMessage.get().getMessageDatabase().getReversedActionMessagesByTime(chat, startIndex, requestAmount);
-        List<Message> messageList = weMessage.get().getMessageDatabase().getReversedMessagesByTime(chat, startIndex, requestAmount);
-
-        for (ActionMessage m : actionMessageList){
-            actionMessages.put(m.getUuid().toString(), m);
-        }
-
-        for (Message m : messageList){
-            messages.put(m.getUuid().toString(), m);
-        }
-
         List<MessageBase> joinedList = new ArrayList<>();
-        joinedList.addAll(actionMessageList);
-        joinedList.addAll(messageList);
 
-        Collections.sort(joinedList, new Comparator<MessageBase>() {
-            @Override
-            public int compare(MessageBase o1, MessageBase o2) {
-                if (o1.getTimeIdentifier() > o2.getTimeIdentifier()) {
-                    return -1;
-                }
-                if (o1.getTimeIdentifier() < o2.getTimeIdentifier()) {
-                    return 1;
-                }
-                return 0;
+        if (chat instanceof SmsChat){
+            joinedList.addAll(app.getMmsManager().queueMessages((SmsChat) chat, startIndex, requestAmount));
+        }else {
+            List<ActionMessage> actionMessageList = app.getMessageDatabase().getReversedActionMessagesByTime(chat, startIndex, requestAmount);
+            List<Message> messageList = app.getMessageDatabase().getReversedMessagesByTime(chat, startIndex, requestAmount);
+
+            for (ActionMessage m : actionMessageList) {
+                actionMessages.put(m.getUuid().toString(), m);
             }
-        });
+
+            for (Message m : messageList) {
+                messages.put(m.getIdentifier(), m);
+            }
+
+            joinedList.addAll(actionMessageList);
+            joinedList.addAll(messageList);
+
+            Collections.sort(joinedList, new Comparator<MessageBase>() {
+                @Override
+                public int compare(MessageBase o1, MessageBase o2) {
+                    if (o1.getTimeIdentifier() > o2.getTimeIdentifier()) {
+                        return -1;
+                    }
+                    if (o1.getTimeIdentifier() < o2.getTimeIdentifier()) {
+                        return 1;
+                    }
+                    return 0;
+                }
+            });
+        }
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onMessagesQueueFinish(joinedList);
         }
     }
 
-    private void refreshMessagesTask(){
-        messages.clear();
-        actionMessages.clear();
-
-        for (MessageCallbacks callbacks : callbacksMap.values()){
-            callbacks.onMessagesRefresh();
-        }
-    }
-
     private void addActionMessageTask(ActionMessage actionMessage){
-        weMessage.get().getMessageDatabase().addActionMessage(actionMessage);
+        app.getMessageDatabase().addActionMessage(actionMessage);
         actionMessages.put(actionMessage.getUuid().toString(), actionMessage);
 
         for (MessageCallbacks callbacks : callbacksMap.values()){
@@ -747,12 +817,42 @@ public final class MessageManager {
         }
     }
 
-    public void dumpAll(weMessage app){
-        handles.clear();
-        chats.clear();
-        messages.clear();
-        actionMessages.clear();
-        callbacksMap.clear();
+    private void init(){
+        createThreadedTask(new Runnable() {
+            @Override
+            public void run() {
+                for (Handle h : app.getMessageDatabase().getHandles()){
+                    handles.put(h.getUuid().toString(), h);
+                }
+
+                for (MessageCallbacks callbacks : callbacksMap.values()){
+                    callbacks.onContactListRefresh(new ArrayList<>(getContacts().values()));
+                }
+            }
+        }).start();
+    }
+
+    private boolean isUuid(String identifier){
+        try {
+            UUID.fromString(identifier);
+            return true;
+        }catch (Exception ex){
+            return false;
+        }
+    }
+
+    private boolean isPossibleSmsChat(Chat chat){
+        if (chat instanceof PeerChat){
+            return PhoneNumberUtil.getInstance().isPossibleNumber(((PeerChat) chat).getHandle().getHandleID(), Resources.getSystem().getConfiguration().locale.getCountry());
+        }else {
+            GroupChat groupChat = (GroupChat) chat;
+
+            for (Handle h : groupChat.getParticipants()){
+                if (!PhoneNumberUtil.getInstance().isPossibleNumber(h.getHandleID(), Resources.getSystem().getConfiguration().locale.getCountry())) return false;
+            }
+
+            return true;
+        }
     }
 
     private Thread createThreadedTask(Runnable runnable){

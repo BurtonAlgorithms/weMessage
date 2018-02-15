@@ -33,9 +33,9 @@ import java.io.File;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
-import scott.wemessage.app.messages.models.Attachment;
-import scott.wemessage.app.messages.models.Message;
-import scott.wemessage.app.messages.models.chats.Chat;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.messages.Attachment;
+import scott.wemessage.app.models.messages.Message;
 import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
@@ -376,7 +376,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
 
     private void performEffect(Message message, MessageEffect effect, boolean alreadyPerformed, boolean override){
         if (!alreadyPerformed) {
-            weMessage.get().getMessageManager().updateMessage(message.getUuid().toString(), message.setEffectFinished(true), true);
+            weMessage.get().getMessageManager().updateMessage(message.getIdentifier(), message.setEffectFinished(true), true);
         }
 
         switch (effect){

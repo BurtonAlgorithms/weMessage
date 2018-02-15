@@ -1,25 +1,23 @@
-package scott.wemessage.app.messages.models.chats;
-
-import java.util.UUID;
+package scott.wemessage.app.models.chats;
 
 import scott.wemessage.app.utils.FileLocationContainer;
 
 public abstract class Chat {
 
-    private UUID uuid;
+    private String identifier;
     private String macGuid;
     private String macGroupID;
     private String macChatIdentifier;
     private boolean isInChat;
     private boolean hasUnreadMessages;
-    protected FileLocationContainer chatPictureFileLocation;
+    FileLocationContainer chatPictureFileLocation;
 
     public Chat(){
 
     }
 
-    public Chat(UUID uuid, FileLocationContainer chatPictureFileLocation, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages){
-        this.uuid = uuid;
+    public Chat(String identifier, FileLocationContainer chatPictureFileLocation, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages){
+        this.identifier = identifier;
         this.chatPictureFileLocation = chatPictureFileLocation;
         this.macGuid = macGuid;
         this.macGroupID = macGroupID;
@@ -28,8 +26,8 @@ public abstract class Chat {
         this.hasUnreadMessages = hasUnreadMessages;
     }
 
-    public UUID getUuid() {
-        return uuid;
+    public String getIdentifier() {
+        return identifier;
     }
 
     public abstract ChatType getChatType();
@@ -58,8 +56,8 @@ public abstract class Chat {
         return hasUnreadMessages;
     }
 
-    public Chat setUuid(UUID uuid) {
-        this.uuid = uuid;
+    public Chat setIdentifier(String identifier) {
+        this.identifier = identifier;
         return this;
     }
 
@@ -91,6 +89,11 @@ public abstract class Chat {
     public Chat setHasUnreadMessages(boolean hasUnreadMessages) {
         this.hasUnreadMessages = hasUnreadMessages;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof Chat && ((Chat) obj).getIdentifier().equals(getIdentifier());
     }
 
     public enum ChatType {

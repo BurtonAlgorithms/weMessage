@@ -1,8 +1,6 @@
-package scott.wemessage.app.messages.models.chats;
+package scott.wemessage.app.models.chats;
 
-import java.util.UUID;
-
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.utils.FileLocationContainer;
 import scott.wemessage.app.weMessage;
 
@@ -14,12 +12,12 @@ public class PeerChat extends Chat {
 
     }
 
-    public PeerChat(UUID uuid, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages, Handle handle) {
-        super(uuid, null, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
+    public PeerChat(String identifier, String macGuid, String macGroupID, String macChatIdentifier, boolean isInChat, boolean hasUnreadMessages, Handle handle) {
+        super(identifier, null, macGuid, macGroupID, macChatIdentifier, isInChat, hasUnreadMessages);
 
         this.handle = handle;
 
-        if (weMessage.get().getMessageDatabase().getContactByHandle(handle) != null){
+        if (handle != null && weMessage.get().getMessageDatabase().getContactByHandle(handle) != null){
             this.chatPictureFileLocation = weMessage.get().getMessageDatabase().getContactByHandle(handle).getContactPictureFileLocation();
         }
     }
@@ -31,7 +29,7 @@ public class PeerChat extends Chat {
 
     @Override
     public FileLocationContainer getChatPictureFileLocation() {
-        if (weMessage.get().getMessageDatabase().getContactByHandle(getHandle()) != null){
+        if (getHandle() != null && weMessage.get().getMessageDatabase().getContactByHandle(getHandle()) != null){
             return weMessage.get().getMessageDatabase().getContactByHandle(getHandle()).getContactPictureFileLocation();
         }
 

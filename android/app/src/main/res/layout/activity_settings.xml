@@ -51,7 +51,8 @@
                 android:textSize="16sp"
                 app:fontName="OrkneyLight"/>
 
-            <RelativeLayout
+            <LinearLayout
+                android:orientation="vertical"
                 android:layout_margin="16dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -88,7 +89,6 @@
                     android:background="?android:attr/selectableItemBackground"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_below="@id/settingsConnectToServer"
                     android:padding="8dp">
 
                     <ImageView
@@ -114,6 +114,121 @@
                     <ImageView
                         android:id="@+id/settingsContactsArrow"
                         android:src="@drawable/ic_arrow_right"
+                        android:tint="@color/heavyBlue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:layout_alignParentEnd="true"/>
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/settingsEditNumber"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp">
+
+                    <ImageView
+                        android:id="@+id/settingsEditNumberImage"
+                        android:src="@drawable/ic_phone"
+                        android:tint="@color/colorAccent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="-4dp"
+                        android:layout_centerVertical="true"/>
+
+                    <scott.wemessage.app.ui.view.font.FontTextView
+                        android:text="@string/edit_number"
+                        android:textSize="18sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_centerVertical="true"
+                        android:layout_toStartOf="@+id/settingsEditNumberArrow"
+                        android:layout_toEndOf="@id/settingsEditNumberImage"
+                        app:fontName="OrkneyLight"/>
+
+                    <ImageView
+                        android:id="@+id/settingsEditNumberArrow"
+                        android:src="@drawable/ic_arrow_right"
+                        android:tint="@color/heavyBlue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:layout_alignParentEnd="true"/>
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/settingsToggleSms"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp">
+
+                    <ImageView
+                        android:id="@+id/settingsToggleSmsImage"
+                        android:src="@drawable/ic_text_message"
+                        android:tint="@color/outgoingBubbleColorOrangePressed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="-4dp"
+                        android:layout_centerVertical="true"/>
+
+                    <scott.wemessage.app.ui.view.font.FontTextView
+                        android:text="@string/toggle_sms_mode"
+                        android:textSize="18sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_centerVertical="true"
+                        android:layout_toStartOf="@+id/settingsToggleSmsArrow"
+                        android:layout_toEndOf="@id/settingsToggleSmsImage"
+                        app:fontName="OrkneyLight"/>
+
+                    <ImageView
+                        android:id="@+id/settingsToggleSmsArrow"
+                        android:src="@drawable/ic_arrow_right"
+                        android:tint="@color/outgoingBubbleColorOrangePressed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:layout_alignParentEnd="true"/>
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/settingsSwitchAccounts"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp">
+
+                    <ImageView
+                        android:id="@+id/settingsSwitchAccountsImage"
+                        android:src="@drawable/ic_people"
+                        android:tint="@color/outgoingBubbleColor"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="-6dp"
+                        android:layout_centerVertical="true"/>
+
+                    <scott.wemessage.app.ui.view.font.FontTextView
+                        android:text="@string/switch_accounts"
+                        android:textSize="18sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_centerVertical="true"
+                        android:layout_toStartOf="@+id/settingsSwitchAccountsArrow"
+                        android:layout_toEndOf="@id/settingsSwitchAccountsImage"
+                        app:fontName="OrkneyLight"/>
+
+                    <ImageView
+                        android:id="@+id/settingsSwitchAccountsArrow"
+                        android:src="@drawable/ic_arrow_right"
+                        android:tint="@color/heavyBlue"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -122,47 +237,16 @@
                 </RelativeLayout>
 
                 <LinearLayout
-                    android:id="@+id/settingsAbout"
-                    android:background="?android:attr/selectableItemBackground"
-                    android:orientation="horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/settingsContacts"
-                    android:paddingTop="8dp"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:src="@drawable/ic_info_filled"
-                        android:tint="@color/lighterBlack"
-                        android:layout_marginStart="9dp"
-                        android:layout_marginEnd="-4dp"
-                        android:layout_width="42dp"
-                        android:layout_height="42dp"/>
-
-                    <scott.wemessage.app.ui.view.font.FontTextView
-                        android:text="@string/word_about"
-                        android:textSize="18sp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        app:fontName="OrkneyLight"/>
-
-                </LinearLayout>
-
-                <LinearLayout
                     android:id="@+id/settingsSignInOut"
                     android:background="?android:attr/selectableItemBackground"
                     android:orientation="horizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_below="@id/settingsAbout"
-                    android:layout_marginBottom="24dp"
                     android:padding="8dp"
                     android:gravity="center_vertical">
 
                     <ImageView
                         android:src="@drawable/ic_person"
-                        android:layout_marginEnd="-4dp"
                         android:layout_width="42dp"
                         android:layout_height="42dp"/>
 
@@ -176,7 +260,34 @@
 
                 </LinearLayout>
 
-            </RelativeLayout>
+                <LinearLayout
+                    android:id="@+id/settingsAbout"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:paddingTop="8dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:src="@drawable/ic_info_filled"
+                        android:tint="@color/lighterBlack"
+                        android:layout_marginStart="9dp"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"/>
+
+                    <scott.wemessage.app.ui.view.font.FontTextView
+                        android:text="@string/word_about"
+                        android:textSize="18sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        app:fontName="OrkneyLight"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </RelativeLayout>
 

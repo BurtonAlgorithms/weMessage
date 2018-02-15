@@ -1,6 +1,8 @@
-package scott.wemessage.app.messages.models.users;
+package scott.wemessage.app.models.users;
 
 import java.util.UUID;
+
+import scott.wemessage.app.weMessage;
 
 public class Account {
 
@@ -28,6 +30,10 @@ public class Account {
 
     public String getEncryptedPassword() {
         return encryptedPassword;
+    }
+
+    public Handle getHandle(){
+        return weMessage.get().getMessageDatabase().getHandleByHandleID(getEmail());
     }
 
     public Account setUuid(UUID uuid) {

@@ -14,7 +14,6 @@ import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.IConnectionBinder;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.connection.json.action.JSONAction;
-import scott.wemessage.commons.connection.json.message.JSONMessage;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
@@ -30,7 +29,7 @@ public abstract class MessagingFragment extends Fragment {
         startConnectionServiceSilently();
     }
 
-    protected void showMessageSendFailureSnackbar(JSONMessage jsonMessage, ReturnType returnType){
+    protected void showMessageSendFailureSnackbar(ReturnType returnType){
         switch (returnType) {
             case INVALID_NUMBER:
                 showErroredSnackbar(getString(R.string.message_delivery_failure_invalid_number));
@@ -49,6 +48,9 @@ public abstract class MessagingFragment extends Fragment {
                 break;
             case UI_ERROR:
                 showErroredSnackbar(getString(R.string.message_delivery_failure_ui_error));
+                break;
+            default:
+                showErroredSnackbar(getString(R.string.message_delivery_failure_unknown));
                 break;
         }
     }
@@ -212,8 +214,8 @@ public abstract class MessagingFragment extends Fragment {
     }
 
     private void startConnectionServiceSilently(){
-        if (!isConnectionServiceRunning()){
-            SharedPreferences sharedPreferences = getActivity().getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
+        if (!isConnectionServiceRunning() && weMessage.get().isSignedIn(true)){
+            SharedPreferences sharedPreferences = weMessage.get().getSharedPreferences();
             Intent startServiceIntent = new Intent(getActivity(), ConnectionService.class);
 
             String host = sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_HOST, "");
@@ -235,6 +237,7 @@ public abstract class MessagingFragment extends Fragment {
             startServiceIntent.putExtra(weMessage.ARG_EMAIL, sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, ""));
             startServiceIntent.putExtra(weMessage.ARG_PASSWORD, sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, ""));
             startServiceIntent.putExtra(weMessage.ARG_PASSWORD_ALREADY_HASHED, true);
+            startServiceIntent.putExtra(weMessage.ARG_FAILOVER_IP, sharedPreferences.getString(weMessage.SHARED_PREFERENCES_LAST_FAILOVER_IP, ""));
 
             getActivity().startService(startServiceIntent);
 

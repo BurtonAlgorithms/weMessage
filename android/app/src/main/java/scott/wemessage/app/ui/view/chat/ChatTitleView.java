@@ -17,10 +17,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import scott.wemessage.R;
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.GroupChat;
-import scott.wemessage.app.messages.models.chats.PeerChat;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.chats.PeerChat;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.ui.view.font.FontTextView;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.view.DisplayUtils;

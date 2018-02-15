@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages.models.users;
+package scott.wemessage.app.models.users;
 
 import android.content.res.Resources;
 

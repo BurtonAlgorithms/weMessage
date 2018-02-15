@@ -70,7 +70,7 @@ public class ChatDialogViewHolder extends DialogsListAdapter.DialogViewHolder<Ch
         itemView.findViewById(R.id.chatDeleteButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                weMessage.get().getMessageManager().deleteChat(weMessage.get().getMessageDatabase().getChatByUuid(dialogId), true);
+                weMessage.get().getMessageManager().deleteChat(weMessage.get().getMessageDatabase().getChatByIdentifier(dialogId), true);
             }
         });
     }

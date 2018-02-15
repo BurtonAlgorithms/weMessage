@@ -50,6 +50,7 @@
             android:paddingStart="12dp"
             android:text="@string/login_text"
             android:textSize="16sp"
+            android:textColorLink="@color/colorHeader"
             app:fontName="OrkneyLight"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
@@ -83,6 +84,40 @@
 
             <EditText
                 android:id="@+id/launchIpEditText"
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:backgroundTint="@color/colorHeader"
+                android:inputType="text"
+                android:imeOptions="actionDone"
+                android:layout_marginBottom="8dp"/>
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <scott.wemessage.app.ui.view.font.FontTextView
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:labelFor="@+id/launchFailoverIpEditText"
+                    app:fontName="OrkneyBold"
+                    android:text="@string/login_failover_ip"
+                    android:textColor="@color/lightBlack" />
+
+                <ImageView
+                    android:id="@+id/launchFailoverIpShowDetailsButton"
+                    android:src="@drawable/ic_help_outline"
+                    android:tint="@color/colorHeader"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_marginStart="12dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/launchFailoverIpEditText"
                 android:layout_height="wrap_content"
                 android:layout_width="match_parent"
                 android:backgroundTint="@color/colorHeader"
@@ -162,7 +197,7 @@
             app:layout_constraintTop_toBottomOf="@+id/launchLoginLinearLayout" />
 
         <scott.wemessage.app.ui.view.font.FontButton
-            android:id="@+id/offlineButton"
+            android:id="@+id/smsOrOfflineButton"
             app:buttonFontName="OrkneyLight"
             android:textAllCaps="false"
             android:textSize="20sp"

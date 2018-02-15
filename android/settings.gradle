@@ -1,6 +1,8 @@
 include ':app'
-include ':Commons'
+include ':commons'
 include ':chatkit'
+include ':smskit'
 
-project(':Commons').projectDir = new File(rootDir.getParent(), '/Commons')
+project(':commons').projectDir = new File(rootDir.getParent(), '/Commons')
 project(':chatkit').projectDir = new File(rootDir, '/dependencies/chatkit')
+project(':smskit').projectDir = new File(rootDir, '/dependencies/smskit')

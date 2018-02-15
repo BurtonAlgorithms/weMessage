@@ -6,10 +6,10 @@ import com.stfalcon.chatkit.commons.models.IMessage;
 import java.util.ArrayList;
 import java.util.List;
 
-import scott.wemessage.app.messages.models.chats.Chat;
-import scott.wemessage.app.messages.models.chats.GroupChat;
-import scott.wemessage.app.messages.models.chats.PeerChat;
-import scott.wemessage.app.messages.models.users.Handle;
+import scott.wemessage.app.models.chats.Chat;
+import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.chats.PeerChat;
+import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.ui.view.messages.MessageView;
 import scott.wemessage.app.ui.view.messages.UserView;
 import scott.wemessage.app.utils.IOUtils;
@@ -38,7 +38,7 @@ public class ChatDialogView implements IDialog {
 
     @Override
     public String getId() {
-        return chat.getUuid().toString();
+        return chat.getIdentifier();
     }
 
     @Override
@@ -73,7 +73,7 @@ public class ChatDialogView implements IDialog {
 
     @Override
     public int getUnreadCount() {
-        return booleanToInteger(weMessage.get().getMessageDatabase().getChatByUuid(getId()).hasUnreadMessages());
+        return booleanToInteger(weMessage.get().getMessageDatabase().getChatByIdentifier(getId()).hasUnreadMessages());
     }
 
     private int booleanToInteger(boolean bool){

@@ -4,7 +4,7 @@ import android.support.v4.app.Fragment;
 
 import scott.wemessage.R;
 import scott.wemessage.app.ui.ChatListFragment;
-import scott.wemessage.app.utils.view.SingleFragmentActivity;
+import scott.wemessage.app.ui.activities.abstracts.SingleFragmentActivity;
 
 public class ChatListActivity extends SingleFragmentActivity {
 

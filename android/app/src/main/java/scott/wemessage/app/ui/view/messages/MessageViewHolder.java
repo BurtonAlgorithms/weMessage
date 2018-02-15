@@ -1,6 +1,6 @@
 package scott.wemessage.app.ui.view.messages;
 
-import scott.wemessage.app.messages.models.Attachment;
+import scott.wemessage.app.models.messages.Attachment;
 
 public interface MessageViewHolder {
 
