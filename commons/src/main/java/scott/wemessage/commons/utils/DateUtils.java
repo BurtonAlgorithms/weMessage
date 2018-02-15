@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 public class DateUtils {
 
     public static Date getDateUsing2001(Long time) {
+        if(time == null) return null;
+
         try {
             return new Date(get2001Time() + TimeUnit.SECONDS.toMillis(time));
         }catch(Exception ex){
@@ -23,6 +25,8 @@ public class DateUtils {
     }
 
     public static Long convertDateTo2001Time(Date date){
+        if (date == null) return null;
+
         try {
             return TimeUnit.MILLISECONDS.toSeconds(date.getTime()) - TimeUnit.MILLISECONDS.toSeconds(get2001Time());
         }catch(Exception ex){

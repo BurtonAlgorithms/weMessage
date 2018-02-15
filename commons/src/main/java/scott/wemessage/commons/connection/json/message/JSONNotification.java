@@ -28,11 +28,14 @@ public class JSONNotification {
     @SerializedName("attachmentNumber")
     private String attachmentNumber;
 
+    @SerializedName("accountLogin")
+    private String accountLogin;
+
     public JSONNotification(){
 
     }
 
-    public JSONNotification(String notificationVersion, String registrationToken, String encryptedText, String key, String handleId, String chatId, String chatName, String attachmentNumber) {
+    public JSONNotification(String notificationVersion, String registrationToken, String encryptedText, String key, String handleId, String chatId, String chatName, String attachmentNumber, String accountLogin) {
         this.notificationVersion = notificationVersion;
         this.registrationToken = registrationToken;
         this.encryptedText = encryptedText;
@@ -41,6 +44,7 @@ public class JSONNotification {
         this.chatId = chatId;
         this.chatName = chatName;
         this.attachmentNumber = attachmentNumber;
+        this.accountLogin = accountLogin;
     }
 
     public String getNotificationVersion() {
@@ -75,6 +79,10 @@ public class JSONNotification {
         return attachmentNumber;
     }
 
+    public String getAccountLogin() {
+        return accountLogin;
+    }
+
     public void setNotificationVersion(String notificationVersion) {
         this.notificationVersion = notificationVersion;
     }
@@ -105,5 +113,9 @@ public class JSONNotification {
 
     public void setAttachmentNumber(String attachmentNumber) {
         this.attachmentNumber = attachmentNumber;
+    }
+
+    public void setAccountLogin(String accountLogin) {
+        this.accountLogin = accountLogin;
     }
 }

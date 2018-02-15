@@ -4,7 +4,7 @@ public interface Constants {
 
     String WEMESSAGE_VERSION = "1.2";
     int WEMESSAGE_BUILD_VERSION = 12;
-    int FIREBASE_NOTIFICATION_VERSION = 1;
+    int FIREBASE_NOTIFICATION_VERSION = 2;
 
     int DEFAULT_PORT = 22222;
     int MINIMUM_PASSWORD_LENGTH = 8;

@@ -44,6 +44,25 @@ public class FileUtils {
         return new FileInputStream(file);
     }
 
+    public static void writeInputStreamToFile(InputStream inputStream, File file) throws IOException {
+        OutputStream output = null;
+
+        try {
+            output = new FileOutputStream(file);
+
+            byte[] buffer = new byte[4 * 1024];
+            int read;
+
+            while ((read = inputStream.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+            output.flush();
+        } finally {
+            if (output != null) output.close();
+            inputStream.close();
+        }
+    }
+
     public static byte[] readBytesFromFile(File file) throws IOException {
         byte[] buffer = new byte[(int) file.length()];
         InputStream ios = null;
