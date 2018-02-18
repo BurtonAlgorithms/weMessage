@@ -648,26 +648,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     public void onContactListRefresh(List<? extends ContactInfo> handles) { }
 
     @Override
-    public void onChatAdd(Chat chat) {
-        if (chat instanceof SmsChat){
-            if (chat instanceof SmsPeerChat && getChat() instanceof PeerChat){
-                if (((SmsPeerChat) chat).getHandle().equals(((PeerChat) getChat()).getHandle())){
-                    launchConversationView(chat.getIdentifier());
-                }
-            }else if (chat instanceof SmsGroupChat && getChat() instanceof GroupChat){
-                boolean isChatThis = ListUtils.areListsEqual(((SmsGroupChat) chat).getParticipants(), ((GroupChat) getChat()).getParticipants(), new Comparator<Handle>() {
-                    @Override
-                    public int compare(Handle o1, Handle o2) {
-                        return o1.getHandleID().compareTo(o2.getHandleID());
-                    }
-                });
-
-                if (isChatThis){
-                    launchConversationView(chat.getIdentifier());
-                }
-            }
-        }
-    }
+    public void onChatAdd(Chat chat) { }
 
     @Override
     public void onChatUpdate(Chat oldData, final Chat newData) {
@@ -818,6 +799,28 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
                     messageListAdapter.update(oldData.getIdentifier(), new MessageView(newData));
                     messageMapIntegrity.put(newData.getIdentifier(), newData);
+                    showDeliveryStatusOnLastMessage();
+                }else {
+                    Chat newChat = newData.getChat();
+
+                    if (isChatThis(oldData.getChat()) && newChat instanceof SmsChat){
+                        if (newChat instanceof SmsPeerChat && getChat() instanceof PeerChat) {
+                            if (((SmsPeerChat) newChat).getHandle().equals(((PeerChat) getChat()).getHandle())) {
+                                launchConversationView(newChat.getIdentifier());
+                            }
+                        } else if (newChat instanceof SmsGroupChat && getChat() instanceof GroupChat) {
+                            boolean isChatThis = ListUtils.areListsEqual(((SmsGroupChat) newChat).getParticipants(), ((GroupChat) getChat()).getParticipants(), new Comparator<Handle>() {
+                                @Override
+                                public int compare(Handle o1, Handle o2) {
+                                    return o1.getHandleID().compareTo(o2.getHandleID());
+                                }
+                            });
+
+                            if (isChatThis) {
+                                launchConversationView(newChat.getIdentifier());
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -1361,7 +1364,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
 
         if (useMms){
-            if (totalSize > weMessage.MAX_MMS_ATTACHMENT_SIZE){
+            if (totalSize > weMessage.MAX_MMS_ATTACHMENT_SIZE * 7){
                 return new PackedMessage(null, MessageTaskReturnType.FILE_SIZE_TOO_LARGE_MMS);
             }
         }
@@ -1441,7 +1444,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             message = new MmsMessage(
                     null,
                     getChat(),
-                    weMessage.get().getCurrentSession().getSmsHandle(),
+                    getChat() instanceof SmsChat ? weMessage.get().getCurrentSession().getSmsHandle() : weMessage.get().getCurrentSession().getAccount().getHandle(),
                     attachments,
                     unprocessedMessage.getInput().toString().trim(),
                     Calendar.getInstance().getTime(),

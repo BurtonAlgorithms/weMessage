@@ -18,12 +18,13 @@ public class MmsSent extends MmsSentReceiver {
         super.onReceive(context, intent);
 
         try {
+            String taskIdentifier = intent.getStringExtra(EXTRA_TASK_IDENTIFIER);
             Uri messageUri = Uri.parse(intent.getStringExtra(EXTRA_CONTENT_URI));
-            MmsMessage mmsMessage = weMessage.get().getMmsDatabase().getMessageFromUri(messageUri);
+            MmsMessage mmsMessage = weMessage.get().getMmsDatabase().getMessageFromUri(taskIdentifier, messageUri);
 
-            if (mmsMessage != null) {
-                weMessage.get().getMmsManager().updateOrAddMessage(intent.getStringExtra(EXTRA_TASK_IDENTIFIER), mmsMessage);
-            }
+            if (mmsMessage == null) throw new NullPointerException("Message from constructed URI was null.");
+
+            weMessage.get().getMmsManager().updateOrAddMessage(taskIdentifier, mmsMessage);
         }catch (Exception ex){
             AppLogger.error("An error occurred while adding an MMS message", ex);
             weMessage.get().getMessageManager().alertMessageSendFailure(null, ReturnType.UNKNOWN_ERROR);

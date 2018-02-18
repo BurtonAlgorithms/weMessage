@@ -1193,6 +1193,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
     private class ChatViewHeaderHolder extends RecyclerView.ViewHolder {
 
         private boolean isInit = false;
+        private boolean isChatSms;
 
         private LinearLayout chatViewPictureContainer;
         private ImageView chatViewPicture;
@@ -1210,6 +1211,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
         public void bind(GroupChat chat){
             init(chat);
+            isChatSms = chat instanceof SmsChat;
 
             Glide.with(ChatViewFragment.this).load(IOUtils.getChatIconUri(chat, IOUtils.IconSize.LARGE)).into(chatViewPicture);
             chatViewName.setText(chat.getUIDisplayName(false));
@@ -1218,7 +1220,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             if (StringUtils.isEmpty(editedChatPicture)) {
                 Glide.with(ChatViewFragment.this).load(IOUtils.getChatIconUri(chat, IOUtils.IconSize.LARGE)).into(chatViewPicture);
             }else if (editedChatPicture.equals("DELETE")) {
-                Glide.with(ChatViewFragment.this).load(IOUtils.getDefaultChatUri(IOUtils.IconSize.LARGE)).into(chatViewPicture);
+                Glide.with(ChatViewFragment.this).load(IOUtils.getDefaultChatUri(IOUtils.IconSize.LARGE, isChatSms)).into(chatViewPicture);
             }else {
                 Glide.with(ChatViewFragment.this).load(editedChatPicture).into(chatViewPicture);
             }
@@ -1279,7 +1281,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
 
         public void updatePicture(String path){
             if (path.equals("DELETE")) {
-                Glide.with(ChatViewFragment.this).load(IOUtils.getDefaultChatUri(IOUtils.IconSize.LARGE)).into(chatViewPicture);
+                Glide.with(ChatViewFragment.this).load(IOUtils.getDefaultChatUri(IOUtils.IconSize.LARGE, isChatSms)).into(chatViewPicture);
             }else {
                 Glide.with(ChatViewFragment.this).load(path).into(chatViewPicture);
             }

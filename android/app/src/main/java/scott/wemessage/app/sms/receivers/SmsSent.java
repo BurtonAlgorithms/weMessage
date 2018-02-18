@@ -18,11 +18,13 @@ public class SmsSent extends SentReceiver {
         super.onReceive(context, intent);
 
         try {
+            String taskIdentifier = intent.getStringExtra("task_identifier");
             Uri messageUri = Uri.parse(intent.getStringExtra("message_uri"));
-            MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(messageUri);
+            MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(taskIdentifier, messageUri);
 
-            if (message == null) return;
-            weMessage.get().getMmsManager().updateOrAddMessage(intent.getStringExtra("task_identifier"), message);
+            if (message == null) throw new NullPointerException("Message from constructed URI was null.");
+
+            weMessage.get().getMmsManager().updateOrAddMessage(taskIdentifier, message);
         }catch (Exception ex){
             AppLogger.error("An error occurred while sending an SMS message", ex);
             weMessage.get().getMessageManager().alertMessageSendFailure(null, ReturnType.UNKNOWN_ERROR);

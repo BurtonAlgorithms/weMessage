@@ -12,6 +12,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
@@ -30,7 +31,6 @@ import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
 import com.stfalcon.chatkit.utils.DateFormatter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -66,7 +66,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     private final String GO_BACK_REASON_ALERT_TAG = "GoBackReasonAlert";
     private final String UPDATE_LOG_ALERT_TAG = "UpdateLogAlert";
-    private final int ERROR_SNACKBAR_DURATION = 5000;
+    private final int ERROR_SNACKBAR_DURATION = 5;
 
     private String callbackUuid;
     private AtomicBoolean isParseChatsTaskRunning = new AtomicBoolean(false);
@@ -315,13 +315,14 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                 toggleNoConversations(false);
                 if (!isChatBlocked(chat)) {
                     dialogsListAdapter.addItem(new ChatDialogView(chat));
+                    dialogsList.scrollToPosition(0);
                 }
             }
         });
     }
 
     @Override
-    public void onChatUpdate(Chat oldData, Chat newData) {
+    public void onChatUpdate(final Chat oldData, Chat newData) {
         if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(newData);
 
@@ -329,7 +330,11 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    dialogsListAdapter.updateItemById(chatDialogView);
+                    dialogsListAdapter.updateItemById(oldData.getIdentifier(), chatDialogView);
+
+                    if (((LinearLayoutManager) dialogsList.getLayoutManager()).findFirstCompletelyVisibleItemPosition() <= 2){
+                        dialogsList.scrollToPosition(0);
+                    }
                 }
             });
         }
@@ -440,6 +445,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                     }
                     dialogsListAdapter.sortByLastMessageDate();
                     toggleNoConversations(dialogsListAdapter.isEmpty());
+                    dialogsList.scrollToPosition(0);
                 }
             }
         });
@@ -454,13 +460,32 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                 if (!isChatBlocked(message.getChat())) {
                     MessageView messageView = new MessageView(message);
                     dialogsListAdapter.updateDialogWithMessage(message.getChat().getIdentifier(), messageView);
+
+                    if (((LinearLayoutManager) dialogsList.getLayoutManager()).findFirstCompletelyVisibleItemPosition() <= 2){
+                        dialogsList.scrollToPosition(0);
+                    }
                 }
             }
         });
     }
 
     @Override
-    public void onMessageUpdate(Message oldData, Message newData) { }
+    public void onMessageUpdate(Message oldData, final Message newData) {
+        if (getActivity() == null) return;
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!isChatBlocked(newData.getChat())) {
+                    MessageView messageView = new MessageView(newData);
+                    dialogsListAdapter.updateDialogWithMessage(newData.getChat().getIdentifier(), messageView);
+
+                    if (((LinearLayoutManager) dialogsList.getLayoutManager()).findFirstCompletelyVisibleItemPosition() <= 2){
+                        dialogsList.scrollToPosition(0);
+                    }
+                }
+            }
+        });
+    }
 
     @Override
     public void onMessageDelete(final Message message) {
@@ -559,12 +584,15 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             protected void onProgressUpdate(ChatDialogView... chatDialogViewBatch) {
                 if (!hasConversations) toggleNoConversations(false);
 
-                dialogsListAdapter.addItems(Arrays.asList(chatDialogViewBatch));
+                for (ChatDialogView dialogView : chatDialogViewBatch){
+                    dialogsListAdapter.addItem(dialogView);
+                }
             }
 
             @Override
             protected void onPostExecute(Void aVoid) {
                 dialogsListAdapter.sortByLastMessageDate();
+                dialogsList.scrollToPosition(0);
                 isParseChatsTaskRunning.set(false);
             }
         }.execute(chats);

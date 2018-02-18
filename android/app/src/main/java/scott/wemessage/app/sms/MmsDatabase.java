@@ -38,7 +38,7 @@ import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public class MmsDatabase {
+public final class MmsDatabase {
 
     private weMessage app;
 
@@ -47,6 +47,10 @@ public class MmsDatabase {
     }
 
     public MmsMessage getMessageFromUri(Uri uri){
+        return getMessageFromUri(null, uri);
+    }
+
+    public MmsMessage getMessageFromUri(String taskIdentifier, Uri uri){
         if (!MmsManager.hasSmsPermissions()) return null;
 
         String uriString = uri.toString();
@@ -69,13 +73,33 @@ public class MmsDatabase {
             if (isMms) {
                 Cursor mmsCursor = app.getContentResolver().query(uri, new String[]{"date_sent", "date", "msg_box", "_id", "thread_id"}, null, null, null);
 
-                if (mmsCursor.moveToFirst()) mmsMessage = buildMmsMessage(mmsCursor);
-                mmsCursor.close();
+                if (mmsCursor.moveToFirst()) {
+                    mmsMessage = buildMmsMessage(taskIdentifier, mmsCursor);
+                    mmsCursor.close();
+                } else {
+                    mmsCursor.close();
+
+                    Uri newUri = Uri.parse("content://mms/" + uriString.substring(uriString.lastIndexOf("/") + 1));
+                    Cursor mmsCursorRetry = app.getContentResolver().query(newUri, new String[]{"date_sent", "date", "msg_box", "_id", "thread_id"}, null, null, null);
+
+                    if (mmsCursorRetry.moveToFirst()) mmsMessage = buildMmsMessage(taskIdentifier, mmsCursorRetry);
+                    mmsCursorRetry.close();
+                }
             } else {
                 Cursor smsCursor = app.getContentResolver().query(uri, new String[]{"address", "date_sent", "date", "body", "type", "_id", "thread_id"}, null, null, null);
 
-                if (smsCursor.moveToFirst()) mmsMessage = buildSmsMessage(smsCursor);
-                smsCursor.close();
+                if (smsCursor.moveToFirst()){
+                    mmsMessage = buildSmsMessage(smsCursor);
+                    smsCursor.close();
+                }else {
+                    smsCursor.close();
+
+                    Uri newUri = Uri.parse("content://sms/" + uriString.substring(uriString.lastIndexOf("/") + 1));
+                    Cursor smsCursorRetry = app.getContentResolver().query(newUri, new String[]{"address", "date_sent", "date", "body", "type", "_id", "thread_id"}, null, null, null);
+
+                    if (smsCursorRetry.moveToFirst()) mmsMessage = buildSmsMessage(smsCursorRetry);
+                    smsCursorRetry.close();
+                }
             }
 
             if (mmsMessage != null) {
@@ -88,7 +112,7 @@ public class MmsDatabase {
 
                 if (app.getMmsManager().getMmsMessage(messageId) != null) {
                     long largestMessageId = getLargestMessageId();
-                    if (largestMessageId != -1L) return null;
+                    if (largestMessageId == -1L) return null;
 
                     messageId = String.valueOf(largestMessageId + 1L);
                 }
@@ -104,6 +128,8 @@ public class MmsDatabase {
                     } else {
                         app.getContentResolver().update(updateUri, contentValues, "_id = " + firstMessageId, null);
                     }
+
+                    mmsMessage.setIdentifier(messageId);
                 }
             }
         }catch (Exception ex){
@@ -177,7 +203,7 @@ public class MmsDatabase {
                 values.put("seen", 0);
                 values.put("type", 1);
 
-                return app.getContentResolver().insert(Uri.parse("content://sms"), values);
+                return app.getContentResolver().insert(Uri.parse("content://sms/inbox"), values);
             }
         }
 
@@ -263,7 +289,7 @@ public class MmsDatabase {
                         Cursor mmsCursor = app.getContentResolver().query(Uri.parse("content://mms/"), new String[]{"date_sent", "date", "msg_box", "_id", "thread_id"}, "_id = " + messageId, null, null);
 
                         if (mmsCursor.moveToFirst()) {
-                            MmsMessage message = buildMmsMessage(mmsCursor);
+                            MmsMessage message = buildMmsMessage(null, mmsCursor);
 
                             if (message != null)
                                 app.getMmsManager().addMessage(message);
@@ -349,7 +375,7 @@ public class MmsDatabase {
         return smsChat;
     }
 
-    private MmsMessage buildMmsMessage(Cursor mmsCursor){
+    private MmsMessage buildMmsMessage(String taskIdentifier, Cursor mmsCursor){
         MmsMessage mmsMessage = null;
         Handle sender;
         boolean isFromMe = false;
@@ -362,6 +388,7 @@ public class MmsDatabase {
         Date dateDelivered = processDate(mmsCursor.getString(mmsCursor.getColumnIndex("date")));
         boolean isErrored = mmsCursor.getInt(mmsCursor.getColumnIndex("msg_box")) == 5;
         boolean isDelivered = mmsCursor.getInt(mmsCursor.getColumnIndex("msg_box")) == 2;
+        boolean skipAttachments = !StringUtils.isEmpty(taskIdentifier) && app.getMmsManager().getMmsMessage(taskIdentifier) != null;
 
         String address = getMmsSender(messageId);
 
@@ -374,6 +401,10 @@ public class MmsDatabase {
             } else {
                 sender = processHandle(address);
             }
+        }
+
+        if (skipAttachments){
+            attachments.addAll(app.getMmsManager().getMmsMessage(taskIdentifier).getAttachments());
         }
 
         Cursor partCursor = app.getContentResolver().query(Uri.parse("content://mms/part"), new String[]{"_id", "ct", "_data", "text"}, "mid = " + messageId, null, null);
@@ -391,6 +422,8 @@ public class MmsDatabase {
                         textBuilder.append(partCursor.getString(partCursor.getColumnIndex("text")));
                     }
                 } else {
+                    if (skipAttachments) continue;
+
                     FileLocationContainer fileLocationContainer = null;
                     String fileName;
 
@@ -563,7 +596,7 @@ public class MmsDatabase {
             newFile.createNewFile();
 
             out = new FileOutputStream(newFile);
-            photo.compress(Bitmap.CompressFormat.PNG, 90, out);
+            photo.compress(Bitmap.CompressFormat.PNG, 100, out);
 
             out.close();
         }catch (OutOfMemoryError error){

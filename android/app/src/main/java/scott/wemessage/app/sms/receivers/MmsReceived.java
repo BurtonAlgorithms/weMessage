@@ -20,7 +20,7 @@ public class MmsReceived extends MmsReceivedReceiver {
             PowerManager powerManager = (PowerManager) weMessage.get().getSystemService(Context.POWER_SERVICE);
             MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(messageUri);
 
-            if (message == null) return;
+            if (message == null) throw new NullPointerException("Message from constructed URI was null.");
 
             if (!powerManager.isInteractive()) {
                 PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "WeMessageNotificationWakeLock");

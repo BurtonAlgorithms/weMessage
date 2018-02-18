@@ -176,7 +176,7 @@ public class LaunchFragment extends Fragment {
                     smsOrOfflineButton.setTextColor(getResources().getColor(R.color.brightRed));
                 }
 
-                if (enableSmsModeButton != null){
+                if (enableSmsModeButton != null && MmsManager.isPhone()){
                     enableSmsModeButton.setVisibility(View.VISIBLE);
                 }
             }else if (intent.getAction().equals(weMessage.BROADCAST_SMS_MODE_ENABLED)){
@@ -332,7 +332,7 @@ public class LaunchFragment extends Fragment {
             if (isServiceRunning(ConnectionService.class) && loginProgressDialog == null){
                 showProgressDialog(view, getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
             }else if (weMessage.get().isSignedIn(true) && !isServiceRunning(ConnectionService.class)) {
-                if (!(getActivity().getIntent().hasExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT) && getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false))) {
+                if (getActivity().getIntent().hasExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT) && !getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false)) {
                     if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
                         startConnectionService(view, ipAddress, port, email, hashedPass, true, failoverIp);
                     }
@@ -357,7 +357,10 @@ public class LaunchFragment extends Fragment {
             smsOrOfflineButton.setText(R.string.offline_mode);
             smsOrOfflineButton.setFont("OrkneyLight");
             smsOrOfflineButton.setTextColor(getResources().getColor(R.color.brightRed));
-            enableSmsModeButton.setVisibility(View.VISIBLE);
+
+            if (MmsManager.isPhone()) {
+                enableSmsModeButton.setVisibility(View.VISIBLE);
+            }
         }
 
         String fullText = getString(R.string.login_text).concat("  ").concat(getString(R.string.need_help));

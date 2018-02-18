@@ -287,6 +287,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
                     Contact c = new Contact(UUID.randomUUID(), "", "", Arrays.asList(h), h, null);
                     weMessage.get().getMessageManager().addContact(c, true);
+
                     return;
                 }
 
@@ -1105,6 +1106,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
     private class ContactViewHeader extends RecyclerView.ViewHolder {
         private boolean isInit = false;
+        private boolean isHandleSms = false;
 
         private LinearLayout contactPictureContainer;
         private ImageView contactPicture;
@@ -1127,6 +1129,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
         public void bind(ContactInfo contact){
             init();
+            isHandleSms = contact.pullHandle(false).getHandleType() == Handle.HandleType.SMS;
 
             String handleID;
             String handleText;
@@ -1185,7 +1188,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
                 if (StringUtils.isEmpty(editedContactPicture)) {
                     Glide.with(ContactViewFragment.this).load(IOUtils.getContactIconUri(contact.pullHandle(false), IOUtils.IconSize.LARGE)).into(contactPicture);
                 } else if (editedContactPicture.equals("DELETE")) {
-                    Glide.with(ContactViewFragment.this).load(IOUtils.getDefaultContactUri(IOUtils.IconSize.LARGE)).into(contactPicture);
+                    Glide.with(ContactViewFragment.this).load(IOUtils.getDefaultContactUri(IOUtils.IconSize.LARGE, isHandleSms)).into(contactPicture);
                 } else {
                     Glide.with(ContactViewFragment.this).load(editedContactPicture).into(contactPicture);
                 }
@@ -1339,7 +1342,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
         public void updatePicture(String path){
             if (path.equals("DELETE")) {
-                Glide.with(ContactViewFragment.this).load(IOUtils.getDefaultContactUri(IOUtils.IconSize.LARGE)).into(contactPicture);
+                Glide.with(ContactViewFragment.this).load(IOUtils.getDefaultContactUri(IOUtils.IconSize.LARGE, isHandleSms)).into(contactPicture);
             }else {
                 Glide.with(ContactViewFragment.this).load(path).into(contactPicture);
             }

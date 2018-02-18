@@ -66,13 +66,13 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + AttachmentTable.FILE_TYPE + " TEXT, "
                 + AttachmentTable.TOTAL_BYTES + " INTEGER );";
 
-        String createContactTable = "CREATE TABLE " + ContactTable.TABLE_NAME + " ("
+        String createContactsTable = "CREATE TABLE " + ContactTable.TABLE_NAME + " ("
                 + ContactTable._ID + " INTEGER PRIMARY KEY, "
                 + ContactTable.UUID + " TEXT, "
                 + ContactTable.FIRST_NAME + " TEXT, "
                 + ContactTable.LAST_NAME + " TEXT, "
                 + ContactTable.HANDLES + " TEXT, "
-                + ContactTable.PRIMARY_HANDLE + "TEXT, "
+                + ContactTable.PRIMARY_HANDLE + " TEXT, "
                 + ContactTable.CONTACT_PICTURE_FILE_LOCATION + " TEXT );";
 
         String createChatTable = "CREATE TABLE " + ChatTable.TABLE_NAME + " ("
@@ -145,7 +145,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         db.execSQL(createAccountTable);
         db.execSQL(createActionMessageTable);
         db.execSQL(createAttachmentTable);
-        db.execSQL(createContactTable);
+        db.execSQL(createContactsTable);
         db.execSQL(createChatTable);
         db.execSQL(createHandleTable);
         db.execSQL(createMessageTable);

@@ -10,11 +10,15 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.provider.Telephony;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
+import android.telephony.CarrierConfigManager;
 import android.telephony.TelephonyManager;
+
+import com.android.mms.MmsConfig;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -26,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
+import scott.wemessage.app.jobs.SendMessageJob;
 import scott.wemessage.app.models.chats.Chat;
 import scott.wemessage.app.models.chats.GroupChat;
 import scott.wemessage.app.models.messages.Attachment;
@@ -33,7 +38,6 @@ import scott.wemessage.app.models.sms.chats.SmsChat;
 import scott.wemessage.app.models.sms.messages.MmsMessage;
 import scott.wemessage.app.models.users.Contact;
 import scott.wemessage.app.models.users.Handle;
-import scott.wemessage.app.jobs.SendMessageJob;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
@@ -52,6 +56,18 @@ public final class MmsManager {
 
     public MmsManager(weMessage app){
         this.app = app;
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                CarrierConfigManager carrierConfigManager = (CarrierConfigManager) app.getSystemService(Context.CARRIER_CONFIG_SERVICE);
+                weMessage.MAX_MMS_ATTACHMENT_SIZE = carrierConfigManager.getConfig().getInt(CarrierConfigManager.KEY_MMS_MAX_MESSAGE_SIZE_INT);
+            } else {
+                MmsConfig.init(app);
+                weMessage.MAX_MMS_ATTACHMENT_SIZE = MmsConfig.getMaxMessageSize();
+            }
+        }catch (Exception ex){
+            AppLogger.error("Could not fetch maximum SMS size, defaulting to 10MB", ex);
+        }
     }
 
     public ConcurrentHashMap<String, SmsChat> getChats(){
@@ -130,8 +146,9 @@ public final class MmsManager {
         app.getMessageDatabase().addMmsMessage(message);
     }
 
-    public synchronized MmsMessage addSmsMessage(final Object[] smsExtra){
-        MmsMessage message = app.getMmsDatabase().getMessageFromUri(app.getMmsDatabase().addSmsMessage(smsExtra));
+    public MmsMessage addSmsMessage(final Object[] smsExtra){
+        Uri uri = app.getMmsDatabase().addSmsMessage(smsExtra);
+        MmsMessage message = app.getMmsDatabase().getMessageFromUri(uri);
 
         if (message != null){
             app.getMessageManager().addMessage(message, false);
@@ -291,7 +308,7 @@ public final class MmsManager {
                 if (chat.getChatPictureFileLocation() != null && !StringUtils.isEmpty(chat.getChatPictureFileLocation().getFileLocation())) {
                     largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeFile(chat.getChatPictureFileLocation().getFileLocation()));
                 } else {
-                    largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeResource(app.getResources(), R.drawable.ic_default_group_chat));
+                    largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeResource(app.getResources(), R.drawable.ic_default_group_chat_sms));
                 }
             } else {
                 Contact c = app.getMessageDatabase().getContactByHandle(handle);
@@ -299,9 +316,9 @@ public final class MmsManager {
                     Bitmap bitmap = BitmapFactory.decodeFile(c.getContactPictureFileLocation().getFileLocation());
 
                     if (bitmap != null) largeIcon = DisplayUtils.createCircleBitmap(bitmap);
-                    else largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeResource(app.getResources(), R.drawable.ic_default_contact));
+                    else largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeResource(app.getResources(), R.drawable.ic_default_contact_sms));
                 } else {
-                    largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeResource(app.getResources(), R.drawable.ic_default_contact));
+                    largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeResource(app.getResources(), R.drawable.ic_default_contact_sms));
                 }
             }
 

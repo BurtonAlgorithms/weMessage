@@ -32,6 +32,7 @@ import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.models.chats.Chat;
 import scott.wemessage.app.models.chats.GroupChat;
 import scott.wemessage.app.models.chats.PeerChat;
+import scott.wemessage.app.models.sms.chats.SmsChat;
 import scott.wemessage.app.models.users.Contact;
 import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.utils.media.MediaDownloadCallbacks;
@@ -61,9 +62,9 @@ public class IOUtils {
             Contact contact = weMessage.get().getMessageDatabase().getContactByHandle(peerChat.getHandle());
 
             if (contact == null || contact.getContactPictureFileLocation() == null){
-                return getDefaultContactUri(iconSize);
+                return getDefaultContactUri(iconSize, chat instanceof SmsChat);
             }else if (StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())){
-                return getDefaultContactUri(iconSize);
+                return getDefaultContactUri(iconSize, chat instanceof SmsChat);
             }else {
                 return Uri.fromFile(contact.getContactPictureFileLocation().getFile()).toString();
             }
@@ -71,9 +72,9 @@ public class IOUtils {
             GroupChat groupChat = (GroupChat) chat;
 
             if (groupChat.getChatPictureFileLocation() == null){
-                return getDefaultChatUri(iconSize);
+                return getDefaultChatUri(iconSize, chat instanceof SmsChat);
             } else if (StringUtils.isEmpty(groupChat.getChatPictureFileLocation().getFileLocation())){
-                return getDefaultChatUri(iconSize);
+                return getDefaultChatUri(iconSize, chat instanceof SmsChat);
             } else {
                 return Uri.fromFile(groupChat.getChatPictureFileLocation().getFile()).toString();
             }
@@ -85,40 +86,60 @@ public class IOUtils {
             Contact contact = weMessage.get().getMessageDatabase().getContactByHandle(handle);
 
             if (contact == null || contact.getContactPictureFileLocation() == null) {
-                return getDefaultContactUri(iconSize);
+                return getDefaultContactUri(iconSize, handle.getHandleType() == Handle.HandleType.SMS);
             } else if (StringUtils.isEmpty(contact.getContactPictureFileLocation().getFileLocation())) {
-                return getDefaultContactUri(iconSize);
+                return getDefaultContactUri(iconSize, handle.getHandleType() == Handle.HandleType.SMS);
             } else {
                 return Uri.fromFile(contact.getContactPictureFileLocation().getFile()).toString();
             }
         }catch (Exception ex){
-            return getDefaultContactUri(iconSize);
+            return getDefaultContactUri(iconSize, handle != null && handle.getHandleType() == Handle.HandleType.SMS);
         }
     }
 
-    public static String getDefaultContactUri(IconSize iconSize){
+    public static String getDefaultContactUri(IconSize iconSize, boolean isSms){
         int resId;
 
-        if (iconSize == IconSize.NORMAL){
-            resId = R.drawable.ic_default_contact;
-        }else if (iconSize == IconSize.LARGE){
-            resId = R.drawable.ic_default_contact_large;
+        if (isSms){
+            if (iconSize == IconSize.NORMAL) {
+                resId = R.drawable.ic_default_contact_sms;
+            } else if (iconSize == IconSize.LARGE) {
+                resId = R.drawable.ic_default_contact_large_sms;
+            } else {
+                resId = R.drawable.ic_default_contact_sms;
+            }
         }else {
-            resId = R.drawable.ic_default_contact;
+            if (iconSize == IconSize.NORMAL) {
+                resId = R.drawable.ic_default_contact;
+            } else if (iconSize == IconSize.LARGE) {
+                resId = R.drawable.ic_default_contact_large;
+            } else {
+                resId = R.drawable.ic_default_contact;
+            }
         }
 
         return IOUtils.getUriFromResource(weMessage.get(), resId).toString();
     }
 
-    public static String getDefaultChatUri(IconSize iconSize){
+    public static String getDefaultChatUri(IconSize iconSize, boolean isSms){
         int resId;
 
-        if (iconSize == IconSize.NORMAL){
-            resId = R.drawable.ic_default_group_chat;
-        }else if (iconSize == IconSize.LARGE){
-            resId = R.drawable.ic_default_group_chat_large;
+        if (isSms){
+            if (iconSize == IconSize.NORMAL) {
+                resId = R.drawable.ic_default_group_chat_sms;
+            } else if (iconSize == IconSize.LARGE) {
+                resId = R.drawable.ic_default_group_chat_large_sms;
+            } else {
+                resId = R.drawable.ic_default_group_chat_sms;
+            }
         }else {
-            resId = R.drawable.ic_default_group_chat;
+            if (iconSize == IconSize.NORMAL) {
+                resId = R.drawable.ic_default_group_chat;
+            } else if (iconSize == IconSize.LARGE) {
+                resId = R.drawable.ic_default_group_chat_large;
+            } else {
+                resId = R.drawable.ic_default_group_chat;
+            }
         }
 
         return IOUtils.getUriFromResource(weMessage.get(), resId).toString();

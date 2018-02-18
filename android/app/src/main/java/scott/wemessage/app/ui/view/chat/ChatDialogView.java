@@ -28,7 +28,12 @@ public class ChatDialogView implements IDialog {
         this.chat = chat;
         this.lastMessage = new MessageView(weMessage.get().getMessageDatabase().getLastMessageFromChat(chat));
         this.dialogPhoto = IOUtils.getChatIconUri(chat, IOUtils.IconSize.NORMAL);
-        this.unreadMessages = booleanToInteger(weMessage.get().getMessageDatabase().getChatByIdentifier(getId()).hasUnreadMessages());
+
+        try {
+            this.unreadMessages = booleanToInteger(weMessage.get().getMessageDatabase().getChatByIdentifier(getId()).hasUnreadMessages());
+        }catch (Exception ex){
+            this.unreadMessages = 0;
+        }
 
         if (chat.getChatType() == Chat.ChatType.PEER){
             users.add(new UserView(((PeerChat) chat).getHandle()));

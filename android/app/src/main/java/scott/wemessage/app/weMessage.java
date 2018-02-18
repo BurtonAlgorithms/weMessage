@@ -52,7 +52,7 @@ public final class weMessage extends Application implements Constants {
     public static final int DATABASE_VERSION = 3;
     public static final int CONNECTION_TIMEOUT_WAIT = 5;
     public static final int MAX_CHAT_ICON_SIZE = 26214400;
-    public static final int MAX_MMS_ATTACHMENT_SIZE = 10485760;
+    public static int MAX_MMS_ATTACHMENT_SIZE = 10485760;
 
     public static final String DATABASE_NAME = "weMessage.db";
     public static final String APP_IDENTIFIER = "scott.wemessage.app";

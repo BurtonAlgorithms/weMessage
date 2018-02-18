@@ -18,11 +18,13 @@ public class SmsDelivered extends DeliveredReceiver {
         super.onReceive(context, intent);
 
         try {
+            String taskIdentifier = intent.getStringExtra("task_identifier");
             Uri messageUri = Uri.parse(intent.getStringExtra("message_uri"));
-            MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(messageUri);
+            MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(taskIdentifier, messageUri);
 
-            if (message == null) return;
-            weMessage.get().getMmsManager().updateOrAddMessage(intent.getStringExtra("task_identifier"), message);
+            if (message == null) throw new NullPointerException("Message from constructed URI was null.");
+
+            weMessage.get().getMmsManager().updateOrAddMessage(taskIdentifier, message);
         }catch (Exception ex){
             AppLogger.error("An error occurred while updating an SMS message", ex);
             LocalBroadcastManager.getInstance(weMessage.get()).sendBroadcast(new Intent(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR));

@@ -1,5 +1,7 @@
 package scott.wemessage.app.jobs;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -11,11 +13,13 @@ import com.klinker.android.send_message.Message;
 import com.klinker.android.send_message.Settings;
 import com.klinker.android.send_message.Transaction;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.models.chats.Chat;
@@ -27,6 +31,7 @@ import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.utils.AndroidUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.types.FailReason;
+import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.types.ReturnType;
 import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
@@ -34,9 +39,6 @@ import scott.wemessage.commons.utils.StringUtils;
 public class SendMessageJob extends Job {
 
     public static final String TAG = "weMessageSendMmsMessageJob";
-
-    //todo compress image ; diff levels of compression
-    //todo fix multiple recipients
 
     @NonNull
     @Override
@@ -69,6 +71,12 @@ public class SendMessageJob extends Job {
             }
 
             try {
+                long finalSize = 0L;
+
+                for (Attachment a : mmsMessage.getAttachments()){
+                    finalSize += a.getFileLocation().getFile().length();
+                }
+
                 for (Attachment a : mmsMessage.getAttachments()) {
                     File attachmentFile = a.getFileLocation().getFile();
 
@@ -78,7 +86,14 @@ public class SendMessageJob extends Job {
                     }
 
                     try {
-                        message.addMedia(FileUtils.readBytesFromFile(attachmentFile), AndroidUtils.getMimeTypeStringFromPath(attachmentFile.getAbsolutePath()), a.getTransferName());
+                        String type = a.getFileType();
+
+                        if ((MimeType.getTypeFromString(type) == MimeType.IMAGE || type.equals("image/jpg") || type.equals("image/bmp")) && !type.equals("image/gif")) {
+                            message.addMedia(compressImage(attachmentFile, finalSize), "image/jpeg", a.getTransferName());
+                        }else {
+                            message.addMedia(FileUtils.readBytesFromFile(attachmentFile), AndroidUtils.getMimeTypeStringFromPath(attachmentFile.getAbsolutePath()), a.getTransferName());
+                        }
+
                     } catch (IOException ex) {
                         AppLogger.error("An error occurred while trying to read bytes from an attachment file", ex);
                         failedAttachments.put(a, FailReason.UNKNOWN);
@@ -93,13 +108,8 @@ public class SendMessageJob extends Job {
                 }
             }
 
-            final String threadId = StringUtils.isEmpty(chat.getIdentifier()) ? null : mmsMessage.getChat().getIdentifier();
+            final String threadId = StringUtils.isEmpty(chat.getIdentifier()) || !isIdentifierSms(chat.getIdentifier()) ? null : mmsMessage.getChat().getIdentifier();
 
-/*
-            if (threadId == null && !isMeInChat(message.getAddresses())){
-                message.addAddress(weMessage.get().getCurrentSession().getSmsHandle().getHandleID());
-            }
-*/
             new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
                 public void run() {
@@ -134,13 +144,49 @@ public class SendMessageJob extends Job {
                 .schedule();
     }
 
-    private boolean isMeInChat(String[] addresses){
-        for (String address : addresses){
-            String parsed = Handle.parseHandleId(address);
+    private byte[] compressImage(File file, long totalSize) throws IOException {
+        double ratio = totalSize / weMessage.MAX_MMS_ATTACHMENT_SIZE;
+        int quality;
 
-            if (weMessage.get().getCurrentSession().getSmsHandle().getHandleID().equals(parsed)) return true;
+        if (ratio < 0.5) quality = 100;
+        else if (isInRange(0.5, ratio, 1.0)) quality = 90;
+        else if (isInRange(1, ratio, 1.25)) quality = 85;
+        else if (isInRange(1.25, ratio, 1.5)) quality = 80;
+        else if (isInRange(1.75, ratio, 2.0)) quality = 75;
+        else if (isInRange(2.0, ratio, 2.5)) quality = 70;
+        else if (isInRange(2.5, ratio, 3.0)) quality = 65;
+        else if (isInRange(3.0, ratio, 3.5)) quality = 58;
+        else if (isInRange(3.5, ratio, 4.0)) quality = 50;
+        else if (isInRange(4.0, ratio, 4.5)) quality = 42;
+        else if (isInRange(4.5, ratio, 5.0)) quality = 34;
+        else if (isInRange(5.0, ratio, 5.5)) quality = 26;
+        else if (isInRange(5.5, ratio, 6.0)) quality = 20;
+        else if (isInRange(6.0, ratio, 6.5)) quality = 15;
+        else if (isInRange(6.5, ratio, 7.0)) quality = 10;
+        else quality = 1;
+
+        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+        byte[] byteArray = baos.toByteArray();
+        baos.close();
+
+        return byteArray;
+    }
+
+    private boolean isInRange(double min, double number, double max){
+        return min <= number && number <= max;
+    }
+
+    private boolean isIdentifierSms(String identifier){
+        try {
+            UUID.fromString(identifier);
+        }catch (Exception ex){
+            try {
+                Long.parseLong(identifier);
+                return true;
+            }catch (Exception exc){ }
         }
-
         return false;
     }
 }
