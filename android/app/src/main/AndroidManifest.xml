@@ -56,6 +56,13 @@
                 <data android:scheme="mms" />
                 <data android:scheme="mmsto" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
         <activity android:name=".app.ui.activities.ChatViewActivity" />
         <activity android:name=".app.ui.activities.ContactSelectActivity" />
@@ -103,6 +110,12 @@
             <intent-filter>
                 <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
                 <data android:mimeType="application/vnd.wap.mms-message" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".app.sms.receivers.SmsPackageChange">
+            <intent-filter>
+                <action android:name="android.provider.action.DEFAULT_SMS_PACKAGE_CHANGED" />
             </intent-filter>
         </receiver>
 

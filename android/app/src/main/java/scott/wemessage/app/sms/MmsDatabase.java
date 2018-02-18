@@ -2,7 +2,6 @@ package scott.wemessage.app.sms;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
-import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -10,7 +9,7 @@ import android.net.Uri;
 import android.telephony.SmsMessage;
 import android.webkit.MimeTypeMap;
 
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import org.joda.time.DateTime;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -20,14 +19,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.models.chats.Chat;
-import scott.wemessage.app.models.chats.GroupChat;
 import scott.wemessage.app.models.messages.Attachment;
 import scott.wemessage.app.models.sms.chats.SmsChat;
 import scott.wemessage.app.models.sms.chats.SmsGroupChat;
@@ -40,7 +38,7 @@ import scott.wemessage.commons.types.MimeType;
 import scott.wemessage.commons.utils.FileUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
-public final class MmsDatabase {
+public class MmsDatabase {
 
     private weMessage app;
 
@@ -48,255 +46,120 @@ public final class MmsDatabase {
         this.app = app;
     }
 
-    protected HashMap<String, SmsChat> getChats(){
-        HashMap<String, SmsChat> chats = new HashMap<>();
+    public MmsMessage getMessageFromUri(Uri uri){
+        if (!MmsManager.hasSmsPermissions()) return null;
 
-        Uri uri = Uri.parse("content://mms-sms/conversations/");
-        Cursor chatQuery = app.getContentResolver().query(uri, new String[]{ "thread_id" }, null, null, null);
-
-        if (chatQuery == null) return chats;
-
-        if (chatQuery.moveToFirst()){
-            do {
-                SmsChat chat = buildChat(chatQuery.getString(chatQuery.getColumnIndex("thread_id")));
-
-                if (chat != null) {
-                    chats.put(((Chat) chat).getIdentifier(), chat);
-                }
-            }while (chatQuery.moveToNext());
-        }
-
-        chatQuery.close();
-
-        return chats;
-    }
-
-    public SmsPeerChat getChatByHandle(Handle handle){
-        for (SmsChat chat : app.getMmsManager().getChats().values()){
-            if (chat instanceof SmsPeerChat){
-                if (((SmsPeerChat) chat).getHandle().equals(handle)) return (SmsPeerChat) chat;
-            }
-        }
-        return null;
-    }
-
-    protected List<MmsMessage> getReversedMessagesByTime(String threadId, long startIndex, long numberToFetch){
-        List<MmsMessage> messages = new ArrayList<>();
-        Uri uri = Uri.parse("content://mms-sms/conversations/" + threadId);
-
-        Cursor rowCursor = app.getContentResolver().query(uri, new String[] {"_id"}, null, null, null);
-        long finalRow;
+        String uriString = uri.toString();
+        MmsMessage mmsMessage = null;
+        boolean isMms = false;
 
         try {
-            rowCursor.moveToLast();
-            finalRow = rowCursor.getLong(rowCursor.getColumnIndex("_id"));
-            rowCursor.close();
-        }catch (Exception ex){ return messages; }
+            if (uriString.contains("sms") && uriString.contains("mms")) {
+                Cursor cursor = app.getContentResolver().query(uri, new String[]{"ct_t"}, null, null, null);
 
-        long start = finalRow - startIndex;
-        Cursor cursor = app.getContentResolver().query(uri, new String[]{ "_id" }, "_id <= " + start, null, "date DESC LIMIT " + numberToFetch);
-
-        if (cursor.moveToFirst()) {
-            while (!cursor.isAfterLast()) {
-                String messageId = cursor.getString(cursor.getColumnIndex("_id"));
-                MmsMessage message = app.getMmsManager().getMmsMessage(messageId, false);
-
-                if (message != null) {
-                    messages.add(message);
+                if (cursor.moveToFirst()) {
+                    String contentType = cursor.getString(cursor.getColumnIndex("ct_t"));
+                    isMms = !StringUtils.isEmpty(contentType) && (contentType.equalsIgnoreCase("application/vnd.wap.multipart.related") || contentType.equalsIgnoreCase("application/vnd.wap.multipart.mixed"));
                 }
-                cursor.moveToNext();
+                cursor.close();
+            } else if (uriString.contains("mms")) {
+                isMms = true;
             }
-        }
 
-        cursor.close();
+            if (isMms) {
+                Cursor mmsCursor = app.getContentResolver().query(uri, new String[]{"date_sent", "date", "msg_box", "_id", "thread_id"}, null, null, null);
 
-        return messages;
-    }
-
-    public MmsMessage getLastMessageFromChat(String threadId){
-        MmsMessage message = null;
-        Uri uri = Uri.parse("content://mms-sms/conversations/");
-        Cursor initialQuery = app.getContentResolver().query(uri, new String[]{ "_id" }, "thread_id = " + threadId, null, null);
-
-        if (initialQuery == null) return null;
-
-        if (initialQuery.moveToFirst()){
-            String messageId = initialQuery.getString(initialQuery.getColumnIndex("_id"));
-            message = app.getMmsManager().getMmsMessage(messageId, true);
-        }
-
-        initialQuery.close();
-
-        return message;
-    }
-
-    public String getMessageId(Uri uri){
-        Cursor cursor = app.getContentResolver().query(uri, new String[] { "_id" }, null, null, null);
-        String id = null;
-
-        if (cursor == null) return null;
-
-        if (cursor.moveToFirst()){
-            id = cursor.getString(cursor.getColumnIndex("_id"));
-        }
-
-        cursor.close();
-        return id;
-    }
-
-    private String getSmsMessageId(String address, String body, long date){
-        String id = null;
-        Cursor query = app.getContentResolver().query(Uri.parse("content://sms"),
-                new String[] { "_id" }, "address = \"" + address + "\" AND body = \"" + body +"\" AND date = " + date, null, null);
-
-        if (query == null) return null;
-
-        if (query.moveToFirst()){
-            id = query.getString(query.getColumnIndex("_id"));
-        }
-
-        query.close();
-        return id;
-    }
-
-    protected SmsChat buildChat(String threadId){
-        SmsChat smsChat = null;
-        List<Handle> handles = new ArrayList<>();
-        boolean hasUnreadMessages;
-
-        ContentResolver contentResolver = app.getContentResolver();
-        Uri uri = Uri.parse("content://mms-sms/conversations/");
-        Cursor initialQuery = contentResolver.query(uri, new String[]{ "_id", "ct_t", "read" }, "thread_id = " + threadId, null, null);
-
-        if (initialQuery == null) return null;
-
-        if (initialQuery.moveToFirst()){
-            hasUnreadMessages = !integerToBoolean(initialQuery.getInt(initialQuery.getColumnIndex("read")));
-            String messageId = initialQuery.getString(initialQuery.getColumnIndex("_id"));
-            String contentType = initialQuery.getString(initialQuery.getColumnIndex("ct_t"));
-
-            if (!StringUtils.isEmpty(contentType) && contentType.equals("application/vnd.wap.multipart.related")) {
-                Uri addressUri = Uri.parse(MessageFormat.format("content://mms/{0}/addr", messageId));
-                Cursor cursorAddress = app.getContentResolver().query(addressUri, new String[] { "address" }, "msg_id = " + messageId, null, null);
-
-                if (cursorAddress.moveToFirst()) {
-                    do {
-                        String number = cursorAddress.getString(cursorAddress.getColumnIndex("address"));
-
-                        if (!StringUtils.isEmpty(number) && PhoneNumberUtil.getInstance().isPossibleNumber(number, Resources.getSystem().getConfiguration().locale.getCountry())){
-                            Handle handle = app.getMessageDatabase().getHandleByHandleID(number);
-
-                            if (handle == null){
-                                handle = new Handle(UUID.randomUUID(), number, Handle.HandleType.SMS, false, false);
-                                app.getMessageManager().addHandle(handle, false);
-                            }
-
-                            handles.add(handle);
-                        }
-                    }while (cursorAddress.moveToNext());
-                }
-
-                cursorAddress.close();
+                if (mmsCursor.moveToFirst()) mmsMessage = buildMmsMessage(mmsCursor);
+                mmsCursor.close();
             } else {
-                Cursor addressCursor = contentResolver.query(Uri.parse("content://sms"), new String[] { "address" }, "_id = " + messageId, null, null);
+                Cursor smsCursor = app.getContentResolver().query(uri, new String[]{"address", "date_sent", "date", "body", "type", "_id", "thread_id"}, null, null, null);
 
-                if (addressCursor.moveToFirst()) {
-                    String phone = addressCursor.getString(addressCursor.getColumnIndex("address"));
-                    Handle handle = app.getMessageDatabase().getHandleByHandleID(phone);
+                if (smsCursor.moveToFirst()) mmsMessage = buildSmsMessage(smsCursor);
+                smsCursor.close();
+            }
 
-                    if (handle == null) {
-                        handle = new Handle(UUID.randomUUID(), phone, Handle.HandleType.SMS, false, false);
-                        app.getMessageManager().addHandle(handle, false);
+            if (mmsMessage != null) {
+                String firstMessageId = mmsMessage.getIdentifier();
+                String messageId = mmsMessage.getIdentifier();
+
+                if (app.getMmsManager().getSmsChat(mmsMessage.getChat().getIdentifier()) == null) {
+                    app.getMessageManager().addChat(mmsMessage.getChat(), false);
+                }
+
+                if (app.getMmsManager().getMmsMessage(messageId) != null) {
+                    long largestMessageId = getLargestMessageId();
+                    if (largestMessageId != -1L) return null;
+
+                    messageId = String.valueOf(largestMessageId + 1L);
+                }
+
+                if (!firstMessageId.equals(messageId)) {
+                    ContentValues contentValues = new ContentValues();
+                    contentValues.put("_id", messageId);
+
+                    Uri updateUri = Uri.parse("content://mms-sms/conversations/" + mmsMessage.getChat().getIdentifier());
+
+                    if (isMms) {
+                        app.getContentResolver().update(updateUri, contentValues, "_id = " + firstMessageId, null);
+                    } else {
+                        app.getContentResolver().update(updateUri, contentValues, "_id = " + firstMessageId, null);
                     }
-
-                    handles.add(handle);
-                }
-
-                addressCursor.close();
-            }
-
-            FileLocationContainer fileLocationContainer = null;
-            boolean isDoNotDisturb = false;
-
-            if (app.getMessageDatabase().getSmsChatByThreadId(threadId) != null){
-                SmsChat dbSmsChat = app.getMessageDatabase().getSmsChatByThreadId(threadId);
-
-                fileLocationContainer = ((Chat) dbSmsChat).getChatPictureFileLocation();
-
-                if (dbSmsChat instanceof GroupChat){
-                    isDoNotDisturb = ((GroupChat) dbSmsChat).isDoNotDisturb();
                 }
             }
-
-            if (handles.isEmpty()){  return null; }
-
-            if (handles.size() == 1){
-                smsChat = new SmsPeerChat(threadId, handles.get(0), hasUnreadMessages);
-            }
-
-            if (handles.size() > 1){
-                smsChat = new SmsGroupChat(threadId, handles, fileLocationContainer, hasUnreadMessages, isDoNotDisturb);
-            }
-
-            if (app.getMessageDatabase().getSmsChatByThreadId(threadId) == null && smsChat != null){
-                app.getMessageDatabase().addSmsChat(smsChat);
-            }
-        }
-        initialQuery.close();
-
-        return smsChat;
-    }
-
-    protected MmsMessage buildMessage(String messageId){
-        MmsMessage mmsMessage = null;
-
-        if (isMessageMms(messageId)) {
-            mmsMessage = assembleMmsMessage(messageId);
-        } else {
-            mmsMessage = assembleSmsMessage(messageId);
+        }catch (Exception ex){
+            AppLogger.error("An error occurred while parsing a message from a URI", ex);
         }
 
         return mmsMessage;
     }
 
     protected void markChatAsRead(String threadId){
+        if (!MmsManager.hasSmsPermissions()) return;
+
+        Uri smsUri = Uri.parse("content://sms/");
+        Uri mmsUri = Uri.parse("content://mms/");
+        ContentResolver contentResolver = app.getContentResolver();
+
         ContentValues readValues = new ContentValues();
         readValues.put("read", 1);
+        readValues.put("seen", 1);
 
-        Uri uri = Uri.parse("content://mms-sms/complete-conversations/");
-        ContentResolver contentResolver = app.getContentResolver();
-        Cursor cursor = contentResolver.query(uri, new String[] {"_id"}, "thread_id = " + threadId + " AND read = 0", null, null);
+        Cursor smsCursor = contentResolver.query(smsUri, new String[] {"_id"}, "thread_id = " + threadId + " AND read = 0", null, null);
 
-        if (cursor != null){
-            if (cursor.moveToFirst()){
-                while (!cursor.isAfterLast()){
-                    String messageId = cursor.getString(cursor.getColumnIndex("_id"));
+        if (smsCursor != null){
+            if (smsCursor.moveToFirst()){
+                do {
+                    String messageId = smsCursor.getString(smsCursor.getColumnIndex("_id"));
 
-                    contentResolver.update(uri, readValues, "_id = " + messageId, null);
-                    cursor.moveToNext();
-                }
+                    contentResolver.update(smsUri, readValues, "_id = " + messageId, null);
+                }while (smsCursor.moveToNext());
             }
-            cursor.close();
+            smsCursor.close();
         }
-    }
 
-    protected void updateChat(String threadId, SmsChat newData){
-        app.getMessageDatabase().updateSmsChatByThreadId(threadId, newData);
+        Cursor mmsCursor = contentResolver.query(mmsUri, new String[] {"_id"}, "thread_id = " + threadId + " AND read = 0", null, null);
+
+        if (mmsCursor != null){
+            if (mmsCursor.moveToFirst()){
+                do {
+                    String messageId = mmsCursor.getString(mmsCursor.getColumnIndex("_id"));
+
+                    contentResolver.update(mmsUri, readValues, "_id = " + messageId, null);
+                }while (mmsCursor.moveToNext());
+            }
+            mmsCursor.close();
+        }
     }
 
     protected void deleteChat(String threadId){
-        app.getContentResolver().delete(Uri.parse("content://mms-sms/conversations/" + threadId),null,null);
-        app.getMessageDatabase().deleteSmsChatByThreadId(threadId);
+        if (!MmsManager.hasSmsPermissions()) return;
 
-        for (Attachment a : app.getMessageDatabase().getAttachmentsBySmsThreadId(threadId)){
-            a.getFileLocation().getFile().delete();
-            app.getMessageDatabase().deleteAttachmentByUuid(a.getUuid().toString());
-        }
+        app.getContentResolver().delete(Uri.parse("content://mms-sms/conversations/" + threadId),null,null);
     }
 
-    public String addSmsMessage(Object[] smsExtra){
-        String address = "";
-        long timeStampMillis = 0L;
+    protected Uri addSmsMessage(Object[] smsExtra){
+        if (!MmsManager.hasSmsPermissions()) return null;
+
         StringBuilder text = new StringBuilder("");
         SmsMessage[] smsMessages = new SmsMessage[smsExtra.length];
 
@@ -305,219 +168,341 @@ public final class MmsDatabase {
             text.append(sms.getMessageBody());
 
             if (i == smsMessages.length - 1) {
-                address = sms.getOriginatingAddress();
-                timeStampMillis = sms.getTimestampMillis();
-
                 ContentValues values = new ContentValues();
-                values.put("address", address);
+                values.put("address", sms.getOriginatingAddress());
                 values.put("body", text.toString());
-                values.put("date", timeStampMillis);
+                values.put("date", sms.getTimestampMillis());
                 values.put("status", sms.getStatus());
                 values.put("read", 0);
+                values.put("seen", 0);
                 values.put("type", 1);
 
-                app.getContentResolver().insert(Uri.parse("content://sms"), values);
+                return app.getContentResolver().insert(Uri.parse("content://sms"), values);
             }
         }
 
-        return getSmsMessageId(address, text.toString(), timeStampMillis);
+        return null;
     }
 
-    protected void deleteMessage(String messageId){
-        Uri completeConversationUri = Uri.parse("content://mms-sms/complete-conversations/");
-        Cursor initialQuery = app.getContentResolver().query(completeConversationUri, new String[] {"transport_type"}, "_id = " + messageId, null, null);
+    protected void deleteMessage(MmsMessage message){
+        if (!MmsManager.hasSmsPermissions()) return;
+
+        if (message.isMms()){
+            app.getContentResolver().delete(Uri.parse("content://mms/" + message.getIdentifier()), null, null);
+        }else {
+            app.getContentResolver().delete(Uri.parse("content://sms/" + message.getIdentifier()), null, null);
+        }
+    }
+
+    public void executeChatSync(){
+        if (!MmsManager.hasSmsPermissions()) return;
+
+        Uri uri = Uri.parse("content://mms-sms/conversations/");
+        Cursor chatQuery = app.getContentResolver().query(uri, new String[]{ "thread_id", "_id", "ct_t", "read" }, null, null, null);
+
+        if (chatQuery == null) return;
+
+        if (chatQuery.moveToFirst()){
+            do {
+                try {
+                    String threadId = chatQuery.getString(chatQuery.getColumnIndex("thread_id"));
+
+                    if (app.getMmsManager().getSmsChat(threadId) != null) continue;
+
+                    SmsChat smsChat = buildSmsChat(chatQuery);
+
+                    if (smsChat != null) {
+                        app.getMmsManager().getSyncingChats().put(threadId, smsChat);
+                        app.getMmsManager().addChat(smsChat);
+                    }
+                }catch (Exception ex){
+                    AppLogger.error("An error occurred while fetching a chat from the database during SMS Chat Sync", ex);
+                }
+            }while (chatQuery.moveToNext());
+        }
+
+        chatQuery.close();
+        app.getMessageManager().refreshChats(false, true);
+    }
+
+    public void executeMessageSync(String identifier){
+        if (!MmsManager.hasSmsPermissions()) return;
+
+        Uri uri = Uri.parse("content://mms-sms/conversations/" + identifier);
+        Cursor initialQuery = app.getContentResolver().query(uri, new String[]{ "_id", "ct_t", "address" }, null, null, null);
 
         if (initialQuery == null) return;
 
         if (initialQuery.moveToFirst()){
-            String transportType = initialQuery.getString(initialQuery.getColumnIndex("transport_type"));
+            do {
+                try {
+                    String firstMessageId = initialQuery.getString(initialQuery.getColumnIndex("_id"));
+                    String messageId = initialQuery.getString(initialQuery.getColumnIndex("_id"));
+                    String contentType = initialQuery.getString(initialQuery.getColumnIndex("ct_t"));
+                    boolean isMms = !StringUtils.isEmpty(contentType) && (contentType.equalsIgnoreCase("application/vnd.wap.multipart.related") || contentType.equalsIgnoreCase("application/vnd.wap.multipart.mixed"));
 
-            if (transportType.equals("sms")){
-                app.getContentResolver().delete(Uri.parse("content://sms/" + messageId), null, null);
-            }else if (transportType.equals("mms")){
-                app.getContentResolver().delete(Uri.parse("content://mms/" + messageId), null, null);
-            }
+                    if (app.getMmsManager().getMmsMessage(messageId) != null) {
+                        long largestMessageId = getLargestMessageId();
+                        if (largestMessageId == -1L) continue;
+
+                        messageId = String.valueOf(largestMessageId + 1L);
+                    }
+
+                    if (!firstMessageId.equals(messageId)) {
+                        ContentValues contentValues = new ContentValues();
+                        contentValues.put("_id", messageId);
+
+                        if (isMms) {
+                            app.getContentResolver().update(uri, contentValues, "_id = " + firstMessageId, null);
+                        } else {
+                            app.getContentResolver().update(uri, contentValues, "_id = " + firstMessageId, null);
+                        }
+                    }
+
+                    if (isMms) {
+                        Cursor mmsCursor = app.getContentResolver().query(Uri.parse("content://mms/"), new String[]{"date_sent", "date", "msg_box", "_id", "thread_id"}, "_id = " + messageId, null, null);
+
+                        if (mmsCursor.moveToFirst()) {
+                            MmsMessage message = buildMmsMessage(mmsCursor);
+
+                            if (message != null)
+                                app.getMmsManager().addMessage(message);
+                        }
+
+                        mmsCursor.close();
+                    } else {
+                        Cursor smsCursor = app.getContentResolver().query(Uri.parse("content://sms/"), new String[]{"address", "date_sent", "date", "body", "type", "_id", "thread_id"}, "_id = " + messageId, null, null);
+
+                        if (smsCursor.moveToFirst()) {
+                            MmsMessage message = buildSmsMessage(smsCursor);
+
+                            if (message != null)
+                                app.getMmsManager().addMessage(message);
+                        }
+
+                        smsCursor.close();
+                    }
+                }catch (Exception ex){
+                    AppLogger.error("An error occurred while fetching a message from the database during SMS Message Sync", ex);
+                }
+            }while (initialQuery.moveToNext());
         }
+
         initialQuery.close();
-
-        for (Attachment a : app.getMessageDatabase().getAttachmentsBySmsMessage(messageId)){
-            a.getFileLocation().getFile().delete();
-            app.getMessageDatabase().deleteAttachmentByUuid(a.getUuid().toString());
-        }
+        app.getMmsManager().getSyncingChats().remove(identifier);
+        app.getMessageManager().updateChat(identifier, (Chat) app.getMmsManager().getSmsChat(identifier),false);
     }
 
-    private MmsMessage assembleMmsMessage(String messageId){
-        MmsMessage mmsMessage = null;
-        Cursor mmsCursor = app.getContentResolver().query(Uri.parse("content://mms/"), new String[]{"date_sent", "date", "msg_box", "thread_id"}, "_id = " + messageId, null, null);
+    private SmsChat buildSmsChat(Cursor chatCursor){
+        SmsChat smsChat = null;
+        List<Handle> handles = new ArrayList<>();
 
-        if (mmsCursor.moveToFirst()) {
-            Handle sender;
-            List<Attachment> attachments = new ArrayList<>();
-            boolean isFromMe = false;
-            StringBuilder textBuilder = new StringBuilder("");
-            SmsChat smsChat = app.getMmsManager().getSmsChat(mmsCursor.getString(mmsCursor.getColumnIndex("thread_id")));
+        String threadId = chatCursor.getString(chatCursor.getColumnIndex("thread_id"));
+        String messageId = chatCursor.getString(chatCursor.getColumnIndex("_id"));
+        String contentType = chatCursor.getString(chatCursor.getColumnIndex("ct_t"));
+        boolean hasUnreadMessages = !integerToBoolean(chatCursor.getInt(chatCursor.getColumnIndex("read")));
 
-            String address = getMmsSender(messageId);
-            String dateSent = mmsCursor.getString(mmsCursor.getColumnIndex("date_sent"));
-            String dateDelivered = mmsCursor.getString(mmsCursor.getColumnIndex("date"));
-            boolean isErrored = mmsCursor.getInt(mmsCursor.getColumnIndex("msg_box")) == 5;
-            boolean isDelivered = mmsCursor.getInt(mmsCursor.getColumnIndex("msg_box")) == 2;
+        if (!StringUtils.isEmpty(contentType) && (contentType.equalsIgnoreCase("application/vnd.wap.multipart.related") || contentType.equalsIgnoreCase("application/vnd.wap.multipart.mixed"))) {
+            Uri addressUri = Uri.parse(MessageFormat.format("content://mms/{0}/addr", messageId));
+            Cursor cursorAddress = app.getContentResolver().query(addressUri, new String[] { "address" }, "msg_id = " + messageId, null, null);
 
-            if (!(!StringUtils.isEmpty(address) && PhoneNumberUtil.getInstance().isPossibleNumber(address, Resources.getSystem().getConfiguration().locale.getCountry()))) {
-                sender = null;
-            } else {
-                if (app.getCurrentSession().getSmsHandle().getHandleID().equals(Handle.parseHandleId(address))) {
-                    sender = app.getCurrentSession().getSmsHandle();
-                    isFromMe = true;
-                } else {
-                    Handle handle = app.getMessageDatabase().getHandleByHandleID(address);
-
-                    if (handle == null) {
-                        handle = new Handle(UUID.randomUUID(), address, Handle.HandleType.SMS, false, false);
-                        app.getMessageManager().addHandle(handle, false);
-                    }
-                    sender = handle;
-                }
-            }
-
-            HashMap<String, Attachment> existingAttachments = new HashMap<>();
-
-            for (Attachment a : app.getMessageDatabase().getAttachmentsBySmsMessage(messageId)) {
-                existingAttachments.put(a.getTransferName(), a);
-            }
-
-            Cursor partCursor = app.getContentResolver().query(Uri.parse("content://mms/part"), new String[]{"_id", "ct", "_data", "text"}, "mid = " + messageId, null, null);
-
-            if (partCursor.moveToFirst()) {
+            if (cursorAddress.moveToFirst()) {
                 do {
-                    String partId = partCursor.getString(partCursor.getColumnIndex("_id"));
-                    String type = partCursor.getString(partCursor.getColumnIndex("ct"));
-                    String data = partCursor.getString(partCursor.getColumnIndex("_data"));
+                    String number = cursorAddress.getString(cursorAddress.getColumnIndex("address"));
 
-                    if (type.equals("text/plain")) {
-                        if (data != null) {
-                            textBuilder.append(getMmsText(partId));
-                        } else {
-                            textBuilder.append(partCursor.getColumnIndex("text"));
-                        }
-                    } else {
-                        FileLocationContainer fileLocationContainer = null;
-                        String fileName;
-
-                        if (StringUtils.isEmpty(data) || StringUtils.isEmpty(type)) continue;
-
-                        if (data.contains("/")) {
-                            String[] split = data.split("/");
-                            fileName = split[split.length - 1];
-                        } else {
-                            fileName = data;
-                        }
-
-                        try {
-                            if (MimeType.getTypeFromString(type) == MimeType.IMAGE || type.equals("image/jpg") || type.equals("image/bmp")) {
-                                fileLocationContainer = processMmsImage(partId, fileName);
-                            } else if (MimeTypeMap.getSingleton().getExtensionFromMimeType(type) != null) {
-                                fileLocationContainer = processAttachment(partId, fileName, "." + MimeTypeMap.getSingleton().getExtensionFromMimeType(type));
-                            }
-                        } catch (IOException ex) {
-                            AppLogger.error("An error occurred while loading an attachment from an MMS message", ex);
-                        }
-
-                        if (fileLocationContainer != null) {
-                            if (existingAttachments.containsKey(fileLocationContainer.getFile().getName())) {
-                                attachments.add(existingAttachments.get(fileLocationContainer.getFile().getName()));
-                            } else {
-                                Attachment attachment = new Attachment(UUID.randomUUID(), "", fileLocationContainer.getFile().getName(),
-                                        fileLocationContainer, type, fileLocationContainer.getFile().length());
-
-                                attachment.setBoundSmsChat(((Chat) smsChat).getIdentifier());
-                                attachment.setBoundSmsMessage(messageId);
-                                attachments.add(attachment);
-                                app.getMessageDatabase().addAttachment(attachment);
-                            }
-                        }
+                    if (!StringUtils.isEmpty(number)){
+                        handles.add(processHandle(number));
                     }
-                } while (partCursor.moveToNext());
+                }while (cursorAddress.moveToNext());
             }
-            partCursor.close();
 
-            if (StringUtils.isEmpty(dateSent) || Long.parseLong(dateSent) < 100)
-                dateSent = null;
-            if (StringUtils.isEmpty(dateDelivered) || Long.parseLong(dateDelivered) < 100)
-                dateDelivered = null;
+            cursorAddress.close();
+        } else {
+            Cursor addressCursor = app.getContentResolver().query(Uri.parse("content://sms"), new String[] { "address" }, "_id = " + messageId, null, null);
 
-            if (sender != null) {
-                mmsMessage = new MmsMessage(messageId,
-                        (Chat) smsChat,
-                        sender,
-                        attachments,
-                        textBuilder.toString(),
-                        dateSent == null ? null : new Date(Long.parseLong(dateSent)),
-                        dateDelivered == null ? null : new Date(Long.parseLong(dateDelivered)),
-                        isErrored,
-                        isDelivered,
-                        isFromMe);
+            if (addressCursor.moveToFirst()) {
+                String phone = addressCursor.getString(addressCursor.getColumnIndex("address"));
+                handles.add(processHandle(phone));
+            }
+
+            addressCursor.close();
+        }
+
+        if (handles.isEmpty()) return null;
+
+        if (handles.size() == 1){
+            smsChat = new SmsPeerChat(threadId, handles.get(0), hasUnreadMessages);
+        }
+
+        if (handles.size() > 1){
+            handles.removeAll(Collections.singleton(weMessage.get().getCurrentSession().getSmsHandle()));
+
+            if (handles.isEmpty()){
+                smsChat = new SmsPeerChat(threadId, weMessage.get().getCurrentSession().getSmsHandle(), hasUnreadMessages);
+            }else if (handles.size() == 1) {
+                smsChat = new SmsPeerChat(threadId, handles.get(0), hasUnreadMessages);
+            } else {
+                smsChat = new SmsGroupChat(threadId, handles, null, hasUnreadMessages, false);
             }
         }
 
-        mmsCursor.close();
+        return smsChat;
+    }
+
+    private MmsMessage buildMmsMessage(Cursor mmsCursor){
+        MmsMessage mmsMessage = null;
+        Handle sender;
+        boolean isFromMe = false;
+        List<Attachment> attachments = new ArrayList<>();
+        StringBuilder textBuilder = new StringBuilder("");
+
+        String messageId = mmsCursor.getString(mmsCursor.getColumnIndex("_id"));
+        String threadId = mmsCursor.getString(mmsCursor.getColumnIndex("thread_id"));
+        Date dateSent = processDate(mmsCursor.getString(mmsCursor.getColumnIndex("date_sent")));
+        Date dateDelivered = processDate(mmsCursor.getString(mmsCursor.getColumnIndex("date")));
+        boolean isErrored = mmsCursor.getInt(mmsCursor.getColumnIndex("msg_box")) == 5;
+        boolean isDelivered = mmsCursor.getInt(mmsCursor.getColumnIndex("msg_box")) == 2;
+
+        String address = getMmsSender(messageId);
+
+        if (StringUtils.isEmpty(address)) {
+            sender = null;
+        } else {
+            if (app.getCurrentSession().getSmsHandle().getHandleID().equals(Handle.parseHandleId(address))) {
+                sender = app.getCurrentSession().getSmsHandle();
+                isFromMe = true;
+            } else {
+                sender = processHandle(address);
+            }
+        }
+
+        Cursor partCursor = app.getContentResolver().query(Uri.parse("content://mms/part"), new String[]{"_id", "ct", "_data", "text"}, "mid = " + messageId, null, null);
+
+        if (partCursor.moveToFirst()) {
+            do {
+                String partId = partCursor.getString(partCursor.getColumnIndex("_id"));
+                String type = partCursor.getString(partCursor.getColumnIndex("ct"));
+                String data = partCursor.getString(partCursor.getColumnIndex("_data"));
+
+                if (type.equals("text/plain")) {
+                    if (data != null) {
+                        textBuilder.append(getMmsText(partId));
+                    } else {
+                        textBuilder.append(partCursor.getString(partCursor.getColumnIndex("text")));
+                    }
+                } else {
+                    FileLocationContainer fileLocationContainer = null;
+                    String fileName;
+
+                    if (StringUtils.isEmpty(data) || StringUtils.isEmpty(type)) continue;
+
+                    if (data.contains("/")) {
+                        String[] split = data.split("/");
+                        fileName = split[split.length - 1];
+                    } else {
+                        fileName = data;
+                    }
+
+                    try {
+                        if ((MimeType.getTypeFromString(type) == MimeType.IMAGE || type.equals("image/jpg") || type.equals("image/bmp")) && !type.equals("image/gif")) {
+                            fileLocationContainer = processMmsImage(partId, fileName);
+                        } else if (MimeTypeMap.getSingleton().getExtensionFromMimeType(type) != null) {
+                            fileLocationContainer = processAttachment(partId, fileName, "." + MimeTypeMap.getSingleton().getExtensionFromMimeType(type));
+                        }
+                    } catch (IOException ex) {
+                        AppLogger.error("An error occurred while loading an attachment from an MMS message", ex);
+                    }
+
+                    if (fileLocationContainer != null) {
+                        Attachment attachment = new Attachment(UUID.randomUUID(), "", fileLocationContainer.getFile().getName(),
+                                fileLocationContainer, type, fileLocationContainer.getFile().length());
+
+                        attachments.add(attachment);
+                    }
+                }
+            } while (partCursor.moveToNext());
+        }
+        partCursor.close();
+
+        Chat chat = (Chat) app.getMmsManager().getSmsChat(threadId);
+
+        if (chat == null){
+            Cursor chatQuery = app.getContentResolver().query(Uri.parse("content://mms-sms/conversations/"), new String[]{ "thread_id", "_id", "ct_t", "read" }, "thread_id = " + threadId, null, null);
+
+            if (chatQuery.moveToFirst()){
+                chat = (Chat) buildSmsChat(chatQuery);
+            }
+            chatQuery.close();
+        }
+
+        if (sender != null && chat != null) {
+            mmsMessage = new MmsMessage(messageId,
+                    chat,
+                    sender,
+                    attachments,
+                    textBuilder.toString(),
+                    dateSent,
+                    dateDelivered,
+                    isErrored,
+                    isDelivered,
+                    isFromMe,
+                    true);
+        }
+
         return mmsMessage;
     }
 
-    private MmsMessage assembleSmsMessage(String messageId){
+    private MmsMessage buildSmsMessage(Cursor smsCursor){
         MmsMessage mmsMessage = null;
-        Cursor smsCursor = app.getContentResolver().query(Uri.parse("content://sms"), new String[] { "address", "date_sent", "date", "body", "type", "thread_id" }, "_id = " + messageId, null, null);
+        Handle sender = null;
 
-        if (smsCursor.moveToFirst()){
-            Handle sender;
-            SmsChat smsChat = app.getMmsManager().getSmsChat(smsCursor.getString(smsCursor.getColumnIndex("thread_id")));
-            String address = smsCursor.getString(smsCursor.getColumnIndex("address"));
-            String dateSent = smsCursor.getString(smsCursor.getColumnIndex("date_sent"));
-            String dateDelivered = smsCursor.getString(smsCursor.getColumnIndex("date"));
-            String text = smsCursor.getString(smsCursor.getColumnIndex("body"));
-            int type = smsCursor.getInt(smsCursor.getColumnIndex("type"));
-            boolean isFromMe = false;
-            boolean errored = type == 5;
+        String messageId = smsCursor.getString(smsCursor.getColumnIndex("_id"));
+        String threadId = smsCursor.getString(smsCursor.getColumnIndex("thread_id"));
+        String address = smsCursor.getString(smsCursor.getColumnIndex("address"));
+        String text = smsCursor.getString(smsCursor.getColumnIndex("body"));
+        Date dateSent = processDate(smsCursor.getString(smsCursor.getColumnIndex("date_sent")));
+        Date dateDelivered = processDate(smsCursor.getString(smsCursor.getColumnIndex("date")));
+        int type = smsCursor.getInt(smsCursor.getColumnIndex("type"));
+        boolean isFromMe = false;
+        boolean errored = type == 5;
 
-            if (type == 2 || type == 3 || type == 4 || type == 5 || type == 6){
-                isFromMe = true;
-            }
+        if (type == 2 || type == 3 || type == 4 || type == 5 || type == 6){
+            isFromMe = true;
+        }
 
-            if (!(!StringUtils.isEmpty(address) && PhoneNumberUtil.getInstance().isPossibleNumber(address, Resources.getSystem().getConfiguration().locale.getCountry()))){
-                sender = null;
-            }else {
-                if (isFromMe) {
-                    sender = app.getCurrentSession().getSmsHandle();
-                } else {
-                    Handle handle = app.getMessageDatabase().getHandleByHandleID(address);
-
-                    if (handle == null) {
-                        handle = new Handle(UUID.randomUUID(), address, Handle.HandleType.SMS, false, false);
-                        app.getMessageManager().addHandle(handle, false);
-                    }
-
-                    sender = handle;
-                }
-            }
-
-            if (StringUtils.isEmpty(dateSent) || Long.parseLong(dateSent) < 100) dateSent = null;
-            if (StringUtils.isEmpty(dateDelivered) || Long.parseLong(dateDelivered) < 100) dateDelivered = null;
-
-            if (sender != null){
-                mmsMessage = new MmsMessage(messageId,
-                        (Chat) smsChat,
-                        sender,
-                        new ArrayList<Attachment>(),
-                        text,
-                        dateSent == null ? null : new Date(Long.parseLong(dateSent)),
-                        dateDelivered == null ? null : new Date(Long.parseLong(dateDelivered)),
-                        errored,
-                        type == 2 && (dateSent != null || dateDelivered != null),
-                        isFromMe);
+        if (!StringUtils.isEmpty(address)){
+            if (isFromMe) {
+                sender = app.getCurrentSession().getSmsHandle();
+            } else {
+                sender = processHandle(address);
             }
         }
 
-        smsCursor.close();
+        Chat chat = (Chat) app.getMmsManager().getSmsChat(threadId);
+
+        if (chat == null){
+            Cursor chatQuery = app.getContentResolver().query(Uri.parse("content://mms-sms/conversations/"), new String[]{ "thread_id", "_id", "ct_t", "read" }, "thread_id = " + threadId, null, null);
+
+            if (chatQuery.moveToFirst()){
+                chat = (Chat) buildSmsChat(chatQuery);
+            }
+            chatQuery.close();
+        }
+
+        if (sender != null && chat != null){
+            mmsMessage = new MmsMessage(messageId,
+                    chat,
+                    sender,
+                    new ArrayList<Attachment>(),
+                    text,
+                    dateSent,
+                    dateDelivered,
+                    errored,
+                    type == 2 && (dateSent != null || dateDelivered != null),
+                    isFromMe,
+                    false);
+        }
+
         return mmsMessage;
     }
 
@@ -561,34 +546,6 @@ public final class MmsDatabase {
         return address;
     }
 
-    private boolean isThreadMms(String threadId){
-        boolean isMms;
-
-        Cursor cursor = app.getContentResolver().query(Uri.parse("content://mms-sms/conversations/"), new String[]{ "ct_t" }, "thread_id = " + threadId, null, null);
-        cursor.moveToFirst();
-
-        String contentType = cursor.getString(cursor.getColumnIndex("ct_t"));
-
-        isMms = contentType != null && contentType.equals("application/vnd.wap.multipart.related");
-        cursor.close();
-
-        return isMms;
-    }
-
-    private boolean isMessageMms(String messageId){
-        boolean isMms;
-
-        Cursor cursor = app.getContentResolver().query(Uri.parse("content://mms-sms/conversations/"), new String[]{ "ct_t" }, "_id = " + messageId, null, null);
-        cursor.moveToFirst();
-
-        String contentType = cursor.getString(cursor.getColumnIndex("ct_t"));
-
-        isMms = contentType != null && contentType.equals("application/vnd.wap.multipart.related");
-        cursor.close();
-
-        return isMms;
-    }
-
     private FileLocationContainer processMmsImage(String partId, String name) throws IOException {
         Bitmap photo;
         InputStream is = null;
@@ -606,7 +563,7 @@ public final class MmsDatabase {
             newFile.createNewFile();
 
             out = new FileOutputStream(newFile);
-            photo.compress(Bitmap.CompressFormat.PNG, 100, out);
+            photo.compress(Bitmap.CompressFormat.PNG, 90, out);
 
             out.close();
         }catch (OutOfMemoryError error){
@@ -633,6 +590,55 @@ public final class MmsDatabase {
         FileUtils.writeInputStreamToFile(inputStream, newFile);
 
         return new FileLocationContainer(newFile);
+    }
+
+    private Handle processHandle(String address){
+        Handle handle = app.getMessageDatabase().getHandleByHandleID(address);
+
+        if (handle == null) {
+            handle = new Handle(UUID.randomUUID(), address, Handle.HandleType.SMS, false, false);
+            app.getMessageManager().addHandle(handle, false);
+        }
+
+        return handle;
+    }
+
+    private Date processDate(String date){
+        if (StringUtils.isEmpty(date)) return null;
+        Long dateLong = Long.parseLong(date);
+
+        if (dateLong < 100) return null;
+
+        if (new DateTime(dateLong).getYear() < 2000){
+            return processDate(String.valueOf(dateLong * 10L));
+        }
+
+        return new Date(dateLong);
+    }
+
+    private Long getLargestMessageId(){
+        Long smsMaxId;
+        Long mmsMaxId;
+
+        try {
+            Cursor smsMaxIdCursor = app.getContentResolver().query(Uri.parse("content://sms/"), new String[]{"MAX(_id) as max_id"}, null, null, null);
+            smsMaxIdCursor.moveToFirst();
+            smsMaxId = smsMaxIdCursor.getLong(0);
+            smsMaxIdCursor.close();
+        }catch (Exception ex){
+            smsMaxId = -1L;
+        }
+
+        try {
+            Cursor mmsMaxIdCursor = app.getContentResolver().query(Uri.parse("content://mms/"), new String[]{"MAX(_id) as max_id"}, null, null, null);
+            mmsMaxIdCursor.moveToFirst();
+            mmsMaxId = mmsMaxIdCursor.getLong(0);
+            mmsMaxIdCursor.close();
+        }catch (Exception ex){
+            mmsMaxId = -1L;
+        }
+
+        return smsMaxId > mmsMaxId ? smsMaxId : mmsMaxId;
     }
 
     private boolean integerToBoolean(Integer integer){

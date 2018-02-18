@@ -120,6 +120,66 @@ public class DialogDisplayer {
         alertDialogFragment.show(fragmentManager, "NoAccountsFoundDialog");
     }
 
+    public static void showContactSyncDialog(final Context context, final FragmentManager fragmentManager, final Runnable macRunnable, final Runnable androidRunnable){
+        ContactSyncAlertDialog contactSyncAlertDialog = new ContactSyncAlertDialog();
+
+        contactSyncAlertDialog.setSyncRunnables(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        Bundle bundle = new Bundle();
+                        DialogDisplayer.AlertDialogFragmentDouble alertDialogFragmentDouble = new DialogDisplayer.AlertDialogFragmentDouble();
+
+                        bundle.putString(weMessage.BUNDLE_ALERT_TITLE, context.getString(R.string.sync_contacts_title));
+                        bundle.putString(weMessage.BUNDLE_ALERT_MESSAGE, context.getString(R.string.sync_contacts_android_message));
+                        bundle.putString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON, context.getString(R.string.start_process));
+                        alertDialogFragmentDouble.setArguments(bundle);
+
+                        alertDialogFragmentDouble.setOnDismiss(androidRunnable);
+                        alertDialogFragmentDouble.show(fragmentManager, "ContactSyncDialogPhone");
+                    }
+                },
+
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        Bundle bundle = new Bundle();
+                        DialogDisplayer.AlertDialogFragmentDouble alertDialogFragmentDouble = new DialogDisplayer.AlertDialogFragmentDouble();
+
+                        bundle.putString(weMessage.BUNDLE_ALERT_TITLE, context.getString(R.string.sync_contacts_title));
+                        bundle.putString(weMessage.BUNDLE_ALERT_MESSAGE, context.getString(R.string.sync_contacts_mac_message));
+                        bundle.putString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON, context.getString(R.string.start_process));
+                        alertDialogFragmentDouble.setArguments(bundle);
+
+                        if (weMessage.get().getSharedPreferences().getBoolean(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW, true)) {
+                            alertDialogFragmentDouble.setOnDismiss(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (context == null || fragmentManager == null) return;
+
+                                    weMessage.get().getSharedPreferences().edit().putBoolean(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW, false).apply();
+
+                                    Bundle bundle = new Bundle();
+                                    DialogDisplayer.AlertDialogFragmentDouble alertDialogFragmentDouble = new DialogDisplayer.AlertDialogFragmentDouble();
+
+                                    bundle.putString(weMessage.BUNDLE_ALERT_TITLE, context.getString(R.string.sync_contacts_title));
+                                    bundle.putString(weMessage.BUNDLE_ALERT_MESSAGE, context.getString(R.string.sync_contacts_message_permission));
+                                    bundle.putString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON, context.getString(R.string.ok_button));
+                                    alertDialogFragmentDouble.setArguments(bundle);
+
+                                    alertDialogFragmentDouble.setOnDismiss(macRunnable);
+                                    alertDialogFragmentDouble.show(fragmentManager,  "ContactSyncDialogComputerPermission");
+                                }
+                            });
+                        }else {
+                            alertDialogFragmentDouble.setOnDismiss(macRunnable);
+                        }
+                        alertDialogFragmentDouble.show(fragmentManager, "ContactSyncDialogComputer");
+                    }
+                });
+        contactSyncAlertDialog.show(fragmentManager, "ContactSyncDialog");
+    }
+
     public static class AlertDialogFragment extends DialogFragment {
 
         private Runnable runnable;
@@ -292,6 +352,82 @@ public class DialogDisplayer {
 
         public void setDenyRunnable(Runnable runnable){
             this.denyRunnable = runnable;
+        }
+    }
+
+    public static class ContactSyncAlertDialog extends DialogFragment {
+        private int syncMode = -1;
+        private Runnable androidRunnable;
+        private Runnable macRunnable;
+
+        @NonNull
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            AlertDialogLayout alertDialogLayout = (AlertDialogLayout) getActivity().getLayoutInflater().inflate(R.layout.alert_dialog_layout, null);
+
+            alertDialogLayout.setTitle(getString(R.string.sync_contacts_title));
+            alertDialogLayout.setMessage(getString(R.string.sync_contacts_message));
+
+            builder.setView(alertDialogLayout);
+            builder.setPositiveButton(getString(R.string.sync_with_mac), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    syncMode = 1;
+                    dialog.dismiss();
+                }
+            });
+
+            builder.setNeutralButton(getString(R.string.sync_with_phone), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    syncMode = 2;
+                    dialog.dismiss();
+                }
+            });
+
+            setRetainInstance(true);
+
+            return builder.create();
+        }
+
+        @Override
+        public void onDestroyView() {
+            Dialog dialog = getDialog();
+
+            if (dialog != null && getRetainInstance()) {
+                dialog.setDismissMessage(null);
+            }
+            super.onDestroyView();
+        }
+
+        @Override
+        public void onDismiss(DialogInterface dialog) {
+            if (syncMode != -1) {
+                if (getActivity() != null && !getActivity().isDestroyed() && !getActivity().isFinishing() && isAdded()) {
+                    if (syncMode == 1){
+                        new Handler().postDelayed(macRunnable, 100L);
+                    }else if (syncMode == 2){
+                        new Handler().postDelayed(androidRunnable, 100L);
+                    }
+                }
+            }
+
+            super.onDismiss(dialog);
+        }
+
+        @Override
+        public void show(FragmentManager manager, String tag) {
+            try {
+                super.show(manager, tag);
+            }catch(Exception ex){
+                AppLogger.log(AppLogger.Level.ERROR, null, "Attempted to show a dialog when display was exited.");
+            }
+        }
+
+        public void setSyncRunnables(Runnable androidSync, Runnable macSync){
+            this.androidRunnable = androidSync;
+            this.macRunnable = macSync;
         }
     }
 }

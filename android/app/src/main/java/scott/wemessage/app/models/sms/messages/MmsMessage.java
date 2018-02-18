@@ -18,8 +18,11 @@ import scott.wemessage.commons.utils.DateUtils;
 
 public class MmsMessage extends Message {
 
-    public MmsMessage(String identifier, Chat chat, Handle sender, List<Attachment> attachments, String text, Date dateSent, Date dateDelivered, Boolean errored, Boolean isDelivered, Boolean isFromMe){
+    private boolean isMms;
+
+    public MmsMessage(String identifier, Chat chat, Handle sender, List<Attachment> attachments, String text, Date dateSent, Date dateDelivered, Boolean errored, Boolean isDelivered, Boolean isFromMe, Boolean isMms){
         super(identifier, "", chat, sender, attachments, text, DateUtils.convertDateTo2001Time(dateSent), DateUtils.convertDateTo2001Time(dateDelivered), null, errored, true, isDelivered, false, true, isFromMe, MessageEffect.NONE, true);
+        this.isMms = isMms;
     }
 
     @Override
@@ -62,6 +65,10 @@ public class MmsMessage extends Message {
         return true;
     }
 
+    public Boolean isMms(){
+        return isMms;
+    }
+
     @Override
     public MmsMessage setMacGuid(String macGuid) {
         return this;
@@ -94,6 +101,11 @@ public class MmsMessage extends Message {
 
     @Override
     public MmsMessage setEffectFinished(Boolean effectFinished) {
+        return this;
+    }
+
+    public MmsMessage setMms(boolean isMms){
+        this.isMms = isMms;
         return this;
     }
 

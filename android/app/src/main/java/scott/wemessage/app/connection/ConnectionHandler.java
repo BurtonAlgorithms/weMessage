@@ -2,7 +2,6 @@ package scott.wemessage.app.connection;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.content.LocalBroadcastManager;
@@ -11,7 +10,6 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -85,6 +83,7 @@ import scott.wemessage.commons.types.DisconnectReason;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.MessageEffect;
 import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.ByteArrayAdapter;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.FileUtils;
@@ -1682,7 +1681,7 @@ public final class ConnectionHandler extends Thread {
 
     private boolean isPossibleSmsChat(JSONChat jsonChat){
         for (String s : jsonChat.getParticipants()){
-            if (!PhoneNumberUtil.getInstance().isPossibleNumber(s, Resources.getSystem().getConfiguration().locale.getCountry())) return false;
+            if (AuthenticationUtils.isValidEmailFormat(s)) return false;
         }
         return true;
     }

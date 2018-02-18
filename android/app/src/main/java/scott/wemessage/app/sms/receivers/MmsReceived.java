@@ -18,7 +18,7 @@ public class MmsReceived extends MmsReceivedReceiver {
     protected void onMessageReceived(Uri messageUri) {
         try {
             PowerManager powerManager = (PowerManager) weMessage.get().getSystemService(Context.POWER_SERVICE);
-            MmsMessage message = weMessage.get().getMmsManager().getMmsMessage(weMessage.get().getMmsDatabase().getMessageId(messageUri), false);
+            MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(messageUri);
 
             if (message == null) return;
 
@@ -28,6 +28,7 @@ public class MmsReceived extends MmsReceivedReceiver {
             }
 
             weMessage.get().getMessageManager().addMessage(message, false);
+            weMessage.get().getMessageManager().updateChat(message.getChat().getIdentifier(), message.getChat().setHasUnreadMessages(true), false);
             weMessage.get().getMmsManager().showMmsNotification(message);
         }catch (Exception ex){
             AppLogger.error("An error occurred while receiving an MMS message", ex);

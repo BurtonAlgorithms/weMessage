@@ -402,7 +402,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             };
         }
 
-        final MessagesListAdapter<IMessage> messageListAdapter = new MessagesListAdapter<>(meUuid, messageHolders, imageLoader);
+        final MessagesListAdapter<IMessage> messageListAdapter = new MessagesListAdapter<>(meUuid, messageHolders, imageLoader, getChat() instanceof SmsChat);
 
         messageListAdapter.setDateHeadersFormatter(new DateFormatter.Formatter() {
             @Override
@@ -502,7 +502,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     getResources().getColor(R.color.transparent), R.drawable.mask));
 
             messageInput.setSendBackgroundDrawable(getSelector(getResources().getColor(R.color.outgoingBubbleColorOrange), getResources().getColor(R.color.outgoingBubbleColorOrangePressed),
-                    getResources().getColor(R.color.transparent), R.drawable.mask));
+                    getResources().getColor(R.color.white_four), R.drawable.mask));
         }
 
         messageSelectionModeBar.findViewById(R.id.messageSelectCopyIcon).setOnClickListener(new View.OnClickListener() {
@@ -1053,8 +1053,12 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     @Override
-    public boolean onNotification(String macGuid) {
-        return !getChat().getMacGuid().equals(macGuid);
+    public boolean onNotification(String chatId) {
+        if (getChat() instanceof SmsChat){
+            return !getChat().getIdentifier().equals(chatId);
+        }else {
+            return !getChat().getMacGuid().equals(chatId);
+        }
     }
 
     @Override
@@ -1444,6 +1448,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     null,
                     false,
                     false,
+                    true,
                     true
             );
         }else {
@@ -1746,7 +1751,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
                 MmsMessage mmsMessage = new MmsMessage(null, getChat(),
                         weMessage.get().getCurrentSession().getSmsHandle(), message.getMessage().getAttachments(), message.getMessage().getText(),
-                        Calendar.getInstance().getTime(), null, false, false, true
+                        Calendar.getInstance().getTime(), null, false, false, true, true
                 );
                 weMessage.get().getMmsManager().sendMessage(mmsMessage);
             }

@@ -22,16 +22,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.models.chats.Chat;
 import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.messages.Attachment;
 import scott.wemessage.app.models.sms.chats.SmsChat;
 import scott.wemessage.app.models.sms.messages.MmsMessage;
 import scott.wemessage.app.models.users.Contact;
 import scott.wemessage.app.models.users.Handle;
-import scott.wemessage.app.sms.services.SendMessageJob;
+import scott.wemessage.app.jobs.SendMessageJob;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
@@ -42,13 +44,14 @@ public final class MmsManager {
     private final int ERRORED_NOTIFICATION_TAG = 1000;
 
     private weMessage app;
-    
+
+    private AtomicBoolean isInitialized = new AtomicBoolean(false);
     private ConcurrentHashMap<String, SmsChat> chats = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, MmsMessage> messages = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, SmsChat> syncingChats = new ConcurrentHashMap<>();
 
     public MmsManager(weMessage app){
         this.app = app;
-        init();
     }
 
     public ConcurrentHashMap<String, SmsChat> getChats(){
@@ -59,27 +62,29 @@ public final class MmsManager {
         return messages;
     }
 
+    public ConcurrentHashMap<String, SmsChat> getSyncingChats(){
+        return syncingChats;
+    }
+
     public SmsChat getSmsChat(String threadId){
         SmsChat chat = chats.get(threadId);
 
         if (chat == null){
-            chat = app.getMmsDatabase().buildChat(threadId);
-            if (chat != null) app.getMessageManager().addChat((Chat) chat, false);
+            chat = app.getMessageDatabase().getSmsChatByThreadId(threadId);
+
+            if (chat != null){
+                chats.put(threadId, chat);
+            }
         }
+
         return chat;
     }
 
-    public MmsMessage getMmsMessage(String messageId, boolean addIfNotExists){
-        if (messageId == null) return null;
-
+    public MmsMessage getMmsMessage(String messageId){
         MmsMessage message = messages.get(messageId);
 
         if (message == null){
-            message = app.getMmsDatabase().buildMessage(messageId);
-
-            if (addIfNotExists && message != null){
-                messages.put(message.getIdentifier(), message);
-            }
+            message = app.getMessageDatabase().getMmsMessageByIdentifier(messageId);
         }
 
         return message;
@@ -87,18 +92,21 @@ public final class MmsManager {
 
     public synchronized void addChat(SmsChat chat){
         chats.put(((Chat) chat).getIdentifier(), chat);
+        app.getMessageDatabase().addSmsChat(chat);
     }
 
     public synchronized void updateChat(String threadId, SmsChat newData) {
         chats.put(threadId, newData);
-        app.getMmsDatabase().updateChat(threadId, newData);
+        app.getMessageDatabase().updateSmsChatByThreadId(threadId, newData);
     }
 
     public synchronized void setHasUnreadMessages(SmsChat smsChat, boolean hasUnreadMessages){
         Chat chat = (Chat) smsChat;
-
         chat.setHasUnreadMessages(hasUnreadMessages);
+
         chats.put(chat.getIdentifier(), (SmsChat) chat);
+        app.getMessageDatabase().updateSmsChatByThreadId(chat.getIdentifier(), (SmsChat) chat);
+
         if (!hasUnreadMessages) app.getMmsDatabase().markChatAsRead(chat.getIdentifier());
     }
 
@@ -106,16 +114,24 @@ public final class MmsManager {
         Chat chat = (Chat) smsChat;
 
         chats.remove(chat.getIdentifier());
+        app.getMessageDatabase().deleteSmsChatByThreadId(chat.getIdentifier());
         app.getMmsDatabase().deleteChat(chat.getIdentifier());
         app.clearNotifications(chat.getIdentifier());
     }
 
     public synchronized void addMessage(MmsMessage message){
+        for (Attachment a : message.getAttachments()) {
+            if (app.getMessageDatabase().getAttachmentByUuid(a.getUuid().toString()) == null) {
+                app.getMessageDatabase().addAttachment(a);
+            }
+        }
+
         messages.put(message.getIdentifier(), message);
+        app.getMessageDatabase().addMmsMessage(message);
     }
 
     public synchronized MmsMessage addSmsMessage(final Object[] smsExtra){
-        MmsMessage message = getMmsMessage(app.getMmsDatabase().addSmsMessage(smsExtra), false);
+        MmsMessage message = app.getMmsDatabase().getMessageFromUri(app.getMmsDatabase().addSmsMessage(smsExtra));
 
         if (message != null){
             app.getMessageManager().addMessage(message, false);
@@ -126,15 +142,17 @@ public final class MmsManager {
 
     public synchronized void updateMessage(String identifier, MmsMessage message){
         messages.put(identifier, message);
+        app.getMessageDatabase().updateMmsMessageByIdentifier(identifier, message);
     }
 
     public synchronized void removeMessage(MmsMessage message){
         messages.remove(message.getIdentifier());
-        app.getMmsDatabase().deleteMessage(message.getIdentifier());
+        app.getMmsDatabase().deleteMessage(message);
+        app.getMessageDatabase().deleteMmsMessageByIdentifier(message.getIdentifier());
     }
 
     public List<MmsMessage> queueMessages(SmsChat chat, long startIndex, long requestAmount){
-        List<MmsMessage> messageList = app.getMmsDatabase().getReversedMessagesByTime(((Chat) chat).getIdentifier(), startIndex, requestAmount);
+        List<MmsMessage> messageList = app.getMessageDatabase().getReversedMmsMessagesByTime(chat, startIndex, requestAmount);
 
         for (MmsMessage m : messageList){
             messages.put(m.getIdentifier(), m);
@@ -220,18 +238,27 @@ public final class MmsManager {
         return true;
     }
 
-    private void init(){
+    public void initialize(){
+        if (isInitialized.get()) return;
+        isInitialized.set(true);
+
         new Thread(new Runnable() {
             @Override
             public void run() {
                 chats.clear();
-                chats.putAll(app.getMmsDatabase().getChats());
+
+                for (SmsChat chat : app.getMessageDatabase().getSmsChats()){
+                    chats.put(((Chat) chat).getIdentifier(), chat);
+                }
+
                 app.getMessageManager().refreshChats(false, true);
             }
         }).start();
     }
 
     public void dumpMessages(){
+        isInitialized.set(false);
+
         chats.clear();
         messages.clear();
         app.getMessageManager().refreshChats(false, true);

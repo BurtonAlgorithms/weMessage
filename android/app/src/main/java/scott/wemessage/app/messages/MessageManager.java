@@ -1,9 +1,5 @@
 package scott.wemessage.app.messages;
 
-import android.content.res.Resources;
-
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -34,6 +30,7 @@ import scott.wemessage.commons.connection.json.action.JSONAction;
 import scott.wemessage.commons.types.ActionType;
 import scott.wemessage.commons.types.FailReason;
 import scott.wemessage.commons.types.ReturnType;
+import scott.wemessage.commons.utils.AuthenticationUtils;
 import scott.wemessage.commons.utils.DateUtils;
 import scott.wemessage.commons.utils.StringUtils;
 
@@ -387,7 +384,7 @@ public final class MessageManager {
 
             if (message != null && isPossibleSmsChat(message.getChat())) {
                 MmsMessage mmsMessage = new MmsMessage(null, message.getChat(), message.getSender(), message.getAttachments(), message.getText(),
-                        message.getModernDateSent(), null, false, false, true);
+                        message.getModernDateSent(), null, false, false, true, true);
 
                 removeMessageTask(message);
                 app.getMmsManager().sendMessage(mmsMessage);
@@ -414,7 +411,7 @@ public final class MessageManager {
 
             if (isPossibleSmsChat(groupChat)){
                 MmsMessage mmsMessage = new MmsMessage(null, groupChat, app.getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), jsonAction.getArgs()[2],
-                        Calendar.getInstance().getTime(), null, false, false, true);
+                        Calendar.getInstance().getTime(), null, false, false, true, true);
                 app.getMmsManager().sendMessage(mmsMessage);
                 return;
             }
@@ -742,7 +739,7 @@ public final class MessageManager {
         Message oldMessage;
 
         if (newData instanceof MmsMessage){
-            oldMessage = app.getMmsManager().getMmsMessage(uuid, false);
+            oldMessage = app.getMmsManager().getMmsMessage(uuid);
             app.getMmsManager().updateMessage(uuid, (MmsMessage) newData);
         }else {
             oldMessage = app.getMessageDatabase().getMessageByIdentifier(uuid);
@@ -843,12 +840,12 @@ public final class MessageManager {
 
     private boolean isPossibleSmsChat(Chat chat){
         if (chat instanceof PeerChat){
-            return PhoneNumberUtil.getInstance().isPossibleNumber(((PeerChat) chat).getHandle().getHandleID(), Resources.getSystem().getConfiguration().locale.getCountry());
+            return !AuthenticationUtils.isValidEmailFormat(((PeerChat) chat).getHandle().getHandleID());
         }else {
             GroupChat groupChat = (GroupChat) chat;
 
             for (Handle h : groupChat.getParticipants()){
-                if (!PhoneNumberUtil.getInstance().isPossibleNumber(h.getHandleID(), Resources.getSystem().getConfiguration().locale.getCountry())) return false;
+                if (AuthenticationUtils.isValidEmailFormat(h.getHandleID())) return false;
             }
 
             return true;

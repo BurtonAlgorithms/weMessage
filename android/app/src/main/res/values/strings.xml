@@ -207,6 +207,7 @@
     <string name="sign_out">Sign Out</string>
     <string name="single_attachment_added_toast">Attachment added to the message.</string>
     <string name="single_attachment_removed_toast">Attachment removed from the message.</string>
+    <string name="sms_chat_syncing">This SMS chat is currently being synced with the messages on your phone. Please wait until the syncing process is finished before viewing this conversation.</string>
     <string name="sms_mode">SMS Mode</string>
     <string name="sms_error">SMS Error</string>
     <string name="start_process">Start Process</string>

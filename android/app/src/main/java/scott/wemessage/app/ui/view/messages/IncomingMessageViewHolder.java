@@ -36,6 +36,7 @@ import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.models.chats.Chat;
 import scott.wemessage.app.models.messages.Attachment;
 import scott.wemessage.app.models.messages.Message;
+import scott.wemessage.app.models.sms.messages.MmsMessage;
 import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
@@ -236,7 +237,7 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
             senderName.setVisibility(View.GONE);
         }
 
-        if (message.getMessage().getMessageEffect() != MessageEffect.NONE && message.getMessage().getMessageEffect() != MessageEffect.INVISIBLE_INK){
+        if (!(message.getMessage() instanceof MmsMessage) && message.getMessage().getMessageEffect() != MessageEffect.NONE && message.getMessage().getMessageEffect() != MessageEffect.INVISIBLE_INK){
             time.setVisibility(View.GONE);
             replayButton.setVisibility(View.VISIBLE);
 
@@ -255,7 +256,10 @@ public class IncomingMessageViewHolder extends MessageHolders.IncomingTextMessag
         toggleEmojiView(isStringEmojis(message.getText()));
         toggleSelectionMode(getParentFragment().isInSelectionMode());
         setSelected(getParentFragment().getSelectedMessages().containsKey(message.getId()));
-        performEffect(message.getMessage(), message.getMessage().getMessageEffect(), message.getMessage().getEffectFinished(), false);
+
+        if (!(message.getMessage() instanceof MmsMessage)) {
+            performEffect(message.getMessage(), message.getMessage().getMessageEffect(), message.getMessage().getEffectFinished(), false);
+        }
     }
 
     @Override

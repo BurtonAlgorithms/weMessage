@@ -2,6 +2,8 @@ package scott.wemessage.app.ui.view.messages;
 
 import com.stfalcon.chatkit.commons.models.IMessage;
 
+import org.joda.time.DateTime;
+
 import java.util.Calendar;
 import java.util.Date;
 
@@ -47,7 +49,7 @@ public class MessageView implements IMessage {
     public Date getCreatedAt() {
         try {
             Date date = message.getModernDateSent();
-            if (date == null) return message.getModernDateDelivered();
+            if (date == null || new DateTime(date.getTime()).getYear() < 2000) return message.getModernDateDelivered();
 
             return date;
         }catch(Exception ex){

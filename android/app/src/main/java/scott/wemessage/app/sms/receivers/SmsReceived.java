@@ -17,7 +17,7 @@ public class SmsReceived extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         try {
-            if (intent.getAction().equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION)) {
+            if (intent.getAction().equals(Telephony.Sms.Intents.SMS_DELIVER_ACTION)) {
                 Bundle bundle = intent.getExtras();
 
                 if (bundle != null) {
@@ -30,6 +30,7 @@ public class SmsReceived extends BroadcastReceiver {
                         wakeLock.acquire(5 * 1000);
                     }
 
+                    weMessage.get().getMessageManager().updateChat(message.getChat().getIdentifier(), message.getChat().setHasUnreadMessages(true), false);
                     weMessage.get().getMmsManager().showMmsNotification(message);
                 }
             }

@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.fabric.sdk.android.Fabric;
 
 import scott.wemessage.R;
+import scott.wemessage.app.jobs.JobsCreator;
+import scott.wemessage.app.jobs.SyncMessagesJob;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
 import scott.wemessage.app.messages.firebase.NotificationCallbacks;
@@ -37,7 +39,6 @@ import scott.wemessage.app.security.util.AesPrngHelper;
 import scott.wemessage.app.security.util.AndroidBase64Wrapper;
 import scott.wemessage.app.sms.MmsDatabase;
 import scott.wemessage.app.sms.MmsManager;
-import scott.wemessage.app.sms.services.SendMessageJobCreator;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.commons.Constants;
 import scott.wemessage.commons.connection.ClientMessage;
@@ -213,7 +214,7 @@ public final class weMessage extends Application implements Constants {
         ServerMessage.setByteArrayAdapter(byteArrayAdapter);
 
         EmojiCompat.init(emojiConfig);
-        JobManager.create(this).addJobCreator(new SendMessageJobCreator());
+        JobManager.create(this).addJobCreator(new JobsCreator());
 
         attachmentFolder.mkdir();
         chatIconsFolder.mkdir();
@@ -241,7 +242,7 @@ public final class weMessage extends Application implements Constants {
         }
 
         getMessageManager().initialize();
-        if (MmsManager.isDefaultSmsApp()) enableSmsMode();
+        if (MmsManager.isDefaultSmsApp()) enableSmsMode(false);
         else disableSmsMode();
 
         IOUtils.setDeviceName();
@@ -297,8 +298,6 @@ public final class weMessage extends Application implements Constants {
         return notificationCallbacks.onNotification(macGuid);
     }
 
-    //todo re init messages
-
     public synchronized void signIn(Account account){
         SharedPreferences.Editor editor = getSharedPreferences().edit();
 
@@ -307,6 +306,8 @@ public final class weMessage extends Application implements Constants {
             getMessageManager().initialize();
             editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT_EMAIL, false);
         }
+
+        if (getMmsManager() != null) getMmsManager().initialize();
 
         editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, false);
         editor.apply();
@@ -323,21 +324,35 @@ public final class weMessage extends Application implements Constants {
         editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT_EMAIL, true);
         editor.apply();
 
-        if (fullSignOut){
-            if (getMmsManager() != null) getMmsManager().dumpMessages();
-        }
+        if (fullSignOut && getMmsManager() != null) getMmsManager().dumpMessages();
 
         notificationManager.cancelAll();
         getMessageManager().dumpMessages();
         getCurrentSession().setAccount(null);
     }
 
-    public synchronized void enableSmsMode(){
+    public synchronized void enableSmsMode(boolean performResync){
         isDefaultSmsApplication.set(true);
+
+        if (getCurrentSession().getSmsHandle() == null){
+            Handle handle = getMessageDatabase().getHandleByHandleID(MmsManager.getPhoneNumber());
+
+            if (handle == null){
+                handle = new Handle(UUID.randomUUID(), MmsManager.getPhoneNumber(), Handle.HandleType.ME, false, false);
+                getMessageDatabase().addHandle(handle);
+            }
+            getCurrentSession().setSmsHandle(handle);
+        }
 
         getMessageDatabase().configureSmsMode();
         mmsDatabase = new MmsDatabase(this);
         mmsManager = new MmsManager(this);
+
+        getMmsManager().initialize();
+
+        if (performResync){
+            SyncMessagesJob.performSync();
+        }
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(weMessage.BROADCAST_SMS_MODE_ENABLED));
     }

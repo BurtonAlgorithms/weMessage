@@ -1,4 +1,4 @@
-package scott.wemessage.app.sms.services;
+package scott.wemessage.app.jobs;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -6,7 +6,7 @@ import android.support.annotation.Nullable;
 import com.evernote.android.job.Job;
 import com.evernote.android.job.JobCreator;
 
-public class SendMessageJobCreator implements JobCreator {
+public class JobsCreator implements JobCreator {
 
     @Nullable
     @Override
@@ -14,6 +14,10 @@ public class SendMessageJobCreator implements JobCreator {
         switch (tag){
             case SendMessageJob.TAG:
                 return new SendMessageJob();
+            case SyncContactsJob.TAG:
+                return new SyncContactsJob();
+            case SyncMessagesJob.TAG:
+                return new SyncMessagesJob();
             default:
                 return null;
         }

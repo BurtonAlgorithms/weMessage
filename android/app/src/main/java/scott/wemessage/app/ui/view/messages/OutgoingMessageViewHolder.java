@@ -27,6 +27,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.stfalcon.chatkit.messages.MessageHolders;
+import com.stfalcon.chatkit.messages.MessagesListStyle;
 import com.stfalcon.chatkit.utils.DateFormatter;
 import com.vdurmont.emoji.EmojiParser;
 
@@ -36,7 +37,6 @@ import java.util.Date;
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.models.messages.Attachment;
-import scott.wemessage.app.models.sms.messages.MmsMessage;
 import scott.wemessage.app.ui.ConversationFragment;
 import scott.wemessage.app.ui.view.messages.media.AttachmentAudioView;
 import scott.wemessage.app.ui.view.messages.media.AttachmentImageView;
@@ -217,8 +217,6 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
             }
         }
 
-        ViewCompat.setBackground(bubble, getOutgoingBubbleDrawable(message.getMessage() instanceof MmsMessage));
-
         if (StringUtils.isEmpty(message.getText())){
             bubble.setVisibility(View.GONE);
         }else {
@@ -277,6 +275,15 @@ public class OutgoingMessageViewHolder extends MessageHolders.OutcomingTextMessa
         toggleDeliveryVisibility(!StringUtils.isEmpty(getParentFragment().getLastMessageId()) && getParentFragment().getLastMessageId().equals(getMessageId()));
         toggleSelectionMode(getParentFragment().isInSelectionMode());
         setSelected(getParentFragment().getSelectedMessages().containsKey(message.getId()));
+    }
+
+    @Override
+    public void applyStyle(MessagesListStyle style, boolean overrideStyle) {
+        super.applyStyle(style, overrideStyle);
+
+        if (overrideStyle){
+            if (bubble != null) ViewCompat.setBackground(bubble, getOutgoingBubbleDrawable(true));
+        }
     }
 
     @Override

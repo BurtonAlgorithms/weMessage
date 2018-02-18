@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -28,9 +29,12 @@ import com.stfalcon.chatkit.dialogs.DialogsList;
 import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
 import com.stfalcon.chatkit.utils.DateFormatter;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import scott.wemessage.R;
 import scott.wemessage.app.messages.MessageCallbacks;
@@ -42,6 +46,7 @@ import scott.wemessage.app.models.messages.Message;
 import scott.wemessage.app.models.messages.MessageBase;
 import scott.wemessage.app.models.users.ContactInfo;
 import scott.wemessage.app.models.users.Handle;
+import scott.wemessage.app.sms.MmsManager;
 import scott.wemessage.app.ui.activities.ConversationActivity;
 import scott.wemessage.app.ui.activities.CreateChatActivity;
 import scott.wemessage.app.ui.activities.LaunchActivity;
@@ -64,6 +69,8 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     private final int ERROR_SNACKBAR_DURATION = 5000;
 
     private String callbackUuid;
+    private AtomicBoolean isParseChatsTaskRunning = new AtomicBoolean(false);
+    private boolean hasConversations = false;
 
     private LinearLayout noConversationsView;
     private FloatingActionButton addChatButton;
@@ -203,6 +210,13 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         dialogsListAdapter.setOnDialogClickListener(new DialogsListAdapter.OnDialogClickListener<IDialog>() {
             @Override
             public void onDialogClick(IDialog dialog) {
+                if (MmsManager.isDefaultSmsApp()){
+                    if (weMessage.get().getMmsManager().getSyncingChats().containsKey(dialog.getId())){
+                        showErroredSnackbar(getString(R.string.sms_chat_syncing));
+                        return;
+                    }
+                }
+
                 Intent launcherIntent = new Intent(weMessage.get(), ConversationActivity.class);
 
                 launcherIntent.putExtra(weMessage.BUNDLE_RETURN_POINT, getActivity().getClass().getName());
@@ -248,17 +262,12 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         dialogsList.setAdapter(dialogsListAdapter);
         this.dialogsListAdapter = dialogsListAdapter;
 
-        for (Chat chat : weMessage.get().getMessageManager().getChats()){
-            if (!isChatBlocked(chat)) {
-                dialogsListAdapter.addItem(new ChatDialogView(chat));
-            }
-        }
-
         if (getActivity().getIntent() != null && !StringUtils.isEmpty(getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON))){
             DialogDisplayer.generateAlertDialog(getString(R.string.word_error), getActivity().getIntent().getStringExtra(weMessage.BUNDLE_CONVERSATION_GO_BACK_REASON)).show(getFragmentManager(), GO_BACK_REASON_ALERT_TAG);
         }
 
         showUpdateDialog();
+        parseChats();
 
         return view;
     }
@@ -517,6 +526,50 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         });
     }
 
+    @SuppressWarnings("unchecked")
+    private void parseChats(){
+        if (isParseChatsTaskRunning.get()) return;
+        isParseChatsTaskRunning.set(true);
+
+        List<Chat> chats = weMessage.get().getMessageManager().getChats();
+
+        if (!chats.isEmpty() && !isChatBlocked(chats.get(0))) dialogsListAdapter.addItem(new ChatDialogView(chats.get(0)));
+
+        new AsyncTask<List<Chat>, ChatDialogView, Void>(){
+            @Override
+            protected Void doInBackground(List<Chat>[] params) {
+                ArrayList<ChatDialogView> dialogViews = new ArrayList<>();
+
+                for (int i = 1; i < params[0].size(); i++) {
+                    Chat chat = params[0].get(i);
+                    ChatDialogView chatDialogView = new ChatDialogView(chat);
+
+                    if (!isChatBlocked(chat)) dialogViews.add(chatDialogView);
+
+                    if (dialogViews.size() == 5 || i == params[0].size() - 1){
+                        publishProgress(dialogViews.toArray(new ChatDialogView[dialogViews.size()]));
+                        dialogViews.clear();
+                    }
+                }
+
+                return null;
+            }
+
+            @Override
+            protected void onProgressUpdate(ChatDialogView... chatDialogViewBatch) {
+                if (!hasConversations) toggleNoConversations(false);
+
+                dialogsListAdapter.addItems(Arrays.asList(chatDialogViewBatch));
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                dialogsListAdapter.sortByLastMessageDate();
+                isParseChatsTaskRunning.set(false);
+            }
+        }.execute(chats);
+    }
+
     private void showUpdateDialog(){
         SharedPreferences preferences = weMessage.get().getSharedPreferences();
 
@@ -560,6 +613,8 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     }
 
     private void toggleNoConversations(boolean bool){
+        hasConversations = !bool;
+
         if (bool){
             if (dialogsList.getVisibility() != View.GONE) {
                 dialogsList.setVisibility(View.GONE);

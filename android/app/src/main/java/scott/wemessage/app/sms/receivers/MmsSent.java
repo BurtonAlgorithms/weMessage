@@ -18,8 +18,8 @@ public class MmsSent extends MmsSentReceiver {
         super.onReceive(context, intent);
 
         try {
-            Uri uri = Uri.parse(intent.getStringExtra(EXTRA_CONTENT_URI));
-            MmsMessage mmsMessage = weMessage.get().getMmsManager().getMmsMessage(weMessage.get().getMmsDatabase().getMessageId(uri), false);
+            Uri messageUri = Uri.parse(intent.getStringExtra(EXTRA_CONTENT_URI));
+            MmsMessage mmsMessage = weMessage.get().getMmsDatabase().getMessageFromUri(messageUri);
 
             if (mmsMessage != null) {
                 weMessage.get().getMmsManager().updateOrAddMessage(intent.getStringExtra(EXTRA_TASK_IDENTIFIER), mmsMessage);

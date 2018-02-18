@@ -8,6 +8,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +24,7 @@ import scott.wemessage.app.models.messages.Message;
 import scott.wemessage.app.models.sms.chats.SmsChat;
 import scott.wemessage.app.models.sms.chats.SmsGroupChat;
 import scott.wemessage.app.models.sms.chats.SmsPeerChat;
+import scott.wemessage.app.models.sms.messages.MmsMessage;
 import scott.wemessage.app.models.users.Account;
 import scott.wemessage.app.models.users.Contact;
 import scott.wemessage.app.models.users.Handle;
@@ -61,9 +64,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + AttachmentTable.TRANSFER_NAME + " TEXT, "
                 + AttachmentTable.FILE_LOCATION + " TEXT, "
                 + AttachmentTable.FILE_TYPE + " TEXT, "
-                + AttachmentTable.TOTAL_BYTES + " INTEGER, "
-                + AttachmentTable.BOUND_SMS_CHAT + " TEXT, "
-                + AttachmentTable.BOUND_SMS_MESSAGE + " TEXT );";
+                + AttachmentTable.TOTAL_BYTES + " INTEGER );";
 
         String createContactTable = "CREATE TABLE " + ContactTable.TABLE_NAME + " ("
                 + ContactTable._ID + " INTEGER PRIMARY KEY, "
@@ -122,8 +123,24 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + SmsChatTable._ID + " INTEGER PRIMARY KEY, "
                 + SmsChatTable.THREAD_ID + " TEXT, "
                 + SmsChatTable.CHAT_TYPE + " TEXT, "
+                + SmsChatTable.PARTICIPANTS + " TEXT, "
                 + SmsChatTable.IS_DO_NOT_DISTURB + " INTEGER, "
+                + SmsChatTable.HAS_UNREAD_MESSAGES + " INTEGER, "
                 + SmsChatTable.CHAT_PICTURE_FILE_LOCATION + " TEXT );";
+
+        String createMmsMessageTable = "CREATE TABLE " + MmsMessageTable.TABLE_NAME + " ("
+                + MmsMessageTable._ID + " INTEGER PRIMARY KEY, "
+                + MmsMessageTable.IDENTIFIER + " TEXT, "
+                + MmsMessageTable.THREAD_ID + " TEXT, "
+                + MmsMessageTable.SENDER_UUID + " TEXT, "
+                + MmsMessageTable.ATTACHMENTS + " TEXT, "
+                + MmsMessageTable.TEXT + " TEXT, "
+                + MmsMessageTable.DATE_SENT + " INTEGER, "
+                + MmsMessageTable.DATE_DELIVERED + " INTEGER, "
+                + MmsMessageTable.ERRORED + " INTEGER, "
+                + MmsMessageTable.IS_DELIVERED + " INTEGER, "
+                + MmsMessageTable.IS_FROM_ME + " INTEGER, "
+                + MmsMessageTable.IS_MMS + " INTEGER );";
 
         db.execSQL(createAccountTable);
         db.execSQL(createActionMessageTable);
@@ -133,6 +150,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         db.execSQL(createHandleTable);
         db.execSQL(createMessageTable);
         db.execSQL(createSmsChatTable);
+        db.execSQL(createMmsMessageTable);
     }
 
     @Override
@@ -200,17 +218,12 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             String insertIntoAttachmentPerm = "INSERT INTO " + AttachmentTable.TABLE_NAME + " SELECT " + attachmentValues + " FROM attachmentTempTable;";
             String dropTempAttachmentTable = "DROP TABLE attachmentTempTable;";
 
-            String alterAttachmentSmsChatTable = "ALTER TABLE " + AttachmentTable.TABLE_NAME + " ADD COLUMN " + AttachmentTable.BOUND_SMS_CHAT + " TEXT DEFAULT \"\"";
-            String alterAttachmentSmsMessageTable = "ALTER TABLE " + AttachmentTable.TABLE_NAME + " ADD COLUMN " + AttachmentTable.BOUND_SMS_MESSAGE + " TEXT DEFAULT \"\"";
-
             db.execSQL(createAttachmentsTempTable);
             db.execSQL(insertIntoAttachmentTemp);
             db.execSQL(dropAttachmentTable);
             db.execSQL(createAttachmentTable);
             db.execSQL(insertIntoAttachmentPerm);
             db.execSQL(dropTempAttachmentTable);
-            db.execSQL(alterAttachmentSmsChatTable);
-            db.execSQL(alterAttachmentSmsMessageTable);
 
             LinkedHashMap<String, ContactV2> contactsV2Map = new LinkedHashMap<>();
             LinkedHashMap<String, String> contactHandleMap = new LinkedHashMap<>();
@@ -322,8 +335,24 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                     + SmsChatTable._ID + " INTEGER PRIMARY KEY, "
                     + SmsChatTable.THREAD_ID + " TEXT, "
                     + SmsChatTable.CHAT_TYPE + " TEXT, "
+                    + SmsChatTable.PARTICIPANTS + " TEXT, "
                     + SmsChatTable.IS_DO_NOT_DISTURB + " INTEGER, "
+                    + SmsChatTable.HAS_UNREAD_MESSAGES + " INTEGER, "
                     + SmsChatTable.CHAT_PICTURE_FILE_LOCATION + " TEXT );";
+
+            String createMmsMessageTable = "CREATE TABLE " + MmsMessageTable.TABLE_NAME + " ("
+                    + MmsMessageTable._ID + " INTEGER PRIMARY KEY, "
+                    + MmsMessageTable.IDENTIFIER + " TEXT, "
+                    + MmsMessageTable.THREAD_ID + " TEXT, "
+                    + MmsMessageTable.SENDER_UUID + " TEXT, "
+                    + MmsMessageTable.ATTACHMENTS + " TEXT, "
+                    + MmsMessageTable.TEXT + " TEXT, "
+                    + MmsMessageTable.DATE_SENT + " INTEGER, "
+                    + MmsMessageTable.DATE_DELIVERED + " INTEGER, "
+                    + MmsMessageTable.ERRORED + " INTEGER, "
+                    + MmsMessageTable.IS_DELIVERED + " INTEGER, "
+                    + MmsMessageTable.IS_FROM_ME + " INTEGER, "
+                    + MmsMessageTable.IS_MMS + " INTEGER );";
 
             db.execSQL(alterHandleDoNotDisturb);
             db.execSQL(alterHandleBlocked);
@@ -333,6 +362,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             db.execSQL(dropChatsTable);
             db.execSQL(createChatTable);
             db.execSQL(createSmsChatTable);
+            db.execSQL(createMmsMessageTable);
 
             for (ContactV2 contact : contactsV2Map.values()){
                 if (StringUtils.isEmpty(contact.firstName) && StringUtils.isEmpty(contact.lastName) && StringUtils.isEmpty(contact.contactPictureFileLocation)) continue;
@@ -425,6 +455,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             db.execSQL("DROP TABLE " + HandleTable.TABLE_NAME);
             db.execSQL("DROP TABLE " + MessageTable.TABLE_NAME);
             db.execSQL("DROP TABLE " + SmsChatTable.TABLE_NAME);
+            db.execSQL("DROP TABLE " + MmsMessageTable.TABLE_NAME);
 
             onCreate(db);
         }
@@ -458,31 +489,35 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public void configureSmsMode(){
-        if (!MmsManager.isDefaultSmsApp()){
+        if (!MmsManager.isDefaultSmsApp()) {
             getWritableDatabase().execSQL("DROP TABLE " + SmsChatTable.TABLE_NAME);
+            getWritableDatabase().execSQL("DROP TABLE " + MmsMessageTable.TABLE_NAME);
 
             String createSmsChatTable = "CREATE TABLE " + SmsChatTable.TABLE_NAME + " ("
                     + SmsChatTable._ID + " INTEGER PRIMARY KEY, "
                     + SmsChatTable.THREAD_ID + " TEXT, "
                     + SmsChatTable.CHAT_TYPE + " TEXT, "
+                    + SmsChatTable.PARTICIPANTS + " TEXT, "
                     + SmsChatTable.IS_DO_NOT_DISTURB + " INTEGER, "
+                    + SmsChatTable.HAS_UNREAD_MESSAGES + " INTEGER, "
                     + SmsChatTable.CHAT_PICTURE_FILE_LOCATION + " TEXT );";
 
+            String createMmsMessageTable = "CREATE TABLE " + MmsMessageTable.TABLE_NAME + " ("
+                    + MmsMessageTable._ID + " INTEGER PRIMARY KEY, "
+                    + MmsMessageTable.IDENTIFIER + " TEXT, "
+                    + MmsMessageTable.THREAD_ID + " TEXT, "
+                    + MmsMessageTable.SENDER_UUID + " TEXT, "
+                    + MmsMessageTable.ATTACHMENTS + " TEXT, "
+                    + MmsMessageTable.TEXT + " TEXT, "
+                    + MmsMessageTable.DATE_SENT + " INTEGER, "
+                    + MmsMessageTable.DATE_DELIVERED + " INTEGER, "
+                    + MmsMessageTable.ERRORED + " INTEGER, "
+                    + MmsMessageTable.IS_DELIVERED + " INTEGER, "
+                    + MmsMessageTable.IS_FROM_ME + " INTEGER, "
+                    + MmsMessageTable.IS_MMS + " INTEGER );";
+
             getWritableDatabase().execSQL(createSmsChatTable);
-
-            String selectAttachmentsQuery = "SELECT * FROM " + AttachmentTable.TABLE_NAME + " WHERE " + AttachmentTable.BOUND_SMS_CHAT + " IS NOT NULL AND " + AttachmentTable.BOUND_SMS_CHAT + " != \"\"";
-
-            Cursor cursor = getWritableDatabase().rawQuery(selectAttachmentsQuery, null);
-            if (cursor.moveToFirst()) {
-                while (!cursor.isAfterLast()) {
-                    new FileLocationContainer(cursor.getString(cursor.getColumnIndex(AttachmentTable.FILE_LOCATION))).getFile().delete();
-                    deleteAttachmentByUuid(cursor.getString(cursor.getColumnIndex(AttachmentTable.UUID)));
-
-                    cursor.moveToNext();
-                }
-            }
-            cursor.close();
-
+            getWritableDatabase().execSQL(createMmsMessageTable);
         }
     }
 
@@ -506,50 +541,6 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         cursor.close();
 
         return accounts;
-    }
-
-    public List<Attachment> getAttachmentsBySmsThreadId(String threadId){
-        List<Attachment> attachments = new ArrayList<>();
-
-        SQLiteDatabase db = getWritableDatabase();
-        String selectQuery = "SELECT * FROM " + AttachmentTable.TABLE_NAME + " WHERE " + AttachmentTable.BOUND_SMS_CHAT + " = ?";
-
-        Cursor cursor = db.rawQuery(selectQuery, new String[] { threadId });
-        if (cursor.moveToFirst()) {
-            while (!cursor.isAfterLast()) {
-                Attachment attachment = buildAttachment(cursor);
-
-                if (attachment != null) {
-                    attachments.add(attachment);
-                }
-                cursor.moveToNext();
-            }
-        }
-        cursor.close();
-
-        return attachments;
-    }
-
-    public List<Attachment> getAttachmentsBySmsMessage(String messageId){
-        List<Attachment> attachments = new ArrayList<>();
-
-        SQLiteDatabase db = getWritableDatabase();
-        String selectQuery = "SELECT * FROM " + AttachmentTable.TABLE_NAME + " WHERE " + AttachmentTable.BOUND_SMS_MESSAGE + " = ?";
-
-        Cursor cursor = db.rawQuery(selectQuery, new String[] { messageId });
-        if (cursor.moveToFirst()) {
-            while (!cursor.isAfterLast()) {
-                Attachment attachment = buildAttachment(cursor);
-
-                if (attachment != null) {
-                    attachments.add(attachment);
-                }
-                cursor.moveToNext();
-            }
-        }
-        cursor.close();
-
-        return attachments;
     }
 
     public List<Contact> getContacts(){
@@ -606,6 +597,28 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {
                 Chat chat = buildChat(cursor);
+
+                if (chat != null) {
+                    chats.add(chat);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return chats;
+    }
+
+    public List<SmsChat> getSmsChats(){
+        List<SmsChat> chats = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + SmsChatTable.TABLE_NAME;
+        Cursor cursor = db.rawQuery(selectQuery, null);
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                SmsChat chat = buildSmsChat(cursor);
 
                 if (chat != null) {
                     chats.add(chat);
@@ -677,11 +690,23 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public PeerChat getChatByHandle(Handle handle){
+        SQLiteDatabase db = getWritableDatabase();
+
         if (handle.getHandleType() == Handle.HandleType.SMS && MmsManager.isDefaultSmsApp()){
-            return weMessage.get().getMmsDatabase().getChatByHandle(handle);
+            String selectQuery = "SELECT * FROM " + SmsChatTable.TABLE_NAME + " WHERE " + SmsChatTable.PARTICIPANTS + " = ?";
+
+            Cursor cursor = db.rawQuery(selectQuery, new String[]{ Handle.parseHandleId(handle.getHandleID()) });
+            SmsPeerChat chat = null;
+
+            if (cursor.getCount() > 0) {
+                cursor.moveToLast();
+                chat = (SmsPeerChat) buildSmsChat(cursor);
+            }
+
+            cursor.close();
+            return chat;
         }
 
-        SQLiteDatabase db = getWritableDatabase();
         String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME + " WHERE " + ChatTable.PARTICIPANTS + " = ?";
 
         Cursor cursor = db.rawQuery(selectQuery, new String[]{ Handle.parseHandleId(handle.getHandleID()) });
@@ -691,6 +716,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             cursor.moveToLast();
             chat = (PeerChat) buildChat(cursor);
         }
+
         cursor.close();
         return chat;
     }
@@ -752,22 +778,20 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase();
 
         if (isIdentifierSms(chatUuid)){
-            long finalRow = getMaxIdFromTable(AttachmentTable.TABLE_NAME, AttachmentTable._ID);
+            long finalRow = getMaxIdFromTable(MmsMessageTable.TABLE_NAME, MmsMessageTable._ID);
             long start = finalRow - startIndex;
 
-            String selectQuery = "SELECT * FROM " + AttachmentTable.TABLE_NAME + " WHERE " + AttachmentTable._ID + " <= ? AND "
-                    + AttachmentTable.BOUND_SMS_CHAT + " = ? ORDER BY " + AttachmentTable._ID + " DESC LIMIT " + numberToFetch;
+            String selectQuery = "SELECT * FROM " + MmsMessageTable.TABLE_NAME + " WHERE " + MmsMessageTable._ID + " <= ? AND "
+                    + MmsMessageTable.THREAD_ID + " = ? ORDER BY " + MmsMessageTable._ID + " DESC LIMIT " + numberToFetch;
             Cursor cursor = db.rawQuery(selectQuery, new String[] {String.valueOf(start), chatUuid} );
 
             if (cursor.moveToFirst()) {
                 while (!cursor.isAfterLast()) {
-                    attachments.add(buildAttachment(cursor));
+                    attachments.addAll(stringListToAttachments(Arrays.asList(cursor.getString(cursor.getColumnIndex(MmsMessageTable.ATTACHMENTS)).split(", "))));
                     cursor.moveToNext();
                 }
             }
-
             cursor.close();
-            return attachments;
         }
 
         long finalRow = getMaxIdFromTable(MessageTable.TABLE_NAME, MessageTable._ID);
@@ -842,6 +866,32 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return messages;
     }
 
+    public List<MmsMessage> getReversedMmsMessagesByTime(SmsChat chat, long startIndex, long numberToFetch){
+        List<MmsMessage> messages = new ArrayList<>();
+
+        SQLiteDatabase db = getWritableDatabase();
+        long finalRow = getMaxIdFromTable(MmsMessageTable.TABLE_NAME, MmsMessageTable._ID);
+        long start = finalRow - startIndex;
+
+        String selectQuery = "SELECT * FROM " + MmsMessageTable.TABLE_NAME + " WHERE " + MmsMessageTable._ID + " <= ? AND "
+                + MmsMessageTable.THREAD_ID + " = ? ORDER BY " + MmsMessageTable.DATE_SENT + " DESC LIMIT " + numberToFetch;
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {String.valueOf(start), ((Chat) chat).getIdentifier()} );
+
+        if (cursor.moveToFirst()) {
+            while (!cursor.isAfterLast()) {
+                MmsMessage message = buildMmsMessage(cursor);
+
+                if (message != null) {
+                    messages.add(message);
+                }
+                cursor.moveToNext();
+            }
+        }
+        cursor.close();
+
+        return messages;
+    }
+
     public List<Message> getReversedMessagesWithSearchParameters(Chat chat, String matchingText, boolean isFromMe, long startIndex, long numberToFetch){
         List<Message> messages = new ArrayList<>();
 
@@ -871,11 +921,23 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Message getLastMessageFromChat(Chat chat){
+        SQLiteDatabase db = getWritableDatabase();
+
         if (chat instanceof SmsChat){
-            return weMessage.get().getMmsDatabase().getLastMessageFromChat(chat.getIdentifier());
+            String selectQuery = "SELECT * FROM " + MmsMessageTable.TABLE_NAME + " WHERE " + MmsMessageTable.THREAD_ID + " = ?";
+
+            Cursor cursor = db.rawQuery(selectQuery, new String[] {chat.getIdentifier()});
+            MmsMessage message = null;
+
+            if (cursor.getCount() > 0){
+                cursor.moveToLast();
+                message = buildMmsMessage(cursor);
+            }
+
+            cursor.close();
+            return message;
         }
 
-        SQLiteDatabase db = getWritableDatabase();
         String selectQuery = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable.CHAT_UUID + " = ?";
 
         Cursor cursor = db.rawQuery(selectQuery, new String[] {chat.getIdentifier()});
@@ -885,6 +947,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             cursor.moveToLast();
             message = buildMessage(cursor);
         }
+
         cursor.close();
         return message;
     }
@@ -1032,9 +1095,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         Attachment attachment = new Attachment().setUuid(UUID.fromString(cursor.getString(cursor.getColumnIndex(AttachmentTable.UUID))))
                 .setMacGuid(cursor.getString(cursor.getColumnIndex(AttachmentTable.MAC_GUID))).setTransferName(cursor.getString(cursor.getColumnIndex(AttachmentTable.TRANSFER_NAME)))
                 .setFileLocation(new FileLocationContainer(cursor.getString(cursor.getColumnIndex(AttachmentTable.FILE_LOCATION))))
-                .setFileType(cursor.getString(cursor.getColumnIndex(AttachmentTable.FILE_TYPE))).setTotalBytes(cursor.getLong(cursor.getColumnIndex(AttachmentTable.TOTAL_BYTES)))
-                .setBoundSmsChat(cursor.getString(cursor.getColumnIndex(AttachmentTable.BOUND_SMS_CHAT)))
-                .setBoundSmsMessage(cursor.getString(cursor.getColumnIndex(AttachmentTable.BOUND_SMS_MESSAGE)));
+                .setFileType(cursor.getString(cursor.getColumnIndex(AttachmentTable.FILE_TYPE))).setTotalBytes(cursor.getLong(cursor.getColumnIndex(AttachmentTable.TOTAL_BYTES)));
 
         return attachment;
     }
@@ -1048,18 +1109,6 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         values.put(AttachmentTable.FILE_LOCATION, attachment.getFileLocation().getFileLocation());
         values.put(AttachmentTable.FILE_TYPE, attachment.getFileType());
         values.put(AttachmentTable.TOTAL_BYTES, attachment.getTotalBytes());
-
-        if (!StringUtils.isEmpty(attachment.getBoundSmsChat())){
-            values.put(AttachmentTable.BOUND_SMS_CHAT, attachment.getBoundSmsChat());
-        }else {
-            values.putNull(AttachmentTable.BOUND_SMS_CHAT);
-        }
-
-        if (!StringUtils.isEmpty(attachment.getBoundSmsMessage())){
-            values.put(AttachmentTable.BOUND_SMS_MESSAGE, attachment.getBoundSmsMessage());
-        }else {
-            values.putNull(AttachmentTable.BOUND_SMS_MESSAGE);
-        }
 
         return values;
     }
@@ -1349,7 +1398,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
     public Chat getChatByIdentifier(String identifier){
         if (isIdentifierSms(identifier)){
-            return (Chat) weMessage.get().getMmsManager().getSmsChat(identifier);
+            return (Chat) getSmsChatByThreadId(identifier);
         }
 
         SQLiteDatabase db = getWritableDatabase();
@@ -1513,7 +1562,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
     public Message getMessageByIdentifier(String identifier){
         if (isIdentifierSms(identifier)){
-            return weMessage.get().getMmsManager().getMmsMessage(identifier, false);
+            return getMmsMessageByIdentifier(identifier);
         }
 
         SQLiteDatabase db = getWritableDatabase();
@@ -1601,13 +1650,17 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ChatType chatType = ChatType.stringToChatType(cursor.getString(cursor.getColumnIndex(SmsChatTable.CHAT_TYPE)));
 
         if (chatType == ChatType.PEER){
-            chat = new SmsPeerChat(cursor.getString(cursor.getColumnIndex(SmsChatTable.THREAD_ID)), null, false);
+            chat = new SmsPeerChat(cursor.getString(cursor.getColumnIndex(SmsChatTable.THREAD_ID)),
+                    getHandleByHandleID(cursor.getString(cursor.getColumnIndex(SmsChatTable.PARTICIPANTS))),
+                    integerToBoolean(cursor.getInt(cursor.getColumnIndex(SmsChatTable.HAS_UNREAD_MESSAGES))));
         }else {
             String chatPictureFileLoc = cursor.getString(cursor.getColumnIndex(SmsChatTable.CHAT_PICTURE_FILE_LOCATION));
 
-            chat = new SmsGroupChat(cursor.getString(cursor.getColumnIndex(SmsChatTable.THREAD_ID)), null,
+            chat = new SmsGroupChat(cursor.getString(cursor.getColumnIndex(SmsChatTable.THREAD_ID)),
+                    stringListToHandles(Arrays.asList(cursor.getString(cursor.getColumnIndex(SmsChatTable.PARTICIPANTS)).split(", "))),
                     StringUtils.isEmpty(chatPictureFileLoc) ? null : new FileLocationContainer(chatPictureFileLoc),
-                    false, integerToBoolean(cursor.getInt(cursor.getColumnIndex(SmsChatTable.IS_DO_NOT_DISTURB))));
+                    integerToBoolean(cursor.getInt(cursor.getColumnIndex(SmsChatTable.HAS_UNREAD_MESSAGES))),
+                    integerToBoolean(cursor.getInt(cursor.getColumnIndex(SmsChatTable.IS_DO_NOT_DISTURB))));
         }
         return chat;
     }
@@ -1616,8 +1669,10 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         if (smsChat instanceof SmsPeerChat){
+            values.put(SmsChatTable.PARTICIPANTS, Handle.parseHandleId(((SmsPeerChat) smsChat).getHandle().getHandleID()));
             values.putNull(SmsChatTable.IS_DO_NOT_DISTURB);
         }else if (smsChat instanceof SmsGroupChat){
+            values.put(SmsChatTable.PARTICIPANTS, StringUtils.join(handlesToStringList(((SmsGroupChat) smsChat).getParticipants()), ", ", 2));
             values.put(SmsChatTable.IS_DO_NOT_DISTURB, booleanToInteger(((SmsGroupChat) smsChat).isDoNotDisturb()));
         }
 
@@ -1625,6 +1680,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         values.put(SmsChatTable.THREAD_ID, chat.getIdentifier());
         values.put(SmsChatTable.CHAT_TYPE, chat.getChatType().getTypeName());
+        values.put(SmsChatTable.HAS_UNREAD_MESSAGES, booleanToInteger(chat.hasUnreadMessages()));
 
         if (chat.getChatPictureFileLocation() != null) {
             values.put(SmsChatTable.CHAT_PICTURE_FILE_LOCATION, chat.getChatPictureFileLocation().getFileLocation());
@@ -1663,11 +1719,113 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         db.update(SmsChatTable.TABLE_NAME, values, selection, new String[]{ threadId });
     }
 
-    public void deleteSmsChatByThreadId(String threadId){
+    public void deleteSmsChatByThreadId(final String threadId){
         String whereClause = SmsChatTable.THREAD_ID + " = ?";
+        final SmsChat chat = getSmsChatByThreadId(threadId);
+
+        new Thread(){
+            @Override
+            public void run() {
+                for (MmsMessage message : getReversedMmsMessagesByTime(chat, 0L, Long.MAX_VALUE)){
+                    deleteMmsMessageByIdentifier(message.getIdentifier());
+                }
+            }
+        }.start();
 
         getWritableDatabase().delete(SmsChatTable.TABLE_NAME, whereClause, new String[] { threadId });
     }
+
+    private MmsMessage buildMmsMessage(Cursor cursor){
+        Long dateSent = cursor.getLong(cursor.getColumnIndex(MmsMessageTable.DATE_SENT));
+        Long dateDelivered = cursor.getLong(cursor.getColumnIndex(MmsMessageTable.DATE_DELIVERED));
+
+        MmsMessage message = new MmsMessage(
+                cursor.getString(cursor.getColumnIndex(MmsMessageTable.IDENTIFIER)),
+                getChatByIdentifier(cursor.getString(cursor.getColumnIndex(MmsMessageTable.THREAD_ID))),
+                getHandleByHandleID(cursor.getString(cursor.getColumnIndex(MmsMessageTable.SENDER_UUID))),
+                stringListToAttachments(Arrays.asList(cursor.getString(cursor.getColumnIndex(MmsMessageTable.ATTACHMENTS)).split(", "))),
+                cursor.getString(cursor.getColumnIndex(MmsMessageTable.TEXT)),
+                new Date(dateSent),
+                new Date(dateDelivered),
+                integerToBoolean(cursor.getInt(cursor.getColumnIndex(MmsMessageTable.ERRORED))),
+                integerToBoolean(cursor.getInt(cursor.getColumnIndex(MmsMessageTable.IS_DELIVERED))),
+                integerToBoolean(cursor.getInt(cursor.getColumnIndex(MmsMessageTable.IS_FROM_ME))),
+                integerToBoolean(cursor.getInt(cursor.getColumnIndex(MmsMessageTable.IS_MMS)))
+        );
+        return message;
+    }
+
+    private ContentValues mmsMessageToContentValues(MmsMessage message){
+        ContentValues values = new ContentValues();
+
+        Date dateSent;
+
+        if (message.getModernDateSent() == null && message.getModernDateDelivered() != null){
+            dateSent = message.getModernDateDelivered();
+        }else if (message.getModernDateSent() == null) {
+            dateSent = Calendar.getInstance().getTime();
+        }else {
+            dateSent = message.getModernDateSent();
+        }
+
+        values.put(MmsMessageTable.IDENTIFIER, message.getIdentifier());
+        values.put(MmsMessageTable.THREAD_ID, message.getChat().getIdentifier());
+        values.put(MmsMessageTable.SENDER_UUID, Handle.parseHandleId(message.getSender().getHandleID()));
+        values.put(MmsMessageTable.ATTACHMENTS, StringUtils.join(attachmentsToStringList(message.getAttachments()), ", ", 2));
+        values.put(MmsMessageTable.TEXT, message.getText());
+        values.put(MmsMessageTable.DATE_SENT, dateSent.getTime());
+        values.put(MmsMessageTable.DATE_DELIVERED, message.getModernDateDelivered() == null ? null : message.getModernDateDelivered().getTime());
+        values.put(MmsMessageTable.ERRORED, booleanToInteger(message.hasErrored()));
+        values.put(MmsMessageTable.IS_DELIVERED, booleanToInteger(message.isDelivered()));
+        values.put(MmsMessageTable.IS_FROM_ME, booleanToInteger(message.isFromMe()));
+        values.put(MmsMessageTable.IS_MMS, booleanToInteger(message.isMms()));
+
+        return values;
+    }
+
+    public MmsMessage getMmsMessageByIdentifier(String identifier){
+        SQLiteDatabase db = getWritableDatabase();
+        String selectQuery = "SELECT * FROM " + MmsMessageTable.TABLE_NAME + " WHERE " + MmsMessageTable.IDENTIFIER + " = ?";
+
+        Cursor cursor = db.rawQuery(selectQuery, new String[] {identifier});
+        MmsMessage message = null;
+
+        if (cursor.getCount() > 0){
+            cursor.moveToFirst();
+            message = buildMmsMessage(cursor);
+        }
+        cursor.close();
+        return message;
+    }
+
+    public void addMmsMessage(MmsMessage message){
+        SQLiteDatabase db = getWritableDatabase();
+        db.insert(MmsMessageTable.TABLE_NAME, null, mmsMessageToContentValues(message));
+    }
+
+    public void updateMmsMessageByIdentifier(String identifier, MmsMessage newData){
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = mmsMessageToContentValues(newData);
+        String selection = MmsMessageTable.IDENTIFIER + " = ?";
+
+        db.update(MmsMessageTable.TABLE_NAME, values, selection, new String[]{ identifier });
+    }
+
+    public void deleteMmsMessageByIdentifier(String identifier){
+        if (getMmsMessageByIdentifier(identifier) == null) return;
+
+        String whereClause = MmsMessageTable.IDENTIFIER + " = ?";
+        List<Attachment> attachments = getMmsMessageByIdentifier(identifier).getAttachments();
+
+        for (Attachment a : attachments){
+            if (a != null) {
+                a.getFileLocation().getFile().delete();
+                deleteAttachmentByUuid(a.getUuid().toString());
+            }
+        }
+        getWritableDatabase().delete(MmsMessageTable.TABLE_NAME, whereClause, new String[] { identifier });
+    }
+
 
     private List<String> handlesToStringList(List<Handle> handles){
         List<String> stringList = new ArrayList<>();
@@ -1776,8 +1934,6 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         public static final String FILE_LOCATION = "file_location";
         public static final String FILE_TYPE = "file_type";
         public static final String TOTAL_BYTES = "total_bytes";
-        public static final String BOUND_SMS_CHAT = "bound_sms_chat";
-        public static final String BOUND_SMS_MESSAGE = "bound_sms_message";
     }
 
     public static class ContactTable {
@@ -1846,8 +2002,26 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         public static final String _ID = "_id";
         public static final String THREAD_ID = "thread_id";
         public static final String CHAT_TYPE = "chat_type";
-        public static final String CHAT_PICTURE_FILE_LOCATION = "chat_picture_file_location";
+        public static final String PARTICIPANTS = "participants";
         public static final String IS_DO_NOT_DISTURB = "is_do_not_disturb";
+        public static final String HAS_UNREAD_MESSAGES = "has_unread_messages";
+        public static final String CHAT_PICTURE_FILE_LOCATION = "chat_picture_file_location";
+    }
+
+    public static class MmsMessageTable {
+        public static final String TABLE_NAME = "mms_messages";
+        public static final String _ID = "_id";
+        public static final String IDENTIFIER = "identifier";
+        public static final String THREAD_ID = "thread_id";
+        public static final String SENDER_UUID = "sender_uuid";
+        public static final String ATTACHMENTS = "attachments";
+        public static final String TEXT = "text";
+        public static final String DATE_SENT = "date_sent";
+        public static final String DATE_DELIVERED = "date_delivered";
+        public static final String ERRORED = "errored";
+        public static final String IS_DELIVERED = "is_delivered";
+        public static final String IS_FROM_ME = "is_from_me";
+        public static final String IS_MMS = "is_mms";
     }
 
     @Deprecated

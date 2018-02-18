@@ -45,6 +45,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.connection.ConnectionService;
@@ -74,6 +76,8 @@ public class LaunchFragment extends Fragment {
     private final String LAUNCH_ALERT_DIALOG_TAG = "DialogLauncherAlert";
     private final String LAUNCH_ANIMATION_DIALOG_TAG = "DialogAnimationTag";
 
+    private AtomicBoolean startingChatListActivity = new AtomicBoolean(false);
+
     private int oldEditTextColor;
     private int errorSnackbarDuration = 5000;
     private boolean isBoundToConnectionService = false;
@@ -86,7 +90,7 @@ public class LaunchFragment extends Fragment {
     private ConnectionServiceConnection serviceConnection = new ConnectionServiceConnection();
     private ConstraintLayout launchConstraintLayout;
     private EditText ipEditText, failoverIpEditText, emailEditText, passwordEditText;
-    private FontButton signInButton, smsOrOfflineButton;
+    private FontButton signInButton, smsOrOfflineButton, enableSmsModeButton;
     private ProgressDialog loginProgressDialog;
 
     private BroadcastReceiver launcherBroadcastReceiver = new BroadcastReceiver() {
@@ -171,11 +175,19 @@ public class LaunchFragment extends Fragment {
                     smsOrOfflineButton.setFont("OrkneyLight");
                     smsOrOfflineButton.setTextColor(getResources().getColor(R.color.brightRed));
                 }
+
+                if (enableSmsModeButton != null){
+                    enableSmsModeButton.setVisibility(View.VISIBLE);
+                }
             }else if (intent.getAction().equals(weMessage.BROADCAST_SMS_MODE_ENABLED)){
                 if (smsOrOfflineButton != null){
                     smsOrOfflineButton.setText(R.string.sms_mode);
                     smsOrOfflineButton.setFont("OrkneyMedium");
                     smsOrOfflineButton.setTextColor(getResources().getColor(R.color.outgoingBubbleColorOrange));
+                }
+
+                if (enableSmsModeButton != null){
+                    enableSmsModeButton.setVisibility(View.GONE);
                 }
             }
         }
@@ -264,6 +276,7 @@ public class LaunchFragment extends Fragment {
         passwordEditText = view.findViewById(R.id.launchPasswordEditText);
         signInButton = view.findViewById(R.id.signInButton);
         smsOrOfflineButton = view.findViewById(R.id.smsOrOfflineButton);
+        enableSmsModeButton = view.findViewById(R.id.enableSmsMode);
         oldEditTextColor = emailEditText.getCurrentTextColor();
 
         if (savedInstanceState != null) {
@@ -339,10 +352,12 @@ public class LaunchFragment extends Fragment {
             smsOrOfflineButton.setText(R.string.sms_mode);
             smsOrOfflineButton.setFont("OrkneyMedium");
             smsOrOfflineButton.setTextColor(getResources().getColor(R.color.outgoingBubbleColorOrange));
+            enableSmsModeButton.setVisibility(View.GONE);
         }else {
             smsOrOfflineButton.setText(R.string.offline_mode);
             smsOrOfflineButton.setFont("OrkneyLight");
             smsOrOfflineButton.setTextColor(getResources().getColor(R.color.brightRed));
+            enableSmsModeButton.setVisibility(View.VISIBLE);
         }
 
         String fullText = getString(R.string.login_text).concat("  ").concat(getString(R.string.need_help));
@@ -659,6 +674,16 @@ public class LaunchFragment extends Fragment {
                 signInOffline(email, password);
             }
         });
+
+        enableSmsModeButton.setOnClickListener(new OnClickWaitListener(750L) {
+            @Override
+            public void onWaitClick(View v) {
+                Intent launcherIntent = new Intent(weMessage.get(), SetDefaultSmsActivity.class);
+
+                startActivity(launcherIntent);
+                getActivity().finish();
+            }
+        });
         return view;
     }
 
@@ -751,6 +776,9 @@ public class LaunchFragment extends Fragment {
     }
 
     private void startChatListActivity(){
+        if (startingChatListActivity.get()) return;
+        startingChatListActivity.set(true);
+
         Intent chatListIntent = new Intent(weMessage.get(), ChatListActivity.class);
 
         startActivity(chatListIntent);

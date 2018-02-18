@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import scott.wemessage.R;
 import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.connection.ConnectionServiceConnection;
+import scott.wemessage.app.jobs.SyncContactsJob;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.models.chats.Chat;
 import scott.wemessage.app.models.messages.ActionMessage;
@@ -60,7 +61,6 @@ import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.sms.MmsManager;
 import scott.wemessage.app.ui.activities.abstracts.BaseActivity;
 import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
-import scott.wemessage.app.utils.ContactUtils;
 import scott.wemessage.app.utils.IOUtils;
 import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.utils.view.DisplayUtils;
@@ -372,7 +372,7 @@ public class ContactListActivity extends BaseActivity implements MessageCallback
         switch (position){
             case 0: break;
             case 1:
-                ContactUtils.showContactSyncDialog(this, getSupportFragmentManager(),
+                DialogDisplayer.showContactSyncDialog(this, getSupportFragmentManager(),
 
                 new Runnable() {
                     @Override
@@ -460,7 +460,7 @@ public class ContactListActivity extends BaseActivity implements MessageCallback
     private void phoneContactSync(){
         if (!hasPermission(Manifest.permission.READ_CONTACTS, false, null, "ContactSyncReadContactsPermission", weMessage.REQUEST_PERMISSION_READ_CONTACTS)) return;
 
-        ContactUtils.syncContacts(weMessage.get());
+        SyncContactsJob.syncContacts();
     }
 
     private void macContactSync(){

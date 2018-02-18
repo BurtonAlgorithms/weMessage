@@ -12,8 +12,6 @@ public class Attachment {
     private FileLocationContainer fileLocation;
     private String fileType;
     private Long totalBytes;
-    private String boundSmsChat = null;
-    private String boundSmsMessage = null;
 
     public Attachment(){
 
@@ -52,14 +50,6 @@ public class Attachment {
         return totalBytes;
     }
 
-    public String getBoundSmsChat() {
-        return boundSmsChat;
-    }
-
-    public String getBoundSmsMessage(){
-        return boundSmsMessage;
-    }
-
     public Attachment setUuid(UUID uuid) {
         this.uuid = uuid;
         return this;
@@ -87,16 +77,6 @@ public class Attachment {
 
     public Attachment setTotalBytes(long totalBytes) {
         this.totalBytes = totalBytes;
-        return this;
-    }
-
-    public Attachment setBoundSmsChat(String boundSmsChat) {
-        this.boundSmsChat = boundSmsChat;
-        return this;
-    }
-
-    public Attachment setBoundSmsMessage(String smsMessage){
-        this.boundSmsMessage = smsMessage;
         return this;
     }
 }

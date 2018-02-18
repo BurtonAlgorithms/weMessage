@@ -2,5 +2,5 @@ package scott.wemessage.app.messages.firebase;
 
 public interface NotificationCallbacks {
 
-    boolean onNotification(String macGuid);
+    boolean onNotification(String chatId);
 }

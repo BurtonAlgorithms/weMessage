@@ -1,4 +1,4 @@
-package scott.wemessage.app.sms.services;
+package scott.wemessage.app.jobs;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -33,12 +33,15 @@ import scott.wemessage.commons.utils.StringUtils;
 
 public class SendMessageJob extends Job {
 
-    public static final String TAG = "SendMmsMessageJob";
+    public static final String TAG = "weMessageSendMmsMessageJob";
+
+    //todo compress image ; diff levels of compression
+    //todo fix multiple recipients
 
     @NonNull
     @Override
     protected Result onRunJob(@NonNull Params params) {
-        MmsMessage mmsMessage = weMessage.get().getMmsManager().getMmsMessage(params.getExtras().getString("messageId", null), false);
+        MmsMessage mmsMessage = weMessage.get().getMmsManager().getMmsMessage(params.getExtras().getString("messageId", null));
 
         Settings settings = new Settings();
         settings.setUseSystemSending(true);
@@ -92,6 +95,11 @@ public class SendMessageJob extends Job {
 
             final String threadId = StringUtils.isEmpty(chat.getIdentifier()) ? null : mmsMessage.getChat().getIdentifier();
 
+/*
+            if (threadId == null && !isMeInChat(message.getAddresses())){
+                message.addAddress(weMessage.get().getCurrentSession().getSmsHandle().getHandleID());
+            }
+*/
             new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
                 public void run() {
@@ -103,8 +111,8 @@ public class SendMessageJob extends Job {
                 weMessage.get().getMessageManager().alertAttachmentSendFailure(a, failedAttachments.get(a));
             }
         }catch (Exception ex){
-            if (weMessage.get().getMmsManager().getMmsMessage(taskIdentifier, false) != null) {
-                weMessage.get().getMessageManager().removeMessage(weMessage.get().getMmsManager().getMmsMessage(taskIdentifier, false), false);
+            if (weMessage.get().getMmsManager().getMmsMessage(taskIdentifier) != null) {
+                weMessage.get().getMessageManager().removeMessage(weMessage.get().getMmsManager().getMmsMessage(taskIdentifier), false);
             }
 
             weMessage.get().getMessageManager().alertMessageSendFailure(null, ReturnType.NOT_SENT);
@@ -124,5 +132,15 @@ public class SendMessageJob extends Job {
                 .setExtras(persistableBundleCompat)
                 .build()
                 .schedule();
+    }
+
+    private boolean isMeInChat(String[] addresses){
+        for (String address : addresses){
+            String parsed = Handle.parseHandleId(address);
+
+            if (weMessage.get().getCurrentSession().getSmsHandle().getHandleID().equals(parsed)) return true;
+        }
+
+        return false;
     }
 }

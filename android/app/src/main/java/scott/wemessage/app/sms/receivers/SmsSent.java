@@ -19,7 +19,7 @@ public class SmsSent extends SentReceiver {
 
         try {
             Uri messageUri = Uri.parse(intent.getStringExtra("message_uri"));
-            MmsMessage message = weMessage.get().getMmsManager().getMmsMessage(weMessage.get().getMmsDatabase().getMessageId(messageUri), false);
+            MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(messageUri);
 
             if (message == null) return;
             weMessage.get().getMmsManager().updateOrAddMessage(intent.getStringExtra("task_identifier"), message);

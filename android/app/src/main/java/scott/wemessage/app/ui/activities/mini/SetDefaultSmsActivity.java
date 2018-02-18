@@ -67,7 +67,7 @@ public class SetDefaultSmsActivity extends BaseActivity {
         }
 
         if (MmsManager.isDefaultSmsApp()){
-            weMessage.get().getSharedPreferences().getBoolean(weMessage.SHARED_PREFERENCES_PROMPT_FOR_SMS, false);
+            weMessage.get().getSharedPreferences().edit().putBoolean(weMessage.SHARED_PREFERENCES_PROMPT_FOR_SMS, false).apply();
             returnToLastScreen();
             return;
         }
@@ -96,7 +96,7 @@ public class SetDefaultSmsActivity extends BaseActivity {
         cancelButton.setOnClickListener(new OnClickWaitListener(750L) {
             @Override
             public void onWaitClick(View v) {
-                weMessage.get().getSharedPreferences().getBoolean(weMessage.SHARED_PREFERENCES_PROMPT_FOR_SMS, false);
+                weMessage.get().getSharedPreferences().edit().putBoolean(weMessage.SHARED_PREFERENCES_PROMPT_FOR_SMS, false).apply();
 
                 new Handler().postDelayed(new Runnable() {
                     @Override
@@ -140,8 +140,6 @@ public class SetDefaultSmsActivity extends BaseActivity {
             isSmsChooserOpen = false;
 
             if (MmsManager.isDefaultSmsApp()){
-                weMessage.get().getSharedPreferences().getBoolean(weMessage.SHARED_PREFERENCES_PROMPT_FOR_SMS, false);
-
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {

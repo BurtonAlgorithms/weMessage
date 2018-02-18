@@ -209,8 +209,24 @@
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             android:layout_marginTop="8dp"
-            android:paddingBottom="16dp"
+            android:paddingBottom="8dp"
             app:layout_constraintTop_toBottomOf="@+id/signInButton" />
+
+        <scott.wemessage.app.ui.view.font.FontButton
+            android:id="@+id/enableSmsMode"
+            app:buttonFontName="OrkneyLight"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:textColor="@color/outgoingBubbleColorOrange"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:text="@string/toggle_sms_mode"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginTop="8dp"
+            android:paddingBottom="16dp"
+            app:layout_constraintTop_toBottomOf="@+id/smsOrOfflineButton" />
 
     </android.support.constraint.ConstraintLayout>
 </ScrollView>

@@ -668,7 +668,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                         SmsGroupChat groupChat = new SmsGroupChat(null, handles, null, false, false);
                         MmsMessage mmsMessage = new MmsMessage(null, groupChat,
                                 weMessage.get().getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), text,
-                                Calendar.getInstance().getTime(), null, false, false, true
+                                Calendar.getInstance().getTime(), null, false, false, true, true
                         );
 
                         weMessage.get().getMmsManager().sendMessage(mmsMessage);
@@ -699,7 +699,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     performSend(input, handle, false);
                     return true;
                 }else if (MmsManager.isDefaultSmsApp()){
-                    if (isPossibleNumber(input)){
+                    if (isPossibleNumber(handle.getHandleID())){
                         performSend(input, handle, true);
                         return true;
                     }else {
@@ -733,7 +733,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             if (chat instanceof SmsChat){
                 MmsMessage mmsMessage = new MmsMessage(null, chat,
                         weMessage.get().getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), input,
-                        Calendar.getInstance().getTime(), null, false, false, true
+                        Calendar.getInstance().getTime(), null, false, false, true, false
                 );
                 weMessage.get().getMmsManager().sendMessage(mmsMessage);
                 return true;
@@ -758,7 +758,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         if (isMms){
             MmsMessage mmsMessage = new MmsMessage(null, new SmsPeerChat(null, handle, false),
                     weMessage.get().getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), input,
-                    Calendar.getInstance().getTime(), null, false, false, true
+                    Calendar.getInstance().getTime(), null, false, false, true, false
             );
             weMessage.get().getMmsManager().sendMessage(mmsMessage);
         }else {
@@ -953,9 +953,13 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
     }
 
     private String getRecipients(Uri uri) {
-        String base = uri.getSchemeSpecificPart();
-        int pos = base.indexOf('?');
-        return (pos == -1) ? base : base.substring(0, pos);
+        try {
+            String base = uri.getSchemeSpecificPart();
+            int pos = base.indexOf('?');
+            return (pos == -1) ? base : base.substring(0, pos);
+        }catch (Exception ex){
+            return null;
+        }
     }
 
     private boolean isStillConnecting(){

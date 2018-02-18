@@ -20,10 +20,15 @@ public class ChatDialogView implements IDialog {
     private Chat chat;
     private List<UserView> users = new ArrayList<>();
     private MessageView lastMessage;
+    private String dialogPhoto;
+    private String dialogName;
+    private int unreadMessages;
 
     public ChatDialogView(Chat chat){
         this.chat = chat;
         this.lastMessage = new MessageView(weMessage.get().getMessageDatabase().getLastMessageFromChat(chat));
+        this.dialogPhoto = IOUtils.getChatIconUri(chat, IOUtils.IconSize.NORMAL);
+        this.unreadMessages = booleanToInteger(weMessage.get().getMessageDatabase().getChatByIdentifier(getId()).hasUnreadMessages());
 
         if (chat.getChatType() == Chat.ChatType.PEER){
             users.add(new UserView(((PeerChat) chat).getHandle()));
@@ -34,6 +39,13 @@ public class ChatDialogView implements IDialog {
                 users.add(new UserView(h));
             }
         }
+
+        if (chat.getChatType() == Chat.ChatType.PEER){
+            this.dialogName = users.get(0).getName();
+        } else {
+            GroupChat groupChat = (GroupChat) chat;
+            this.dialogName = groupChat.getUIDisplayName(false);
+        }
     }
 
     @Override
@@ -43,17 +55,12 @@ public class ChatDialogView implements IDialog {
 
     @Override
     public String getDialogPhoto() {
-        return IOUtils.getChatIconUri(chat, IOUtils.IconSize.NORMAL);
+        return dialogPhoto;
     }
 
     @Override
     public String getDialogName() {
-        if (chat.getChatType() == Chat.ChatType.PEER){
-            return users.get(0).getName();
-        } else {
-            GroupChat groupChat = (GroupChat) chat;
-            return groupChat.getUIDisplayName(false);
-        }
+        return dialogName;
     }
 
     @Override
@@ -73,7 +80,12 @@ public class ChatDialogView implements IDialog {
 
     @Override
     public int getUnreadCount() {
-        return booleanToInteger(weMessage.get().getMessageDatabase().getChatByIdentifier(getId()).hasUnreadMessages());
+        return unreadMessages;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof ChatDialogView && ((ChatDialogView) obj).getId().equals(getId());
     }
 
     private int booleanToInteger(boolean bool){
