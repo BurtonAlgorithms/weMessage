@@ -1,19 +1,11 @@
 package scott.wemessage.app.sms;
 
 import android.Manifest;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Telephony;
-import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.telephony.CarrierConfigManager;
 import android.telephony.TelephonyManager;
@@ -22,30 +14,21 @@ import com.android.mms.MmsConfig;
 
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
 import scott.wemessage.app.jobs.SendMessageJob;
 import scott.wemessage.app.models.chats.Chat;
-import scott.wemessage.app.models.chats.GroupChat;
 import scott.wemessage.app.models.messages.Attachment;
 import scott.wemessage.app.models.sms.chats.SmsChat;
 import scott.wemessage.app.models.sms.messages.MmsMessage;
-import scott.wemessage.app.models.users.Contact;
-import scott.wemessage.app.models.users.Handle;
-import scott.wemessage.app.ui.activities.LaunchActivity;
-import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.StringUtils;
 
 public final class MmsManager {
-
-    private final int ERRORED_NOTIFICATION_TAG = 1000;
 
     private weMessage app;
 
@@ -132,7 +115,7 @@ public final class MmsManager {
         chats.remove(chat.getIdentifier());
         app.getMessageDatabase().deleteSmsChatByThreadId(chat.getIdentifier());
         app.getMmsDatabase().deleteChat(chat.getIdentifier());
-        app.clearNotifications(chat.getIdentifier());
+        app.getNotificationManager().clearNotifications(chat.getIdentifier());
     }
 
     public synchronized void addMessage(MmsMessage message){
@@ -151,6 +134,7 @@ public final class MmsManager {
         MmsMessage message = app.getMmsDatabase().getMessageFromUri(uri);
 
         if (message != null){
+            message.setUnread(true);
             app.getMessageManager().addMessage(message, false);
         }
 
@@ -279,122 +263,5 @@ public final class MmsManager {
         chats.clear();
         messages.clear();
         app.getMessageManager().refreshChats(false, true);
-    }
-
-    public void showMmsNotification(MmsMessage message){
-        NotificationManager notificationManager = (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
-
-        try {
-            if (!app.performNotification(message.getChat().getIdentifier())) return;
-
-            Chat chat = message.getChat();
-            Handle handle = message.getSender();
-
-            if (chat instanceof GroupChat && ((GroupChat) chat).isDoNotDisturb()) return;
-            if (handle.isDoNotDisturb() || handle.isBlocked()) return;
-
-            String displayName = null;
-            String messageText = "";
-            Bitmap largeIcon;
-
-            if (chat instanceof GroupChat) {
-                displayName = ((GroupChat) chat).getUIDisplayName(false);
-            }
-
-            if (!StringUtils.isEmpty(displayName)) messageText = handle.getDisplayName() + ": ";
-            else displayName = handle.getDisplayName();
-
-            if (chat instanceof GroupChat) {
-                if (chat.getChatPictureFileLocation() != null && !StringUtils.isEmpty(chat.getChatPictureFileLocation().getFileLocation())) {
-                    largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeFile(chat.getChatPictureFileLocation().getFileLocation()));
-                } else {
-                    largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeResource(app.getResources(), R.drawable.ic_default_group_chat_sms));
-                }
-            } else {
-                Contact c = app.getMessageDatabase().getContactByHandle(handle);
-                if (c != null && c.getContactPictureFileLocation() != null && !StringUtils.isEmpty(c.getContactPictureFileLocation().getFileLocation())) {
-                    Bitmap bitmap = BitmapFactory.decodeFile(c.getContactPictureFileLocation().getFileLocation());
-
-                    if (bitmap != null) largeIcon = DisplayUtils.createCircleBitmap(bitmap);
-                    else largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeResource(app.getResources(), R.drawable.ic_default_contact_sms));
-                } else {
-                    largeIcon = DisplayUtils.createCircleBitmap(BitmapFactory.decodeResource(app.getResources(), R.drawable.ic_default_contact_sms));
-                }
-            }
-
-            if (StringUtils.isEmpty(StringUtils.trimORC(message.getText()))) {
-                if (message.getAttachments().size() > 0) {
-                    messageText += app.getString(R.string.notification_attachments, String.valueOf(message.getAttachments().size()));
-                }
-            } else {
-                messageText += message.getText();
-            }
-
-            Intent intent = new Intent(app, LaunchActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
-            if (chat != null) {
-                intent.putExtra(weMessage.BUNDLE_LAUNCHER_GO_TO_CONVERSATION_UUID, chat.getIdentifier());
-            }
-            intent.setAction(Long.toString(System.currentTimeMillis()));
-
-            PendingIntent pendingIntent = PendingIntent.getActivity(app, 0, intent, PendingIntent.FLAG_ONE_SHOT);
-            NotificationCompat.Builder builder;
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                builder = new NotificationCompat.Builder(app, weMessage.NOTIFICATION_CHANNEL_NAME);
-            } else {
-                builder = new NotificationCompat.Builder(app);
-                builder.setVibrate(new long[]{1000, 1000})
-                        .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-            }
-
-            int id = (int) ((new Date().getTime() / 1000L) % Integer.MAX_VALUE);
-            String tag = weMessage.NOTIFICATION_TAG;
-
-            if (chat != null) {
-                tag += chat.getIdentifier();
-            }
-
-            if (message.getModernDateSent() != null) builder.setWhen(message.getModernDateSent().getTime());
-            else if (message.getModernDateDelivered() != null) builder.setWhen(message.getModernDateDelivered().getTime());
-            else builder.setWhen(System.currentTimeMillis());
-
-            Notification notification = builder
-                    .setContentTitle(displayName)
-                    .setContentText(StringUtils.trimORC(messageText))
-                    .setSmallIcon(R.drawable.ic_app_notification_white_small)
-                    .setLargeIcon(largeIcon)
-                    .setContentIntent(pendingIntent)
-                    .setAutoCancel(true)
-                    .build();
-
-            notificationManager.notify(tag, id, notification);
-
-
-        } catch (Exception ex) {
-            AppLogger.error("An error occurred while trying to show a notification!", ex);
-
-            NotificationCompat.Builder builder;
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                builder = new NotificationCompat.Builder(app, weMessage.NOTIFICATION_CHANNEL_NAME);
-            } else {
-                builder = new NotificationCompat.Builder(app);
-                builder.setVibrate(new long[]{1000, 1000})
-                        .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-            }
-
-            Notification notification = builder
-                    .setContentTitle(app.getString(R.string.notification_error))
-                    .setContentText(app.getString(R.string.notification_error_body))
-                    .setSmallIcon(R.drawable.ic_app_notification_white_small)
-                    .setWhen(System.currentTimeMillis())
-                    .setAutoCancel(true)
-                    .build();
-
-            notificationManager.cancel(ERRORED_NOTIFICATION_TAG);
-            notificationManager.notify(ERRORED_NOTIFICATION_TAG, notification);
-        }
     }
 }

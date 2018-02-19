@@ -237,7 +237,7 @@
     <string name="version_11_update"><![CDATA[<b>Version 1.1</b>]]> adds Contact Sync! To sync the contacts on your computer with weMessage, go into your weMessage Settings.
         \n\nIn addition, you are now able to view certain message effects.</string>
     <string name="version_12_update"><![CDATA[<b>Version 1.2</b>]]> adds SMS and MMS messaging! If SMS Mode is not enabled, you can turn it on in your weMessage Settings.
-        \n\nOther new features include Contact Sync with the contacts on your phone, a Contact List screen, Failover IP Addresses, and much more!</string>
+        \n\nOther new features include Contact Sync with the contacts on your phone, a Contact List screen, Failover IP Addresses, revamped notifications, and much more!</string>
     <string name="video_gallery_error">An error occurred while saving this to your video library.</string>
     <string name="video_gallery_exists">This video already exists in your video library.</string>
     <string name="video_gallery_save">Video saved to your video library!</string>

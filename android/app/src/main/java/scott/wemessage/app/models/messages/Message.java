@@ -36,7 +36,7 @@ public class Message extends MessageBase {
     private List<Attachment> attachments;
     private String text;
     private Long dateSent, dateDelivered, dateRead;
-    private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe, isEffectFinished;
+    private Boolean errored, isSent, isDelivered, isRead, isFinished, isFromMe, isEffectFinished, isUnread;
     private HashMap<Attachment, FailReason> failedAttachments = new HashMap<>();
     private MessageEffect messageEffect = MessageEffect.NONE;
 
@@ -45,7 +45,7 @@ public class Message extends MessageBase {
     }
 
     public Message(String identifier, String macGuid, Chat chat, Handle sender, List<Attachment> attachments, String text, Long dateSent, Long dateDelivered, Long dateRead,
-                   Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe, MessageEffect messageEffect, Boolean isEffectFinished){
+                   Boolean errored, Boolean isSent, Boolean isDelivered, Boolean isRead, Boolean isFinished, Boolean isFromMe, Boolean isUnread, MessageEffect messageEffect, Boolean isEffectFinished){
         this.identifier = identifier;
         this.macGuid = macGuid;
         this.chat = chat;
@@ -61,6 +61,7 @@ public class Message extends MessageBase {
         this.isRead = isRead;
         this.isFinished = isFinished;
         this.isFromMe = isFromMe;
+        this.isUnread = isUnread;
         this.messageEffect = messageEffect;
         this.isEffectFinished = isEffectFinished;
     }
@@ -152,6 +153,10 @@ public class Message extends MessageBase {
         return isFromMe;
     }
 
+    public Boolean isUnread() {
+        return isUnread;
+    }
+
     public MessageEffect getMessageEffect() {
         return messageEffect;
     }
@@ -232,6 +237,11 @@ public class Message extends MessageBase {
 
     public Message setFromMe(Boolean fromMe) {
         isFromMe = fromMe;
+        return this;
+    }
+
+    public Message setUnread(Boolean unread) {
+        isUnread = unread;
         return this;
     }
 

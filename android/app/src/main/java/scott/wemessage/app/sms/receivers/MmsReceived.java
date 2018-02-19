@@ -27,9 +27,9 @@ public class MmsReceived extends MmsReceivedReceiver {
                 wakeLock.acquire(5 * 1000);
             }
 
-            weMessage.get().getMessageManager().addMessage(message, false);
-            weMessage.get().getMessageManager().updateChat(message.getChat().getIdentifier(), message.getChat().setHasUnreadMessages(true), false);
-            weMessage.get().getMmsManager().showMmsNotification(message);
+            weMessage.get().getMessageManager().addMessage(message.setUnread(true), false);
+            weMessage.get().getMessageManager().setHasUnreadMessages(message.getChat(), true, false);
+            weMessage.get().getNotificationManager().showMmsNotification(message);
         }catch (Exception ex){
             AppLogger.error("An error occurred while receiving an MMS message", ex);
             LocalBroadcastManager.getInstance(weMessage.get()).sendBroadcast(new Intent(weMessage.BROADCAST_NEW_MESSAGE_ERROR));

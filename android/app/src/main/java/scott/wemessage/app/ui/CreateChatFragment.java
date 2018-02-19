@@ -668,7 +668,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                         SmsGroupChat groupChat = new SmsGroupChat(null, handles, null, false, false);
                         MmsMessage mmsMessage = new MmsMessage(null, groupChat,
                                 weMessage.get().getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), text,
-                                Calendar.getInstance().getTime(), null, false, false, true, true
+                                Calendar.getInstance().getTime(), null, false, false, true, false,true
                         );
 
                         weMessage.get().getMmsManager().sendMessage(mmsMessage);
@@ -733,7 +733,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             if (chat instanceof SmsChat){
                 MmsMessage mmsMessage = new MmsMessage(null, chat,
                         weMessage.get().getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), input,
-                        Calendar.getInstance().getTime(), null, false, false, true, false
+                        Calendar.getInstance().getTime(), null, false, false, true, false, false
                 );
                 weMessage.get().getMmsManager().sendMessage(mmsMessage);
                 return true;
@@ -746,7 +746,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                         new ArrayList<Attachment>(),
                         input,
                         DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
-                        null, null, false, true, false, false, true, true, MessageEffect.NONE, false
+                        null, null, false, true, false, false, true, true, false, MessageEffect.NONE, false
                 );
                 serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
                 return true;
@@ -758,7 +758,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
         if (isMms){
             MmsMessage mmsMessage = new MmsMessage(null, new SmsPeerChat(null, handle, false),
                     weMessage.get().getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), input,
-                    Calendar.getInstance().getTime(), null, false, false, true, false
+                    Calendar.getInstance().getTime(), null, false, false, true, false,false
             );
             weMessage.get().getMmsManager().sendMessage(mmsMessage);
         }else {
@@ -778,7 +778,7 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     new ArrayList<Attachment>(),
                     input,
                     DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
-                    null, null, false, true, false, false, true, true, MessageEffect.NONE, false
+                    null, null, false, true, false, false, true, true, false, MessageEffect.NONE, false
             );
             serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(message, true);
         }

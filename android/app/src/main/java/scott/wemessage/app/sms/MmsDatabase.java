@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -41,6 +42,9 @@ import scott.wemessage.commons.utils.StringUtils;
 public final class MmsDatabase {
 
     private weMessage app;
+
+    private static final String[] MMS_MESSAGE_PROJECTION = new String[]{"date_sent", "date", "msg_box", "_id", "thread_id", "read", "seen"};
+    private static final String[] SMS_MESSAGE_PROJECTION = new String[]{"address", "date_sent", "date", "body", "type", "_id", "thread_id", "read", "seen"};
 
     public MmsDatabase(weMessage app){
         this.app = app;
@@ -71,7 +75,7 @@ public final class MmsDatabase {
             }
 
             if (isMms) {
-                Cursor mmsCursor = app.getContentResolver().query(uri, new String[]{"date_sent", "date", "msg_box", "_id", "thread_id"}, null, null, null);
+                Cursor mmsCursor = app.getContentResolver().query(uri, MMS_MESSAGE_PROJECTION, null, null, null);
 
                 if (mmsCursor.moveToFirst()) {
                     mmsMessage = buildMmsMessage(taskIdentifier, mmsCursor);
@@ -80,13 +84,13 @@ public final class MmsDatabase {
                     mmsCursor.close();
 
                     Uri newUri = Uri.parse("content://mms/" + uriString.substring(uriString.lastIndexOf("/") + 1));
-                    Cursor mmsCursorRetry = app.getContentResolver().query(newUri, new String[]{"date_sent", "date", "msg_box", "_id", "thread_id"}, null, null, null);
+                    Cursor mmsCursorRetry = app.getContentResolver().query(newUri, MMS_MESSAGE_PROJECTION, null, null, null);
 
                     if (mmsCursorRetry.moveToFirst()) mmsMessage = buildMmsMessage(taskIdentifier, mmsCursorRetry);
                     mmsCursorRetry.close();
                 }
             } else {
-                Cursor smsCursor = app.getContentResolver().query(uri, new String[]{"address", "date_sent", "date", "body", "type", "_id", "thread_id"}, null, null, null);
+                Cursor smsCursor = app.getContentResolver().query(uri, SMS_MESSAGE_PROJECTION, null, null, null);
 
                 if (smsCursor.moveToFirst()){
                     mmsMessage = buildSmsMessage(smsCursor);
@@ -95,7 +99,7 @@ public final class MmsDatabase {
                     smsCursor.close();
 
                     Uri newUri = Uri.parse("content://sms/" + uriString.substring(uriString.lastIndexOf("/") + 1));
-                    Cursor smsCursorRetry = app.getContentResolver().query(newUri, new String[]{"address", "date_sent", "date", "body", "type", "_id", "thread_id"}, null, null, null);
+                    Cursor smsCursorRetry = app.getContentResolver().query(newUri, SMS_MESSAGE_PROJECTION, null, null, null);
 
                     if (smsCursorRetry.moveToFirst()) mmsMessage = buildSmsMessage(smsCursorRetry);
                     smsCursorRetry.close();
@@ -150,7 +154,7 @@ public final class MmsDatabase {
         readValues.put("read", 1);
         readValues.put("seen", 1);
 
-        Cursor smsCursor = contentResolver.query(smsUri, new String[] {"_id"}, "thread_id = " + threadId + " AND read = 0", null, null);
+        Cursor smsCursor = contentResolver.query(smsUri, new String[] {"_id"}, "thread_id = " + threadId + " AND read = 0 OR seen = 0", null, null);
 
         if (smsCursor != null){
             if (smsCursor.moveToFirst()){
@@ -163,7 +167,7 @@ public final class MmsDatabase {
             smsCursor.close();
         }
 
-        Cursor mmsCursor = contentResolver.query(mmsUri, new String[] {"_id"}, "thread_id = " + threadId + " AND read = 0", null, null);
+        Cursor mmsCursor = contentResolver.query(mmsUri, new String[] {"_id"}, "thread_id = " + threadId + " AND read = 0 OR seen = 0", null, null);
 
         if (mmsCursor != null){
             if (mmsCursor.moveToFirst()){
@@ -286,24 +290,30 @@ public final class MmsDatabase {
                     }
 
                     if (isMms) {
-                        Cursor mmsCursor = app.getContentResolver().query(Uri.parse("content://mms/"), new String[]{"date_sent", "date", "msg_box", "_id", "thread_id"}, "_id = " + messageId, null, null);
+                        Cursor mmsCursor = app.getContentResolver().query(Uri.parse("content://mms/"), MMS_MESSAGE_PROJECTION, "_id = " + messageId, null, null);
 
                         if (mmsCursor.moveToFirst()) {
                             MmsMessage message = buildMmsMessage(null, mmsCursor);
 
-                            if (message != null)
+                            if (message != null) {
                                 app.getMmsManager().addMessage(message);
+
+                                if (message.isUnread()) app.getNotificationManager().addUnreadMessages(1);
+                            }
                         }
 
                         mmsCursor.close();
                     } else {
-                        Cursor smsCursor = app.getContentResolver().query(Uri.parse("content://sms/"), new String[]{"address", "date_sent", "date", "body", "type", "_id", "thread_id"}, "_id = " + messageId, null, null);
+                        Cursor smsCursor = app.getContentResolver().query(Uri.parse("content://sms/"), SMS_MESSAGE_PROJECTION, "_id = " + messageId, null, null);
 
                         if (smsCursor.moveToFirst()) {
                             MmsMessage message = buildSmsMessage(smsCursor);
 
-                            if (message != null)
+                            if (message != null) {
                                 app.getMmsManager().addMessage(message);
+
+                                if (message.isUnread()) app.getNotificationManager().addUnreadMessages(1);
+                            }
                         }
 
                         smsCursor.close();
@@ -389,6 +399,7 @@ public final class MmsDatabase {
         boolean isErrored = mmsCursor.getInt(mmsCursor.getColumnIndex("msg_box")) == 5;
         boolean isDelivered = mmsCursor.getInt(mmsCursor.getColumnIndex("msg_box")) == 2;
         boolean skipAttachments = !StringUtils.isEmpty(taskIdentifier) && app.getMmsManager().getMmsMessage(taskIdentifier) != null;
+        boolean isUnread = !integerToBoolean(mmsCursor.getInt(mmsCursor.getColumnIndex("read"))) || !integerToBoolean(mmsCursor.getInt(mmsCursor.getColumnIndex("seen")));
 
         String address = getMmsSender(messageId);
 
@@ -468,6 +479,12 @@ public final class MmsDatabase {
             chatQuery.close();
         }
 
+        if (dateSent == null && dateDelivered != null){
+            dateSent = dateDelivered;
+        }else if (dateSent == null) {
+            dateSent = Calendar.getInstance().getTime();
+        }
+
         if (sender != null && chat != null) {
             mmsMessage = new MmsMessage(messageId,
                     chat,
@@ -479,6 +496,7 @@ public final class MmsDatabase {
                     isErrored,
                     isDelivered,
                     isFromMe,
+                    isUnread,
                     true);
         }
 
@@ -498,6 +516,7 @@ public final class MmsDatabase {
         int type = smsCursor.getInt(smsCursor.getColumnIndex("type"));
         boolean isFromMe = false;
         boolean errored = type == 5;
+        boolean isUnread = !integerToBoolean(smsCursor.getInt(smsCursor.getColumnIndex("read"))) || !integerToBoolean(smsCursor.getInt(smsCursor.getColumnIndex("seen")));
 
         if (type == 2 || type == 3 || type == 4 || type == 5 || type == 6){
             isFromMe = true;
@@ -522,6 +541,12 @@ public final class MmsDatabase {
             chatQuery.close();
         }
 
+        if (dateSent == null && dateDelivered != null){
+            dateSent = dateDelivered;
+        }else if (dateSent == null) {
+            dateSent = Calendar.getInstance().getTime();
+        }
+
         if (sender != null && chat != null){
             mmsMessage = new MmsMessage(messageId,
                     chat,
@@ -531,8 +556,9 @@ public final class MmsDatabase {
                     dateSent,
                     dateDelivered,
                     errored,
-                    type == 2 && (dateSent != null || dateDelivered != null),
+                    type == 2 && (dateSent != null),
                     isFromMe,
+                    isUnread,
                     false);
         }
 
@@ -675,7 +701,7 @@ public final class MmsDatabase {
     }
 
     private boolean integerToBoolean(Integer integer){
-        if (integer > 1 || integer < 0) throw new ArrayIndexOutOfBoundsException("Parsing a boolean from an int must be either 0 or 1. Found: " + integer);
+        if (integer == null || integer > 1 || integer < 0) return false;
         return integer == 1;
     }
 }

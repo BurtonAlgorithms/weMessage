@@ -117,7 +117,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + MessageTable.IS_FINISHED + " INTEGER, "
                 + MessageTable.IS_FROM_ME + " INTEGER, "
                 + MessageTable.MESSAGE_EFFECT + " TEXT, "
-                + MessageTable.EFFECT_PERFORMED + " INTEGER );";
+                + MessageTable.EFFECT_PERFORMED + " INTEGER, "
+                + MessageTable.IS_UNREAD + " INTEGER );";
 
         String createSmsChatTable = "CREATE TABLE " + SmsChatTable.TABLE_NAME + " ("
                 + SmsChatTable._ID + " INTEGER PRIMARY KEY, "
@@ -140,6 +141,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 + MmsMessageTable.ERRORED + " INTEGER, "
                 + MmsMessageTable.IS_DELIVERED + " INTEGER, "
                 + MmsMessageTable.IS_FROM_ME + " INTEGER, "
+                + MmsMessageTable.IS_UNREAD + " INTEGER, "
                 + MmsMessageTable.IS_MMS + " INTEGER );";
 
         db.execSQL(createAccountTable);
@@ -303,6 +305,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             String alterHandleType = "UPDATE " + HandleTable.TABLE_NAME + " SET " +
                     HandleTable.HANDLE_TYPE + " = '" + Handle.HandleType.UNKNOWN.getTypeName() + "' WHERE " + HandleTable.HANDLE_TYPE + " = '" + Handle.HandleType.IMESSAGE.getTypeName() + "'";
 
+            String alterMessagesIsUnread = "ALTER TABLE " + MessageTable.TABLE_NAME + " ADD COLUMN " + MessageTable.IS_UNREAD + " INTEGER DEFAULT 0";
+
             String dropContactsTable = "DROP TABLE " + ContactTable.TABLE_NAME + ";";
 
             String createContactsTable = "CREATE TABLE " + ContactTable.TABLE_NAME + " ("
@@ -352,11 +356,13 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                     + MmsMessageTable.ERRORED + " INTEGER, "
                     + MmsMessageTable.IS_DELIVERED + " INTEGER, "
                     + MmsMessageTable.IS_FROM_ME + " INTEGER, "
+                    + MmsMessageTable.IS_UNREAD + " INTEGER, "
                     + MmsMessageTable.IS_MMS + " INTEGER );";
 
             db.execSQL(alterHandleDoNotDisturb);
             db.execSQL(alterHandleBlocked);
             db.execSQL(alterHandleType);
+            db.execSQL(alterMessagesIsUnread);
             db.execSQL(dropContactsTable);
             db.execSQL(createContactsTable);
             db.execSQL(dropChatsTable);
@@ -514,6 +520,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                     + MmsMessageTable.ERRORED + " INTEGER, "
                     + MmsMessageTable.IS_DELIVERED + " INTEGER, "
                     + MmsMessageTable.IS_FROM_ME + " INTEGER, "
+                    + MmsMessageTable.IS_UNREAD + " INTEGER, "
                     + MmsMessageTable.IS_MMS + " INTEGER );";
 
             getWritableDatabase().execSQL(createSmsChatTable);
@@ -760,10 +767,16 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {
-                ActionMessage message = buildActionMessage(cursor);
+                ActionMessage pulledMessage = pullActionMessageFromManager(cursor);
 
-                if (message != null) {
-                    actionMessages.add(message);
+                if (pulledMessage != null){
+                    actionMessages.add(pulledMessage);
+                }else {
+                    ActionMessage message = buildActionMessage(cursor);
+
+                    if (message != null) {
+                        actionMessages.add(message);
+                    }
                 }
                 cursor.moveToNext();
             }
@@ -853,11 +866,18 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {
-                Message message = buildMessage(cursor);
+                Message pulledMessage = pullMessageFromManager(cursor);
 
-                if (message != null) {
-                    messages.add(message);
+                if (pulledMessage != null){
+                    messages.add(pulledMessage);
+                }else {
+                    Message message = buildMessage(cursor);
+
+                    if (message != null) {
+                        messages.add(message);
+                    }
                 }
+
                 cursor.moveToNext();
             }
         }
@@ -879,10 +899,16 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {
-                MmsMessage message = buildMmsMessage(cursor);
+                MmsMessage pulledMessage = pullMmsMessageFromManager(cursor);
 
-                if (message != null) {
-                    messages.add(message);
+                if (pulledMessage != null){
+                    messages.add(pulledMessage);
+                }else {
+                    MmsMessage message = buildMmsMessage(cursor);
+
+                    if (message != null) {
+                        messages.add(message);
+                    }
                 }
                 cursor.moveToNext();
             }
@@ -920,6 +946,56 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return messages;
     }
 
+    public List<Message> getUnreadMessages(Chat chat){
+        List<Message> messages = new ArrayList<>();
+
+        if (chat instanceof SmsChat){
+            String selectStatement = "SELECT * FROM " + MmsMessageTable.TABLE_NAME + " WHERE " + MmsMessageTable.IS_UNREAD + " = 1 AND " + MmsMessageTable.THREAD_ID + " = ?";
+            Cursor cursor = getWritableDatabase().rawQuery(selectStatement, new String[] { chat.getIdentifier() });
+
+            if (cursor.moveToFirst()) {
+                while (!cursor.isAfterLast()) {
+                    MmsMessage pulledMessage = pullMmsMessageFromManager(cursor);
+
+                    if (pulledMessage != null){
+                        messages.add(pulledMessage);
+                    }else {
+                        MmsMessage message = buildMmsMessage(cursor);
+
+                        if (message != null) {
+                            messages.add(message);
+                        }
+                    }
+                    cursor.moveToNext();
+                }
+            }
+            cursor.close();
+        }else {
+            String selectStatement = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable.IS_UNREAD + " = 1 AND " + MessageTable.CHAT_UUID + " = ?";
+            Cursor cursor = getWritableDatabase().rawQuery(selectStatement, new String[]{ chat.getIdentifier() });
+
+            if (cursor.moveToFirst()) {
+                while (!cursor.isAfterLast()) {
+                    Message pulledMessage = pullMessageFromManager(cursor);
+
+                    if (pulledMessage != null){
+                        messages.add(pulledMessage);
+                    }else {
+                        Message message = buildMessage(cursor);
+
+                        if (message != null) {
+                            messages.add(message);
+                        }
+                    }
+                    cursor.moveToNext();
+                }
+            }
+            cursor.close();
+        }
+
+        return messages;
+    }
+
     public Message getLastMessageFromChat(Chat chat){
         SQLiteDatabase db = getWritableDatabase();
 
@@ -950,6 +1026,20 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
         cursor.close();
         return message;
+    }
+
+    public int getUnreadCount(){
+        int i = 0;
+        Cursor cursor = getWritableDatabase().rawQuery("SELECT " + MessageTable._ID + " FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable.IS_UNREAD + " = 1", null);
+
+        i += cursor.getCount();
+        cursor.close();
+
+        Cursor cursorMms = getWritableDatabase().rawQuery("SELECT " + MmsMessageTable._ID + " FROM " + MmsMessageTable.TABLE_NAME + " WHERE " + MmsMessageTable.IS_UNREAD + " = 1", null);
+        i+= cursorMms.getCount();
+        cursorMms.close();
+
+        return i;
     }
 
     private Account buildAccount(Cursor cursor){
@@ -1531,7 +1621,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 .setHasErrored(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.ERRORED)))).setIsSent(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_SENT))))
                 .setDelivered(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_DELIVERED)))).setRead(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_READ))))
                 .setFinished(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_FINISHED)))).setFromMe(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_FROM_ME))))
-                .setMessageEffect(MessageEffect.from(cursor.getString(cursor.getColumnIndex(MessageTable.MESSAGE_EFFECT)))).setEffectFinished(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.EFFECT_PERFORMED))));
+                .setUnread(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.IS_UNREAD)))).setMessageEffect(MessageEffect.from(cursor.getString(cursor.getColumnIndex(MessageTable.MESSAGE_EFFECT))))
+                .setEffectFinished(integerToBoolean(cursor.getInt(cursor.getColumnIndex(MessageTable.EFFECT_PERFORMED))));
         return message;
     }
 
@@ -1554,6 +1645,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         values.put(MessageTable.IS_READ, booleanToInteger(message.isRead()));
         values.put(MessageTable.IS_FINISHED, booleanToInteger(message.isFinished()));
         values.put(MessageTable.IS_FROM_ME, booleanToInteger(message.isFromMe()));
+        values.put(MessageTable.IS_UNREAD, booleanToInteger(message.isUnread()));
         values.put(MessageTable.MESSAGE_EFFECT, message.getMessageEffect().getEffectName());
         values.put(MessageTable.EFFECT_PERFORMED, booleanToInteger(message.getEffectFinished()));
 
@@ -1750,6 +1842,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 integerToBoolean(cursor.getInt(cursor.getColumnIndex(MmsMessageTable.ERRORED))),
                 integerToBoolean(cursor.getInt(cursor.getColumnIndex(MmsMessageTable.IS_DELIVERED))),
                 integerToBoolean(cursor.getInt(cursor.getColumnIndex(MmsMessageTable.IS_FROM_ME))),
+                integerToBoolean(cursor.getInt(cursor.getColumnIndex(MmsMessageTable.IS_UNREAD))),
                 integerToBoolean(cursor.getInt(cursor.getColumnIndex(MmsMessageTable.IS_MMS)))
         );
         return message;
@@ -1778,6 +1871,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         values.put(MmsMessageTable.ERRORED, booleanToInteger(message.hasErrored()));
         values.put(MmsMessageTable.IS_DELIVERED, booleanToInteger(message.isDelivered()));
         values.put(MmsMessageTable.IS_FROM_ME, booleanToInteger(message.isFromMe()));
+        values.put(MmsMessageTable.IS_UNREAD, booleanToInteger(message.isUnread()));
         values.put(MmsMessageTable.IS_MMS, booleanToInteger(message.isMms()));
 
         return values;
@@ -1826,7 +1920,6 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         getWritableDatabase().delete(MmsMessageTable.TABLE_NAME, whereClause, new String[] { identifier });
     }
 
-
     private List<String> handlesToStringList(List<Handle> handles){
         List<String> stringList = new ArrayList<>();
 
@@ -1867,6 +1960,31 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             }
         }
         return attachments;
+    }
+
+    private ActionMessage pullActionMessageFromManager(Cursor cursor){
+        if (!(weMessage.get().getCurrentSession().equals(UUID.fromString(cursor.getString(cursor.getColumnIndex(ActionMessageTable.ACCOUNT_UUID)))))) return null;
+
+        String identifier = cursor.getString(cursor.getColumnIndex(ActionMessageTable.UUID));
+        if (StringUtils.isEmpty(identifier)) return null;
+
+        return weMessage.get().getMessageManager().getLoadedActionMessages().get(identifier);
+    }
+
+    private Message pullMessageFromManager(Cursor cursor){
+        if (!(weMessage.get().getCurrentSession().equals(UUID.fromString(cursor.getString(cursor.getColumnIndex(MessageTable.ACCOUNT_UUID)))))) return null;
+
+        String identifier = cursor.getString(cursor.getColumnIndex(MessageTable.UUID));
+        if (StringUtils.isEmpty(identifier)) return null;
+
+        return weMessage.get().getMessageManager().getLoadedMessages().get(identifier);
+    }
+
+    private MmsMessage pullMmsMessageFromManager(Cursor cursor){
+        String identifier = cursor.getString(cursor.getColumnIndex(MmsMessageTable.IDENTIFIER));
+        if (StringUtils.isEmpty(identifier)) return null;
+
+        return weMessage.get().getMmsManager().getLoadedMessages().get(identifier);
     }
 
     private Long getMaxIdFromTable(String tableName, String idRow){
@@ -1995,6 +2113,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         public static final String IS_FROM_ME = "is_from_me";
         public static final String MESSAGE_EFFECT = "message_effect";
         public static final String EFFECT_PERFORMED = "effect_performed";
+        public static final String IS_UNREAD = "is_unread";
     }
 
     public static class SmsChatTable {
@@ -2021,6 +2140,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         public static final String ERRORED = "errored";
         public static final String IS_DELIVERED = "is_delivered";
         public static final String IS_FROM_ME = "is_from_me";
+        public static final String IS_UNREAD = "is_unread";
         public static final String IS_MMS = "is_mms";
     }
 

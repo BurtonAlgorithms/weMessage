@@ -803,6 +803,7 @@ public final class ConnectionHandler extends Thread {
 
                                 MessageManager messageManager = weMessage.get().getMessageManager();
                                 MessageDatabase messageDatabase = weMessage.get().getMessageDatabase();
+                                boolean isUnread = false;
 
                                 for (String s : jsonMessage.getChat().getParticipants()) {
                                     Handle handle = messageDatabase.getHandleByHandleID(s);
@@ -818,6 +819,7 @@ public final class ConnectionHandler extends Thread {
                                 runChatCheck(messageManager, jsonChat, DateUtils.getDateUsing2001(jsonMessage.getDateSent() - 1));
 
                                 if (!jsonMessage.isFromMe()) {
+                                    isUnread = true;
                                     messageManager.setHasUnreadMessages(messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), true, false);
                                 }
 
@@ -850,7 +852,7 @@ public final class ConnectionHandler extends Thread {
 
                                 Message message = new Message(UUID.randomUUID().toString(), jsonMessage.getMacGuid(), messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, attachments,
                                         textDecryptionTask.getDecryptedText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(), jsonMessage.getDateRead(), jsonMessage.getErrored(),
-                                        jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe(), MessageEffect.from(jsonMessage.getMessageEffect()), false);
+                                        jsonMessage.isSent(), jsonMessage.isDelivered(), jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe(), isUnread, MessageEffect.from(jsonMessage.getMessageEffect()), false);
 
                                 messageManager.addMessage(message, false);
                             } catch (Exception ex) {
@@ -910,7 +912,7 @@ public final class ConnectionHandler extends Thread {
                                                         messageDatabase.getChatByMacGuid(jsonChat.getMacGuid()), sender, new ArrayList<Attachment>(),
                                                         textDecryptionTask.getDecryptedText(), jsonMessage.getDateSent(), jsonMessage.getDateDelivered(),
                                                         jsonMessage.getDateRead(), jsonMessage.getErrored(), jsonMessage.isSent(), jsonMessage.isDelivered(),
-                                                        jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe(), MessageEffect.from(jsonMessage.getMessageEffect()), false);
+                                                        jsonMessage.isRead(), jsonMessage.isFinished(), jsonMessage.isFromMe(), false, MessageEffect.from(jsonMessage.getMessageEffect()), false);
                                                 messageManager.addMessage(message, false);
                                             } else {
                                                 AppLogger.log(AppLogger.Level.ERROR, TAG, "An error occurred while updating a message with Mac GUID: " + jsonMessage.getMacGuid() +
@@ -1596,7 +1598,7 @@ public final class ConnectionHandler extends Thread {
         Message newData = new Message().setIdentifier(existingMessage.getIdentifier()).setAttachments(existingMessage.getAttachments()).setText(existingMessage.getText())
                 .setDateSent(jsonMessage.getDateSent()).setDateDelivered(jsonMessage.getDateDelivered()).setDateRead(jsonMessage.getDateRead()).setHasErrored(jsonMessage.getErrored())
                 .setIsSent(jsonMessage.isSent()).setDelivered(jsonMessage.isDelivered()).setRead(jsonMessage.isRead()).setFinished(jsonMessage.isFinished()).setFromMe(existingMessage.isFromMe())
-                .setMessageEffect(MessageEffect.from(jsonMessage.getMessageEffect())).setEffectFinished(existingMessage.getEffectFinished());
+                .setUnread(false).setMessageEffect(MessageEffect.from(jsonMessage.getMessageEffect())).setEffectFinished(existingMessage.getEffectFinished());
 
         if (overrideAll){
             Handle sender;

@@ -332,7 +332,12 @@ public class LaunchFragment extends Fragment {
             if (isServiceRunning(ConnectionService.class) && loginProgressDialog == null){
                 showProgressDialog(view, getString(R.string.connecting_dialog_title), getString(R.string.connecting_dialog_message, ipAddress, port));
             }else if (weMessage.get().isSignedIn(true) && !isServiceRunning(ConnectionService.class)) {
-                if (getActivity().getIntent().hasExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT) && !getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false)) {
+                boolean startConnectionService;
+
+                if (MmsManager.isDefaultSmsApp()) startConnectionService = getActivity().getIntent().hasExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT) && !getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false);
+                else startConnectionService = !getActivity().getIntent().getBooleanExtra(weMessage.BUNDLE_LAUNCHER_DO_NOT_TRY_RECONNECT, false);
+
+                if (startConnectionService) {
                     if (!host.equals("") && !email.equals("") && !hashedPass.equals("")) {
                         startConnectionService(view, ipAddress, port, email, hashedPass, true, failoverIp);
                     }
@@ -493,7 +498,10 @@ public class LaunchFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 lastHashedPass = weMessage.get().getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_HASHED_PASSWORD, "");
-                passwordEditText.setText(weMessage.DEFAULT_PASSWORD);
+
+                if (!StringUtils.isEmpty(lastHashedPass)) {
+                    passwordEditText.setText(weMessage.DEFAULT_PASSWORD);
+                }
                 clearEditText(passwordEditText, true);
             }
         });

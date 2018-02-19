@@ -83,7 +83,7 @@ import scott.wemessage.app.connection.IConnectionBinder;
 import scott.wemessage.app.messages.MessageCallbacks;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
-import scott.wemessage.app.messages.firebase.NotificationCallbacks;
+import scott.wemessage.app.messages.notifications.NotificationCallbacks;
 import scott.wemessage.app.models.chats.Chat;
 import scott.wemessage.app.models.chats.GroupChat;
 import scott.wemessage.app.models.chats.PeerChat;
@@ -316,7 +316,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         callbackUuid = UUID.randomUUID().toString();
 
         messageManager.hookCallbacks(callbackUuid, this);
-        weMessage.get().setNotificationCallbacks(this);
+        weMessage.get().getNotificationManager().setNotificationCallbacks(this);
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(messageListBroadcastReceiver, broadcastIntentFilter);
 
         super.onCreate(savedInstanceState);
@@ -550,7 +550,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
 
         toggleIsInChat(chat.isInChat());
-        weMessage.get().clearNotifications(chat.getIdentifier());
+        weMessage.get().getNotificationManager().clearNotifications(chat.getIdentifier());
 
         return view;
     }
@@ -614,7 +614,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
         }
 
         messageManager.unhookCallbacks(callbackUuid);
-        weMessage.get().setNotificationCallbacks(null);
+        weMessage.get().getNotificationManager().setNotificationCallbacks(null);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(messageListBroadcastReceiver);
 
         if (isBoundToConnectionService){
@@ -1452,6 +1452,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     false,
                     false,
                     true,
+                    false,
                     true
             );
         }else {
@@ -1471,6 +1472,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                     false,
                     true,
                     true,
+                    false,
                     MessageEffect.NONE,
                     false
             );
@@ -1734,7 +1736,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
                         message.getMessage().getAttachments(), message.getMessage().getText(),
                         DateUtils.convertDateTo2001Time(Calendar.getInstance().getTime()),
                         null, null, false, true, false,
-                        false, true, true, MessageEffect.NONE, false
+                        false, true, true, false, MessageEffect.NONE, false
                 );
                 serviceConnection.getConnectionService().getConnectionHandler().sendOutgoingMessage(newMessage, true);
             }
@@ -1754,7 +1756,7 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
 
                 MmsMessage mmsMessage = new MmsMessage(null, getChat(),
                         weMessage.get().getCurrentSession().getSmsHandle(), message.getMessage().getAttachments(), message.getMessage().getText(),
-                        Calendar.getInstance().getTime(), null, false, false, true, true
+                        Calendar.getInstance().getTime(), null, false, false, true, false,true
                 );
                 weMessage.get().getMmsManager().sendMessage(mmsMessage);
             }

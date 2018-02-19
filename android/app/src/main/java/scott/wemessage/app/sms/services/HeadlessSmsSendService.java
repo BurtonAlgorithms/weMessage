@@ -57,7 +57,7 @@ public class HeadlessSmsSendService extends IntentService {
         }
 
         MmsMessage mmsMessage = new MmsMessage(null, chat, weMessage.get().getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), message,
-                Calendar.getInstance().getTime(), null, false, false, true, chat instanceof SmsGroupChat);
+                Calendar.getInstance().getTime(), null, false, false, true, false, chat instanceof SmsGroupChat);
         weMessage.get().getMmsManager().sendMessage(mmsMessage);
     }
 

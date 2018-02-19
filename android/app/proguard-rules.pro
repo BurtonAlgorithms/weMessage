@@ -95,3 +95,13 @@
 -dontwarn com.github.siyamed.**
 
 ##--------------------------------------------------------------------
+
+
+##------------------------  Shortcut Badger  ------------------------
+
+-keep public class me.leolin.shortcutbadger.**
+-keepclassmembers public class me.leolin.shortcutbadger.** {
+    *;
+}
+
+#---------------------------------------------------------------------

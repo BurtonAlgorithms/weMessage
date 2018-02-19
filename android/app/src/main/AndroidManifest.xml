@@ -83,7 +83,7 @@
         <service android:name="com.android.mms.transaction.TransactionService" />
 
         <service
-            android:name=".app.messages.firebase.NotificationService">
+            android:name=".app.messages.firebase.FirebaseNotificationService">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>

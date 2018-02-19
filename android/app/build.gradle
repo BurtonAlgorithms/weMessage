@@ -57,6 +57,7 @@ dependencies {
     implementation 'com.thefinestartist:finestwebview:1.2.7'
     implementation 'com.yalantis:contextmenu:1.0.7'
     implementation 'com.yqritc:android-scalablevideoview:1.0.4'
+    implementation "me.leolin:ShortcutBadger:1.1.21@aar"
     implementation 'nl.dionsegijn:konfetti:1.1.0'
     implementation ('com.vdurmont:emoji-java:4.0.0'){
         exclude group: 'org.json', module: 'json'

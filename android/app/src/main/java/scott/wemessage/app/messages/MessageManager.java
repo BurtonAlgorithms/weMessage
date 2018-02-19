@@ -79,6 +79,14 @@ public final class MessageManager {
         return contactInfoHashMap;
     }
 
+    protected ConcurrentHashMap<String, Message> getLoadedMessages(){
+        return messages;
+    }
+
+    protected ConcurrentHashMap<String, ActionMessage> getLoadedActionMessages(){
+        return actionMessages;
+    }
+
     public synchronized void addContact(final Contact contact, boolean threaded){
         if (threaded){
             createThreadedTask(new Runnable() {
@@ -384,7 +392,7 @@ public final class MessageManager {
 
             if (message != null && isPossibleSmsChat(message.getChat())) {
                 MmsMessage mmsMessage = new MmsMessage(null, message.getChat(), message.getSender(), message.getAttachments(), message.getText(),
-                        message.getModernDateSent(), null, false, false, true, true);
+                        message.getModernDateSent(), null, false, false, true, false,true);
 
                 removeMessageTask(message);
                 app.getMmsManager().sendMessage(mmsMessage);
@@ -411,7 +419,7 @@ public final class MessageManager {
 
             if (isPossibleSmsChat(groupChat)){
                 MmsMessage mmsMessage = new MmsMessage(null, groupChat, app.getCurrentSession().getSmsHandle(), new ArrayList<Attachment>(), jsonAction.getArgs()[2],
-                        Calendar.getInstance().getTime(), null, false, false, true, true);
+                        Calendar.getInstance().getTime(), null, false, false, true, false, true);
                 app.getMmsManager().sendMessage(mmsMessage);
                 return;
             }
@@ -617,6 +625,17 @@ public final class MessageManager {
     }
 
     private void setHasUnreadMessagesTask(Chat chat, boolean hasUnreadMessages){
+        if (!hasUnreadMessages) {
+            int count = 0;
+
+            for (Message message : app.getMessageDatabase().getUnreadMessages(chat)) {
+                updateMessageTask(message.getIdentifier(), message.setUnread(false));
+                count++;
+            }
+
+            app.getNotificationManager().subtractUnreadMessages(count);
+        }
+
         if (chat instanceof SmsChat){
             app.getMmsManager().setHasUnreadMessages((SmsChat) chat, hasUnreadMessages);
         }else {
@@ -692,8 +711,20 @@ public final class MessageManager {
         }else {
             if (chat.getIdentifier() != null) {
                 chats.remove(chat.getIdentifier());
-                app.clearNotifications(chat.getIdentifier());
+                app.getNotificationManager().clearNotifications(chat.getIdentifier());
                 app.getMessageDatabase().deleteChatByUuid(chat.getIdentifier());
+
+                for (ActionMessage message : new ArrayList<>(actionMessages.values())){
+                    if (message.getChat().equals(chat)){
+                        actionMessages.remove(message.getUuid().toString());
+                    }
+                }
+
+                for (Message message : new ArrayList<>(messages.values())){
+                    if (message.getChat().equals(chat)){
+                        messages.remove(message.getIdentifier());
+                    }
+                }
             }
         }
 
@@ -717,6 +748,8 @@ public final class MessageManager {
     }
 
     private void addMessageTask(Message message){
+        if (message.isUnread()) app.getNotificationManager().addUnreadMessages(1);
+
         if (message instanceof MmsMessage){
             app.getMmsManager().addMessage((MmsMessage) message);
         }else {

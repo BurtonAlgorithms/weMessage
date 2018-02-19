@@ -1,16 +1,9 @@
 package scott.wemessage.app;
 
 import android.app.Application;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.media.AudioAttributes;
-import android.media.RingtoneManager;
-import android.os.Build;
-import android.service.notification.StatusBarNotification;
 import android.support.text.emoji.EmojiCompat;
 import android.support.text.emoji.FontRequestEmojiCompatConfig;
 import android.support.v4.content.LocalBroadcastManager;
@@ -20,7 +13,6 @@ import com.crashlytics.android.Crashlytics;
 import com.evernote.android.job.JobManager;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -31,7 +23,7 @@ import scott.wemessage.app.jobs.JobsCreator;
 import scott.wemessage.app.jobs.SyncMessagesJob;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.messages.MessageManager;
-import scott.wemessage.app.messages.firebase.NotificationCallbacks;
+import scott.wemessage.app.messages.notifications.NotificationManager;
 import scott.wemessage.app.models.users.Account;
 import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.models.users.Session;
@@ -170,9 +162,9 @@ public final class weMessage extends Application implements Constants {
     private MmsDatabase mmsDatabase;
     private MmsManager mmsManager;
     private Session currentSession;
+    private NotificationManager notificationManager;
     private File attachmentFolder;
     private File chatIconsFolder;
-    private NotificationCallbacks notificationCallbacks;
 
     public AtomicBoolean isDefaultSmsApplication = new AtomicBoolean(false);
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
@@ -188,7 +180,6 @@ public final class weMessage extends Application implements Constants {
 
         updateDatabase();
         generateSharedPreferences();
-        initNotificationChannel();
 
         File attachmentFolder = new File(getFilesDir(), weMessage.ATTACHMENT_FOLDER_NAME);
         File chatIconsFolder = new File(getFilesDir(), weMessage.CHAT_ICONS_FOLDER_NAME);
@@ -224,6 +215,7 @@ public final class weMessage extends Application implements Constants {
         this.currentSession = new Session();
         this.messageDatabase = new MessageDatabase(this);
         this.messageManager = new MessageManager(this);
+        this.notificationManager = new NotificationManager(this);
 
         if (!StringUtils.isEmpty(MmsManager.getPhoneNumber())){
             Handle handle = getMessageDatabase().getHandleByHandleID(MmsManager.getPhoneNumber());
@@ -268,6 +260,10 @@ public final class weMessage extends Application implements Constants {
         return currentSession;
     }
 
+    public synchronized NotificationManager getNotificationManager(){
+        return notificationManager;
+    }
+
     public SharedPreferences getSharedPreferences(){
         return getSharedPreferences(weMessage.APP_IDENTIFIER, Context.MODE_PRIVATE);
     }
@@ -292,12 +288,6 @@ public final class weMessage extends Application implements Constants {
         return isEmojiInitialized.get();
     }
 
-    public synchronized boolean performNotification(String macGuid){
-        if (notificationCallbacks == null) return true;
-
-        return notificationCallbacks.onNotification(macGuid);
-    }
-
     public synchronized void signIn(Account account){
         SharedPreferences.Editor editor = getSharedPreferences().edit();
 
@@ -314,7 +304,6 @@ public final class weMessage extends Application implements Constants {
     }
 
     public synchronized void signOut(boolean fullSignOut){
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         SharedPreferences.Editor editor = getSharedPreferences().edit();
 
         if (fullSignOut){
@@ -368,50 +357,8 @@ public final class weMessage extends Application implements Constants {
         LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(weMessage.BROADCAST_SMS_MODE_DISABLED));
     }
 
-    public synchronized void setNotificationCallbacks(NotificationCallbacks notificationCallbacks){
-        this.notificationCallbacks = notificationCallbacks;
-    }
-
-    public synchronized void clearNotifications(String uuid){
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
-            HashMap<Integer, String> toCancel = new HashMap<>();
-
-            for (StatusBarNotification notification : notificationManager.getActiveNotifications()){
-                if (StringUtils.isEmpty(notification.getTag())) continue;
-                if (notification.getTag().equals(weMessage.NOTIFICATION_TAG + uuid) || notification.getTag().equals(weMessage.NOTIFICATION_TAG)){
-                    toCancel.put(notification.getId(), notification.getTag());
-                }
-            }
-
-            for (Integer i : toCancel.keySet()){
-                notificationManager.cancel(toCancel.get(i), i);
-            }
-        }else {
-            notificationManager.cancelAll();
-        }
-    }
-
     private void updateDatabase(){
         new MessageDatabase(this).getWritableDatabase().close();
-    }
-
-    private void initNotificationChannel(){
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && notificationManager.getNotificationChannel(weMessage.NOTIFICATION_CHANNEL_NAME) == null) {
-            NotificationChannel channel = new NotificationChannel(weMessage.NOTIFICATION_CHANNEL_NAME, getString(R.string.notification_channel_name), NotificationManager.IMPORTANCE_HIGH);
-            AudioAttributes audioAttributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT).build();
-
-            channel.enableLights(true);
-            channel.enableVibration(true);
-            channel.setLightColor(Color.BLUE);
-            channel.setVibrationPattern(new long[]{1000, 1000});
-            channel.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), audioAttributes);
-
-            notificationManager.createNotificationChannel(channel);
-        }
     }
 
     private void generateSharedPreferences(){

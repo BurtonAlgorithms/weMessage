@@ -20,8 +20,8 @@ public class MmsMessage extends Message {
 
     private boolean isMms;
 
-    public MmsMessage(String identifier, Chat chat, Handle sender, List<Attachment> attachments, String text, Date dateSent, Date dateDelivered, Boolean errored, Boolean isDelivered, Boolean isFromMe, Boolean isMms){
-        super(identifier, "", chat, sender, attachments, text, DateUtils.convertDateTo2001Time(dateSent), DateUtils.convertDateTo2001Time(dateDelivered), null, errored, true, isDelivered, false, true, isFromMe, MessageEffect.NONE, true);
+    public MmsMessage(String identifier, Chat chat, Handle sender, List<Attachment> attachments, String text, Date dateSent, Date dateDelivered, Boolean errored, Boolean isDelivered, Boolean isFromMe, Boolean isUnread, Boolean isMms){
+        super(identifier, "", chat, sender, attachments, text, DateUtils.convertDateTo2001Time(dateSent), DateUtils.convertDateTo2001Time(dateDelivered), null, errored, true, isDelivered, false, true, isFromMe, isUnread, MessageEffect.NONE, true);
         this.isMms = isMms;
     }
 

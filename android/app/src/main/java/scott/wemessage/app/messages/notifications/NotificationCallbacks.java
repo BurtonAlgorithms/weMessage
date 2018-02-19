@@ -1,4 +1,4 @@
-package scott.wemessage.app.messages.firebase;
+package scott.wemessage.app.messages.notifications;
 
 public interface NotificationCallbacks {
 

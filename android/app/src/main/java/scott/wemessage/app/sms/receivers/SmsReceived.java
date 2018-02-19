@@ -30,8 +30,8 @@ public class SmsReceived extends BroadcastReceiver {
                         wakeLock.acquire(5 * 1000);
                     }
 
-                    weMessage.get().getMessageManager().updateChat(message.getChat().getIdentifier(), message.getChat().setHasUnreadMessages(true), false);
-                    weMessage.get().getMmsManager().showMmsNotification(message);
+                    weMessage.get().getMessageManager().setHasUnreadMessages(message.getChat(), true, false);
+                    weMessage.get().getNotificationManager().showMmsNotification(message);
                 }
             }
         }catch (Exception ex){
