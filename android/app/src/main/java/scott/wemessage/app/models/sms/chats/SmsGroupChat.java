@@ -31,7 +31,7 @@ public class SmsGroupChat extends GroupChat implements SmsChat {
     }
 
     @Override
-    public String getUIDisplayName(boolean macUI) {
+    public String getUIDisplayName() {
         return getDisplayName();
     }
 

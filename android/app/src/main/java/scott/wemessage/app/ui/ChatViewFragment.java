@@ -1214,7 +1214,7 @@ public class ChatViewFragment extends MessagingFragment implements MessageCallba
             isChatSms = chat instanceof SmsChat;
 
             Glide.with(ChatViewFragment.this).load(IOUtils.getChatIconUri(chat, IOUtils.IconSize.LARGE)).into(chatViewPicture);
-            chatViewName.setText(chat.getUIDisplayName(false));
+            chatViewName.setText(chat.getUIDisplayName());
             chatViewContactsTextView.setText(getString(R.string.participants, chat.getParticipants().size()));
 
             if (StringUtils.isEmpty(editedChatPicture)) {

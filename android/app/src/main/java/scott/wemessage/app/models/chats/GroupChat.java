@@ -36,7 +36,7 @@ public class GroupChat extends Chat {
         return displayName;
     }
 
-    public String getUIDisplayName(boolean macUI){
+    public String getUIDisplayName(){
         String fullString;
 
         if (!StringUtils.isEmpty(getDisplayName())){
@@ -44,21 +44,12 @@ public class GroupChat extends Chat {
         } else {
             ArrayList<String> dummyParticipantList = new ArrayList<>();
 
-            if (!macUI) {
-                for (Handle h : participants) {
-                    dummyParticipantList.add(h.getDisplayName());
-                }
-                dummyParticipantList.remove(dummyParticipantList.size() - 1);
-
-                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + participants.get(participants.size() - 1).getDisplayName();
-            } else {
-                for (Handle h : participants) {
-                    dummyParticipantList.add(h.getHandleID());
-                }
-                dummyParticipantList.remove(dummyParticipantList.size() - 1);
-
-                fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + getParticipants().get(getParticipants().size() - 1).getHandleID();
+            for (Handle h : participants) {
+                dummyParticipantList.add(h.getDisplayName());
             }
+            dummyParticipantList.remove(dummyParticipantList.size() - 1);
+
+            fullString = StringUtils.join(dummyParticipantList, ", ", 2) + " & " + participants.get(participants.size() - 1).getDisplayName();
         }
         return fullString;
     }

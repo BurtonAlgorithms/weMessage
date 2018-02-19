@@ -154,6 +154,7 @@
     <string name="no_password">Please enter a password to sign in with!</string>
     <string name="no_phone">Please enter a phone number.</string>
     <string name="notification_attachments">%1$s Attachments</string>
+    <string name="notification_attachments_single">%1$s Attachment</string>
     <string name="notification_channel_name">New Messages</string>
     <string name="notification_error">Notification Error</string>
     <string name="notification_error_body">An error occurred while receiving a notification.</string>

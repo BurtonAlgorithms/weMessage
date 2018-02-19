@@ -19,6 +19,6 @@ public class FirebaseNotificationService extends FirebaseMessagingService {
             wakeLock.acquire(5 * 1000);
         }
 
-        weMessage.get().getNotificationManager().showRegularNotification(this, remoteMessage);
+        weMessage.get().getNotificationManager().showFirebaseNotification(this, remoteMessage);
     }
 }

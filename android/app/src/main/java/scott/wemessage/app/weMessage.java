@@ -217,16 +217,6 @@ public final class weMessage extends Application implements Constants {
         this.messageManager = new MessageManager(this);
         this.notificationManager = new NotificationManager(this);
 
-        if (!StringUtils.isEmpty(MmsManager.getPhoneNumber())){
-            Handle handle = getMessageDatabase().getHandleByHandleID(MmsManager.getPhoneNumber());
-
-            if (handle == null){
-                handle = new Handle(UUID.randomUUID(), MmsManager.getPhoneNumber(), Handle.HandleType.ME, false, false);
-                getMessageDatabase().addHandle(handle);
-            }
-            getCurrentSession().setSmsHandle(handle);
-        }
-
         if (isSignedIn(true)){
             if (!StringUtils.isEmpty(getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, ""))){
                 getCurrentSession().setAccount(getMessageDatabase().getAccountByEmail(getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, "")));
@@ -323,7 +313,7 @@ public final class weMessage extends Application implements Constants {
     public synchronized void enableSmsMode(boolean performResync){
         isDefaultSmsApplication.set(true);
 
-        if (getCurrentSession().getSmsHandle() == null){
+        if (getCurrentSession().getSmsHandle() == null && !StringUtils.isEmpty(MmsManager.getPhoneNumber())){
             Handle handle = getMessageDatabase().getHandleByHandleID(MmsManager.getPhoneNumber());
 
             if (handle == null){

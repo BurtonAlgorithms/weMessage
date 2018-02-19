@@ -162,18 +162,20 @@ public class SetNumberActivity extends BaseActivity {
         if (isEditNumberFromSettings){
             ((TextView) findViewById(R.id.setNumberText)).setText(getString(R.string.phone_number_not_detected_settings));
             if (StringUtils.isEmpty(setNumberEditText.getText().toString())) setNumberEditText.setText(weMessage.get().getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_MANUAL_PHONE_NUMBER, ""));
-            cancelButton.setVisibility(View.VISIBLE);
-
-            cancelButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    goToSettings();
-                }
-            });
         }else {
             ((TextView) findViewById(R.id.setNumberText)).setText(getString(R.string.phone_number_not_detected));
-            cancelButton.setVisibility(View.GONE);
         }
+
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isEditNumberFromSettings) {
+                    goToSettings();
+                }else {
+                    finish();
+                }
+            }
+        });
     }
 
     @Override

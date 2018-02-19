@@ -89,12 +89,12 @@ public final class MessageManager {
 
     public synchronized void addContact(final Contact contact, boolean threaded){
         if (threaded){
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     addContactTask(contact, true);
                 }
-            }).start();
+            });
         }else {
             addContactTask(contact, true);
         }
@@ -102,12 +102,12 @@ public final class MessageManager {
 
     public synchronized void updateContact(final String uuid, final Contact newData, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     updateContactTask(uuid, newData, true);
                 }
-            }).start();
+            });
         }else {
             updateContactTask(uuid, newData, true);
         }
@@ -115,12 +115,12 @@ public final class MessageManager {
 
     public synchronized void deleteContact(final String uuid, boolean threaded){
         if (threaded){
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     deleteContactTask(uuid, true);
                 }
-            }).start();
+            });
         }else {
             deleteContactTask(uuid, true);
         }
@@ -128,12 +128,12 @@ public final class MessageManager {
 
     public synchronized void addContactNoCallback(final Contact contact, boolean threaded){
         if (threaded){
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     addContactTask(contact, false);
                 }
-            }).start();
+            });
         }else {
             addContactTask(contact, false);
         }
@@ -141,12 +141,12 @@ public final class MessageManager {
 
     public synchronized void updateContactNoCallback(final String uuid, final Contact newData, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     updateContactTask(uuid, newData, false);
                 }
-            }).start();
+            });
         }else {
             updateContactTask(uuid, newData, false);
         }
@@ -154,12 +154,12 @@ public final class MessageManager {
 
     public synchronized void deleteContactNoCallback(final String uuid, boolean threaded){
         if (threaded){
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     deleteContactTask(uuid, false);
                 }
-            }).start();
+            });
         }else {
             deleteContactTask(uuid, false);
         }
@@ -167,51 +167,51 @@ public final class MessageManager {
 
     public synchronized void addHandle(final Handle handle, boolean threaded){
         if (threaded){
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     addHandleTask(handle, true);
                 }
-            }).start();
+            });
         }else {
             addHandleTask(handle, true);
         }
     }
 
-    public synchronized void updateHandle(final String uuid, final Handle newData, final boolean threaded){
-        if (threaded){
-            createThreadedTask(new Runnable() {
-                @Override
-                public void run() {
-                    updateHandleTask(uuid, newData, true);
-                }
-            }).start();
-        }else {
-            updateHandleTask(uuid, newData, true);
-        }
-    }
-
     public synchronized void addHandleNoCallback(final Handle handle, boolean threaded){
         if (threaded){
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     addHandleTask(handle, false);
                 }
-            }).start();
+            });
         }else {
             addHandleTask(handle, false);
         }
     }
 
+    public synchronized void updateHandle(final String uuid, final Handle newData, final boolean threaded){
+        if (threaded){
+            startThreadedTask(new Runnable() {
+                @Override
+                public void run() {
+                    updateHandleTask(uuid, newData, true);
+                }
+            });
+        }else {
+            updateHandleTask(uuid, newData, true);
+        }
+    }
+
     public synchronized void deleteHandle(final String uuid, boolean threaded){
         if (threaded){
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     deleteHandleTask(uuid);
                 }
-            }).start();
+            });
         }else {
             deleteHandleTask(uuid);
         }
@@ -219,12 +219,12 @@ public final class MessageManager {
 
     public synchronized void addChat(final Chat chat, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     addChatTask(chat);
                 }
-            }).start();
+            });
         }else {
             addChatTask(chat);
         }
@@ -232,12 +232,12 @@ public final class MessageManager {
 
     public synchronized void updateChat(final String uuid, final Chat newData, boolean threaded) {
         if (threaded){
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     updateChatTask(uuid, newData);
                 }
-            }).start();
+            });
         }else {
             updateChatTask(uuid, newData);
         }
@@ -245,12 +245,12 @@ public final class MessageManager {
 
     public synchronized void setHasUnreadMessages(final Chat chat, final boolean hasUnreadMessages, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     setHasUnreadMessagesTask(chat, hasUnreadMessages);
                 }
-            }).start();
+            });
         }else {
             setHasUnreadMessagesTask(chat, hasUnreadMessages);
         }
@@ -258,12 +258,12 @@ public final class MessageManager {
 
     public synchronized void renameGroupChat(final GroupChat chat, final String newName, final Date executionTime, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     renameGroupChatTask(chat, newName, executionTime);
                 }
-            }).start();
+            });
         }else {
             renameGroupChatTask(chat, newName, executionTime);
         }
@@ -271,12 +271,12 @@ public final class MessageManager {
 
     public synchronized void addParticipantToGroup(final GroupChat chat, final Handle handle, final Date executionTime, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     addParticipantToGroupTask(chat, handle, executionTime);
                 }
-            }).start();
+            });
         }else {
             addParticipantToGroupTask(chat, handle, executionTime);
         }
@@ -284,12 +284,12 @@ public final class MessageManager {
 
     public synchronized void removeParticipantFromGroup(final GroupChat chat, final Handle handle, final Date executionTime, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     removeParticipantFromGroupTask(chat, handle, executionTime);
                 }
-            }).start();
+            });
         }else {
             removeParticipantFromGroupTask(chat, handle, executionTime);
         }
@@ -297,12 +297,12 @@ public final class MessageManager {
 
     public synchronized void leaveGroup(final GroupChat chat, final Date executionTime, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     leaveGroupTask(chat, executionTime);
                 }
-            }).start();
+            });
         }else {
             leaveGroupTask(chat, executionTime);
         }
@@ -310,12 +310,12 @@ public final class MessageManager {
 
     public synchronized void deleteChat(final Chat chat, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     deleteChatTask(chat);
                 }
-            }).start();
+            });
         }else {
             deleteChatTask(chat);
         }
@@ -323,12 +323,12 @@ public final class MessageManager {
 
     public synchronized void refreshChats(boolean threaded, final boolean callbackOnly){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     refreshChatsTask(callbackOnly);
                 }
-            }).start();
+            });
         }else {
             refreshChatsTask(callbackOnly);
         }
@@ -336,12 +336,12 @@ public final class MessageManager {
 
     public synchronized void addMessage(final Message message, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     addMessageTask(message);
                 }
-            }).start();
+            });
         }else {
             addMessageTask(message);
         }
@@ -349,12 +349,12 @@ public final class MessageManager {
 
     public synchronized void updateMessage(final String uuid, final Message newData, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     updateMessageTask(uuid, newData);
                 }
-            }).start();
+            });
         }else {
             updateMessageTask(uuid, newData);
         }
@@ -362,12 +362,12 @@ public final class MessageManager {
 
     public synchronized void removeMessage(final Message message, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     removeMessageTask(message);
                 }
-            }).start();
+            });
         }else {
             removeMessageTask(message);
         }
@@ -375,12 +375,12 @@ public final class MessageManager {
 
     public void queueMessages(final Chat chat, final long startIndex, final long requestAmount, boolean threaded){
         if (threaded) {
-            createThreadedTask(new Runnable() {
+            startThreadedTask(new Runnable() {
                 @Override
                 public void run() {
                     queueMessagesTask(chat, startIndex, requestAmount);
                 }
-            }).start();
+            });
         }else {
             queueMessagesTask(chat, startIndex, requestAmount);
         }
@@ -848,7 +848,7 @@ public final class MessageManager {
     }
 
     private void init(){
-        createThreadedTask(new Runnable() {
+        startThreadedTask(new Runnable() {
             @Override
             public void run() {
                 for (Handle h : app.getMessageDatabase().getHandles()){
@@ -859,7 +859,7 @@ public final class MessageManager {
                     callbacks.onContactListRefresh(new ArrayList<>(getContacts().values()));
                 }
             }
-        }).start();
+        });
     }
 
     private boolean isUuid(String identifier){
@@ -885,7 +885,7 @@ public final class MessageManager {
         }
     }
 
-    private Thread createThreadedTask(Runnable runnable){
-        return new Thread(runnable);
+    private void startThreadedTask(Runnable runnable){
+        new Thread(runnable).start();
     }
 }

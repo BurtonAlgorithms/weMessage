@@ -1216,7 +1216,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
                     if (c != null){
                         for (Handle handle : c.getHandles()){
-                            weMessage.get().getMessageManager().updateHandle(handle.getUuid().toString(), handle.setDoNotDisturb(b), false);
+                            weMessage.get().getMessageManager().updateHandle(handle.getUuid().toString(), handle.setDoNotDisturb(b), true);
                         }
                         weMessage.get().getMessageManager().updateContact(c.getUuid().toString(), c, true);
                     }else {
@@ -1233,7 +1233,7 @@ public class ContactViewFragment extends MessagingFragment implements MessageCal
 
                     if (c != null){
                         for (Handle handle : c.getHandles()){
-                            weMessage.get().getMessageManager().updateHandle(handle.getUuid().toString(), handle.setBlocked(true), false);
+                            weMessage.get().getMessageManager().updateHandle(handle.getUuid().toString(), handle.setBlocked(true), true);
                         }
                         weMessage.get().getMessageManager().updateContact(c.getUuid().toString(), c, true);
                     }else {

@@ -648,7 +648,7 @@ public class ContactListActivity extends BaseActivity implements MessageCallback
                         weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(!isInBlockedMode.get()), true);
                     }else if (contact instanceof Contact){
                         for (Handle h : ((Contact) contact).getHandles()){
-                            weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(!isInBlockedMode.get()), false);
+                            weMessage.get().getMessageManager().updateHandle(h.getUuid().toString(), h.setBlocked(!isInBlockedMode.get()), true);
                         }
                         weMessage.get().getMessageManager().updateContact(contact.getUuid().toString(), (Contact) contact, true);
                     }

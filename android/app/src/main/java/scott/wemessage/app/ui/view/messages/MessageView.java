@@ -13,6 +13,7 @@ import scott.wemessage.commons.utils.StringUtils;
 public class MessageView implements IMessage {
 
     private Message message;
+    private String overrideText;
 
     public MessageView(Message message){
         this.message = message;
@@ -29,6 +30,8 @@ public class MessageView implements IMessage {
 
     @Override
     public String getText() {
+        if (!StringUtils.isEmpty(overrideText)) return overrideText;
+
         try {
             return StringUtils.trimORC(message.getText());
         }catch(Exception ex){
@@ -55,6 +58,10 @@ public class MessageView implements IMessage {
         }catch(Exception ex){
             return Calendar.getInstance().getTime();
         }
+    }
+
+    public void setText(String text){
+        this.overrideText = text;
     }
 
     public boolean hasErrored(){

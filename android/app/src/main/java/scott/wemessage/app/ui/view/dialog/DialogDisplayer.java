@@ -13,6 +13,7 @@ import android.support.v7.app.AlertDialog;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
+import scott.wemessage.app.sms.MmsManager;
 import scott.wemessage.app.weMessage;
 import scott.wemessage.commons.utils.StringUtils;
 
@@ -47,7 +48,7 @@ public class DialogDisplayer {
         Bundle bundle = new Bundle();
         AlertDialogFragmentDouble dialog = new AlertDialogFragmentDouble();
 
-        bundle.putString(weMessage.BUNDLE_ALERT_TITLE, context.getString(R.string.offline_mode));
+        bundle.putString(weMessage.BUNDLE_ALERT_TITLE, MmsManager.isDefaultSmsApp() ? context.getString(R.string.sms_mode) : context.getString(R.string.offline_mode));
         bundle.putString(weMessage.BUNDLE_ALERT_MESSAGE, message);
         bundle.putString(weMessage.BUNDLE_ALERT_POSITIVE_BUTTON, context.getString(R.string.reconnect_button));
         dialog.setArguments(bundle);

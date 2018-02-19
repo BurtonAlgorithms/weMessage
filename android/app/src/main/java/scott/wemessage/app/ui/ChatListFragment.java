@@ -31,6 +31,7 @@ import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
 import com.stfalcon.chatkit.utils.DateFormatter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -584,13 +585,11 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             protected void onProgressUpdate(ChatDialogView... chatDialogViewBatch) {
                 if (!hasConversations) toggleNoConversations(false);
 
-                for (ChatDialogView dialogView : chatDialogViewBatch){
-                    dialogsListAdapter.addItem(dialogView);
-                }
+                dialogsListAdapter.addItems(Arrays.asList(chatDialogViewBatch));
             }
 
             @Override
-            protected void onPostExecute(Void aVoid) {
+            protected void onPostExecute(Void result) {
                 dialogsListAdapter.sortByLastMessageDate();
                 dialogsList.scrollToPosition(0);
                 isParseChatsTaskRunning.set(false);

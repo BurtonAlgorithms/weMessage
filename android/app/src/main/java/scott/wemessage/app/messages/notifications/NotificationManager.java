@@ -103,7 +103,7 @@ public final class NotificationManager {
         }
     }
 
-    public void showRegularNotification(Context context, RemoteMessage remoteMessage){
+    public void showFirebaseNotification(Context context, RemoteMessage remoteMessage){
         android.app.NotificationManager notificationManager = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         MessageDatabase database = app.getMessageDatabase();
 
@@ -145,7 +145,7 @@ public final class NotificationManager {
 
                     if (!StringUtils.isEmpty(jsonNotification.getChatId())) {
                         if (chat != null && chat instanceof GroupChat) {
-                            displayName = ((GroupChat) chat).getUIDisplayName(false);
+                            displayName = ((GroupChat) chat).getUIDisplayName();
                         }
                     } else if (!StringUtils.isEmpty(jsonNotification.getChatName())) {
                         displayName = jsonNotification.getChatName();
@@ -261,7 +261,7 @@ public final class NotificationManager {
             Bitmap largeIcon;
 
             if (chat instanceof GroupChat) {
-                displayName = ((GroupChat) chat).getUIDisplayName(false);
+                displayName = ((GroupChat) chat).getUIDisplayName();
             }
 
             if (!StringUtils.isEmpty(displayName)) messageText = handle.getDisplayName() + ": ";

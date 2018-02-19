@@ -133,7 +133,7 @@ public class ChatTitleView extends LinearLayout {
             titleTextView.setTextColor(Color.WHITE);
             titleTextView.setSingleLine();
             titleTextView.setEllipsize(TextUtils.TruncateAt.END);
-            titleTextView.setText(groupChat.getUIDisplayName(false));
+            titleTextView.setText(groupChat.getUIDisplayName());
             titleTextView.setLayoutParams(titleLayoutParams);
 
             String participantsText;
