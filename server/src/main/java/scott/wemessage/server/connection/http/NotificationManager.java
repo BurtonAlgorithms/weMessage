@@ -2,6 +2,7 @@ package scott.wemessage.server.connection.http;
 
 import com.google.gson.Gson;
 
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import okhttp3.MediaType;
@@ -21,12 +22,12 @@ import scott.wemessage.server.weMessage;
 
 public class NotificationManager {
 
-    private final long MINIMUM_INTERVAL = 2000;
+    private final long MINIMUM_INTERVAL = 1500;
 
     private MessageServer messageServer;
     private AtomicBoolean unsupportedNotificationVersion = new AtomicBoolean(false);
     private AtomicBoolean hasErrored = new AtomicBoolean(false);
-    private Long lastExecution;
+    private HashMap<String, Long> lastExecutionMap = new HashMap<>();
 
     public NotificationManager(MessageServer messageServer){
         this.messageServer = messageServer;
@@ -35,15 +36,13 @@ public class NotificationManager {
     public void sendNotification(final String registrationToken, final Message message){
         boolean run = false;
 
-        Long previousTime = lastExecution;
+        Long previousClickTimestamp = lastExecutionMap.get(registrationToken);
         long currentTimestamp = System.currentTimeMillis();
 
-        lastExecution = currentTimestamp;
+        lastExecutionMap.put(registrationToken, currentTimestamp);
 
-        if (previousTime == null || (currentTimestamp - previousTime > MINIMUM_INTERVAL)){
+        if(previousClickTimestamp == null || (currentTimestamp - previousClickTimestamp > MINIMUM_INTERVAL)) {
             run = true;
-        }else {
-            run = false;
         }
 
         if (!run) return;
