@@ -365,6 +365,8 @@ public class LaunchFragment extends Fragment {
 
             if (MmsManager.isPhone()) {
                 enableSmsModeButton.setVisibility(View.VISIBLE);
+            }else {
+                enableSmsModeButton.setVisibility(View.GONE);
             }
         }
 
