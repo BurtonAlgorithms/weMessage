@@ -7,7 +7,7 @@ import com.crashlytics.android.Crashlytics;
 public final class AppLogger {
 
     private static final String DEFAULT_TAG = "weMessage";
-    static final boolean USE_CRASHLYTICS = false; //todo fix
+    static final boolean USE_CRASHLYTICS = true;
 
     private AppLogger() { }
 
