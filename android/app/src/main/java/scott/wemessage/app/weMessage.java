@@ -222,7 +222,7 @@ public final class weMessage extends Application implements Constants {
         }
 
         getMessageManager().initialize();
-        if (MmsManager.isDefaultSmsApp()) enableSmsMode(false);
+        if (MmsManager.isDefaultSmsApp()) enableSmsMode(getMessageDatabase().getSmsChats().isEmpty());
         else disableSmsMode();
 
         IOUtils.setDeviceName();

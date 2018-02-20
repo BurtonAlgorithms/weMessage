@@ -41,7 +41,8 @@ import scott.wemessage.commons.utils.StringUtils;
 
 public class SetDefaultSmsActivity extends BaseActivity {
 
-    private boolean isSmsChooserOpen = false;
+    private int SMS_CHOSEN_ACTIVITY_RESULT = 2222;
+
     private boolean isSettingsIntentOpen = false;
     private boolean isPermissionOnlyMode = false;
     private boolean isLaunchedFromSettings = false;
@@ -138,19 +139,6 @@ public class SetDefaultSmsActivity extends BaseActivity {
                     setDefaultSmsApp();
                 }
             }
-        }else if (isSmsChooserOpen){
-            isSmsChooserOpen = false;
-
-            if (MmsManager.isDefaultSmsApp()){
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        returnToLastScreen();
-                    }
-                }, 250L);
-            }else {
-                DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), getString(R.string.set_default_sms_not_chosen)).show(getSupportFragmentManager(), "SmsAppNotChosenAlert");
-            }
         }
     }
 
@@ -190,6 +178,22 @@ public class SetDefaultSmsActivity extends BaseActivity {
                 break;
             default:
                 break;
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == SMS_CHOSEN_ACTIVITY_RESULT){
+            if (MmsManager.isDefaultSmsApp()){
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        returnToLastScreen();
+                    }
+                }, 250L);
+            }else {
+                DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), getString(R.string.set_default_sms_not_chosen)).show(getSupportFragmentManager(), "SmsAppNotChosenAlert");
+            }
         }
     }
 
@@ -240,11 +244,9 @@ public class SetDefaultSmsActivity extends BaseActivity {
             setSettings();
         } else {
             if (!isPermissionOnlyMode) {
-                isSmsChooserOpen = true;
-
                 Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
                 intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, getPackageName());
-                startActivity(intent);
+                startActivityForResult(intent, SMS_CHOSEN_ACTIVITY_RESULT);
             }
         }
     }

@@ -42,6 +42,14 @@
 ##--------------------------------------------------------
 
 
+##-----------------------  SMSKit  -----------------------
+
+-dontwarn com.android.mms.**
+-dontwarn android.net.**
+
+##--------------------------------------------------------
+
+
 ##------------------------------  GSON  ------------------------------
 
 # Gson uses generic type information stored in a class file when working with fields. Proguard
@@ -86,8 +94,18 @@
   public *;
 }
 
+##--------------------------------------------------------------------
+
+
+##------------------------------  OkHttp  -----------------------------
+
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn javax.annotation.**
+-keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
 
 ##--------------------------------------------------------------------
+
 
 ##------------------------  Shape Image View  ------------------------
 
