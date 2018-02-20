@@ -17,6 +17,11 @@ public class SmsDelivered extends DeliveredReceiver {
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
 
+        if (weMessage.get().getCurrentSession().getSmsHandle() == null){
+            LocalBroadcastManager.getInstance(weMessage.get()).sendBroadcast(new Intent(weMessage.BROADCAST_MESSAGE_UPDATE_ERROR));
+            return;
+        }
+
         try {
             String taskIdentifier = intent.getStringExtra("task_identifier");
             Uri messageUri = Uri.parse(intent.getStringExtra("message_uri"));

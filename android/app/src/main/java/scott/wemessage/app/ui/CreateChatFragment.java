@@ -738,6 +738,14 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 weMessage.get().getMmsManager().sendMessage(mmsMessage);
                 return true;
             }else {
+                if (!isConnectionServiceRunning()) {
+                    showOfflineActionDialog(getString(R.string.offline_mode_message_send, MmsManager.isDefaultSmsApp() ? getString(R.string.sms_mode) : getString(R.string.offline_mode)));
+                    return false;
+                }else if (isStillConnecting()){
+                    showErroredSnackbar(getString(R.string.still_connecting_send_message), 5);
+                    return false;
+                }
+
                 Message message = new Message(
                         UUID.randomUUID().toString(),
                         null,

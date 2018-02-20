@@ -20,6 +20,11 @@ public class SmsReceived extends BroadcastReceiver {
             if (intent.getAction().equals(Telephony.Sms.Intents.SMS_DELIVER_ACTION)) {
                 Bundle bundle = intent.getExtras();
 
+                if (weMessage.get().getCurrentSession().getSmsHandle() == null){
+                    LocalBroadcastManager.getInstance(weMessage.get()).sendBroadcast(new Intent(weMessage.BROADCAST_NEW_MESSAGE_ERROR));
+                    return;
+                }
+
                 if (bundle != null) {
                     Object[] smsExtra = (Object[]) bundle.get("pdus");
                     MmsMessage message = weMessage.get().getMmsManager().addSmsMessage(smsExtra);

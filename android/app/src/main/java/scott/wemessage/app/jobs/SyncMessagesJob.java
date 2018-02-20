@@ -19,10 +19,12 @@ public class SyncMessagesJob extends Job {
     @NonNull
     @Override
     protected Result onRunJob(@NonNull Params params) {
-        weMessage.get().getMmsDatabase().executeChatSync();
+        if (weMessage.get().getCurrentSession().getSmsHandle() != null) {
+            weMessage.get().getMmsDatabase().executeChatSync();
 
-        for (SmsChat chat : weMessage.get().getMmsManager().getChats().values()) {
-            weMessage.get().getMmsDatabase().executeMessageSync(((Chat) chat).getIdentifier());
+            for (SmsChat chat : weMessage.get().getMmsManager().getChats().values()) {
+                weMessage.get().getMmsDatabase().executeMessageSync(((Chat) chat).getIdentifier());
+            }
         }
 
         isSyncRunning.set(false);

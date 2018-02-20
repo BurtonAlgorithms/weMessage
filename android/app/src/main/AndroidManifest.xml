@@ -68,8 +68,8 @@
         <activity android:name=".app.ui.activities.ContactSelectActivity" />
         <activity android:name=".app.ui.activities.ContactViewActivity" />
         <activity android:name=".app.ui.activities.ContactListActivity" />
-        <activity android:name=".app.ui.activities.MessageImageActivity" />
-        <activity android:name=".app.ui.activities.MessageVideoActivity" android:theme="@style/AppTheme.VideoPlayer" android:configChanges="orientation|keyboardHidden|screenLayout|screenSize"> </activity>
+        <activity android:name=".app.ui.activities.mini.MessageImageActivity" />
+        <activity android:name=".app.ui.activities.mini.MessageVideoActivity" android:theme="@style/AppTheme.VideoPlayer" android:configChanges="orientation|keyboardHidden|screenLayout|screenSize"> </activity>
         <activity android:name=".app.ui.activities.SettingsActivity" />
         <activity android:name=".app.ui.activities.AboutActivity" />
         <activity android:name=".app.ui.activities.mini.SetDefaultSmsActivity" android:configChanges="orientation|keyboardHidden|screenLayout|screenSize"/>

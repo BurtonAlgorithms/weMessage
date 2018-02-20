@@ -745,6 +745,7 @@ public final class ConnectionHandler extends Thread {
                         heartbeatThread.start();
                     }
 
+                    weMessage.get().getNotificationManager().refreshNotificationCount(true);
                 } else if (incoming.startsWith(weMessage.JSON_CONNECTION_TERMINATED)) {
                     ServerMessage serverMessage = getIncomingMessage(weMessage.JSON_CONNECTION_TERMINATED, incoming);
                     DisconnectReason disconnectReason = DisconnectReason.fromCode(((Integer) serverMessage.getOutgoing(Integer.class)));

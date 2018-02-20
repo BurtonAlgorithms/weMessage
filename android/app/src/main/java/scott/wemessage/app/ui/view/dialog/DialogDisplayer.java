@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
+import android.view.KeyEvent;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
@@ -185,6 +186,7 @@ public class DialogDisplayer {
 
         private Runnable runnable;
         private boolean isCancelableOnTouchOutside = true;
+        private boolean backButtonDisabled = false;
         private boolean linkify = false;
 
         @NonNull
@@ -225,6 +227,16 @@ public class DialogDisplayer {
 
             Dialog dialog = builder.create();
             dialog.setCanceledOnTouchOutside(isCancelableOnTouchOutside);
+
+            if (backButtonDisabled){
+                dialog.setOnKeyListener(new DialogInterface.OnKeyListener() {
+                    @Override
+                    public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+                        if(keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) return false;
+                        return true;
+                    }
+                });
+            }
 
             return dialog;
         }
@@ -269,6 +281,10 @@ public class DialogDisplayer {
 
         public void setCancelableOnTouchedOutside(boolean cancelableOnTouchedOutside){
             isCancelableOnTouchOutside = cancelableOnTouchedOutside;
+        }
+
+        public void disableBackPress(boolean disabled){
+            backButtonDisabled = disabled;
         }
     }
 

@@ -89,6 +89,7 @@ public class ContactSelectActivity extends BaseActivity implements MessageCallba
     private boolean isBoundToConnectionService = false;
     private boolean isSwitchAccountsMode = false;
     private boolean isSwitchAccountFragmentShown = false;
+    private boolean isSavingInstanceState = false;
 
     private String callbackUuid;
     private String chatUuid;
@@ -364,6 +365,8 @@ public class ContactSelectActivity extends BaseActivity implements MessageCallba
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
+        isSavingInstanceState = true;
+
         outState.putString(weMessage.BUNDLE_CONVERSATION_CHAT, chatUuid);
         outState.putStringArray(weMessage.BUNDLE_HANDLE_UUID, handleChatUuidMap);
         outState.putBoolean(weMessage.BUNDLE_SWITCH_ACCOUNTS_MODE, isSwitchAccountsMode);
@@ -497,10 +500,12 @@ public class ContactSelectActivity extends BaseActivity implements MessageCallba
             public void run() {
                 goToPreviousView();
             }
-        }, 260L);
+        }, 275L);
     }
 
     private void performAction(String arg){
+        if (isSavingInstanceState) return;
+
         if (isSwitchAccountsMode){
             toggleSwitchAccountsFragment(arg, !isSwitchAccountFragmentShown, true);
         }else if (!StringUtils.isEmpty(chatUuid)){
@@ -557,6 +562,8 @@ public class ContactSelectActivity extends BaseActivity implements MessageCallba
                     switchAccountsFragmentContainer.animate().alpha(1.0f).translationY(0).setDuration(250).setListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationStart(Animator animation) {
+                            if (isSavingInstanceState) return;
+
                             super.onAnimationStart(animation);
 
                             handleSwitchAccountsFragmentOpen(email);

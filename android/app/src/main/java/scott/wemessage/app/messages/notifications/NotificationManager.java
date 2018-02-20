@@ -1,5 +1,6 @@
 package scott.wemessage.app.messages.notifications;
 
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.PendingIntent;
@@ -18,15 +19,17 @@ import com.google.firebase.messaging.RemoteMessage;
 
 import java.util.Date;
 import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
 
 import me.leolin.shortcutbadger.ShortcutBadger;
 
 import scott.wemessage.R;
 import scott.wemessage.app.AppLogger;
+import scott.wemessage.app.connection.ConnectionService;
 import scott.wemessage.app.messages.MessageDatabase;
 import scott.wemessage.app.models.chats.Chat;
 import scott.wemessage.app.models.chats.GroupChat;
+import scott.wemessage.app.models.sms.chats.SmsChat;
 import scott.wemessage.app.models.sms.messages.MmsMessage;
 import scott.wemessage.app.models.users.Contact;
 import scott.wemessage.app.models.users.Handle;
@@ -45,7 +48,7 @@ public final class NotificationManager {
     
     private weMessage app;
     private NotificationCallbacks notificationCallbacks;
-    private AtomicInteger unreadMessages = new AtomicInteger(0);
+    private ConcurrentHashMap<String, Integer> unreadMessages = new ConcurrentHashMap<>();
     
     public NotificationManager(weMessage app){
         this.app = app;
@@ -57,24 +60,47 @@ public final class NotificationManager {
         this.notificationCallbacks = notificationCallbacks;
     }
 
-    public void addUnreadMessages(int amount){
-        unreadMessages.set(unreadMessages.intValue() + amount);
+    public void addUnreadMessages(String chatId, int amount){
+        int unread = 0;
+
+        if (unreadMessages.containsKey(chatId)){
+            unread = unreadMessages.get(chatId);
+        }
+
+        unreadMessages.put(chatId, unread + amount);
 
         try {
-            ShortcutBadger.applyCount(app, unreadMessages.get());
+            ShortcutBadger.applyCount(app, getTotalUnread());
         }catch (Exception ex){
             AppLogger.error("An error occurred while trying to create a badge", ex);
         }
     }
 
-    public void subtractUnreadMessages(int amount){
-        unreadMessages.set(unreadMessages.intValue() - amount);
+    public void subtractUnreadMessages(String chatId){
+        unreadMessages.remove(chatId);
 
         try {
-            ShortcutBadger.applyCount(app, unreadMessages.get());
+            ShortcutBadger.applyCount(app, getTotalUnread());
         }catch (Exception ex){
             AppLogger.error("An error occurred while trying to create a badge", ex);
         }
+    }
+
+    public void refreshNotificationCount(final boolean firebaseOnly){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (Chat c : app.getMessageManager().getChats()) {
+                    if (firebaseOnly) {
+                        if (!(c instanceof SmsChat)){
+                            unreadMessages.put(c.getIdentifier(), app.getMessageDatabase().getUnreadMessagesCount(c));
+                        }
+                    }else {
+                        unreadMessages.put(c.getIdentifier(), app.getMessageDatabase().getUnreadMessagesCount(c));
+                    }
+                }
+            }
+        }).start();
     }
 
     public void cancelAll(){
@@ -234,6 +260,8 @@ public final class NotificationManager {
                             .build();
 
                     notificationManager.notify(tag, id, notification);
+
+                    if (!isServiceRunning(ConnectionService.class)) addUnreadMessages(jsonNotification.getChatId(), 1);
                 }
             }else {
                 performErroredNotification(context, remoteMessage);
@@ -406,15 +434,25 @@ public final class NotificationManager {
 
             notificationManager.createNotificationChannel(channel);
         }
+    }
 
-        unreadMessages.set(app.getMessageDatabase().getUnreadCount());
+    private int getTotalUnread(){
+        int value = 0;
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            try {
-                ShortcutBadger.applyCount(app, unreadMessages.get());
-            }catch (Exception ex){
-                AppLogger.error("An error occurred while trying to create a badge", ex);
+        for (Integer i : unreadMessages.values()){
+            value += i;
+        }
+
+        return value;
+    }
+
+    private boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) app.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
             }
         }
+        return false;
     }
 }

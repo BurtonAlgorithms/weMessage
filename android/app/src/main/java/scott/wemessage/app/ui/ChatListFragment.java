@@ -268,7 +268,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         }
 
         showUpdateDialog();
-        parseChats();
+        loadChats();
 
         return view;
     }
@@ -553,7 +553,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     }
 
     @SuppressWarnings("unchecked")
-    private void parseChats(){
+    private void loadChats(){
         if (isParseChatsTaskRunning.get()) return;
         isParseChatsTaskRunning.set(true);
 

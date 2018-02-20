@@ -298,7 +298,7 @@ public final class MmsDatabase {
                             if (message != null) {
                                 app.getMmsManager().addMessage(message);
 
-                                if (message.isUnread()) app.getNotificationManager().addUnreadMessages(1);
+                                if (message.isUnread()) app.getNotificationManager().addUnreadMessages(message.getChat().getIdentifier(), 1);
                             }
                         }
 
@@ -312,7 +312,7 @@ public final class MmsDatabase {
                             if (message != null) {
                                 app.getMmsManager().addMessage(message);
 
-                                if (message.isUnread()) app.getNotificationManager().addUnreadMessages(1);
+                                if (message.isUnread()) app.getNotificationManager().addUnreadMessages(message.getChat().getIdentifier(), 1);
                             }
                         }
 

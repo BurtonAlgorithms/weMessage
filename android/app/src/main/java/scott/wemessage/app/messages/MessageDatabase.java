@@ -1028,16 +1028,22 @@ public final class MessageDatabase extends SQLiteOpenHelper {
         return message;
     }
 
-    public int getUnreadCount(){
+    public int getUnreadMessagesCount(Chat chat){
         int i = 0;
-        Cursor cursor = getWritableDatabase().rawQuery("SELECT " + MessageTable._ID + " FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable.IS_UNREAD + " = 1", null);
 
-        i += cursor.getCount();
-        cursor.close();
+        if (chat instanceof SmsChat){
+            String selectStatement = "SELECT * FROM " + MmsMessageTable.TABLE_NAME + " WHERE " + MmsMessageTable.IS_UNREAD + " = 1 AND " + MmsMessageTable.THREAD_ID + " = ?";
+            Cursor cursor = getWritableDatabase().rawQuery(selectStatement, new String[] { chat.getIdentifier() });
 
-        Cursor cursorMms = getWritableDatabase().rawQuery("SELECT " + MmsMessageTable._ID + " FROM " + MmsMessageTable.TABLE_NAME + " WHERE " + MmsMessageTable.IS_UNREAD + " = 1", null);
-        i+= cursorMms.getCount();
-        cursorMms.close();
+            i+= cursor.getCount();
+            cursor.close();
+        }else {
+            String selectStatement = "SELECT * FROM " + MessageTable.TABLE_NAME + " WHERE " + MessageTable.IS_UNREAD + " = 1 AND " + MessageTable.CHAT_UUID + " = ?";
+            Cursor cursor = getWritableDatabase().rawQuery(selectStatement, new String[]{chat.getIdentifier()});
+
+            i+= cursor.getCount();
+            cursor.close();
+        }
 
         return i;
     }

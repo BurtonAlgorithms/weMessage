@@ -59,7 +59,7 @@ public final class MessageManager {
     public List<Chat> getChats(){
         List<Chat> chats = new ArrayList<>();
 
-        if (MmsManager.isDefaultSmsApp()){
+        if (MmsManager.isDefaultSmsApp() && app.getMmsManager() != null){
             for (SmsChat chat : app.getMmsManager().getChats().values()){
                 chats.add((Chat) chat);
             }
@@ -626,14 +626,12 @@ public final class MessageManager {
 
     private void setHasUnreadMessagesTask(Chat chat, boolean hasUnreadMessages){
         if (!hasUnreadMessages) {
-            int count = 0;
 
             for (Message message : app.getMessageDatabase().getUnreadMessages(chat)) {
                 updateMessageTask(message.getIdentifier(), message.setUnread(false));
-                count++;
             }
 
-            app.getNotificationManager().subtractUnreadMessages(count);
+            app.getNotificationManager().subtractUnreadMessages(chat.getIdentifier());
         }
 
         if (chat instanceof SmsChat){
@@ -742,13 +740,15 @@ public final class MessageManager {
             }
         }
 
+        app.getNotificationManager().refreshNotificationCount(false);
+
         for (MessageCallbacks callbacks : callbacksMap.values()){
             callbacks.onChatListRefresh(getChats());
         }
     }
 
     private void addMessageTask(Message message){
-        if (message.isUnread()) app.getNotificationManager().addUnreadMessages(1);
+        if (message.isUnread()) app.getNotificationManager().addUnreadMessages(message.getChat().getIdentifier(), 1);
 
         if (message instanceof MmsMessage){
             app.getMmsManager().addMessage((MmsMessage) message);

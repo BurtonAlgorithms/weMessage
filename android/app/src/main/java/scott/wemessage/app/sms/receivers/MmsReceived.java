@@ -20,6 +20,11 @@ public class MmsReceived extends MmsReceivedReceiver {
             PowerManager powerManager = (PowerManager) weMessage.get().getSystemService(Context.POWER_SERVICE);
             MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(messageUri);
 
+            if (weMessage.get().getCurrentSession().getSmsHandle() == null){
+                LocalBroadcastManager.getInstance(weMessage.get()).sendBroadcast(new Intent(weMessage.BROADCAST_NEW_MESSAGE_ERROR));
+                return;
+            }
+
             if (message == null) throw new NullPointerException("Message from constructed URI was null.");
 
             if (!powerManager.isInteractive()) {

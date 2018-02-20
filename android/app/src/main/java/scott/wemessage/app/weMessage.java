@@ -217,10 +217,8 @@ public final class weMessage extends Application implements Constants {
         this.messageManager = new MessageManager(this);
         this.notificationManager = new NotificationManager(this);
 
-        if (isSignedIn(true)){
-            if (!StringUtils.isEmpty(getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, ""))){
-                getCurrentSession().setAccount(getMessageDatabase().getAccountByEmail(getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, "")));
-            }
+        if (isSignedIn(true) && !StringUtils.isEmpty(getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, ""))){
+            getCurrentSession().setAccount(getMessageDatabase().getAccountByEmail(getSharedPreferences().getString(weMessage.SHARED_PREFERENCES_LAST_EMAIL, "")));
         }
 
         getMessageManager().initialize();
@@ -353,66 +351,51 @@ public final class weMessage extends Application implements Constants {
 
     private void generateSharedPreferences(){
         SharedPreferences preferences = getSharedPreferences();
+        SharedPreferences.Editor editor = preferences.edit();
+
         int prefVersion = preferences.getInt(weMessage.SHARED_PREFERENCES_VERSION, -1);
 
         if (prefVersion != -1 && prefVersion != weMessage.WEMESSAGE_BUILD_VERSION){
-            SharedPreferences.Editor editor = preferences.edit();
-
             editor.putBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, true);
             editor.putInt(weMessage.SHARED_PREFERENCES_LAST_VERSION, prefVersion);
             editor.putInt(weMessage.SHARED_PREFERENCES_VERSION, weMessage.WEMESSAGE_BUILD_VERSION);
-            editor.apply();
         }else if (prefVersion == -1){
             if (!StringUtils.isEmpty(preferences.getString(weMessage.SHARED_PREFERENCES_DEVICE_INFO, ""))) {
-                SharedPreferences.Editor editor = preferences.edit();
-
                 editor.putBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, true);
                 editor.putInt(weMessage.SHARED_PREFERENCES_LAST_VERSION, 10);
                 editor.putInt(weMessage.SHARED_PREFERENCES_VERSION, weMessage.WEMESSAGE_BUILD_VERSION);
-                editor.apply();
             }else {
-                SharedPreferences.Editor editor = preferences.edit();
-
                 editor.putBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false);
                 editor.putInt(weMessage.SHARED_PREFERENCES_LAST_VERSION, weMessage.WEMESSAGE_BUILD_VERSION);
                 editor.putInt(weMessage.SHARED_PREFERENCES_VERSION, weMessage.WEMESSAGE_BUILD_VERSION);
-                editor.apply();
             }
         }
 
         if (!preferences.contains(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW)){
-            SharedPreferences.Editor editor = preferences.edit();
-
             editor.putBoolean(weMessage.SHARED_PREFERENCES_CONTACT_SYNC_PERMISSION_SHOW, true);
-            editor.apply();
         }
 
         if (!preferences.contains(weMessage.SHARED_PREFERENCES_MANUAL_PHONE_NUMBER)){
-            SharedPreferences.Editor editor = preferences.edit();
-
             editor.putString(weMessage.SHARED_PREFERENCES_MANUAL_PHONE_NUMBER, "");
-            editor.apply();
         }
 
         if (!preferences.contains(weMessage.SHARED_PREFERENCES_PROMPT_FOR_SMS)){
-            SharedPreferences.Editor editor = preferences.edit();
-
             editor.putBoolean(weMessage.SHARED_PREFERENCES_PROMPT_FOR_SMS, MmsManager.isPhone());
-            editor.apply();
         }
 
-        if (!preferences.contains(weMessage.SHARED_PREFERENCES_SIGNED_OUT) || preferences.getBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false)){
-            SharedPreferences.Editor editor = preferences.edit();
-
+        if (!preferences.contains(weMessage.SHARED_PREFERENCES_SIGNED_OUT)){
             editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
-            editor.apply();
         }
 
         if (!preferences.contains(weMessage.SHARED_PREFERENCES_SIGNED_OUT_EMAIL)){
-            SharedPreferences.Editor editor = preferences.edit();
-
             editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT_EMAIL, true);
-            editor.apply();
         }
+
+        if (preferences.getBoolean(weMessage.SHARED_PREFERENCES_SHOW_UPDATE_DIALOG, false)){
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT, true);
+            editor.putBoolean(weMessage.SHARED_PREFERENCES_SIGNED_OUT_EMAIL, true);
+        }
+
+        editor.apply();
     }
 }

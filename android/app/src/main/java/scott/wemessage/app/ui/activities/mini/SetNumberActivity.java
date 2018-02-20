@@ -29,11 +29,11 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import java.util.UUID;
 
 import scott.wemessage.R;
+import scott.wemessage.app.jobs.SyncMessagesJob;
 import scott.wemessage.app.models.users.Handle;
 import scott.wemessage.app.ui.activities.LaunchActivity;
 import scott.wemessage.app.ui.activities.SettingsActivity;
 import scott.wemessage.app.ui.activities.abstracts.BaseActivity;
-import scott.wemessage.app.ui.view.dialog.DialogDisplayer;
 import scott.wemessage.app.utils.OnClickWaitListener;
 import scott.wemessage.app.utils.view.DisplayUtils;
 import scott.wemessage.app.weMessage;
@@ -137,14 +137,21 @@ public class SetNumberActivity extends BaseActivity {
                 startTextColorAnimation(continueButton, 150L, 150L, finalTextColor, currentTextColor);
 
                 Handle handle = weMessage.get().getMessageDatabase().getHandleByHandleID(phoneNumber);
+                Handle oldHandle = weMessage.get().getCurrentSession().getSmsHandle();
 
                 if (handle == null){
                     handle = new Handle(UUID.randomUUID(), phoneNumber, Handle.HandleType.ME, false, false);
+                    weMessage.get().getMessageManager().addHandle(handle, false);
+                }else {
+                    weMessage.get().getMessageManager().updateHandle(handle.getUuid().toString(), handle.setHandleType(Handle.HandleType.ME), false);
                 }
 
                 weMessage.get().getSharedPreferences().edit().putString(weMessage.SHARED_PREFERENCES_MANUAL_PHONE_NUMBER, phoneNumber).apply();
-                weMessage.get().getMessageManager().addHandle(handle, false);
                 weMessage.get().getCurrentSession().setSmsHandle(handle);
+
+                if (oldHandle == null){
+                    SyncMessagesJob.performSync();
+                }
 
                 new Handler().postDelayed(new Runnable() {
                     @Override
@@ -294,9 +301,5 @@ public class SetNumberActivity extends BaseActivity {
         textView.setMaxLines(5);
 
         return snackbar;
-    }
-
-    public static DialogDisplayer.AlertDialogFragment generateAlertDialog(String title, String message){
-        return DialogDisplayer.generateAlertDialog(title, message);
     }
 }

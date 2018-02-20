@@ -17,6 +17,11 @@ public class SmsSent extends SentReceiver {
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
 
+        if (weMessage.get().getCurrentSession().getSmsHandle() == null){
+            weMessage.get().getMessageManager().alertMessageSendFailure(null, ReturnType.UNKNOWN_ERROR);
+            return;
+        }
+
         try {
             String taskIdentifier = intent.getStringExtra("task_identifier");
             Uri messageUri = Uri.parse(intent.getStringExtra("message_uri"));

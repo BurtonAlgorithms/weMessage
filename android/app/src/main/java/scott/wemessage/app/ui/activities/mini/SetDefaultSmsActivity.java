@@ -18,6 +18,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -125,6 +126,7 @@ public class SetDefaultSmsActivity extends BaseActivity {
                         }
                     });
                     alertDialogFragment.setCancelableOnTouchedOutside(false);
+                    alertDialogFragment.disableBackPress(true);
                     alertDialogFragment.show(getSupportFragmentManager(), "SmsAppNotChosenFailedAlert");
                 }else {
                     DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), getString(R.string.set_default_sms_permission_failed)).show(getSupportFragmentManager(), "SmsPermissionsFailedAlert");
@@ -179,6 +181,7 @@ public class SetDefaultSmsActivity extends BaseActivity {
                             }
                         });
                         alertDialogFragment.setCancelableOnTouchedOutside(false);
+                        alertDialogFragment.disableBackPress(true);
                         alertDialogFragment.show(getSupportFragmentManager(), "SmsAppNotChosenFailedAlert");
                     } else {
                         DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), getString(R.string.set_default_sms_permission_failed)).show(getSupportFragmentManager(), "SmsPermissionsFailedAlert");
@@ -264,7 +267,19 @@ public class SetDefaultSmsActivity extends BaseActivity {
         alertDialogFragment.setDenyRunnable(new Runnable() {
             @Override
             public void run() {
-               DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), getString(R.string.set_default_sms_rationale)).show(getSupportFragmentManager(), "SmsPermissionsWriteSettingsRationale");
+               DialogDisplayer.AlertDialogFragment alertDialogDeny = DialogDisplayer.generateAlertDialog(getString(R.string.permissions_error_title), getString(R.string.set_default_sms_rationale));
+
+               if (isPermissionOnlyMode){
+                   alertDialogDeny.setOnDismiss(new Runnable() {
+                       @Override
+                       public void run() {
+                           finish();
+                       }
+                   });
+                   alertDialogDeny.setCancelableOnTouchedOutside(false);
+               }
+
+               alertDialogDeny.show(getSupportFragmentManager(), "SmsPermissionsWriteSettingsRationale");
             }
         });
         alertDialogFragment.show(getSupportFragmentManager(), "SmsPermissionsWriteSettingsAlert");
@@ -382,6 +397,13 @@ public class SetDefaultSmsActivity extends BaseActivity {
 
             Dialog dialog = builder.create();
             dialog.setCanceledOnTouchOutside(false);
+            dialog.setOnKeyListener(new DialogInterface.OnKeyListener() {
+                @Override
+                public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+                    if(keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) return false;
+                    return true;
+                }
+            });
 
             return dialog;
         }
