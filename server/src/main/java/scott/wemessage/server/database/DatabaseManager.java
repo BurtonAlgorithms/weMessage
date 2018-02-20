@@ -469,8 +469,6 @@ public final class DatabaseManager extends Thread {
         findStatement.setString(1, deviceId);
         ResultSet resultSet = findStatement.executeQuery();
 
-        System.out.println("Executing");
-
         if (!resultSet.isBeforeFirst()){
             String insertStatementString = "INSERT INTO " + TABLE_REGISTRATION_TOKENS + "(" + COLUMN_REGISTRATION_TOKEN_DEVICE_ID + ", " + COLUMN_REGISTRATION_TOKEN_TOKEN + ") VALUES (?, ?)";
             PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
@@ -480,14 +478,11 @@ public final class DatabaseManager extends Thread {
             insertStatement.executeUpdate();
             insertStatement.close();
 
-            System.out.println("Adding: " + token);
         }else {
             String insertStatementString = "UPDATE " + TABLE_REGISTRATION_TOKENS + " SET " + COLUMN_REGISTRATION_TOKEN_TOKEN + " = ? WHERE " + COLUMN_REGISTRATION_TOKEN_DEVICE_ID + " = ?";
             PreparedStatement insertStatement = getServerDatabaseConnection().prepareStatement(insertStatementString);
             insertStatement.setString(1, token);
             insertStatement.setString(2, deviceId);
-
-            System.out.println("Updating: " + token);
 
             insertStatement.executeUpdate();
             insertStatement.close();
