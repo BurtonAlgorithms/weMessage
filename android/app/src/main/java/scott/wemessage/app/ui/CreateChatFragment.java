@@ -799,8 +799,12 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
             Bundle extras = getActivity().getIntent().getExtras();
             Uri intentUri = getActivity().getIntent().getData();
 
-            String message = extras.getString(Intent.EXTRA_TEXT);
+            String message = null;
             String recipients = getRecipients(intentUri);
+
+            if (extras != null){
+                message = extras.getString(Intent.EXTRA_TEXT);
+            }
 
             if (!StringUtils.isEmpty(recipients)){
                 String[] addresses = TextUtils.split(recipients, ";");

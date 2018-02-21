@@ -25,9 +25,7 @@ public class MmsSent extends MmsSentReceiver {
         try {
             String taskIdentifier = intent.getStringExtra(EXTRA_TASK_IDENTIFIER);
             Uri messageUri = Uri.parse(intent.getStringExtra(EXTRA_CONTENT_URI));
-            MmsMessage mmsMessage = weMessage.get().getMmsDatabase().getMessageFromUri(taskIdentifier, messageUri);
-
-            if (mmsMessage == null) throw new NullPointerException("Message from constructed URI was null.");
+            MmsMessage mmsMessage = weMessage.get().getMmsDatabase().getMessageFromUri(taskIdentifier, messageUri, true);
 
             weMessage.get().getMmsManager().updateOrAddMessage(taskIdentifier, mmsMessage);
         }catch (Exception ex){

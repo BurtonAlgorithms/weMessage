@@ -39,6 +39,7 @@ public final class MessageManager {
     private weMessage app;
     private ConcurrentHashMap<String, MessageCallbacks> callbacksMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Handle> handles = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Contact> contactHandleMap = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Chat> chats = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, Message> messages = new ConcurrentHashMap<>();
     private ConcurrentHashMap<String, ActionMessage> actionMessages = new ConcurrentHashMap<>();
@@ -77,6 +78,10 @@ public final class MessageManager {
         }
 
         return contactInfoHashMap;
+    }
+
+    public ConcurrentHashMap<String, Contact> getContactHandleMap(){
+        return contactHandleMap;
     }
 
     protected ConcurrentHashMap<String, Message> getLoadedMessages(){
@@ -464,6 +469,10 @@ public final class MessageManager {
     }
 
     private void addContactTask(Contact contact, boolean useCallbacks){
+        for (Handle h : contact.getHandles()){
+            contactHandleMap.put(h.getUuid().toString(), contact);
+        }
+
         app.getMessageDatabase().addContact(contact);
 
         if (useCallbacks) {
@@ -473,8 +482,9 @@ public final class MessageManager {
         }
     }
 
-    private void updateContactTask(String uuid, Contact newData, boolean useCallbacks){
+    private void updateContactTask(String uuid, final Contact newData, boolean useCallbacks){
         Contact oldContact = app.getMessageDatabase().getContactByUuid(uuid);
+
         app.getMessageDatabase().updateContact(uuid, newData);
 
         if (useCallbacks) {
@@ -482,9 +492,20 @@ public final class MessageManager {
                 callbacks.onContactUpdate(oldContact, newData);
             }
         }
+
+        startThreadedTask(new Runnable() {
+            @Override
+            public void run() {
+                for (String s : contactHandleMap.keySet()){
+                    if (contactHandleMap.get(s).equals(newData)){
+                        contactHandleMap.put(s, newData);
+                    }
+                }
+            }
+        });
     }
 
-    private void deleteContactTask(String uuid, boolean useCallbacks){
+    private void deleteContactTask(final String uuid, boolean useCallbacks){
         app.getMessageDatabase().deleteContactByUuid(uuid);
 
         if (useCallbacks) {
@@ -492,6 +513,17 @@ public final class MessageManager {
                 callbacks.onContactListRefresh(new ArrayList<>(getContacts().values()));
             }
         }
+
+        startThreadedTask(new Runnable() {
+            @Override
+            public void run() {
+                for (String s : contactHandleMap.keySet()){
+                    if (contactHandleMap.get(s).getUuid().toString().equals(uuid)){
+                        contactHandleMap.remove(s);
+                    }
+                }
+            }
+        });
     }
 
     private void addHandleTask(Handle handle, boolean useCallbacks){
@@ -561,8 +593,11 @@ public final class MessageManager {
     }
 
     private void deleteHandleTask(String uuid){
-        List<Chat> chatsToDelete = new ArrayList<>();
         Handle h = app.getMessageDatabase().getHandleByUuid(uuid);
+
+        if (h == null) return;
+
+        List<Chat> chatsToDelete = new ArrayList<>();
         Contact c = app.getMessageDatabase().getContactByHandle(h);
 
         if (app.getMessageDatabase().getAccountByHandle(h) != null) return;
@@ -625,6 +660,8 @@ public final class MessageManager {
     }
 
     private void setHasUnreadMessagesTask(Chat chat, boolean hasUnreadMessages){
+        if (chat == null || chat.getIdentifier() == null) return;
+
         if (!hasUnreadMessages) {
 
             for (Message message : app.getMessageDatabase().getUnreadMessages(chat)) {
@@ -704,6 +741,8 @@ public final class MessageManager {
     }
 
     private void deleteChatTask(Chat chat){
+        if (chat == null) return;
+
         if (chat instanceof SmsChat){
             app.getMmsManager().deleteChat((SmsChat) chat);
         }else {
@@ -853,6 +892,12 @@ public final class MessageManager {
             public void run() {
                 for (Handle h : app.getMessageDatabase().getHandles()){
                     handles.put(h.getUuid().toString(), h);
+                }
+
+                for (Contact c : app.getMessageDatabase().getContacts()){
+                    for (Handle h : c.getHandles()){
+                        contactHandleMap.put(h.getUuid().toString(), c);
+                    }
                 }
 
                 for (MessageCallbacks callbacks : callbacksMap.values()){

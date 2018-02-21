@@ -324,10 +324,11 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatUpdate(final Chat oldData, Chat newData) {
-        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(newData);
 
         if (!isChatBlocked(newData)) {
+            if (getActivity() == null) return;
+
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -343,10 +344,11 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onUnreadMessagesUpdate(Chat chat, boolean hasUnreadMessages) {
-        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
+            if (getActivity() == null) return;
+
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -358,10 +360,11 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatRename(Chat chat, String displayName) {
-        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
+            if (getActivity() == null) return;
+
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -373,10 +376,11 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onParticipantAdd(Chat chat, Handle handle) {
-        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
+            if (getActivity() == null) return;
+
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -388,10 +392,11 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onParticipantRemove(Chat chat, Handle handle) {
-        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
+            if (getActivity() == null) return;
+
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -403,10 +408,11 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onLeaveGroup(Chat chat) {
-        if (getActivity() == null) return;
         final ChatDialogView chatDialogView = new ChatDialogView(chat);
 
         if (!isChatBlocked(chat)) {
+            if (getActivity() == null) return;
+
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -418,8 +424,9 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
     @Override
     public void onChatDelete(final Chat chat) {
-        if (getActivity() == null) return;
         if (!isChatBlocked(chat)) {
+            if (getActivity() == null) return;
+
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -567,6 +574,8 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                 ArrayList<ChatDialogView> dialogViews = new ArrayList<>();
 
                 for (int i = 1; i < params[0].size(); i++) {
+                    if (!isAdded() || getActivity() == null || getActivity().isFinishing() || getActivity().isDestroyed()) break;
+
                     Chat chat = params[0].get(i);
                     ChatDialogView chatDialogView = new ChatDialogView(chat);
 
@@ -590,6 +599,8 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
 
             @Override
             protected void onPostExecute(Void result) {
+                if (!isAdded() || getActivity() == null || getActivity().isFinishing() || getActivity().isDestroyed()) return;
+
                 dialogsListAdapter.sortByLastMessageDate();
                 dialogsList.scrollToPosition(0);
                 isParseChatsTaskRunning.set(false);

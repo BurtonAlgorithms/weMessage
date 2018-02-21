@@ -18,14 +18,12 @@ public class MmsReceived extends MmsReceivedReceiver {
     protected void onMessageReceived(Uri messageUri) {
         try {
             PowerManager powerManager = (PowerManager) weMessage.get().getSystemService(Context.POWER_SERVICE);
-            MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(messageUri);
+            MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(messageUri, true);
 
             if (weMessage.get().getCurrentSession().getSmsHandle() == null){
                 LocalBroadcastManager.getInstance(weMessage.get()).sendBroadcast(new Intent(weMessage.BROADCAST_NEW_MESSAGE_ERROR));
                 return;
             }
-
-            if (message == null) throw new NullPointerException("Message from constructed URI was null.");
 
             if (!powerManager.isInteractive()) {
                 PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "WeMessageNotificationWakeLock");

@@ -157,6 +157,10 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        try {
+            Thread.sleep(500);
+        }catch (Exception ex){ }
+
         if (oldVersion < 2){
             String alterAddMessageEffects = "ALTER TABLE " + MessageTable.TABLE_NAME + " ADD COLUMN " + MessageTable.MESSAGE_EFFECT + " TEXT DEFAULT \"" + MessageEffect.NONE.getEffectName() + "\";";
             String alterAddMessageEffectPerformed = "ALTER TABLE " + MessageTable.TABLE_NAME + " ADD COLUMN " + MessageTable.EFFECT_PERFORMED + " INTEGER DEFAULT 1";
@@ -258,10 +262,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
 
                     cursorHandle.close();
 
-                    if (!contactHandleMap.containsValue(contact.handleText)) {
-                        contactsV2Map.put(contact.uuid, contact);
-                        contactHandleMap.put(contact.uuid, contact.handleText);
-                    }
+                    contactsV2Map.put(contact.uuid, contact);
+                    contactHandleMap.put(contact.uuid, contact.handleText);
                     contactCursor.moveToNext();
                 }
             }
@@ -370,8 +372,11 @@ public final class MessageDatabase extends SQLiteOpenHelper {
             db.execSQL(createSmsChatTable);
             db.execSQL(createMmsMessageTable);
 
+            List<String> addedHandles = new ArrayList<>();
+
             for (ContactV2 contact : contactsV2Map.values()){
                 if (StringUtils.isEmpty(contact.firstName) && StringUtils.isEmpty(contact.lastName) && StringUtils.isEmpty(contact.contactPictureFileLocation)) continue;
+                if (addedHandles.contains(contact.handleText)) continue;
 
                 ContentValues values = new ContentValues();
                 String firstName = "";
@@ -398,6 +403,7 @@ public final class MessageDatabase extends SQLiteOpenHelper {
                 }
 
                 db.insert(ContactTable.TABLE_NAME, null, values);
+                addedHandles.add(contact.handleText);
             }
 
             for (ChatV2 chat : chatsV2List){
@@ -1081,6 +1087,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Account getAccountByEmail(String email){
+        if (email == null) return null;
+
         SQLiteDatabase db = getWritableDatabase();
         String selectQuery = "SELECT * FROM " + AccountTable.TABLE_NAME + " WHERE " + AccountTable.ACCOUNT_EMAIL + " = ?";
 
@@ -1512,6 +1520,8 @@ public final class MessageDatabase extends SQLiteOpenHelper {
     }
 
     public Chat getChatByMacGuid(String macGuid){
+        if (macGuid == null) return null;
+
         SQLiteDatabase db = getWritableDatabase();
         String selectQuery = "SELECT * FROM " + ChatTable.TABLE_NAME + " WHERE " + ChatTable.MAC_GUID + " = ?";
 

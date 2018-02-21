@@ -43,6 +43,7 @@ public final class MmsDatabase {
 
     private weMessage app;
 
+    private static final String[] SMS_CHAT_PROJECTION = new String[]{"thread_id", "_id", "ct_t", "read"};
     private static final String[] MMS_MESSAGE_PROJECTION = new String[]{"date_sent", "date", "msg_box", "_id", "thread_id", "read", "seen"};
     private static final String[] SMS_MESSAGE_PROJECTION = new String[]{"address", "date_sent", "date", "body", "type", "_id", "thread_id", "read", "seen"};
 
@@ -50,11 +51,11 @@ public final class MmsDatabase {
         this.app = app;
     }
 
-    public MmsMessage getMessageFromUri(Uri uri){
-        return getMessageFromUri(null, uri);
+    public MmsMessage getMessageFromUri(Uri uri, boolean cannotBeNull){
+        return getMessageFromUri(null, uri, cannotBeNull);
     }
 
-    public MmsMessage getMessageFromUri(String taskIdentifier, Uri uri){
+    public MmsMessage getMessageFromUri(String taskIdentifier, Uri uri, boolean cannotBeNull){
         if (!MmsManager.hasSmsPermissions()) return null;
 
         String uriString = uri.toString();
@@ -78,7 +79,7 @@ public final class MmsDatabase {
                 Cursor mmsCursor = app.getContentResolver().query(uri, MMS_MESSAGE_PROJECTION, null, null, null);
 
                 if (mmsCursor.moveToFirst()) {
-                    mmsMessage = buildMmsMessage(taskIdentifier, mmsCursor);
+                    mmsMessage = buildMmsMessage(taskIdentifier, mmsCursor, cannotBeNull);
                     mmsCursor.close();
                 } else {
                     mmsCursor.close();
@@ -86,14 +87,14 @@ public final class MmsDatabase {
                     Uri newUri = Uri.parse("content://mms/" + uriString.substring(uriString.lastIndexOf("/") + 1));
                     Cursor mmsCursorRetry = app.getContentResolver().query(newUri, MMS_MESSAGE_PROJECTION, null, null, null);
 
-                    if (mmsCursorRetry.moveToFirst()) mmsMessage = buildMmsMessage(taskIdentifier, mmsCursorRetry);
+                    if (mmsCursorRetry.moveToFirst()) mmsMessage = buildMmsMessage(taskIdentifier, mmsCursorRetry, cannotBeNull);
                     mmsCursorRetry.close();
                 }
             } else {
                 Cursor smsCursor = app.getContentResolver().query(uri, SMS_MESSAGE_PROJECTION, null, null, null);
 
                 if (smsCursor.moveToFirst()){
-                    mmsMessage = buildSmsMessage(smsCursor);
+                    mmsMessage = buildSmsMessage(smsCursor, cannotBeNull);
                     smsCursor.close();
                 }else {
                     smsCursor.close();
@@ -101,7 +102,7 @@ public final class MmsDatabase {
                     Uri newUri = Uri.parse("content://sms/" + uriString.substring(uriString.lastIndexOf("/") + 1));
                     Cursor smsCursorRetry = app.getContentResolver().query(newUri, SMS_MESSAGE_PROJECTION, null, null, null);
 
-                    if (smsCursorRetry.moveToFirst()) mmsMessage = buildSmsMessage(smsCursorRetry);
+                    if (smsCursorRetry.moveToFirst()) mmsMessage = buildSmsMessage(smsCursorRetry, cannotBeNull);
                     smsCursorRetry.close();
                 }
             }
@@ -227,19 +228,26 @@ public final class MmsDatabase {
     public void executeChatSync(){
         if (!MmsManager.hasSmsPermissions()) return;
 
-        Uri uri = Uri.parse("content://mms-sms/conversations/");
-        Cursor chatQuery = app.getContentResolver().query(uri, new String[]{ "thread_id", "_id", "ct_t", "read" }, null, null, null);
+        Cursor chatQuery;
+        boolean usesSimple = false;
 
-        if (chatQuery == null) return;
+        try {
+            Uri uri = Uri.parse("content://mms-sms/conversations/");
+            chatQuery = app.getContentResolver().query(uri, SMS_CHAT_PROJECTION, null, null, null);
+        }catch (Exception ex){
+            usesSimple = true;
+            Uri uri = Uri.parse("content://mms-sms/conversations?simple=true");
+            chatQuery = app.getContentResolver().query(uri, new String[] { "_id" }, null, null, null);
+        }
 
         if (chatQuery.moveToFirst()){
             do {
                 try {
-                    String threadId = chatQuery.getString(chatQuery.getColumnIndex("thread_id"));
+                    String threadId = usesSimple ? chatQuery.getString(chatQuery.getColumnIndex("_id")) : chatQuery.getString(chatQuery.getColumnIndex("thread_id"));
 
                     if (app.getMmsManager().getSmsChat(threadId) != null) continue;
 
-                    SmsChat smsChat = buildSmsChat(chatQuery);
+                    SmsChat smsChat = buildSmsChat(chatQuery, usesSimple);
 
                     if (smsChat != null) {
                         app.getMmsManager().getSyncingChats().put(threadId, smsChat);
@@ -271,7 +279,7 @@ public final class MmsDatabase {
                     String contentType = initialQuery.getString(initialQuery.getColumnIndex("ct_t"));
                     boolean isMms = !StringUtils.isEmpty(contentType) && (contentType.equalsIgnoreCase("application/vnd.wap.multipart.related") || contentType.equalsIgnoreCase("application/vnd.wap.multipart.mixed"));
 
-                    if (app.getMmsManager().getMmsMessage(messageId) != null) {
+                    if (app.getMmsManager() != null && app.getMmsManager().getMmsMessage(messageId) != null) {
                         long largestMessageId = getLargestMessageId();
                         if (largestMessageId == -1L) continue;
 
@@ -293,7 +301,7 @@ public final class MmsDatabase {
                         Cursor mmsCursor = app.getContentResolver().query(Uri.parse("content://mms/"), MMS_MESSAGE_PROJECTION, "_id = " + messageId, null, null);
 
                         if (mmsCursor.moveToFirst()) {
-                            MmsMessage message = buildMmsMessage(null, mmsCursor);
+                            MmsMessage message = buildMmsMessage(null, mmsCursor, false);
 
                             if (message != null) {
                                 app.getMmsManager().addMessage(message);
@@ -307,7 +315,7 @@ public final class MmsDatabase {
                         Cursor smsCursor = app.getContentResolver().query(Uri.parse("content://sms/"), SMS_MESSAGE_PROJECTION, "_id = " + messageId, null, null);
 
                         if (smsCursor.moveToFirst()) {
-                            MmsMessage message = buildSmsMessage(smsCursor);
+                            MmsMessage message = buildSmsMessage(smsCursor, false);
 
                             if (message != null) {
                                 app.getMmsManager().addMessage(message);
@@ -329,14 +337,36 @@ public final class MmsDatabase {
         app.getMessageManager().updateChat(identifier, (Chat) app.getMmsManager().getSmsChat(identifier),false);
     }
 
-    private SmsChat buildSmsChat(Cursor chatCursor){
+    private SmsChat buildSmsChat(Cursor chatCursor, boolean usesSimple){
         SmsChat smsChat = null;
         List<Handle> handles = new ArrayList<>();
+        String threadId;
+        String messageId;
+        String contentType;
+        boolean hasUnreadMessages;
 
-        String threadId = chatCursor.getString(chatCursor.getColumnIndex("thread_id"));
-        String messageId = chatCursor.getString(chatCursor.getColumnIndex("_id"));
-        String contentType = chatCursor.getString(chatCursor.getColumnIndex("ct_t"));
-        boolean hasUnreadMessages = !integerToBoolean(chatCursor.getInt(chatCursor.getColumnIndex("read")));
+        if (usesSimple){
+            threadId = chatCursor.getString(chatCursor.getColumnIndex("_id"));
+
+            Uri uri = Uri.parse("content://mms-sms/conversations/" + threadId);
+            Cursor recentMessageQuery = app.getContentResolver().query(uri, new String[]{ "_id", "ct_t", "read", "date" }, null, null, "date DESC LIMIT 1");
+
+            if (recentMessageQuery.moveToFirst()){
+                messageId = recentMessageQuery.getString(recentMessageQuery.getColumnIndex("_id"));
+                contentType = recentMessageQuery.getString(recentMessageQuery.getColumnIndex("ct_t"));
+                hasUnreadMessages = !integerToBoolean(recentMessageQuery.getInt(recentMessageQuery.getColumnIndex("read")));
+            }else {
+                recentMessageQuery.close();
+                return null;
+            }
+
+            recentMessageQuery.close();
+        }else {
+            threadId = chatCursor.getString(chatCursor.getColumnIndex("thread_id"));
+            messageId = chatCursor.getString(chatCursor.getColumnIndex("_id"));
+            contentType = chatCursor.getString(chatCursor.getColumnIndex("ct_t"));
+            hasUnreadMessages = !integerToBoolean(chatCursor.getInt(chatCursor.getColumnIndex("read")));
+        }
 
         if (!StringUtils.isEmpty(contentType) && (contentType.equalsIgnoreCase("application/vnd.wap.multipart.related") || contentType.equalsIgnoreCase("application/vnd.wap.multipart.mixed"))) {
             Uri addressUri = Uri.parse(MessageFormat.format("content://mms/{0}/addr", messageId));
@@ -385,7 +415,7 @@ public final class MmsDatabase {
         return smsChat;
     }
 
-    private MmsMessage buildMmsMessage(String taskIdentifier, Cursor mmsCursor){
+    private MmsMessage buildMmsMessage(String taskIdentifier, Cursor mmsCursor, boolean cannotBeNull){
         MmsMessage mmsMessage = null;
         Handle sender;
         boolean isFromMe = false;
@@ -471,10 +501,18 @@ public final class MmsDatabase {
         Chat chat = (Chat) app.getMmsManager().getSmsChat(threadId);
 
         if (chat == null){
-            Cursor chatQuery = app.getContentResolver().query(Uri.parse("content://mms-sms/conversations/"), new String[]{ "thread_id", "_id", "ct_t", "read" }, "thread_id = " + threadId, null, null);
+            Cursor chatQuery;
+            boolean usesSimple = false;
+
+            try {
+                chatQuery = app.getContentResolver().query(Uri.parse("content://mms-sms/conversations/"), SMS_CHAT_PROJECTION, "thread_id = " + threadId, null, null);
+            }catch (Exception ex){
+                usesSimple = true;
+                chatQuery = app.getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), new String[] { "_id" }, "_id = " + threadId, null, null);
+            }
 
             if (chatQuery.moveToFirst()){
-                chat = (Chat) buildSmsChat(chatQuery);
+                chat = (Chat) buildSmsChat(chatQuery, usesSimple);
             }
             chatQuery.close();
         }
@@ -500,10 +538,16 @@ public final class MmsDatabase {
                     true);
         }
 
+        if (cannotBeNull && mmsMessage == null){
+            if (sender == null) throw new NullPointerException("Built MMS message was null because the sender could not be found");
+            else if (chat == null) throw new NullPointerException("Built MMS message was null because the chat could not be found");
+            else throw new NullPointerException("Built MMS message was null for an unknown reason");
+        }
+
         return mmsMessage;
     }
 
-    private MmsMessage buildSmsMessage(Cursor smsCursor){
+    private MmsMessage buildSmsMessage(Cursor smsCursor, boolean cannotBeNull){
         MmsMessage mmsMessage = null;
         Handle sender = null;
 
@@ -533,10 +577,18 @@ public final class MmsDatabase {
         Chat chat = (Chat) app.getMmsManager().getSmsChat(threadId);
 
         if (chat == null){
-            Cursor chatQuery = app.getContentResolver().query(Uri.parse("content://mms-sms/conversations/"), new String[]{ "thread_id", "_id", "ct_t", "read" }, "thread_id = " + threadId, null, null);
+            Cursor chatQuery;
+            boolean usesSimple = false;
+
+            try {
+                chatQuery = app.getContentResolver().query(Uri.parse("content://mms-sms/conversations/"), SMS_CHAT_PROJECTION, "thread_id = " + threadId, null, null);
+            }catch (Exception ex){
+                usesSimple = true;
+                chatQuery = app.getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), new String[] { "_id" }, "_id = " + threadId + threadId, null, null);
+            }
 
             if (chatQuery.moveToFirst()){
-                chat = (Chat) buildSmsChat(chatQuery);
+                chat = (Chat) buildSmsChat(chatQuery, usesSimple);
             }
             chatQuery.close();
         }
@@ -560,6 +612,12 @@ public final class MmsDatabase {
                     isFromMe,
                     isUnread,
                     false);
+        }
+
+        if (cannotBeNull && mmsMessage == null){
+            if (sender == null) throw new NullPointerException("Built SMS message was null because the sender could not be found");
+            if (chat == null) throw new NullPointerException("Built SMS message was null because the chat could not be found");
+            else throw new NullPointerException("Built SMS message was null for an unknown reason");
         }
 
         return mmsMessage;

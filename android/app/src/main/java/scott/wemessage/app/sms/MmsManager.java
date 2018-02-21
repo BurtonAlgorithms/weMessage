@@ -80,6 +80,8 @@ public final class MmsManager {
     }
 
     public MmsMessage getMmsMessage(String messageId){
+        if (messageId == null) return null;
+
         MmsMessage message = messages.get(messageId);
 
         if (message == null){
@@ -131,12 +133,10 @@ public final class MmsManager {
 
     public MmsMessage addSmsMessage(final Object[] smsExtra){
         Uri uri = app.getMmsDatabase().addSmsMessage(smsExtra);
-        MmsMessage message = app.getMmsDatabase().getMessageFromUri(uri);
+        MmsMessage message = app.getMmsDatabase().getMessageFromUri(uri, true);
 
-        if (message != null){
-            message.setUnread(true);
-            app.getMessageManager().addMessage(message, false);
-        }
+        message.setUnread(true);
+        app.getMessageManager().addMessage(message, false);
 
         return message;
     }

@@ -178,6 +178,8 @@ public final class weMessage extends Application implements Constants {
         super.onCreate();
         instance = this;
 
+        if (AppLogger.USE_CRASHLYTICS) Fabric.with(this, new Crashlytics());
+
         updateDatabase();
         generateSharedPreferences();
 
@@ -194,8 +196,6 @@ public final class weMessage extends Application implements Constants {
                         isEmojiInitialized.set(true);
                     }
                 });
-
-        if (AppLogger.USE_CRASHLYTICS) Fabric.with(this, new Crashlytics());
 
         AESCrypto.setMemoryAvailabilityCheck(true);
         AESCrypto.setBase64Wrapper(base64Wrapper);

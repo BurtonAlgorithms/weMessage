@@ -374,19 +374,19 @@ public class ContactListActivity extends BaseActivity implements MessageCallback
             case 1:
                 DialogDisplayer.showContactSyncDialog(this, getSupportFragmentManager(),
 
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        macContactSync();
-                    }
-                },
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                macContactSync();
+                            }
+                        },
 
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        phoneContactSync();
-                    }
-                });
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                phoneContactSync();
+                            }
+                        });
                 break;
             case 2:
                 toggleBlocked();

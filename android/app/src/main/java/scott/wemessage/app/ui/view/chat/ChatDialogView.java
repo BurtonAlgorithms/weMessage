@@ -56,7 +56,7 @@ public class ChatDialogView implements IDialog {
     }
 
     @Override
-    public String getId() {
+    public synchronized String getId() {
         return chat.getIdentifier();
     }
 

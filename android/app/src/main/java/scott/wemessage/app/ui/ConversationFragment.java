@@ -59,6 +59,7 @@ import com.thefinestartist.finestwebview.FinestWebView;
 
 import java.io.File;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -68,6 +69,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -285,7 +287,16 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
             attachmentsInput = savedInstanceState.getStringArrayList(weMessage.BUNDLE_SELECTED_GALLERY_STORE);
             cameraAttachmentInput = savedInstanceState.getString(weMessage.BUNDLE_CAMERA_ATTACHMENT_FILE);
             voiceMessageInput = savedInstanceState.getString(weMessage.BUNDLE_VOICE_MESSAGE_INPUT_FILE);
-            downloadTasks = (ConcurrentHashMap<String, String>) savedInstanceState.getSerializable(BUNDLE_DOWNLOAD_TASKS);
+
+            try {
+                downloadTasks = (ConcurrentHashMap<String, String>) savedInstanceState.getSerializable(BUNDLE_DOWNLOAD_TASKS);
+            }catch (Exception ex){
+                Serializable downloadTasksMap = savedInstanceState.getSerializable(BUNDLE_DOWNLOAD_TASKS);
+
+                if (downloadTasksMap instanceof Map){
+                    downloadTasks.putAll((Map) downloadTasksMap);
+                }
+            }
         }
 
         if (getChat() == null){
@@ -2087,7 +2098,11 @@ public class ConversationFragment extends MessagingFragment implements MessageCa
     }
 
     private boolean isChatThis(Chat c){
-        return c.getIdentifier().equals(getChat().getIdentifier());
+        try {
+            return c.getIdentifier().equals(getChat().getIdentifier());
+        }catch (Exception ex){
+            return false;
+        }
     }
 
     private boolean isPossibleSmsGroupChat(Chat chat){

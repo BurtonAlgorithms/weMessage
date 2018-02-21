@@ -89,10 +89,10 @@ public class Handle extends ContactInfo {
 
     @Override
     public ContactInfo findRoot() {
-        Contact c = weMessage.get().getMessageDatabase().getContactByHandle(this);
+        Contact c = weMessage.get().getMessageManager().getContactHandleMap().get(getUuid().toString());
 
         if (c != null) return c;
-        else return this;
+        return this;
     }
 
     @Override
