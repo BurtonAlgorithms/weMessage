@@ -1,4 +1,4 @@
 ext.weMessageVersion = [
-        versionName: '1.2.6',
+        versionName: '1.2.7',
         versionBuild: 12
 ]
