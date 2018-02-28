@@ -27,6 +27,8 @@ public class SmsSent extends SentReceiver {
             Uri messageUri = Uri.parse(intent.getStringExtra("message_uri"));
             MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(taskIdentifier, messageUri, true);
 
+            if (message == null) throw new NullPointerException("Could not send message because SMS built from URI was null");
+
             weMessage.get().getMmsManager().updateOrAddMessage(taskIdentifier, message);
         }catch (Exception ex){
             AppLogger.error("An error occurred while sending an SMS message", ex);

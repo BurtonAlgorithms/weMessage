@@ -31,7 +31,6 @@ import com.stfalcon.chatkit.dialogs.DialogsListAdapter;
 import com.stfalcon.chatkit.utils.DateFormatter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -268,7 +267,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
         }
 
         showUpdateDialog();
-        loadChats();
+        loadChats(true);
 
         return view;
     }
@@ -444,16 +443,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             @Override
             public void run() {
                 if (dialogsListAdapter != null) {
-                    dialogsListAdapter.clear();
-
-                    for (Chat chat : chats) {
-                        if (!isChatBlocked(chat)) {
-                            dialogsListAdapter.addItem(new ChatDialogView(chat));
-                        }
-                    }
-                    dialogsListAdapter.sortByLastMessageDate();
-                    toggleNoConversations(dialogsListAdapter.isEmpty());
-                    dialogsList.scrollToPosition(0);
+                    loadChats(true);
                 }
             }
         });
@@ -560,15 +550,17 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
     }
 
     @SuppressWarnings("unchecked")
-    private void loadChats(){
+    private void loadChats(final boolean refreshIfDuplicated){
         if (isParseChatsTaskRunning.get()) return;
+
         isParseChatsTaskRunning.set(true);
+        dialogsListAdapter.clear();
 
         List<Chat> chats = weMessage.get().getMessageManager().getChats();
 
         if (!chats.isEmpty() && !isChatBlocked(chats.get(0))) dialogsListAdapter.addItem(new ChatDialogView(chats.get(0)));
 
-        new AsyncTask<List<Chat>, ChatDialogView, Void>(){
+        new AsyncTask<List<Chat>, List<ChatDialogView>, Void>(){
             @Override
             protected Void doInBackground(List<Chat>[] params) {
                 ArrayList<ChatDialogView> dialogViews = new ArrayList<>();
@@ -582,7 +574,7 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                     if (!isChatBlocked(chat)) dialogViews.add(chatDialogView);
 
                     if (dialogViews.size() == 5 || i == params[0].size() - 1){
-                        publishProgress(dialogViews.toArray(new ChatDialogView[dialogViews.size()]));
+                        publishProgress(new ArrayList<>(dialogViews));
                         dialogViews.clear();
                     }
                 }
@@ -591,10 +583,10 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
             }
 
             @Override
-            protected void onProgressUpdate(ChatDialogView... chatDialogViewBatch) {
+            protected void onProgressUpdate(List<ChatDialogView>... chatDialogViewBatch) {
                 if (!hasConversations) toggleNoConversations(false);
 
-                dialogsListAdapter.addItems(Arrays.asList(chatDialogViewBatch));
+                dialogsListAdapter.addItems(chatDialogViewBatch[0]);
             }
 
             @Override
@@ -604,6 +596,10 @@ public class ChatListFragment extends MessagingFragment implements MessageCallba
                 dialogsListAdapter.sortByLastMessageDate();
                 dialogsList.scrollToPosition(0);
                 isParseChatsTaskRunning.set(false);
+
+                if (refreshIfDuplicated && dialogsListAdapter.hasDuplicates()){
+                    loadChats(false);
+                }
             }
         }.execute(chats);
     }

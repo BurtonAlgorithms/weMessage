@@ -60,6 +60,8 @@ public class AttachmentVideoView extends AttachmentView {
 
                 thumbnailBitmap.bitmap = ThumbnailUtils.createVideoThumbnail(params[0].getFileLocation().getFileLocation(),
                         MediaStore.Video.Thumbnails.FULL_SCREEN_KIND);
+
+
                 thumbnailBitmap.width = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
                 thumbnailBitmap.height = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
 

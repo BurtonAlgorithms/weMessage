@@ -266,6 +266,7 @@ public final class MmsDatabase {
     public void executeMessageSync(String identifier){
         if (!MmsManager.hasSmsPermissions()) return;
 
+        int timesSlept = 0;
         Uri uri = Uri.parse("content://mms-sms/conversations/" + identifier);
         Cursor initialQuery = app.getContentResolver().query(uri, new String[]{ "_id", "ct_t", "address" }, null, null, null);
 
@@ -273,13 +274,21 @@ public final class MmsDatabase {
 
         if (initialQuery.moveToFirst()){
             do {
+                while (app.getMmsManager() == null && timesSlept < 10){
+                    timesSlept++;
+
+                    try {
+                        Thread.sleep(500);
+                    }catch (Exception ex) { }
+                }
+
                 try {
                     String firstMessageId = initialQuery.getString(initialQuery.getColumnIndex("_id"));
                     String messageId = initialQuery.getString(initialQuery.getColumnIndex("_id"));
                     String contentType = initialQuery.getString(initialQuery.getColumnIndex("ct_t"));
                     boolean isMms = !StringUtils.isEmpty(contentType) && (contentType.equalsIgnoreCase("application/vnd.wap.multipart.related") || contentType.equalsIgnoreCase("application/vnd.wap.multipart.mixed"));
 
-                    if (app.getMmsManager() != null && app.getMmsManager().getMmsMessage(messageId) != null) {
+                    if (app.getMmsManager().getMmsMessage(messageId) != null) {
                         long largestMessageId = getLargestMessageId();
                         if (largestMessageId == -1L) continue;
 
@@ -616,7 +625,7 @@ public final class MmsDatabase {
 
         if (cannotBeNull && mmsMessage == null){
             if (sender == null) throw new NullPointerException("Built SMS message was null because the sender could not be found");
-            if (chat == null) throw new NullPointerException("Built SMS message was null because the chat could not be found");
+            else if (chat == null) throw new NullPointerException("Built SMS message was null because the chat could not be found");
             else throw new NullPointerException("Built SMS message was null for an unknown reason");
         }
 

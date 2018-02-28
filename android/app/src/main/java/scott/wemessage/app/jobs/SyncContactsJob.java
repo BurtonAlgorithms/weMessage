@@ -53,7 +53,7 @@ public class SyncContactsJob extends Job {
                     Handle handle = weMessage.get().getMessageDatabase().getHandleByHandleID(phoneNumber);
 
                     if (handle == null) {
-                        handle = new Handle(UUID.randomUUID(), phoneNumber, Handle.HandleType.SMS, false, false);
+                        handle = new Handle(UUID.randomUUID(), phoneNumber, Handle.HandleType.UNKNOWN, false, false);
                         weMessage.get().getMessageManager().addHandleNoCallback(handle, false);
                     }
 

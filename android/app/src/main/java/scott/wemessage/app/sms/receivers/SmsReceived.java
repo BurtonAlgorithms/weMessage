@@ -28,6 +28,9 @@ public class SmsReceived extends BroadcastReceiver {
                 if (bundle != null) {
                     Object[] smsExtra = (Object[]) bundle.get("pdus");
                     MmsMessage message = weMessage.get().getMmsManager().addSmsMessage(smsExtra);
+
+                    if (message == null) throw new NullPointerException("Could not receive message because SMS built from URI was null");
+
                     PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
 
                     if (!powerManager.isInteractive()) {

@@ -27,6 +27,8 @@ public class MmsSent extends MmsSentReceiver {
             Uri messageUri = Uri.parse(intent.getStringExtra(EXTRA_CONTENT_URI));
             MmsMessage mmsMessage = weMessage.get().getMmsDatabase().getMessageFromUri(taskIdentifier, messageUri, true);
 
+            if (mmsMessage == null) throw new NullPointerException("Could not send MMS message because MMS built from URI was null");
+
             weMessage.get().getMmsManager().updateOrAddMessage(taskIdentifier, mmsMessage);
         }catch (Exception ex){
             AppLogger.error("An error occurred while adding an MMS message", ex);

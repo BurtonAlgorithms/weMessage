@@ -716,7 +716,10 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                     }
                 }
             }else if (handle.getHandleType() == Handle.HandleType.SMS){
-                if (MmsManager.isDefaultSmsApp()){
+                if (isConnectionServiceRunning() && !isStillConnecting()){
+                    performSend(input, handle, false);
+                    return true;
+                }else if (MmsManager.isDefaultSmsApp()){
                     performSend(input, handle, true);
                     return true;
                 }else {
@@ -1059,6 +1062,8 @@ public class CreateChatFragment extends MessagingFragment implements MessageCall
                 if (!selectedContactsViewIntegrity.contains(contactUuid)){
                     selectedContactsViewIntegrity.add(contactUuid);
                 }
+
+                clearEditText(searchContactEditText, true);
             } else {
                 if (selectedContactUuids.contains(contactUuid)) {
                     selectedContactUuids.remove(contactUuid);

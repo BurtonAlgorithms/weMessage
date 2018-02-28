@@ -166,6 +166,9 @@ public final class weMessage extends Application implements Constants {
     private File attachmentFolder;
     private File chatIconsFolder;
 
+    private final Object mmsDatabaseLock = new Object();
+    private final Object mmsManagerLock = new Object();
+
     public AtomicBoolean isDefaultSmsApplication = new AtomicBoolean(false);
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
 
@@ -236,12 +239,16 @@ public final class weMessage extends Application implements Constants {
         return messageManager;
     }
 
-    public synchronized MmsDatabase getMmsDatabase(){
-        return mmsDatabase;
+    public MmsDatabase getMmsDatabase(){
+        synchronized (mmsDatabaseLock) {
+            return mmsDatabase;
+        }
     }
 
-    public synchronized MmsManager getMmsManager(){
-        return mmsManager;
+    public MmsManager getMmsManager(){
+        synchronized (mmsManagerLock) {
+            return mmsManager;
+        }
     }
 
     public synchronized Session getCurrentSession(){
@@ -322,8 +329,14 @@ public final class weMessage extends Application implements Constants {
         }
 
         getMessageDatabase().configureSmsMode();
-        mmsDatabase = new MmsDatabase(this);
-        mmsManager = new MmsManager(this);
+
+        synchronized (mmsDatabaseLock) {
+            mmsDatabase = new MmsDatabase(this);
+        }
+
+        synchronized (mmsManagerLock) {
+            mmsManager = new MmsManager(this);
+        }
 
         getMmsManager().initialize();
 
@@ -339,8 +352,14 @@ public final class weMessage extends Application implements Constants {
         getMessageDatabase().configureSmsMode();
 
         if (getMmsManager() != null) getMmsManager().dumpMessages();
-        mmsManager = null;
-        mmsDatabase = null;
+
+        synchronized (mmsManagerLock) {
+            mmsManager = null;
+        }
+
+        synchronized (mmsDatabaseLock) {
+            mmsDatabase = null;
+        }
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(weMessage.BROADCAST_SMS_MODE_DISABLED));
     }

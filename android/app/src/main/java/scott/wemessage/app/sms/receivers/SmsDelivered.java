@@ -27,6 +27,8 @@ public class SmsDelivered extends DeliveredReceiver {
             Uri messageUri = Uri.parse(intent.getStringExtra("message_uri"));
             MmsMessage message = weMessage.get().getMmsDatabase().getMessageFromUri(taskIdentifier, messageUri, true);
 
+            if (message == null) throw new NullPointerException("Could not deliver message because SMS built from URI was null");
+
             weMessage.get().getMmsManager().updateOrAddMessage(taskIdentifier, message);
         }catch (Exception ex){
             AppLogger.error("An error occurred while updating an SMS message", ex);
