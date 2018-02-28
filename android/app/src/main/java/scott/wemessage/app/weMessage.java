@@ -169,7 +169,7 @@ public final class weMessage extends Application implements Constants {
     private final Object mmsDatabaseLock = new Object();
     private final Object mmsManagerLock = new Object();
 
-    public AtomicBoolean isDefaultSmsApplication = new AtomicBoolean(false);
+    public AtomicBoolean isSmsModeEnabled = new AtomicBoolean(false);
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
 
     public static weMessage get(){
@@ -316,7 +316,7 @@ public final class weMessage extends Application implements Constants {
     }
 
     public synchronized void enableSmsMode(boolean performResync){
-        isDefaultSmsApplication.set(true);
+        isSmsModeEnabled.set(true);
 
         if (getCurrentSession().getSmsHandle() == null && !StringUtils.isEmpty(MmsManager.getPhoneNumber())){
             Handle handle = getMessageDatabase().getHandleByHandleID(MmsManager.getPhoneNumber());
@@ -348,7 +348,7 @@ public final class weMessage extends Application implements Constants {
     }
 
     public synchronized void disableSmsMode(){
-        isDefaultSmsApplication.set(false);
+        isSmsModeEnabled.set(false);
         getMessageDatabase().configureSmsMode();
 
         if (getMmsManager() != null) getMmsManager().dumpMessages();

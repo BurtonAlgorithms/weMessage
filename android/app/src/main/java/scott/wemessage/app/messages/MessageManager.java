@@ -896,7 +896,7 @@ public final class MessageManager {
 
                 for (Contact c : app.getMessageDatabase().getContacts()){
                     for (Handle h : c.getHandles()){
-                        contactHandleMap.put(h.getUuid().toString(), c);
+                        if (h != null) contactHandleMap.put(h.getUuid().toString(), c);
                     }
                 }
 

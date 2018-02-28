@@ -282,6 +282,8 @@ public final class MmsDatabase {
                     }catch (Exception ex) { }
                 }
 
+                if (app.getMmsManager() == null) continue;
+
                 try {
                     String firstMessageId = initialQuery.getString(initialQuery.getColumnIndex("_id"));
                     String messageId = initialQuery.getString(initialQuery.getColumnIndex("_id"));
