@@ -14,7 +14,7 @@
 * Encryption (AES Cryptography)
 * Read Receipts
 
-**weServer** is the messaging server implementation for the weMessage platform. It processes iMessages sent from the application to the Mac host machine and from Mac to the app. Essentially, it is the "bridge" between the user's Mac computer and Android device.
+**weServer** is the messaging server implementation for the weMessage platform. It processes and forwards iMessages sent from the weMessage app to the Mac host machine, and sends messages received on the Mac to the app. It is the "bridge" between the user's Mac computer and Android device.
 
 ---
 
