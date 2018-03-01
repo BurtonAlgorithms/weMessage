@@ -16,4 +16,8 @@
 
 **Commons** is a module that contains shared Java code between the weServer and weMessage application.
 
-    Copyright © 2018 Roman Scott, Communitext LLC
+#### Information
+
+weMessage was made by Roman Scott for Communitext LLC.
+
+    Copyright © 2018 Roman Scott
