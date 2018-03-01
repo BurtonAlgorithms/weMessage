@@ -2,9 +2,7 @@
 
 [**weMessage**](https://wemessageapp.com) is a unified messaging application that brings Apple’s iMessage to Android devices. weMessage is a software solution that is comprised of two main pieces of software: the Android app itself and a messaging server called the weServer. In order to actually use iMessage, the weServer needs to be installed on a Mac machine. weMessage can also function as a standalone SMS and MMS messaging app.
 
-<p align="center">
-<img src="https://wemessageapp.com/promotional/weMessage-Feature.png">
-</p>
+![Promo]("https://wemessageapp.com/promotional/weMessage-Feature.png")
 
 ###Features:
 * Full support for iMessage group chats and direct messaging
