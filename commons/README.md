@@ -1,3 +1,21 @@
 # weMessage Commons
 
-This Commons project contains the shared code between the Server and Android Application.
+[**weMessage**](https://wemessageapp.com) is a unified messaging application that brings Apple’s iMessage to Android devices. weMessage is a software solution that is comprised of two main pieces of software: the Android app itself and a messaging server called the weServer. In order to actually use iMessage, the weServer needs to be installed on a Mac machine. weMessage can also function as a standalone SMS and MMS messaging app.
+
+<p align="center">
+<img src="https://wemessageapp.com/promotional/weMessage-Feature.png">
+</p>
+
+###Features:
+* Full support for iMessage group chats and direct messaging
+* SMS and MMS functionality
+* The ability to send image, audio, and video attachments
+* A comprehensive contact system that includes Contact Sync, Do Not Disturb, and Blocking
+* Customize names and photo icons for contacts and group chats
+* iMessage effects (Confetti, Fireworks, Invisible Ink)
+* Encryption (AES Cryptography)
+* Read Receipts
+
+**Commons** is a module that contains shared Java code between the weServer and weMessage application.
+
+weMessage was developed by Roman Scott and is owned by Communitext LLC.
