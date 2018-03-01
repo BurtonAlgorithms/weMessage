@@ -4,7 +4,7 @@
 
 ![Promo](https://wemessageapp.com/promotional/weMessage-Feature.png)
 
-###Features:
+### Features:
 * Full support for iMessage group chats and direct messaging
 * SMS and MMS functionality
 * The ability to send image, audio, and video attachments
