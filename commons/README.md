@@ -20,6 +20,6 @@
 
 ### Information
 
-weMessage was made by Roman Scott for Communitext LLC.
+weMessage was created by Roman Scott for Communitext LLC.
 
     Copyright © 2018 Roman Scott
