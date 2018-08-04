@@ -1,0 +1,4 @@
+rootProject.name = 'weServer'
+
+include ':commons'
+project(':commons').projectDir = new File(rootDir.getParent(), '/commons')
