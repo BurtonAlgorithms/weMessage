@@ -20,7 +20,7 @@ configurations {
 }
 
 dependencies {
-    compile (project(':Commons')){
+    compile (project(':commons')){
         transitive = false
     }
 
