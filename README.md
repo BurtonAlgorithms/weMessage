@@ -14,7 +14,11 @@
 * Encryption (AES Cryptography)
 * Read Receipts
 
-**weMessage** is the Android implementation of the weMessage platform. It is the client side interface of the project, and sends messages to and receives messages from the weServer instance. It controls the user interface, stores the messages, and also serves as a standalone SMS and MMS messaging app.
+**android** is the Android implementation of the weMessage platform. It is the client side interface of the project, and sends messages to and receives messages from the weServer instance. It controls the user interface, stores the messages, and also serves as a standalone SMS and MMS messaging app.
+
+**server** is the messaging server implementation for the weMessage platform. It processes and forwards iMessages sent from the weMessage app to the Mac host machine, and sends messages received on the Mac to the app. It is the "bridge" between the user's Mac computer and Android device.
+
+**commons** is a module that contains shared Java code between the weServer and weMessage application.
 
 ---
 
