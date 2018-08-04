@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:id="@+id/aboutLayout">
+
+    <include
+        layout="@layout/toolbar_about" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <RelativeLayout
+            android:layout_margin="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RelativeLayout
+                android:id="@+id/aboutFAQ"
+                android:background="?android:attr/selectableItemBackground"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp">
+
+                <ImageView
+                    android:id="@+id/aboutFAQImage"
+                    android:tint="@color/colorHeader"
+                    android:src="@drawable/ic_question_answer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="2dp"/>
+
+                <scott.wemessage.app.ui.view.font.FontTextView
+                    android:text="@string/word_faq"
+                    android:textSize="18sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@+id/aboutFAQArrow"
+                    android:layout_toEndOf="@id/aboutFAQImage"
+                    app:fontName="OrkneyLight"/>
+
+                <ImageView
+                    android:id="@+id/aboutFAQArrow"
+                    android:src="@drawable/ic_arrow_right"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true"/>
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/aboutPrivacy"
+                android:background="?android:attr/selectableItemBackground"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:layout_below="@id/aboutFAQ">
+
+                <ImageView
+                    android:id="@+id/aboutPrivacyImage"
+                    android:src="@drawable/ic_lock"
+                    android:tint="@color/colorHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"/>
+
+                <scott.wemessage.app.ui.view.font.FontTextView
+                    android:text="@string/privacy_policy"
+                    android:textSize="18sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@+id/aboutPrivacyArrow"
+                    android:layout_toEndOf="@id/aboutPrivacyImage"
+                    app:fontName="OrkneyLight"/>
+
+                <ImageView
+                    android:id="@+id/aboutPrivacyArrow"
+                    android:src="@drawable/ic_arrow_right"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true"/>
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/aboutTerms"
+                android:background="?android:attr/selectableItemBackground"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:layout_below="@id/aboutPrivacy">
+
+                <ImageView
+                    android:id="@+id/aboutTermsImage"
+                    android:src="@drawable/ic_paper"
+                    android:tint="@color/colorHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"/>
+
+                <scott.wemessage.app.ui.view.font.FontTextView
+                    android:text="@string/word_terms"
+                    android:textSize="18sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@+id/aboutTermsArrow"
+                    android:layout_toEndOf="@id/aboutTermsImage"
+                    app:fontName="OrkneyLight"/>
+
+                <ImageView
+                    android:id="@+id/aboutTermsArrow"
+                    android:src="@drawable/ic_arrow_right"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true"/>
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/aboutCredits"
+                android:background="?android:attr/selectableItemBackground"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:layout_below="@id/aboutTerms">
+
+                <ImageView
+                    android:id="@+id/aboutCreditsImage"
+                    android:src="@drawable/ic_favorite_heart"
+                    android:tint="@color/colorHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"/>
+
+                <scott.wemessage.app.ui.view.font.FontTextView
+                    android:text="@string/word_credits"
+                    android:textSize="18sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_centerVertical="true"
+                    android:layout_toStartOf="@+id/aboutCreditsArrow"
+                    android:layout_toEndOf="@id/aboutCreditsImage"
+                    app:fontName="OrkneyLight"/>
+
+                <ImageView
+                    android:id="@+id/aboutCreditsArrow"
+                    android:src="@drawable/ic_arrow_right"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentEnd="true"/>
+
+            </RelativeLayout>
+
+        </RelativeLayout>
+
+    </ScrollView>
+
+</LinearLayout>

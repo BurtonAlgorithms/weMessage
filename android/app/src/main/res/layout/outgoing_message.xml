@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:soundEffectsEnabled="false"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:layout_marginLeft="16dp"
+    android:layout_marginRight="16dp"
+    android:layout_marginTop="8dp">
+
+    <ImageView
+        android:id="@+id/selectedMessageBubble"
+        android:src="@drawable/circle_outline"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_centerInParent="true"
+        android:layout_alignParentStart="true" />
+
+    <LinearLayout
+        android:id="@+id/attachmentsContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/message_outcoming_bubble_margin_left"
+        android:layout_alignParentEnd="true"
+        android:layout_toEndOf="@id/selectedMessageBubble"
+        android:orientation="vertical" >
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/outgoingMessageContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/message_outcoming_bubble_margin_left"
+        android:layout_below="@id/attachmentsContainer"
+        android:layout_toEndOf="@id/selectedMessageBubble"
+        android:layout_alignParentEnd="true">
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@id/bubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@+id/errorBubble"
+
+            app:alignContent="stretch"
+            app:alignItems="stretch"
+            app:flexWrap="wrap"
+            app:justifyContent="flex_end">
+
+            <TextView
+                android:id="@id/messageText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignWithParentIfMissing="true"/>
+
+            <TextView
+                android:id="@id/messageTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/messageText"
+                android:layout_marginStart="8dp"
+                app:layout_alignSelf="center"
+                app:layout_order="1"/>
+
+        </com.google.android.flexbox.FlexboxLayout>
+
+        <ImageView
+            android:id="@+id/errorBubble"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_error_outline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:layout_alignParentEnd="true"/>
+
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/deliveryMessageContainer"
+        android:layout_marginTop="4dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/outgoingMessageContainer"
+        android:layout_alignParentEnd="true"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/deliveryMessageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="14sp"/>
+
+        <TextView
+            android:id="@+id/deliveryMessageTimeView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/errorMessageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/brightRed"
+        android:layout_below="@id/outgoingMessageContainer"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="4dp"
+        android:textSize="14sp"
+        android:text="@string/message_delivery_error"/>
+
+</RelativeLayout>

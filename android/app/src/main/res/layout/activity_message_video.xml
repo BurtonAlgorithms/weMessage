@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/messageVideoParentView"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <scott.wemessage.app.utils.media.VideoAttachmentPlayer
+        android:id="@+id/messageVideoPlayer"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <RelativeLayout
+        android:id="@+id/doneBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/videoPlayerPrimary"
+        android:elevation="4dp">
+
+        <scott.wemessage.app.ui.view.font.FontTextView
+            app:fontName="OrkneyMedium"
+            android:id="@+id/doneButton"
+            android:text="@string/word_done"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:background="?android:attr/selectableItemBackground"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"/>
+
+        <ImageButton
+            android:id="@+id/downloadVideoButton"
+            android:src="@drawable/ic_file_download"
+            android:background="?android:attr/selectableItemBackground"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="12dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="6dp"
+            android:tint="@android:color/white"/>
+    </RelativeLayout>
+</FrameLayout>

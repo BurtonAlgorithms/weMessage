@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scott.wemessage.app.ui.view.messages.media.AttachmentVideoView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <android.support.percent.PercentFrameLayout
+        android:id="@+id/attachmentVideoThumbnailLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toStartOf="@+id/errorBubble">
+
+        <com.stfalcon.chatkit.utils.RoundedImageView
+            android:id="@+id/attachmentVideoThumbnail"
+            app:layout_widthPercent="95%"/>
+
+        <View
+            android:id="@+id/attachmentVideoOverlay"
+            android:layout_gravity="start"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <ImageView
+            android:src="@drawable/ic_play_circle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            app:layout_widthPercent="95%"/>
+
+    </android.support.percent.PercentFrameLayout>
+
+    <ImageView
+        android:id="@+id/errorBubble"
+        android:layout_marginStart="8dp"
+        android:src="@drawable/ic_error_outline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_alignParentEnd="true"/>
+
+</scott.wemessage.app.ui.view.messages.media.AttachmentVideoView>

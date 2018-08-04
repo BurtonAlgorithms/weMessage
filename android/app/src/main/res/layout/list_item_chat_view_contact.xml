@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.daimajia.swipe.SwipeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:show_mode="pull_out"
+    app:clickToClose="true">
+
+    <LinearLayout
+        android:id="@+id/chatContactRemoveButtonLayout"
+        android:layout_width="84dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/red_button_background_drawable"
+        android:weightSum="1">
+
+        <TextView
+            android:text="@string/word_remove"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </LinearLayout>
+
+    <android.support.v7.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:id="@+id/chatContactLayout"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="8dp">
+
+            <com.github.siyamed.shapeimageview.CircularImageView
+                android:id="@+id/chatContactPictureView"
+                android:layout_margin="8dp"
+                android:layout_width="42dp"
+                android:layout_height="42dp"/>
+
+            <scott.wemessage.app.ui.view.font.FontTextView
+                app:fontName="OrkneyLight"
+                android:layout_margin="8dp"
+                android:layout_gravity="center"
+                android:id="@+id/chatContactDisplayNameView"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:textColor="@color/black"/>
+        </LinearLayout>
+
+    </android.support.v7.widget.CardView>
+
+</com.daimajia.swipe.SwipeLayout>

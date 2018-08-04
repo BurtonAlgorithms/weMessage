@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="scott.wemessage">
+
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.WRITE_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_MMS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.provider.Telephony.SMS_RECEIVED" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
+
+    <application
+        android:name="scott.wemessage.app.weMessage"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name=".app.ui.activities.LaunchActivity"
+            android:theme="@style/AppTheme.Launch">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".app.ui.activities.ChatListActivity" />
+        <activity android:name=".app.ui.activities.ConversationActivity" />
+        <activity android:name=".app.ui.activities.CreateChatActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SENDTO" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".app.ui.activities.ChatViewActivity" />
+        <activity android:name=".app.ui.activities.ContactSelectActivity" />
+        <activity android:name=".app.ui.activities.ContactViewActivity" />
+        <activity android:name=".app.ui.activities.ContactListActivity" />
+        <activity android:name=".app.ui.activities.mini.MessageImageActivity" />
+        <activity android:name=".app.ui.activities.mini.MessageVideoActivity" android:theme="@style/AppTheme.VideoPlayer" android:configChanges="orientation|keyboardHidden|screenLayout|screenSize"> </activity>
+        <activity android:name=".app.ui.activities.SettingsActivity" />
+        <activity android:name=".app.ui.activities.AboutActivity" />
+        <activity android:name=".app.ui.activities.mini.SetDefaultSmsActivity" android:configChanges="orientation|keyboardHidden|screenLayout|screenSize"/>
+        <activity android:name=".app.ui.activities.mini.SetNumberActivity" />
+        <activity android:name=".app.utils.view.DisplayWebViewActivity" />
+        <activity android:name="com.thefinestartist.finestwebview.FinestWebViewActivity" android:configChanges="keyboardHidden|orientation|screenSize" android:screenOrientation="sensor" android:theme="@style/FinestWebViewTheme.Light" />
+        <activity android:name="com.afollestad.materialcamera.CaptureActivity" />
+        <activity android:name="com.afollestad.materialcamera.CaptureActivity2" />
+
+        <service android:name=".app.connection.ConnectionService" />
+        <service android:name="com.android.mms.transaction.TransactionService" />
+
+        <service
+            android:name=".app.messages.firebase.FirebaseNotificationService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".app.messages.firebase.FirebaseInstanceIDService">
+            <intent-filter>
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT"/>
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".app.sms.receivers.SmsReceived"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_DELIVER" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".app.sms.receivers.MmsPushReceiver"
+            android:permission="android.permission.BROADCAST_WAP_PUSH">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
+                <data android:mimeType="application/vnd.wap.mms-message" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".app.sms.receivers.SmsPackageChange">
+            <intent-filter>
+                <action android:name="android.provider.action.DEFAULT_SMS_PACKAGE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".app.sms.receivers.SmsSent"
+            android:taskAffinity="scott.wemessage.SMS_SENT"/>
+
+        <receiver
+            android:name=".app.sms.receivers.SmsDelivered"
+            android:taskAffinity="scott.wemessage.SMS_DELIVERED"/>
+
+        <receiver
+            android:name=".app.sms.receivers.MmsSent"
+            android:taskAffinity="com.klinker.android.messaging.MMS_SENT"/>
+
+        <receiver
+            android:name=".app.sms.receivers.MmsReceived"
+            android:taskAffinity="com.klinker.android.messaging.MMS_RECEIVED"/>
+
+        <receiver
+            android:name=".app.sms.receivers.MmsError"
+            android:taskAffinity="com.klinker.android.send_message.MMS_ERROR"/>
+
+        <service
+            android:name=".app.sms.services.HeadlessSmsSendService"
+            android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+            </intent-filter>
+        </service>
+
+        <meta-data android:name="firebase_crashlytics_collection_enabled" android:value="false" />
+
+    </application>
+
+</manifest>

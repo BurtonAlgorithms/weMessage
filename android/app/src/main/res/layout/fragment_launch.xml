@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/launchScrollView"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent">
+
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/launchConstraintLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/launchAppIcon"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@drawable/ic_app_logo"
+            android:background="@drawable/app_icon_border"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="36dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp" />
+
+        <scott.wemessage.app.ui.view.font.FontTextView
+            android:id="@+id/launchAppText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/app_name"
+            android:textSize="25sp"
+            app:fontName="OrkneyLight"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/launchAppIcon"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp" />
+
+        <scott.wemessage.app.ui.view.font.FontTextView
+            android:id="@+id/launchLoginText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:paddingEnd="12dp"
+            android:paddingStart="12dp"
+            android:text="@string/login_text"
+            android:textSize="16sp"
+            android:textColorLink="@color/colorHeader"
+            app:fontName="OrkneyLight"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/launchAppText" />
+
+        <LinearLayout
+            android:id="@+id/launchLoginLinearLayout"
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:padding="16dp"
+            android:background="@drawable/login_border"
+            android:layout_marginTop="24dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/launchLoginText" >
+
+            <scott.wemessage.app.ui.view.font.FontTextView
+                android:id="@+id/launchIpTextView"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:labelFor="@+id/launchIpEditText"
+                app:fontName="OrkneyBold"
+                android:text="@string/login_IP"
+                android:textColor="@color/lightBlack" />
+
+            <EditText
+                android:id="@+id/launchIpEditText"
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:backgroundTint="@color/colorHeader"
+                android:inputType="text"
+                android:imeOptions="actionDone"
+                android:layout_marginBottom="8dp"/>
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <scott.wemessage.app.ui.view.font.FontTextView
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:labelFor="@+id/launchFailoverIpEditText"
+                    app:fontName="OrkneyBold"
+                    android:text="@string/login_failover_ip"
+                    android:textColor="@color/lightBlack" />
+
+                <ImageView
+                    android:id="@+id/launchFailoverIpShowDetailsButton"
+                    android:src="@drawable/ic_help_outline"
+                    android:tint="@color/colorHeader"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_marginStart="12dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/launchFailoverIpEditText"
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:backgroundTint="@color/colorHeader"
+                android:inputType="text"
+                android:imeOptions="actionDone"
+                android:layout_marginBottom="8dp"/>
+
+            <scott.wemessage.app.ui.view.font.FontTextView
+                android:id="@+id/launchEmailTextView"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:labelFor="@+id/launchEmailEditText"
+                app:fontName="OrkneyBold"
+                android:text="@string/login_email"
+                android:textColor="@color/lightBlack" />
+
+            <EditText
+                android:id="@+id/launchEmailEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/colorHeader"
+                android:inputType="textEmailAddress"
+                android:imeOptions="actionDone"
+                android:layout_marginBottom="8dp" />
+
+            <scott.wemessage.app.ui.view.font.FontTextView
+                android:id="@+id/launchPasswordTextView"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:labelFor="@+id/launchPasswordEditText"
+                app:fontName="OrkneyBold"
+                android:text="@string/login_password"
+                android:textColor="@color/lightBlack" />
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent">
+
+                <EditText
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:id="@+id/launchPasswordEditText"
+                    android:layout_columnWeight="20"
+                    android:inputType="textPassword"
+                    android:imeOptions="actionDone"
+                    android:backgroundTint="@color/colorHeader"
+                    android:layout_toStartOf="@+id/passwordRestoreButton"/>
+
+                <ImageView
+                    android:id="@+id/passwordRestoreButton"
+                    android:src="@drawable/ic_reset"
+                    android:tint="@color/colorStatusBar"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="8dp"/>
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+        <scott.wemessage.app.ui.view.font.FontButton
+            android:id="@+id/signInButton"
+            app:buttonFontName="OrkneyLight"
+            android:textAllCaps="false"
+            android:textSize="24sp"
+            android:textColor="@color/heavyBlue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:text="@string/sign_in"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginTop="24dp"
+            android:paddingBottom="8dp"
+            app:layout_constraintTop_toBottomOf="@+id/launchLoginLinearLayout" />
+
+        <scott.wemessage.app.ui.view.font.FontButton
+            android:id="@+id/smsOrOfflineButton"
+            app:buttonFontName="OrkneyLight"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:textColor="@color/brightRed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:text="@string/offline_mode"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginTop="8dp"
+            android:paddingBottom="8dp"
+            app:layout_constraintTop_toBottomOf="@+id/signInButton" />
+
+        <scott.wemessage.app.ui.view.font.FontButton
+            android:id="@+id/enableSmsMode"
+            app:buttonFontName="OrkneyLight"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:textColor="@color/outgoingBubbleColorOrange"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:text="@string/toggle_sms_mode"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:layout_marginTop="8dp"
+            android:paddingBottom="16dp"
+            app:layout_constraintTop_toBottomOf="@+id/smsOrOfflineButton" />
+
+    </android.support.constraint.ConstraintLayout>
+</ScrollView>

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:soundEffectsEnabled="false"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:layout_marginLeft="16dp"
+    android:layout_marginRight="16dp"
+    android:layout_marginTop="8dp">
+
+    <ImageView
+        android:id="@+id/selectedMessageBubble"
+        android:src="@drawable/circle_outline"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_centerInParent="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginEnd="16dp" />
+
+    <RelativeLayout
+        android:id="@+id/incomingMessageContainer"
+        android:layout_toEndOf="@id/selectedMessageBubble"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.github.siyamed.shapeimageview.CircularImageView
+            android:id="@id/messageUserAvatar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/senderName"
+            android:textSize="14sp"
+            android:layout_marginStart="4dp"
+            android:layout_marginBottom="4dp"
+            android:layout_marginEnd="@dimen/message_incoming_bubble_margin_right"
+            android:layout_toEndOf="@id/messageUserAvatar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:id="@+id/attachmentsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/message_incoming_bubble_margin_right"
+            android:layout_toEndOf="@id/messageUserAvatar"
+            android:layout_below="@id/senderName"
+            android:orientation="vertical" >
+
+        </LinearLayout>
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@id/bubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/message_incoming_bubble_margin_right"
+            android:layout_toEndOf="@id/messageUserAvatar"
+            android:orientation="vertical"
+            android:layout_below="@id/attachmentsContainer"
+            app:alignContent="stretch"
+            app:alignItems="stretch"
+            app:flexWrap="wrap"
+            app:justifyContent="flex_end">
+
+            <TextView
+                android:id="@id/messageText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@id/messageTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/messageText"
+                android:layout_marginStart="8dp"
+                app:layout_alignSelf="center" />
+
+            <LinearLayout
+                android:id="@+id/replayButton"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/messageText"
+                android:layout_marginStart="8dp"
+                app:layout_alignSelf="center">
+
+                <ImageView
+                    android:id="@+id/replayButtonImage"
+                    android:tint="@color/colorHeader"
+                    android:src="@drawable/ic_reset"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"/>
+
+                <TextView
+                    android:id="@+id/replayButtonText"
+                    android:layout_marginStart="3dp"
+                    android:text="@string/word_replay"
+                    android:textSize="14sp"
+                    android:textColor="@color/colorHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+        </com.google.android.flexbox.FlexboxLayout>
+
+    </RelativeLayout>
+
+</RelativeLayout>
