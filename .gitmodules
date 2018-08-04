@@ -1,0 +1,6 @@
+[submodule "android/dependencies/smskit"]
+	path = android/dependencies/smskit
+	url = https://github.com/RomanScott/SMSKit.git
+[submodule "android/dependencies/chatkit"]
+	path = android/dependencies/chatkit
+	url = https://github.com/RomanScott/ChatKit.git

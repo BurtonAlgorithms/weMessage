@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.getkeepsafe.dexcount'
 apply plugin: 'io.fabric'
-apply from: '../../Commons/version.gradle'
+apply from: '../../commons/version.gradle'
 apply from: '../android-version.gradle'
 
 android {

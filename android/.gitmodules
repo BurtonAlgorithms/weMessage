@@ -1,6 +1,0 @@
-[submodule "dependencies/chatkit"]
-	path = dependencies/chatkit
-	url = https://github.com/RomanScott/ChatKit
-[submodule "dependencies/smskit"]
-	path = dependencies/smskit
-	url = https://github.com/RomanScott/SMSKit
