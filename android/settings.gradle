@@ -1,10 +1,14 @@
 include ':app'
 include ':commons'
 include ':server'
+include ':firebase'
+include ':website'
 include ':chatkit'
 include ':smskit'
 
 project(':commons').projectDir = new File(rootDir.getParent(), '/commons')
 project(':server').projectDir = new File(rootDir.getParent(), '/server')
+project(':firebase').projectDir = new File(rootDir.getParent(), '/firebase')
+project(':website').projectDir = new File(rootDir.getParent(), '/website')
 project(':chatkit').projectDir = new File(rootDir, '/dependencies/chatkit')
 project(':smskit').projectDir = new File(rootDir, '/dependencies/smskit')

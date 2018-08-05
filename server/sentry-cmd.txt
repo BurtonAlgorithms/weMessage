@@ -1,0 +1,1 @@
+sentry.exe upload-proguard --org wemessage --project weserver --write-properties sentry-meta.properties lib/proguard/out.map
