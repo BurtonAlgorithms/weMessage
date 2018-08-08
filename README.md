@@ -20,7 +20,7 @@
 
 ## Setup & Contributing
 
-The weMessage source code is separated into four modules. In order to load the project, open the folder inside Android Studio. Compilation instructions for the Android app and weServer are included in the ``README`` files of their perspective module folders.
+The weMessage source code is separated into four modules. In order to load the project, open the ``android`` folder inside Android Studio (from there it will load the other modules). Compilation instructions for the Android app and weServer are included in the ``README`` files of their perspective module folders.
 
 If you have any ideas, translations, design changes, code cleaning, or large code changes, please feel free to create an issue or submit a pull request! Any help is welcome and greatly appreciated. If you want to help manage this repository, please send an email to <a href="mailto:business@wemessageapp.com">business@wemessageapp.com</a> Please submit any bugs or crash reports as issues.
 
