@@ -32,7 +32,7 @@ Then, open the ``android`` folder inside Android Studio (from there it will load
 
 The weMessage source code is separated into four modules. Compilation instructions for the Android app and weServer are included in the ``README`` files of their perspective module folders.
 
-If you have any ideas, translations, design changes, code cleaning, or large code changes, please feel free to create an issue or submit a pull request! Any help is welcome and greatly appreciated. If you want to help manage this repository, please send an email to <a href="mailto:business@wemessageapp.com">business@wemessageapp.com</a> Please submit any bugs or crash reports as issues.
+If you have any ideas, language translations, design or user interface changes, code cleaning or refactoring, or improvements you would like to make, please feel free to contribute by submitting a pull request! Any help is welcome and greatly appreciated. If you want to help manage this repository or assisting with leading weMessage's development, please send an email to <a href="mailto:business@wemessageapp.com">business@wemessageapp.com</a>. If you would like to report a bug or submit a crash report, open a <a href="https://github.com/RomanScott/weMessage/issues">new issue</a>.
 
 Do note that the source code is largely undocumented. If you wish to add documentation to the source code, feel free to do so!
 
