@@ -1,0 +1,3 @@
+# weMessage Firebase
+
+Certain functionalities of the weServer (including sending notifications and checking for updates) are provided by URL endpoints that are hosted on [Google's Firebase](https://firebase.google.com) platform. These ``functions/index.js`` file includes [Firebase Cloud Functions](https://firebase.google.com/products/functions/) that the weServer uses. If you want to host your own Firebase instance, you will need to upload your own ``index.js`` file to your Cloud Functions instance and change the URL endpoints inside the weServer module.
