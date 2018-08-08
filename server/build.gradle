@@ -24,12 +24,12 @@ dependencies {
         transitive = false
     }
 
-    dependency 'com.google.code.gson:gson:2.8.2'
-    dependency 'com.googlecode.libphonenumber:libphonenumber:8.8.5'
-    dependency 'joda-time:joda-time:2.9.9'
+    dependency 'com.google.code.gson:gson:2.8.5'
+    dependency 'com.googlecode.libphonenumber:libphonenumber:8.9.10'
+    dependency 'joda-time:joda-time:2.10'
 
     dependency 'commons-codec:commons-codec:1.11'
-    dependency 'com.squareup.okhttp3:okhttp:3.9.0'
+    dependency 'com.squareup.okhttp3:okhttp:3.11.0'
     dependency 'io.sentry:sentry:1.6.3'
     dependency 'org.slf4j:slf4j-nop:1.7.25'
     dependency 'org.xerial:sqlite-jdbc:3.20.1'
