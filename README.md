@@ -24,8 +24,8 @@ In order to load the project, run:
 
 ```
 git clone https://github.com/RomanScott/weMessage.git
-git submodule init
-git submodule update
+cd weMessage
+git submodule update --init --recursive
 ```
 
 Then, open the ``android`` folder inside Android Studio (from there it will load the other modules).
