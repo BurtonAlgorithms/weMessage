@@ -30,6 +30,7 @@ import android.graphics.Color;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.os.Build;
+import android.os.PowerManager;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 
@@ -151,11 +152,19 @@ public final class NotificationManager {
         android.app.NotificationManager notificationManager = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         MessageDatabase database = app.getMessageDatabase();
 
+        // Wake the device if it was sleeping to show the notification
+        PowerManager powerManager = (PowerManager) app.getSystemService(Context.POWER_SERVICE);
+        boolean wake = !powerManager.isInteractive();
+        if (wake) {
+            PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "WeMessageNotificationWakeLock");
+            wakeLock.acquire(5 * 1000);
+        }
+
         try {
             int notificationVersion = Integer.parseInt(remoteMessage.getData().get("notificationVersion"));
 
             if (notificationVersion == weMessage.FIREBASE_NOTIFICATION_VERSION) {
-                if (performNotification(remoteMessage.getData().get("chatId"))) {
+                if (wake || performNotification(remoteMessage.getData().get("chatId"))) {
                     JSONNotification jsonNotification = new JSONNotification();
 
                     jsonNotification.setEncryptedText(remoteMessage.getData().get("encryptedText"));
