@@ -152,13 +152,9 @@ public final class NotificationManager {
         android.app.NotificationManager notificationManager = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         MessageDatabase database = app.getMessageDatabase();
 
-        // Wake the device if it was sleeping to show the notification
+        // Always show the notification when the device is sleeping
         PowerManager powerManager = (PowerManager) app.getSystemService(Context.POWER_SERVICE);
         boolean wake = !powerManager.isInteractive();
-        if (wake) {
-            PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "WeMessageNotificationWakeLock");
-            wakeLock.acquire(5 * 1000);
-        }
 
         try {
             int notificationVersion = Integer.parseInt(remoteMessage.getData().get("notificationVersion"));
