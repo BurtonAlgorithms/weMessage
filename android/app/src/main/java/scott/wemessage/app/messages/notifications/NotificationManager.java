@@ -152,15 +152,11 @@ public final class NotificationManager {
         android.app.NotificationManager notificationManager = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         MessageDatabase database = app.getMessageDatabase();
 
-        // Always show the notification when the device is sleeping
-        PowerManager powerManager = (PowerManager) app.getSystemService(Context.POWER_SERVICE);
-        boolean wake = !powerManager.isInteractive();
-
         try {
             int notificationVersion = Integer.parseInt(remoteMessage.getData().get("notificationVersion"));
 
             if (notificationVersion == weMessage.FIREBASE_NOTIFICATION_VERSION) {
-                if (wake || performNotification(remoteMessage.getData().get("chatId"))) {
+                if (performNotification(remoteMessage.getData().get("chatId"))) {
                     JSONNotification jsonNotification = new JSONNotification();
 
                     jsonNotification.setEncryptedText(remoteMessage.getData().get("encryptedText"));
@@ -413,7 +409,13 @@ public final class NotificationManager {
     }
 
     private synchronized boolean performNotification(String macGuid){
+        // Note: Will not be null when application left in conversation fragment
         if (notificationCallbacks == null) return true;
+
+        // Always show notifications when the app is not in the foreground or the device is asleep
+        // Note: As we switch between activities there is a chance the state will not be accurate.
+        // We should switch to using lifecycle events
+        if (!app.isAppForeground.get()) return true;
 
         return notificationCallbacks.onNotification(macGuid);
     }
