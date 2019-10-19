@@ -20,6 +20,9 @@
 # hide the original source file name.
 -renamesourcefileattribute SourceFile
 
+-dontwarn kotlin.**
+-dontwarn org.jetbrains.**
+-dontwarn nl.dionsegijn.konfetti.emitters.**
 
 ##----------------------  Commons  ----------------------
 

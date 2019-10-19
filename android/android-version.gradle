@@ -1,5 +1,5 @@
 ext.androidVersion = [
-        versionAndroidBuild: 24,
+        versionAndroidBuild: 25,
         compileSdkVersion: 27,
         buildToolsVersion: '27.0.3',
         minSdkVersion: 21,
