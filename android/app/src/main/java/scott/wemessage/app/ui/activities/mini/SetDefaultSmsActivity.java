@@ -109,7 +109,7 @@ public class SetDefaultSmsActivity extends BaseActivity {
                 startTextSizeAnimation(continueButton, 150L, 150L, finalTextSize, currentTextSize);
                 startTextColorAnimation(continueButton, 150L, 150L, finalTextColor, currentTextColor);
 
-                setDefaultSmsApp();
+                setDefaultSmsApp(false);
             }
         });
 
@@ -154,7 +154,7 @@ public class SetDefaultSmsActivity extends BaseActivity {
                 if (isPermissionOnlyMode){
                     returnToLastScreen();
                 }else {
-                    setDefaultSmsApp();
+                    setDefaultSmsApp(false);
                 }
             }
         }
@@ -175,7 +175,7 @@ public class SetDefaultSmsActivity extends BaseActivity {
                             returnToLastScreen();
                         }
                     }else {
-                        setDefaultSmsApp();
+                        setDefaultSmsApp(false);
                     }
                 }else {
                     if (isPermissionOnlyMode) {
@@ -202,11 +202,11 @@ public class SetDefaultSmsActivity extends BaseActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == SMS_CHOSEN_ACTIVITY_RESULT){
-            if (MmsManager.isDefaultSmsApp()){
+            if (weMessage.get().getPackageName().equals(Telephony.Sms.getDefaultSmsPackage(weMessage.get()))){
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        returnToLastScreen();
+                        setDefaultSmsApp(true);
                     }
                 }, 250L);
             }else {
@@ -215,8 +215,8 @@ public class SetDefaultSmsActivity extends BaseActivity {
         }
     }
 
-    private void setDefaultSmsApp(){
-        if (!MmsManager.hasSmsPermissions() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+    private void setDefaultSmsApp(boolean requestPermissions){
+        if ((!MmsManager.hasSmsPermissions() && requestPermissions) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
             final List<String> neededPermissions = new ArrayList<>();
             boolean rationaleShown = false;
 
@@ -261,10 +261,12 @@ public class SetDefaultSmsActivity extends BaseActivity {
         } else if (settingsNoAccess()) {
             setSettings();
         } else {
-            if (!isPermissionOnlyMode) {
+            if (!isPermissionOnlyMode && !MmsManager.isDefaultSmsApp()) {
                 Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
                 intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, getPackageName());
                 startActivityForResult(intent, SMS_CHOSEN_ACTIVITY_RESULT);
+            } else {
+                returnToLastScreen();
             }
         }
     }
@@ -315,7 +317,7 @@ public class SetDefaultSmsActivity extends BaseActivity {
             }, new Runnable() {
                 @Override
                 public void run() {
-                    setDefaultSmsApp();
+                    setDefaultSmsApp(true);
                 }
             });
         fixPermissionsDialog.show(getSupportFragmentManager(), "SmsFixPermissionsAlertDialog");

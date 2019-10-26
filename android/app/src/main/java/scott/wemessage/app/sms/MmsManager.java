@@ -219,7 +219,7 @@ public final class MmsManager {
     }
 
     public static boolean isDefaultSmsApp(){
-        return isPhone() && weMessage.get().getPackageName().equals(Telephony.Sms.getDefaultSmsPackage(weMessage.get()));
+        return isPhone() && hasSmsPermissions() && weMessage.get().getPackageName().equals(Telephony.Sms.getDefaultSmsPackage(weMessage.get()));
     }
 
     public static String getPhoneNumber(){
