@@ -2,7 +2,7 @@ package scott.wemessage.commons;
 
 public interface Constants {
 
-    String WEMESSAGE_VERSION = "1.2.8";
+    String WEMESSAGE_VERSION = "1.2.9";
     int WEMESSAGE_BUILD_VERSION = 12;
     int FIREBASE_NOTIFICATION_VERSION = 2;
 
