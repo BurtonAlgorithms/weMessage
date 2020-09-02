@@ -4,7 +4,7 @@
 
 ---
 
-![Promo](https://wemessageapp.com/promotional/weMessage-Feature.png)
+![Promo](https://www.wemessageapp.com/promotional/weMessage-Feature.png)
 
 ### Features:
 * Full support for iMessage group chats and direct messaging
