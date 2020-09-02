@@ -32,7 +32,7 @@ Then, open the ``android`` folder inside Android Studio (from there it will load
 
 The weMessage source code is separated into four modules. Compilation instructions for the Android app and weServer are included in the ``README`` files of their perspective module folders.
 
-If you have any ideas, language translations, design or user interface changes, code cleaning or refactoring, or improvements you would like to make, please feel free to contribute by submitting a pull request! Any help is welcome and greatly appreciated. If you want to help manage this repository or assisting with leading weMessage's development, please send an email to <a href="mailto:business@wemessageapp.com">business@wemessageapp.com</a>. If you would like to report a bug or submit a crash report, open a <a href="https://github.com/RomanScott/weMessage/issues">new issue</a>.
+If you have any ideas, language translations, design or user interface changes, code cleaning or refactoring, or improvements you would like to make, please feel free to contribute by submitting a pull request! Any help is welcome and greatly appreciated. If you would like to report a bug or submit a crash report, open a <a href="https://github.com/RomanScott/weMessage/issues">new issue</a>.
 
 Do note that the source code is largely undocumented. If you wish to add documentation to the source code, feel free to do so!
 
@@ -45,15 +45,6 @@ Do note that the source code is largely undocumented. If you wish to add documen
 **commons** is a module that contains shared Java code between the weServer and weMessage application.
 
 **firebase** is a module that contains code for some of the Firebase Cloud Functions, including version checking and sending notifications.
-
----
-
-## Donate
-
-weMessage was created because of countless hours of hard work in my free time. If you like using weMessage or it has helped you, please consider donating! Any contribution is greatly appreciated. You can donate at [https://wemessageapp.com/donate](https://wemessageapp.com/donate).
-
-<a href="https://wemessageapp.com/donate">
-<img src="https://www.mywit.org/wp-content/uploads/2017/03/Donate-Button.png" width=270 height=90 align="center">  <img src="https://dpwjbsxqtam5n.cloudfront.net/order-form/credit-cards.png" align="center" width=500 height=55></a>
 
 ---
 
