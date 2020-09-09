@@ -189,6 +189,7 @@ public final class weMessage extends Application implements Constants {
 
     public AtomicBoolean isSmsModeEnabled = new AtomicBoolean(false);
     private AtomicBoolean isEmojiInitialized = new AtomicBoolean(false);
+    public AtomicBoolean isAppForeground = new AtomicBoolean(false);
 
     public static weMessage get(){
         return instance;

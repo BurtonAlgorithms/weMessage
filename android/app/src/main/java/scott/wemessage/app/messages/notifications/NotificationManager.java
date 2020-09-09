@@ -30,6 +30,7 @@ import android.graphics.Color;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.os.Build;
+import android.os.PowerManager;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 
@@ -408,7 +409,13 @@ public final class NotificationManager {
     }
 
     private synchronized boolean performNotification(String macGuid){
+        // Note: Will not be null when application left in conversation fragment
         if (notificationCallbacks == null) return true;
+
+        // Always show notifications when the app is not in the foreground or the device is asleep
+        // Note: As we switch between activities there is a chance the state will not be accurate.
+        // We should switch to using lifecycle events
+        if (!app.isAppForeground.get()) return true;
 
         return notificationCallbacks.onNotification(macGuid);
     }

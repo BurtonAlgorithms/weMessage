@@ -30,6 +30,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        weMessage.get().isAppForeground.set(true);
 
         if (weMessage.get().isSmsModeEnabled.get() && !MmsManager.isDefaultSmsApp()){
             weMessage.get().disableSmsMode();
@@ -46,5 +47,11 @@ public abstract class BaseActivity extends AppCompatActivity {
             startActivity(launcherIntent);
             finish();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        weMessage.get().isAppForeground.set(false);
     }
 }
